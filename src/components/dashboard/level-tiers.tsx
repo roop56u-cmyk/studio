@@ -9,11 +9,10 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Users, DollarSign, CheckSquare, CheckCircle, Lock } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Users, DollarSign, CheckSquare, CheckCircle, Lock, PlayCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
-import { PlayCircle } from "lucide-react";
 
 export const levels = [
   {
@@ -58,9 +57,11 @@ export type Level = typeof levels[0];
 interface LevelTiersProps {
     currentBalance: number;
     onLevelClick: (level: Level) => void;
+    onStartTasks: () => void;
+    isTaskLocked: boolean;
 }
 
-export function LevelTiers({ currentBalance, onLevelClick }: LevelTiersProps) {
+export function LevelTiers({ currentBalance, onLevelClick, onStartTasks, isTaskLocked }: LevelTiersProps) {
     
   const currentLevel = levels.slice().reverse().find(level => currentBalance >= level.minAmount)?.level ?? 0;
 
@@ -80,50 +81,59 @@ export function LevelTiers({ currentBalance, onLevelClick }: LevelTiersProps) {
                 const isCurrentLevel = level.level === currentLevel;
                 return (
                 <CarouselItem key={level.level} className="basis-full sm:basis-1/2 md:basis-1/3">
-                    <div className="p-1">
+                    <div className="p-1 h-full">
                         <Card 
-                            onClick={() => onLevelClick(level)}
                             className={cn(
-                                "h-full flex flex-col cursor-pointer hover:border-primary", 
+                                "h-full flex flex-col", 
                                 isCurrentLevel && "border-primary ring-2 ring-primary"
                             )}
                         >
-                            <CardHeader>
-                                <CardTitle className="flex items-center justify-between">
-                                    <span className="flex items-center gap-2">
-                                        Level {level.level}
-                                        {isUnlocked ? <CheckCircle className="h-5 w-5 text-green-500" /> : <Lock className="h-5 w-5 text-muted-foreground" />}
-                                    </span>
-                                    <span className="text-sm font-normal text-primary bg-primary/10 px-2 py-1 rounded-full">{level.rate}% APY</span>
-                                </CardTitle>
-                                {isCurrentLevel && <CardDescription className="text-primary font-semibold">Current Level</CardDescription>}
-                                {!isCurrentLevel && <CardDescription>Unlock new earning potentials.</CardDescription>}
-                            </CardHeader>
-                            <CardContent className="flex-grow space-y-3">
-                                <div className="flex items-center">
-                                    <DollarSign className="h-5 w-5 mr-3 text-muted-foreground" />
-                                    <div className="text-sm">
-                                        <p className="font-semibold">${level.minAmount.toLocaleString()}</p>
-                                        <p className="text-muted-foreground text-xs">Minimum Amount to Unlock</p>
-                                    </div>
-                                </div>
-                                 <div className="flex items-center">
-                                    <CheckSquare className="h-5 w-5 mr-3 text-muted-foreground" />
-                                    <div className="text-sm">
-                                        <p className="font-semibold">{level.dailyTasks} Tasks / Day</p>
-                                        <p className="text-muted-foreground text-xs">Daily Task Quota</p>
-                                    </div>
-                                </div>
-                                {level.referrals !== null && (
-                                     <div className="flex items-center">
-                                        <Users className="h-5 w-5 mr-3 text-muted-foreground" />
+                            <div className="flex-grow cursor-pointer hover:bg-muted/50" onClick={() => onLevelClick(level)}>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center justify-between">
+                                        <span className="flex items-center gap-2">
+                                            Level {level.level}
+                                            {isUnlocked ? <CheckCircle className="h-5 w-5 text-green-500" /> : <Lock className="h-5 w-5 text-muted-foreground" />}
+                                        </span>
+                                        <span className="text-sm font-normal text-primary bg-primary/10 px-2 py-1 rounded-full">{level.rate}% APY</span>
+                                    </CardTitle>
+                                    {isCurrentLevel && <CardDescription className="text-primary font-semibold">Current Level</CardDescription>}
+                                    {!isCurrentLevel && <CardDescription>Unlock new earning potentials.</CardDescription>}
+                                </CardHeader>
+                                <CardContent className="flex-grow space-y-3">
+                                    <div className="flex items-center">
+                                        <DollarSign className="h-5 w-5 mr-3 text-muted-foreground" />
                                         <div className="text-sm">
-                                            <p className="font-semibold">{level.referrals} Direct Referrals</p>
-                                            <p className="text-muted-foreground text-xs">Required to Unlock</p>
+                                            <p className="font-semibold">${level.minAmount.toLocaleString()}</p>
+                                            <p className="text-muted-foreground text-xs">Minimum Amount to Unlock</p>
                                         </div>
                                     </div>
-                                )}
-                            </CardContent>
+                                    <div className="flex items-center">
+                                        <CheckSquare className="h-5 w-5 mr-3 text-muted-foreground" />
+                                        <div className="text-sm">
+                                            <p className="font-semibold">{level.dailyTasks} Tasks / Day</p>
+                                            <p className="text-muted-foreground text-xs">Daily Task Quota</p>
+                                        </div>
+                                    </div>
+                                    {level.referrals !== null && (
+                                        <div className="flex items-center">
+                                            <Users className="h-5 w-5 mr-3 text-muted-foreground" />
+                                            <div className="text-sm">
+                                                <p className="font-semibold">{level.referrals} Direct Referrals</p>
+                                                <p className="text-muted-foreground text-xs">Required to Unlock</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </div>
+                             {isCurrentLevel && (
+                                <CardFooter>
+                                    <Button onClick={onStartTasks} disabled={isTaskLocked} className="w-full">
+                                        <PlayCircle className="mr-2 h-4 w-4" />
+                                        {isTaskLocked ? "Tasks Locked" : "Start Tasks"}
+                                    </Button>
+                                </CardFooter>
+                            )}
                         </Card>
                     </div>
                 </CarouselItem>

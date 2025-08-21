@@ -38,6 +38,7 @@ export default function UserDashboardPage() {
   
   const currentLevel = levels.slice().reverse().find(level => committedBalance >= level.minAmount);
   const allTasksCompleted = tasksCompletedToday >= dailyTaskQuota;
+  const finalIsTaskLocked = isTaskLocked || allTasksCompleted;
 
   if (isLoading) {
     return (
@@ -84,6 +85,8 @@ export default function UserDashboardPage() {
           <LevelTiers 
             currentBalance={committedBalance} 
             onLevelClick={setSelectedLevel}
+            onStartTasks={() => setIsTaskDialogOpen(true)}
+            isTaskLocked={finalIsTaskLocked}
           />
         </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -165,11 +168,6 @@ export default function UserDashboardPage() {
           open={!!selectedLevel}
           onOpenChange={() => setSelectedLevel(null)}
           isCurrentLevel={selectedLevel.level === currentLevel?.level}
-          isTaskLocked={isTaskLocked || allTasksCompleted}
-          onStartTasks={() => {
-            setSelectedLevel(null);
-            setIsTaskDialogOpen(true);
-          }}
         />
       )}
       <TaskDialog

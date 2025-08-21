@@ -19,8 +19,6 @@ interface LevelDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   isCurrentLevel: boolean;
-  isTaskLocked: boolean;
-  onStartTasks: () => void;
 }
 
 export function LevelDetailDialog({
@@ -28,8 +26,6 @@ export function LevelDetailDialog({
   open,
   onOpenChange,
   isCurrentLevel,
-  isTaskLocked,
-  onStartTasks,
 }: LevelDetailDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -86,14 +82,6 @@ export function LevelDetailDialog({
             </CardContent>
           </Card>
         </div>
-        {isCurrentLevel && (
-          <DialogFooter>
-            <Button onClick={onStartTasks} disabled={isTaskLocked} className="w-full">
-              <PlayCircle className="mr-2 h-4 w-4" />
-              {isTaskLocked ? "Tasks Locked" : "Start Tasks"}
-            </Button>
-          </DialogFooter>
-        )}
       </DialogContent>
     </Dialog>
   );
