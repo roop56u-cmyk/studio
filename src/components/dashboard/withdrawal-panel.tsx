@@ -26,7 +26,7 @@ import { ManageAddressesDialog } from "./manage-addresses-dialog";
 import { PlusCircle } from "lucide-react";
 
 interface WithdrawalPanelProps {
-    onAddRequest: (request: Omit<Request, 'id' | 'date' | 'user' | 'status'>) => void;
+    onAddRequest: (request: Partial<Omit<Request, 'id' | 'date' | 'user' | 'status'>>) => void;
 }
 
 export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {

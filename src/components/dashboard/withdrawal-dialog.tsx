@@ -19,13 +19,6 @@ interface WithdrawalDialogProps {
 export function WithdrawalDialog({ open, onOpenChange }: WithdrawalDialogProps) {
     const { addRequest } = useRequests();
 
-    const handleAddRequest = (requestData: Omit<any, 'id' | 'date' | 'user' | 'status'>) => {
-        addRequest({
-            ...requestData,
-            type: "Withdrawal",
-        });
-    }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -35,7 +28,7 @@ export function WithdrawalDialog({ open, onOpenChange }: WithdrawalDialogProps) 
             Withdraw USDT (BEP20) from your account. Admin fees apply.
           </DialogDescription>
         </DialogHeader>
-        <WithdrawalPanel onAddRequest={handleAddRequest} />
+        <WithdrawalPanel onAddRequest={addRequest} />
       </DialogContent>
     </Dialog>
   );

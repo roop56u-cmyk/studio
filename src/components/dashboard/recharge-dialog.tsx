@@ -10,7 +10,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { RechargePanel } from "@/components/dashboard/recharge-panel";
-import { useWallet } from "@/contexts/WalletContext";
 import { useRequests } from "@/contexts/RequestContext";
 import { ManageAddressesDialog } from "./manage-addresses-dialog";
 
@@ -21,7 +20,6 @@ interface RechargeDialogProps {
 }
 
 export function RechargeDialog({ open, onOpenChange }: RechargeDialogProps) {
-  const { addRecharge } = useWallet();
   const { addRequest } = useRequests();
   const [isManageAddressOpen, setIsManageAddressOpen] = useState(false);
 
@@ -36,7 +34,6 @@ export function RechargeDialog({ open, onOpenChange }: RechargeDialogProps) {
             </DialogDescription>
           </DialogHeader>
           <RechargePanel 
-            onRecharge={addRecharge} 
             onAddRequest={addRequest} 
             onManageAddresses={() => {
               onOpenChange(false); // Close recharge dialog

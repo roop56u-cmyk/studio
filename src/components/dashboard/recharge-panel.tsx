@@ -29,16 +29,15 @@ import { useWallet } from "@/contexts/WalletContext";
 import type { Request } from "@/contexts/RequestContext";
 
 interface RechargePanelProps {
-    onRecharge: (amount: number) => void;
-    onAddRequest: (request: Omit<Request, 'id' | 'date' | 'user' | 'status'>) => void;
+    onAddRequest: (request: Partial<Omit<Request, 'id' | 'date' | 'user' | 'status'>>) => void;
     onManageAddresses: () => void;
 }
 
-export function RechargePanel({ onRecharge, onAddRequest, onManageAddresses }: RechargePanelProps) {
+export function RechargePanel({ onAddRequest, onManageAddresses }: RechargePanelProps) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [amount, setAmount] = useState("");
-  const { getWalletData, withdrawalAddresses } = useWallet();
+  const { withdrawalAddresses } = useWallet();
   const rechargeAddress = "0x4D26340f3B52DCf82dd537cBF3c7e4C1D9b53BDc";
 
   const [isAddressAlertOpen, setIsAddressAlertOpen] = useState(false);
@@ -57,7 +56,6 @@ export function RechargePanel({ onRecharge, onAddRequest, onManageAddresses }: R
   const proceedWithSubmit = () => {
      const numericAmount = parseFloat(amount);
      onAddRequest({
-        ...getWalletData(),
         type: 'Recharge',
         amount: numericAmount,
         address: null, // No withdrawal address for recharges

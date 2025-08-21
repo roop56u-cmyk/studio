@@ -21,7 +21,7 @@ export type Request = {
 
 interface RequestContextType {
   requests: Request[];
-  addRequest: (request: Omit<Request, 'id' | 'date' | 'status' | 'user'>) => void;
+  addRequest: (request: Partial<Omit<Request, 'id' | 'date' | 'status' | 'user'>>) => void;
   updateRequestStatus: (id: string, status: 'Approved' | 'Declined' | 'On Hold', userEmail: string, type: 'Recharge' | 'Withdrawal', amount: number) => void;
   userRequests: Request[];
 }
@@ -108,19 +108,23 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
   }, [currentUser, requests]);
 
 
-  const addRequest = (requestData: Omit<Request, 'id' | 'date' | 'status' | 'user'>) => {
+  const addRequest = (requestData: Partial<Omit<Request, 'id' | 'date' | 'status' | 'user'>>) => {
     if (!currentUser) {
         console.error("Cannot add request: no user logged in.");
         return;
     }
+    
     const newRequest: Request = {
-        ...requestData,
-        ...getWalletData(),
+        ...getWalletData(), // Gets balance, level, deposits, withdrawals
         id: `REQ-${String(requests.length + 1).padStart(3, '0')}`,
         date: new Date().toISOString().split('T')[0],
         status: 'Pending',
-        user: currentUser.email
+        user: currentUser.email,
+        type: requestData.type!,
+        amount: requestData.amount!,
+        address: requestData.address !== undefined ? requestData.address : null,
     };
+
     setRequests(prev => [newRequest, ...prev]);
   };
 
