@@ -7,9 +7,15 @@ import { InterestRateCounter } from "@/components/dashboard/interest-rate-counte
 import { LevelTiers } from "@/components/dashboard/level-tiers";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { useWallet } from "@/contexts/WalletContext";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Lock } from "lucide-react";
 
 export default function UserDashboardPage() {
-  const { taskRewardsBalance, interestEarningsBalance } = useWallet();
+  const { mainBalance, taskRewardsBalance, interestEarningsBalance } = useWallet();
+  const totalBalance = mainBalance + taskRewardsBalance + interestEarningsBalance;
+  const isLocked = totalBalance < 100;
 
   return (
     <div className="grid gap-8">
@@ -20,7 +26,7 @@ export default function UserDashboardPage() {
         </p>
       </div>
        <div className="space-y-8">
-          <LevelTiers />
+          <LevelTiers currentBalance={totalBalance} />
         </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
@@ -29,7 +35,24 @@ export default function UserDashboardPage() {
             balance={taskRewardsBalance.toFixed(2)}
             description="Balance from completed tasks."
           />
-          <ReviewForm />
+          {isLocked ? (
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center"><Lock className="mr-2 h-5 w-5" /> Features Locked</CardTitle>
+                    <CardDescription>You need to have at least $100 to unlock reviews.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm mb-4">
+                        Your current total balance is ${totalBalance.toFixed(2)}. Please recharge your account to reach Level 1 and start completing tasks.
+                    </p>
+                    <Button asChild>
+                        <Link href="/dashboard/recharge">Recharge Now</Link>
+                    </Button>
+                </CardContent>
+            </Card>
+          ) : (
+            <ReviewForm />
+          )}
         </div>
         <div className="space-y-8">
            <WalletBalance 
@@ -37,7 +60,7 @@ export default function UserDashboardPage() {
             balance={interestEarningsBalance.toFixed(2)}
             description="Balance from interest."
           />
-          <InterestRateCounter />
+          <InterestRateCounter isLocked={isLocked} />
           <ReferralCard />
         </div>
       </div>

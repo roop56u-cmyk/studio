@@ -18,7 +18,7 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
   const [amount, setAmount] = useState("");
-  const [mainBalance, setMainBalance] = useState(1234.56);
+  const [mainBalance, setMainBalance] = useState(0);
   const [taskRewardsBalance, setTaskRewardsBalance] = useState(0);
   const [interestEarningsBalance, setInterestEarningsBalance] = useState(0);
 

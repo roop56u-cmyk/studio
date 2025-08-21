@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -35,6 +36,10 @@ export default function SignupPage() {
       return;
     }
     // Mock sign-up: in a real app, you'd create a user record.
+    toast({
+        title: "Account Created!",
+        description: "Welcome! You are now being redirected to your dashboard.",
+    });
     router.push("/dashboard");
   };
 
@@ -71,7 +76,7 @@ export default function SignupPage() {
               <Label htmlFor="invitation-code">Invitation Code</Label>
               <Input
                 id="invitation-code"
-                placeholder="ADMINREF001"
+                placeholder="Enter referral code"
                 required
                 value={invitationCode}
                 onChange={(e) => setInvitationCode(e.target.value)}

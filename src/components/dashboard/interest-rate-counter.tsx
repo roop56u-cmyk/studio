@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -8,14 +9,20 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { TrendingUp, Timer } from "lucide-react";
+import { TrendingUp, Timer, Lock } from "lucide-react";
 import { Skeleton } from "../ui/skeleton";
 
-export function InterestRateCounter() {
+interface InterestRateCounterProps {
+  isLocked?: boolean;
+}
+
+export function InterestRateCounter({ isLocked = false }: InterestRateCounterProps) {
   const [rate, setRate] = useState<string | null>(null);
   const [countdown, setCountdown] = useState<string | null>(null);
 
   useEffect(() => {
+    if (isLocked) return;
+
     const RATE_KEY = "interestRate";
     const EXPIRATION_KEY = "rateExpiration";
 
@@ -62,7 +69,7 @@ export function InterestRateCounter() {
     }, 1000);
 
     return () => clearInterval(intervalId);
-  }, [rate]);
+  }, [rate, isLocked]);
 
   return (
     <Card>
@@ -71,19 +78,23 @@ export function InterestRateCounter() {
             <CardTitle className="text-sm font-medium">
             24h Interest Rate
             </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            {isLocked ? <Lock className="h-4 w-4 text-muted-foreground" /> : <TrendingUp className="h-4 w-4 text-muted-foreground" />}
         </div>
         <CardDescription>Based on platform activity</CardDescription>
       </CardHeader>
       <CardContent>
-        {rate !== null ? (
+        {isLocked ? (
+             <div className="text-2xl font-bold">-.--%</div>
+        ) : rate !== null ? (
             <div className="text-2xl font-bold">{rate}%</div>
         ) : (
             <Skeleton className="h-8 w-24" />
         )}
         <div className="flex items-center pt-2">
             <Timer className="mr-2 h-4 w-4 text-muted-foreground" />
-            {countdown !== null ? (
+             {isLocked ? (
+                <p className="text-xs text-muted-foreground">Locked</p>
+             ) : countdown !== null ? (
                 <p className="text-xs text-muted-foreground">
                     Next update in: {countdown}
                 </p>
@@ -95,5 +106,3 @@ export function InterestRateCounter() {
     </Card>
   );
 }
-
-    

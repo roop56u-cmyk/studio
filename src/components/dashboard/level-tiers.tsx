@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -8,7 +9,8 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Users, DollarSign, Percent, TrendingUp } from "lucide-react";
+import { Users, DollarSign, Percent, TrendingUp, CheckCircle, Lock } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const levels = [
   {
@@ -43,7 +45,14 @@ const levels = [
   },
 ];
 
-export function LevelTiers() {
+interface LevelTiersProps {
+    currentBalance: number;
+}
+
+export function LevelTiers({ currentBalance }: LevelTiersProps) {
+    
+  const currentLevel = levels.slice().reverse().find(level => currentBalance >= level.minAmount)?.level ?? 0;
+
   return (
     <div className="w-full">
          <h2 className="text-2xl font-bold tracking-tight mb-4">Investment Levels</h2>
@@ -55,16 +64,23 @@ export function LevelTiers() {
             className="w-full"
         >
             <CarouselContent>
-            {levels.map((level) => (
+            {levels.map((level) => {
+                const isUnlocked = currentBalance >= level.minAmount;
+                const isCurrentLevel = level.level === currentLevel;
+                return (
                 <CarouselItem key={level.level} className="basis-1/2 md:basis-1/3 lg:basis-1/4">
                     <div className="p-1">
-                        <Card className="h-full flex flex-col">
+                        <Card className={cn("h-full flex flex-col", isCurrentLevel && "border-primary ring-2 ring-primary")}>
                             <CardHeader>
                                 <CardTitle className="flex items-center justify-between">
-                                    <span>Level {level.level}</span>
+                                    <span className="flex items-center gap-2">
+                                        Level {level.level}
+                                        {isUnlocked ? <CheckCircle className="h-5 w-5 text-green-500" /> : <Lock className="h-5 w-5 text-muted-foreground" />}
+                                    </span>
                                     <span className="text-sm font-normal text-primary bg-primary/10 px-2 py-1 rounded-full">{level.rate}% APY</span>
                                 </CardTitle>
-                                <CardDescription>Unlock new earning potentials.</CardDescription>
+                                {isCurrentLevel && <CardDescription className="text-primary font-semibold">Current Level</CardDescription>}
+                                {!isCurrentLevel && <CardDescription>Unlock new earning potentials.</CardDescription>}
                             </CardHeader>
                             <CardContent className="flex-grow space-y-4">
                                 <div className="flex items-center">
@@ -94,7 +110,8 @@ export function LevelTiers() {
                         </Card>
                     </div>
                 </CarouselItem>
-            ))}
+                )
+            })}
             </CarouselContent>
             <CarouselPrevious className="absolute left-0 top-1/2 -translate-y-1/2 transform" />
             <CarouselNext className="absolute right-0 top-1/2 -translate-y-1/2 transform" />
