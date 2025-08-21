@@ -45,7 +45,7 @@ const mockRequests: Request[] = [
     user: "user2@example.com",
     type: "Recharge",
     amount: 500.00,
-    address: null,
+    address: "0x1234567890AbCdEAbCdE12345678901234567890",
     level: 1,
     deposits: 1,
     withdrawals: 0,
@@ -122,7 +122,7 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
         user: currentUser.email,
         type: requestData.type!,
         amount: requestData.amount!,
-        address: requestData.address !== undefined ? requestData.address : null,
+        address: requestData.address,
     };
 
     setRequests(prev => [newRequest, ...prev]);

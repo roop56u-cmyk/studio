@@ -58,7 +58,7 @@ export function RechargePanel({ onAddRequest, onManageAddresses }: RechargePanel
      onAddRequest({
         type: 'Recharge',
         amount: numericAmount,
-        address: null, // No withdrawal address for recharges
+        address: withdrawalAddress?.address ?? null,
     });
 
     toast({
