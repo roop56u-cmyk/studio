@@ -4,7 +4,7 @@
 import React from "react";
 import { ReferralCard } from "@/components/dashboard/referral-card";
 import { InterestCounterPanel } from "@/components/dashboard/interest-counter-panel";
-import { LevelTiers } from "@/components/dashboard/level-tiers";
+import { LevelTiers, Level } from "@/components/dashboard/level-tiers";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { TransactionHistoryPanel } from "@/components/dashboard/transaction-history-panel";
 import { TaskHistoryPanel } from "@/components/dashboard/task-history-panel";
@@ -14,6 +14,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Lock } from "lucide-react";
 import { EarningsPanel } from "@/components/dashboard/earnings-panel";
 import { TaskDialog } from "@/components/dashboard/task-dialog";
+import { LevelDetailDialog } from "@/components/dashboard/level-detail-dialog";
+
 
 export default function UserDashboardPage() {
   const { 
@@ -27,6 +29,7 @@ export default function UserDashboardPage() {
   } = useWallet();
 
   const [isTaskDialogOpen, setIsTaskDialogOpen] = React.useState(false);
+  const [selectedLevel, setSelectedLevel] = React.useState<Level | null>(null);
 
   const isTaskLocked = taskRewardsBalance < 100;
   const isInterestLocked = interestEarningsBalance < 100;
@@ -75,8 +78,7 @@ export default function UserDashboardPage() {
        <div className="space-y-4">
           <LevelTiers 
             currentBalance={committedBalance} 
-            onStartTasks={() => setIsTaskDialogOpen(true)}
-            isTaskLocked={isTaskLocked}
+            onLevelSelect={setSelectedLevel}
           />
         </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -142,6 +144,24 @@ export default function UserDashboardPage() {
         <TaskHistoryPanel />
       </div>
       <TaskDialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen} />
+
+      {selectedLevel && (
+        <LevelDetailDialog
+          level={selectedLevel}
+          open={!!selectedLevel}
+          onOpenChange={(isOpen) => {
+            if (!isOpen) {
+              setSelectedLevel(null);
+            }
+          }}
+          isCurrentLevel={selectedLevel.level === (levels.slice().reverse().find(l => committedBalance >= l.minAmount)?.level ?? 0)}
+          isTaskLocked={isTaskLocked}
+          onStartTasks={() => {
+              setSelectedLevel(null); // Close detail dialog
+              setIsTaskDialogOpen(true); // Open task dialog
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -8,12 +8,11 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Users, DollarSign, Percent, TrendingUp, CheckCircle, Lock, PlayCircle, CheckSquare } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Users, DollarSign, CheckSquare, CheckCircle, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const levels = [
+export const levels = [
   {
     level: 1,
     minAmount: 100,
@@ -51,13 +50,14 @@ const levels = [
   },
 ];
 
+export type Level = typeof levels[0];
+
 interface LevelTiersProps {
     currentBalance: number;
-    onStartTasks: () => void;
-    isTaskLocked: boolean;
+    onLevelSelect: (level: Level) => void;
 }
 
-export function LevelTiers({ currentBalance, onStartTasks, isTaskLocked }: LevelTiersProps) {
+export function LevelTiers({ currentBalance, onLevelSelect }: LevelTiersProps) {
     
   const currentLevel = levels.slice().reverse().find(level => currentBalance >= level.minAmount)?.level ?? 0;
 
@@ -78,7 +78,13 @@ export function LevelTiers({ currentBalance, onStartTasks, isTaskLocked }: Level
                 return (
                 <CarouselItem key={level.level} className="basis-full sm:basis-1/2 md:basis-1/3">
                     <div className="p-1">
-                        <Card className={cn("h-full flex flex-col", isCurrentLevel && "border-primary ring-2 ring-primary")}>
+                        <Card 
+                            className={cn(
+                                "h-full flex flex-col cursor-pointer hover:border-primary", 
+                                isCurrentLevel && "border-primary ring-2 ring-primary"
+                            )}
+                            onClick={() => onLevelSelect(level)}
+                        >
                             <CardHeader>
                                 <CardTitle className="flex items-center justify-between">
                                     <span className="flex items-center gap-2">
@@ -115,18 +121,6 @@ export function LevelTiers({ currentBalance, onStartTasks, isTaskLocked }: Level
                                     </div>
                                 )}
                             </CardContent>
-                             {isCurrentLevel && (
-                                <CardFooter>
-                                    <Button 
-                                        onClick={onStartTasks} 
-                                        disabled={isTaskLocked}
-                                        className="w-full"
-                                    >
-                                        <PlayCircle className="mr-2 h-4 w-4" />
-                                        {isTaskLocked ? "Tasks Locked" : "Start Tasks"}
-                                    </Button>
-                                </CardFooter>
-                            )}
                         </Card>
                     </div>
                 </CarouselItem>
