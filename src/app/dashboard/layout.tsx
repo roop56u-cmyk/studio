@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from "next/link";
@@ -91,9 +92,15 @@ export default function DashboardLayout({
     setAmount("");
   };
 
-  const childrenWithProps = React.Children.map(children, child => {
+  // Clone the child element and pass the balance props to it.
+  // This is necessary for the state changes in the layout to trigger re-renders in the page components.
+   const childrenWithProps = React.Children.map(children, (child) => {
     if (React.isValidElement(child)) {
+      // The `key` prop is added to ensure React re-mounts the component when the path changes,
+      // which is important for components that rely on path-based logic.
+      // Balances are passed to keep the UI in sync with the state managed here.
       return React.cloneElement(child, {
+        key: pathname,
         taskRewardsBalance,
         interestEarningsBalance,
       } as any);
