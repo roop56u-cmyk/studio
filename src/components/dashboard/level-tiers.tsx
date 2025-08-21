@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/carousel";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, DollarSign, Percent, TrendingUp, CheckCircle, Lock, PlayCircle } from "lucide-react";
+import { Users, DollarSign, Percent, TrendingUp, CheckCircle, Lock, PlayCircle, CheckSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const levels = [
@@ -19,30 +19,35 @@ const levels = [
     minAmount: 100,
     rate: 1.8,
     referrals: null,
+    dailyTasks: 15,
   },
   {
     level: 2,
     minAmount: 500,
     rate: 2.8,
     referrals: 8,
+    dailyTasks: 25,
   },
   {
     level: 3,
     minAmount: 2000,
     rate: 3.8,
     referrals: 16,
+    dailyTasks: 35,
   },
   {
     level: 4,
     minAmount: 6000,
     rate: 4.8,
     referrals: 36,
+    dailyTasks: 45,
   },
   {
     level: 5,
     minAmount: 20000,
     rate: 5.8,
     referrals: 55,
+    dailyTasks: 55,
   },
 ];
 
@@ -93,11 +98,11 @@ export function LevelTiers({ currentBalance, onStartTasks, isTaskLocked }: Level
                                         <p className="text-muted-foreground text-xs">Minimum Amount to Unlock</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center">
-                                    <TrendingUp className="h-5 w-5 mr-3 text-muted-foreground" />
+                                 <div className="flex items-center">
+                                    <CheckSquare className="h-5 w-5 mr-3 text-muted-foreground" />
                                     <div className="text-sm">
-                                        <p className="font-semibold">{level.rate}%</p>
-                                        <p className="text-muted-foreground text-xs">Interest Rate</p>
+                                        <p className="font-semibold">{level.dailyTasks} Tasks / Day</p>
+                                        <p className="text-muted-foreground text-xs">Daily Task Quota</p>
                                     </div>
                                 </div>
                                 {level.referrals !== null && (
