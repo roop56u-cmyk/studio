@@ -7,12 +7,10 @@ import { useWallet } from "@/contexts/WalletContext";
 
 export default function WithdrawalPage() {
     const { addRequest } = useRequests();
-    const { getWalletData } = useWallet();
 
     const handleAddRequest = (requestData: Omit<any, 'id' | 'date' | 'user' | 'status'>) => {
         addRequest({
             ...requestData,
-            ...getWalletData(),
             type: "Withdrawal",
         });
     }

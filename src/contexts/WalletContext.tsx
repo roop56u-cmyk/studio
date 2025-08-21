@@ -12,13 +12,17 @@ interface WalletContextType {
   amount: string;
   setAmount: (amount: string) => void;
   handleMoveFunds: (destination: 'Task Rewards' | 'Interest Earnings') => void;
-  addRecharge: (amount: number) => void;
+  addRecharge: (amount: number) => void; // Kept for direct calls if needed elsewhere
   getWalletData: () => {
     balance: number;
     level: number;
     deposits: number;
     withdrawals: number;
-  }
+  };
+  requestWithdrawal: (amount: number) => void;
+  approveRecharge: (amount: number) => void;
+  refundWithdrawal: (amount: number) => void;
+  approveWithdrawal: () => void;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -49,6 +53,16 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [deposits, setDeposits] = useState(() => getInitialState('deposits', 0));
   const [withdrawals, setWithdrawals] = useState(() => getInitialState('withdrawals', 0));
 
+  const setPersistentState = useCallback((key: string, value: any) => {
+     if (typeof window !== 'undefined' && currentUser) {
+        try {
+            localStorage.setItem(`${currentUser.email}_${key}`, JSON.stringify(value));
+        } catch (error) {
+            console.error(`Failed to save ${key} to localStorage`, error);
+        }
+     }
+  }, [currentUser]);
+
   useEffect(() => {
     if (currentUser) {
       setMainBalance(getInitialState('mainBalance', 0));
@@ -67,21 +81,11 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   }, [currentUser]);
 
 
-  const setPersistentState = (key: string, value: any) => {
-     if (typeof window !== 'undefined' && currentUser) {
-        try {
-            localStorage.setItem(`${currentUser.email}_${key}`, JSON.stringify(value));
-        } catch (error) {
-            console.error(`Failed to save ${key} to localStorage`, error);
-        }
-     }
-  }
-
-  useEffect(() => setPersistentState('mainBalance', mainBalance), [mainBalance, currentUser]);
-  useEffect(() => setPersistentState('taskRewardsBalance', taskRewardsBalance), [taskRewardsBalance, currentUser]);
-  useEffect(() => setPersistentState('interestEarningsBalance', interestEarningsBalance), [interestEarningsBalance, currentUser]);
-  useEffect(() => setPersistentState('deposits', deposits), [deposits, currentUser]);
-  useEffect(() => setPersistentState('withdrawals', withdrawals), [withdrawals, currentUser]);
+  useEffect(() => setPersistentState('mainBalance', mainBalance), [mainBalance, setPersistentState]);
+  useEffect(() => setPersistentState('taskRewardsBalance', taskRewardsBalance), [taskRewardsBalance, setPersistentState]);
+  useEffect(() => setPersistentState('interestEarningsBalance', interestEarningsBalance), [interestEarningsBalance, setPersistentState]);
+  useEffect(() => setPersistentState('deposits', deposits), [deposits, setPersistentState]);
+  useEffect(() => setPersistentState('withdrawals', withdrawals), [withdrawals, setPersistentState]);
 
 
   const handleMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings') => {
@@ -119,10 +123,36 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setAmount("");
   };
 
-  const addRecharge = (rechargeAmount: number) => {
+  // Called by admin action
+  const approveRecharge = (rechargeAmount: number) => {
     setMainBalance(prev => prev + rechargeAmount);
     setDeposits(prev => prev + 1);
+     toast({
+      title: "Recharge Approved",
+      description: `Your balance has been updated by ${rechargeAmount.toFixed(2)} USDT.`,
+    });
   };
+
+  const addRecharge = (rechargeAmount: number) => {
+      // This is now only for request creation, not balance update
+  }
+
+  const requestWithdrawal = (withdrawalAmount: number) => {
+    setMainBalance(prev => prev - withdrawalAmount);
+  }
+
+  const approveWithdrawal = () => {
+    setWithdrawals(prev => prev + 1);
+  }
+
+  const refundWithdrawal = (withdrawalAmount: number) => {
+    setMainBalance(prev => prev + withdrawalAmount);
+    toast({
+        variant: "default",
+        title: "Withdrawal Refunded",
+        description: `Your withdrawal request was declined. ${withdrawalAmount.toFixed(2)} USDT has been returned to your main balance.`,
+    });
+  }
   
   const getWalletData = useCallback(() => {
     const balance = mainBalance + taskRewardsBalance + interestEarningsBalance;
@@ -149,6 +179,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         handleMoveFunds,
         addRecharge,
         getWalletData,
+        requestWithdrawal,
+        approveRecharge,
+        refundWithdrawal,
+        approveWithdrawal
       }}
     >
       {children}

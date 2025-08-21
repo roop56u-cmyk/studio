@@ -33,7 +33,10 @@ export function AdminProfile() {
     const { requests, updateRequestStatus } = useRequests();
 
     const handleAction = (requestId: string, action: 'Approved' | 'Declined' | 'On Hold') => {
-        updateRequestStatus(requestId, action);
+        const request = requests.find(r => r.id === requestId);
+        if (!request) return;
+
+        updateRequestStatus(requestId, action, request.user, request.type, request.amount);
         toast({
             title: `Request ${action}`,
             description: `Request ID ${requestId} has been marked as ${action.toLowerCase()}.`,
@@ -76,7 +79,7 @@ export function AdminProfile() {
                     <Badge variant={request.type === 'Withdrawal' ? 'destructive' : 'secondary'}>{request.type}</Badge>
                 </TableCell>
                 <TableCell>${request.amount.toFixed(2)}</TableCell>
-                <TableCell className="font-mono text-xs truncate max-w-[100px]">{request.address || 'N/A'}</TableCell>
+                <TableCell className="font-mono text-xs">{request.address || 'N/A'}</TableCell>
                 <TableCell>{request.level}</TableCell>
                 <TableCell>{request.deposits}/{request.withdrawals}</TableCell>
                 <TableCell>${request.balance.toFixed(2)}</TableCell>

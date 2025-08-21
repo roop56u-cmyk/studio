@@ -3,6 +3,7 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import { useWallet } from './WalletContext';
 
 export type Request = {
     id: string;
@@ -21,7 +22,7 @@ export type Request = {
 interface RequestContextType {
   requests: Request[];
   addRequest: (request: Omit<Request, 'id' | 'date' | 'status' | 'user'>) => void;
-  updateRequestStatus: (id: string, status: 'Approved' | 'Declined' | 'On Hold') => void;
+  updateRequestStatus: (id: string, status: 'Approved' | 'Declined' | 'On Hold', userEmail: string, type: 'Recharge' | 'Withdrawal', amount: number) => void;
   userRequests: Request[];
 }
 
@@ -31,7 +32,7 @@ const mockRequests: Request[] = [
     user: "user1@example.com",
     type: "Withdrawal",
     amount: 150.00,
-    address: "0xAbCd...1234",
+    address: "0xAbCdE123456789012345678901234567890AbCdE",
     level: 2,
     deposits: 5,
     withdrawals: 2,
@@ -57,7 +58,7 @@ const mockRequests: Request[] = [
     user: "admin@stakinghub.com",
     type: "Withdrawal",
     amount: 300.00,
-    address: "0xEfGh...5678",
+    address: "0xEfGhI987654321098765432109876543210EfGhI",
     level: 3,
     deposits: 10,
     withdrawals: 5,
@@ -70,6 +71,9 @@ const mockRequests: Request[] = [
 const RequestContext = createContext<RequestContextType | undefined>(undefined);
 
 export const RequestProvider = ({ children }: { children: ReactNode }) => {
+  const { currentUser } = useAuth();
+  const { getWalletData, approveRecharge, refundWithdrawal, approveWithdrawal } = useWallet();
+
   const [requests, setRequests] = useState<Request[]>(() => {
     if (typeof window === 'undefined') {
         return mockRequests;
@@ -86,8 +90,7 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
   });
 
   const [userRequests, setUserRequests] = useState<Request[]>([]);
-  const { currentUser } = useAuth();
-
+  
   useEffect(() => {
     try {
         localStorage.setItem('requests', JSON.stringify(requests));
@@ -112,6 +115,7 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
     }
     const newRequest: Request = {
         ...requestData,
+        ...getWalletData(),
         id: `REQ-${String(requests.length + 1).padStart(3, '0')}`,
         date: new Date().toISOString().split('T')[0],
         status: 'Pending',
@@ -120,8 +124,44 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
     setRequests(prev => [newRequest, ...prev]);
   };
 
-  const updateRequestStatus = (id: string, status: 'Approved' | 'Declined' | 'On Hold') => {
+  const updateRequestStatus = (id: string, status: 'Approved' | 'Declined' | 'On Hold', userEmail: string, type: 'Recharge' | 'Withdrawal', amount: number) => {
     setRequests(prev => prev.map(req => req.id === id ? { ...req, status } : req));
+    
+    // Only perform wallet actions if the request belongs to the current user
+    if (currentUser?.email === userEmail) {
+        if (status === 'Approved') {
+            if (type === 'Recharge') {
+                approveRecharge(amount);
+            } else { // Withdrawal
+                approveWithdrawal(); // This just updates withdrawal count
+            }
+        } else if (status === 'Declined') {
+            if (type === 'Withdrawal') {
+                refundWithdrawal(amount);
+            }
+        }
+    } else {
+        // This part handles updates for users who are NOT currently logged in,
+        // which is necessary for the admin panel to function correctly.
+        if (status === 'Approved' && type === 'Recharge') {
+            const userMainBalanceKey = `${userEmail}_mainBalance`;
+            const currentBalance = parseFloat(localStorage.getItem(userMainBalanceKey) || '0');
+            localStorage.setItem(userMainBalanceKey, (currentBalance + amount).toString());
+
+            const userDepositsKey = `${userEmail}_deposits`;
+            const currentDeposits = parseInt(localStorage.getItem(userDepositsKey) || '0');
+            localStorage.setItem(userDepositsKey, (currentDeposits + 1).toString());
+        } else if (status === 'Approved' && type === 'Withdrawal') {
+             const userWithdrawalsKey = `${userEmail}_withdrawals`;
+            const currentWithdrawals = parseInt(localStorage.getItem(userWithdrawalsKey) || '0');
+            localStorage.setItem(userWithdrawalsKey, (currentWithdrawals + 1).toString());
+        } else if (status === 'Declined' && type === 'Withdrawal') {
+            const userMainBalanceKey = `${userEmail}_mainBalance`;
+            const currentBalance = parseFloat(localStorage.getItem(userMainBalanceKey) || '0');
+            localStorage.setItem(userMainBalanceKey, (currentBalance + amount).toString());
+        }
+    }
+
   };
 
 
