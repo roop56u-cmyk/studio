@@ -15,6 +15,15 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import type { Request } from "@/contexts/RequestContext";
 import { useWallet } from "@/contexts/WalletContext";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ManageAddressesDialog } from "./manage-addresses-dialog";
+import { PlusCircle } from "lucide-react";
 
 interface WithdrawalPanelProps {
     onAddRequest: (request: Omit<Request, 'id' | 'date' | 'user' | 'status'>) => void;
@@ -22,9 +31,10 @@ interface WithdrawalPanelProps {
 
 export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
   const { toast } = useToast();
-  const [address, setAddress] = useState("");
+  const [selectedAddress, setSelectedAddress] = useState("");
   const [amount, setAmount] = useState("");
-  const { getWalletData, mainBalance, requestWithdrawal } = useWallet();
+  const { getWalletData, mainBalance, requestWithdrawal, withdrawalAddresses } = useWallet();
+  const [isManageOpen, setIsManageOpen] = useState(false);
 
   const { level } = getWalletData();
   const numericAmount = parseFloat(amount) || 0;
@@ -48,11 +58,11 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
         });
         return;
     }
-     if (!address) {
+     if (!selectedAddress) {
         toast({
             variant: "destructive",
             title: "Invalid Address",
-            description: "Please enter a valid withdrawal address.",
+            description: "Please select a withdrawal address.",
         });
         return;
     }
@@ -71,7 +81,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
 
     onAddRequest({
         amount: numericAmount,
-        address,
+        address: selectedAddress,
         type: 'Withdrawal',
     });
 
@@ -80,11 +90,12 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
       description: `Your request to withdraw ${numericAmount.toFixed(2)} USDT is pending approval. The amount has been deducted from your balance.`,
     });
 
-    setAddress("");
+    setSelectedAddress("");
     setAmount("");
   };
 
   return (
+    <>
     <Card>
       <CardHeader>
         <CardTitle>Withdrawal Form</CardTitle>
@@ -96,16 +107,29 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
         <form onSubmit={handleWithdraw}>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="withdrawal-address">
-                Your USDT BEP20 Address
-              </Label>
-              <Input 
-                id="withdrawal-address" 
-                placeholder="0x..." 
-                required 
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                />
+                <div className="flex justify-between items-center">
+                    <Label htmlFor="withdrawal-address">
+                        Your USDT BEP20 Address
+                    </Label>
+                    <Button variant="link" type="button" className="h-auto p-0 text-xs" onClick={() => setIsManageOpen(true)}>Manage</Button>
+                </div>
+                {withdrawalAddresses.length > 0 ? (
+                    <Select onValueChange={setSelectedAddress} value={selectedAddress}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a saved address" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {withdrawalAddresses.map(addr => (
+                                <SelectItem key={addr.id} value={addr.address}>{addr.name} - {addr.address.slice(0,6)}...{addr.address.slice(-4)}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                ) : (
+                    <Button variant="outline" className="w-full justify-start" type="button" onClick={() => setIsManageOpen(true)}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add a withdrawal address
+                    </Button>
+                )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="amount">Amount (USDT)</Label>
@@ -128,12 +152,14 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
                     <span>${netWithdrawal > 0 ? netWithdrawal.toFixed(2) : '0.00'}</span>
                 </div>
             </div>
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={!selectedAddress}>
               Request Withdrawal
             </Button>
           </div>
         </form>
       </CardContent>
     </Card>
+    <ManageAddressesDialog open={isManageOpen} onOpenChange={setIsManageOpen} />
+    </>
   );
 }

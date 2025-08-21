@@ -23,6 +23,12 @@ export type CompletedTask = {
     completedAt: string;
 };
 
+export type WithdrawalAddress = {
+    id: string;
+    name: string;
+    address: string;
+};
+
 
 interface WalletContextType {
   mainBalance: number;
@@ -55,6 +61,10 @@ interface WalletContextType {
   startCounter: (type: 'task' | 'interest') => void;
   claimAndRestartCounter: (type: 'task' | 'interest') => void;
   completeTask: (task: GenerateTaskSuggestionOutput) => void;
+  withdrawalAddresses: WithdrawalAddress[];
+  addWithdrawalAddress: (address: Omit<WithdrawalAddress, 'id'>) => void;
+  updateWithdrawalAddress: (address: WithdrawalAddress) => void;
+  deleteWithdrawalAddress: (id: string) => void;
 }
 
 export type CounterType = 'task' | 'interest';
@@ -100,6 +110,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [tasksCompletedToday, setTasksCompletedToday] = useState(() => getInitialState('tasksCompletedToday', 0));
   const [lastTaskCompletionDate, setLastTaskCompletionDate] = useState(() => getInitialState('lastTaskCompletionDate', ''));
   const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>(() => getInitialState('completedTasks', []));
+  const [withdrawalAddresses, setWithdrawalAddresses] = useState<WithdrawalAddress[]>(() => getInitialState('withdrawalAddresses', []));
 
 
   const committedBalance = taskRewardsBalance + interestEarningsBalance;
@@ -140,6 +151,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       setWithdrawals(getInitialState('withdrawals', 0));
       setInterestCounter(getInitialState('interestCounter', { isRunning: false, startTime: null }));
       setCompletedTasks(getInitialState('completedTasks', []));
+      setWithdrawalAddresses(getInitialState('withdrawalAddresses', []));
       setIsLoading(false);
     } else {
         setMainBalance(0);
@@ -153,6 +165,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setTasksCompletedToday(0);
         setLastTaskCompletionDate('');
         setCompletedTasks([]);
+        setWithdrawalAddresses([]);
     }
   }, [currentUser, setPersistentState]);
 
@@ -168,6 +181,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => setPersistentState('tasksCompletedToday', tasksCompletedToday), [tasksCompletedToday, setPersistentState]);
   useEffect(() => setPersistentState('lastTaskCompletionDate', lastTaskCompletionDate), [lastTaskCompletionDate, setPersistentState]);
   useEffect(() => setPersistentState('completedTasks', completedTasks), [completedTasks, setPersistentState]);
+  useEffect(() => setPersistentState('withdrawalAddresses', withdrawalAddresses), [withdrawalAddresses, setPersistentState]);
 
 
   const handleMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings') => {
@@ -294,6 +308,22 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       });
   };
 
+  const addWithdrawalAddress = (address: Omit<WithdrawalAddress, 'id'>) => {
+    const newAddress = { ...address, id: `ADDR-${Date.now()}` };
+    setWithdrawalAddresses(prev => [...prev, newAddress]);
+    toast({ title: "Address Added", description: `Address "${address.name}" has been saved.` });
+  };
+
+  const updateWithdrawalAddress = (updatedAddress: WithdrawalAddress) => {
+    setWithdrawalAddresses(prev => prev.map(addr => addr.id === updatedAddress.id ? updatedAddress : addr));
+    toast({ title: "Address Updated", description: `Address "${updatedAddress.name}" has been updated.` });
+  };
+
+  const deleteWithdrawalAddress = (id: string) => {
+    setWithdrawalAddresses(prev => prev.filter(addr => addr.id !== id));
+    toast({ title: "Address Deleted", description: "The selected address has been removed." });
+  };
+
 
   return (
     <WalletContext.Provider
@@ -323,6 +353,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         startCounter,
         claimAndRestartCounter,
         completeTask,
+        withdrawalAddresses,
+        addWithdrawalAddress,
+        updateWithdrawalAddress,
+        deleteWithdrawalAddress,
       }}
     >
       {children}
