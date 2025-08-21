@@ -4,7 +4,7 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-type User = {
+export type User = {
     email: string;
     password?: string; // Password is now optional for security reasons after login
     isAdmin: boolean;
@@ -18,6 +18,8 @@ interface AuthContextType {
   login: (email: string, password: string) => { success: boolean, message: string, isAdmin?: boolean };
   signup: (email: string, password: string, referralCode: string) => { success: boolean, message: string };
   logout: () => void;
+  updateUser: (email: string, updatedData: Partial<User>) => void;
+  deleteUser: (email: string) => void;
 }
 
 const initialAdminUser: User = {
@@ -133,8 +135,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         router.push('/login');
     };
 
+    const updateUser = (email: string, updatedData: Partial<User>) => {
+        setUsers(prevUsers => prevUsers.map(user => 
+            user.email === email ? { ...user, ...updatedData } : user
+        ));
+    };
+
+    const deleteUser = (email: string) => {
+        // Prevent deleting the main admin account
+        if (email === initialAdminUser.email) {
+            return;
+        }
+        setUsers(prevUsers => prevUsers.filter(user => user.email !== email));
+    };
+
+
     return (
-        <AuthContext.Provider value={{ currentUser, users, login, signup, logout }}>
+        <AuthContext.Provider value={{ currentUser, users, login, signup, logout, updateUser, deleteUser }}>
             {children}
         </AuthContext.Provider>
     );
