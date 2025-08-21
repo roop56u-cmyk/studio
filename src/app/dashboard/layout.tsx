@@ -119,18 +119,6 @@ function SidebarContentComponent() {
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
-         <SidebarMenuItem>
-          <SidebarMenuButton
-            asChild
-            isActive={pathname.startsWith("/dashboard/admin")}
-            tooltip={{ children: "Admin" }}
-          >
-            <Link href="/dashboard/admin">
-              <Shield />
-              <span>Admin</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
         
          <SidebarMenuItem>
           <Collapsible>
