@@ -70,9 +70,31 @@ const mockRequests: Request[] = [
 const RequestContext = createContext<RequestContextType | undefined>(undefined);
 
 export const RequestProvider = ({ children }: { children: ReactNode }) => {
-  const [requests, setRequests] = useState<Request[]>(mockRequests);
+  const [requests, setRequests] = useState<Request[]>(() => {
+    if (typeof window === 'undefined') {
+        return mockRequests;
+    }
+    try {
+        const storedRequests = localStorage.getItem('requests');
+        if (storedRequests) {
+            return JSON.parse(storedRequests);
+        }
+    } catch (error) {
+        console.error("Failed to parse requests from localStorage", error);
+    }
+    return mockRequests;
+  });
+
   const [userRequests, setUserRequests] = useState<Request[]>([]);
   const { currentUser } = useAuth();
+
+  useEffect(() => {
+    try {
+        localStorage.setItem('requests', JSON.stringify(requests));
+    } catch (error) {
+        console.error("Failed to save requests to localStorage", error);
+    }
+  }, [requests]);
 
   useEffect(() => {
     if (currentUser) {

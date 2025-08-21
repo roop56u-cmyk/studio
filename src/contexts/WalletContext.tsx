@@ -1,8 +1,9 @@
 
 "use client";
 
-import React, { createContext, useState, useContext, ReactNode, useCallback } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from './AuthContext';
 
 interface WalletContextType {
   mainBalance: number;
@@ -24,14 +25,63 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
+  const { currentUser } = useAuth();
   const [amount, setAmount] = useState("");
-  const [mainBalance, setMainBalance] = useState(0);
-  const [taskRewardsBalance, setTaskRewardsBalance] = useState(0);
-  const [interestEarningsBalance, setInterestEarningsBalance] = useState(0);
 
-  // Mock deposit/withdrawal counts
-  const [deposits, setDeposits] = useState(0);
-  const [withdrawals, setWithdrawals] = useState(0);
+  const getInitialState = (key: string, defaultValue: number) => {
+    if (typeof window === 'undefined' || !currentUser) {
+      return defaultValue;
+    }
+    try {
+      const storedValue = localStorage.getItem(`${currentUser.email}_${key}`);
+      if (storedValue) {
+        return JSON.parse(storedValue);
+      }
+    } catch (error) {
+      console.error(`Failed to parse ${key} from localStorage`, error);
+    }
+    return defaultValue;
+  };
+
+  const [mainBalance, setMainBalance] = useState(() => getInitialState('mainBalance', 0));
+  const [taskRewardsBalance, setTaskRewardsBalance] = useState(() => getInitialState('taskRewardsBalance', 0));
+  const [interestEarningsBalance, setInterestEarningsBalance] = useState(() => getInitialState('interestEarningsBalance', 0));
+  const [deposits, setDeposits] = useState(() => getInitialState('deposits', 0));
+  const [withdrawals, setWithdrawals] = useState(() => getInitialState('withdrawals', 0));
+
+  useEffect(() => {
+    if (currentUser) {
+      setMainBalance(getInitialState('mainBalance', 0));
+      setTaskRewardsBalance(getInitialState('taskRewardsBalance', 0));
+      setInterestEarningsBalance(getInitialState('interestEarningsBalance', 0));
+      setDeposits(getInitialState('deposits', 0));
+      setWithdrawals(getInitialState('withdrawals', 0));
+    } else {
+        // Reset to default when user logs out
+        setMainBalance(0);
+        setTaskRewardsBalance(0);
+        setInterestEarningsBalance(0);
+        setDeposits(0);
+        setWithdrawals(0);
+    }
+  }, [currentUser]);
+
+
+  const setPersistentState = (key: string, value: any) => {
+     if (typeof window !== 'undefined' && currentUser) {
+        try {
+            localStorage.setItem(`${currentUser.email}_${key}`, JSON.stringify(value));
+        } catch (error) {
+            console.error(`Failed to save ${key} to localStorage`, error);
+        }
+     }
+  }
+
+  useEffect(() => setPersistentState('mainBalance', mainBalance), [mainBalance, currentUser]);
+  useEffect(() => setPersistentState('taskRewardsBalance', taskRewardsBalance), [taskRewardsBalance, currentUser]);
+  useEffect(() => setPersistentState('interestEarningsBalance', interestEarningsBalance), [interestEarningsBalance, currentUser]);
+  useEffect(() => setPersistentState('deposits', deposits), [deposits, currentUser]);
+  useEffect(() => setPersistentState('withdrawals', withdrawals), [withdrawals, currentUser]);
 
 
   const handleMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings') => {

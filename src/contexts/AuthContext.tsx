@@ -28,17 +28,57 @@ const validReferralCodes = ["ADMINREF001"];
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-    const [users, setUsers] = useState<User[]>([initialAdminUser]);
-    const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [users, setUsers] = useState<User[]>(() => {
+        if (typeof window === 'undefined') {
+            return [initialAdminUser];
+        }
+        try {
+            const storedUsers = localStorage.getItem('users');
+            if (storedUsers) {
+                return JSON.parse(storedUsers);
+            }
+        } catch (error) {
+            console.error("Failed to parse users from localStorage", error);
+        }
+        return [initialAdminUser];
+    });
+
+    const [currentUser, setCurrentUser] = useState<User | null>(() => {
+        if (typeof window === 'undefined') {
+            return null;
+        }
+        try {
+            const storedUser = localStorage.getItem('currentUser');
+            if (storedUser) {
+                return JSON.parse(storedUser);
+            }
+        } catch (error) {
+            console.error("Failed to parse currentUser from localStorage", error);
+        }
+        return null;
+    });
+
     const router = useRouter();
 
-    // Persist currentUser in sessionStorage to handle page reloads
     useEffect(() => {
-        const storedUser = sessionStorage.getItem('currentUser');
-        if (storedUser) {
-            setCurrentUser(JSON.parse(storedUser));
+        try {
+            localStorage.setItem('users', JSON.stringify(users));
+        } catch (error) {
+            console.error("Failed to save users to localStorage", error);
         }
-    }, []);
+    }, [users]);
+
+    useEffect(() => {
+        try {
+            if (currentUser) {
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            } else {
+                localStorage.removeItem('currentUser');
+            }
+        } catch (error) {
+            console.error("Failed to save currentUser to localStorage", error);
+        }
+    }, [currentUser]);
 
     const login = (email: string, password: string) => {
         const user = users.find(u => u.email === email);
@@ -52,7 +92,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         const userToStore = { email: user.email, isAdmin: user.isAdmin };
         setCurrentUser(userToStore);
-        sessionStorage.setItem('currentUser', JSON.stringify(userToStore));
         return { success: true, message: 'Logged in successfully!', isAdmin: user.isAdmin };
     };
 
@@ -67,17 +106,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const newUser: User = { email, password, isAdmin: false };
         setUsers(prev => [...prev, newUser]);
         
-        // Automatically log in the user after successful sign-up
         const userToStore = { email: newUser.email, isAdmin: newUser.isAdmin };
         setCurrentUser(userToStore);
-        sessionStorage.setItem('currentUser', JSON.stringify(userToStore));
 
         return { success: true, message: 'Account created successfully!' };
     };
 
     const logout = () => {
         setCurrentUser(null);
-        sessionStorage.removeItem('currentUser');
         router.push('/login');
     };
 
