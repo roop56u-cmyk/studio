@@ -17,7 +17,10 @@ import { Lock } from "lucide-react";
 export default function UserDashboardPage() {
   const { mainBalance, taskRewardsBalance, interestEarningsBalance, isLoading } = useWallet();
   const committedBalance = taskRewardsBalance + interestEarningsBalance;
-  const isLocked = committedBalance < 100;
+  const isTaskLocked = taskRewardsBalance < 100;
+  const isInterestLocked = interestEarningsBalance < 100;
+  const areBothLocked = isTaskLocked && isInterestLocked;
+
 
   if (isLoading) {
     return (
@@ -74,27 +77,44 @@ export default function UserDashboardPage() {
               description="Balance from interest."
             />
           </div>
-          {isLocked ? (
-            <Card>
+          {areBothLocked ? (
+             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center"><Lock className="mr-2 h-5 w-5" /> Features Locked</CardTitle>
-                    <CardDescription>Move at least $100 to Task or Interest wallets to unlock reviews.</CardDescription>
+                    <CardDescription>Commit funds to unlock platform features.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-sm mb-4">
-                        Your current committed balance is ${committedBalance.toFixed(2)}. Move funds from your main wallet using the sidebar to reach Level 1 and start completing tasks.
+                    <p className="text-sm mb-2">
+                        Move a minimum of <strong>$100 to Task Rewards</strong> to unlock the review tasks.
                     </p>
-                    <p className="text-sm text-muted-foreground">
-                        Your main balance is ${mainBalance.toFixed(2)}.
+                     <p className="text-sm mb-4">
+                        Move a minimum of <strong>$100 to Interest Earnings</strong> to unlock the interest rate counter.
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                        Your main balance is ${mainBalance.toFixed(2)}. Use the sidebar wallet to move funds.
                     </p>
                 </CardContent>
             </Card>
           ) : (
-            <ReviewForm />
+            <>
+              {isTaskLocked ? (
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center"><Lock className="mr-2 h-5 w-5" /> Review Tasks Locked</CardTitle>
+                        <CardDescription>Move at least $100 to the Task Rewards wallet to unlock reviews.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                       <p className="text-sm text-muted-foreground">Your current Task Rewards balance is ${taskRewardsBalance.toFixed(2)}.</p>
+                    </CardContent>
+                </Card>
+              ) : (
+                <ReviewForm />
+              )}
+            </>
           )}
         </div>
         <div className="space-y-8">
-          <InterestRateCounter isLocked={isLocked} />
+          <InterestRateCounter isLocked={isInterestLocked} />
           <ReferralCard />
         </div>
       </div>
