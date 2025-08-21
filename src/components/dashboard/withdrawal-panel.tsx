@@ -35,7 +35,6 @@ interface WithdrawalPanelProps {
     onAddRequest: (request: Partial<Omit<Request, 'id' | 'date' | 'user' | 'status'>>) => void;
 }
 
-const WITHDRAWAL_WAIT_DAYS = 45;
 
 export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
   const { toast } = useToast();
@@ -47,9 +46,11 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
       withdrawalAddress, 
       clearWithdrawalAddress,
       firstDepositDate,
+      isWithdrawalRestrictionEnabled,
+      withdrawalRestrictionDays,
   } = useWallet();
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
-  const [isRestrictionActive, setIsRestrictionActive] = useState(true);
+  const [isRestrictionActive, setIsRestrictionActive] = useState(false);
 
   const { level } = getWalletData();
   const numericAmount = parseFloat(amount) || 0;
@@ -64,23 +65,33 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
   const netWithdrawal = numericAmount - adminFee;
 
   useEffect(() => {
-    if (!firstDepositDate) {
-      setIsRestrictionActive(true);
+    if (!isWithdrawalRestrictionEnabled) {
+      setIsRestrictionActive(false);
       return;
     }
-    const firstDepositTime = new Date(firstDepositDate).getTime();
-    const restrictionEndTime = firstDepositTime + (WITHDRAWAL_WAIT_DAYS * 24 * 60 * 60 * 1000);
-    
-    const interval = setInterval(() => {
-        if (Date.now() >= restrictionEndTime) {
-            setIsRestrictionActive(false);
-            clearInterval(interval);
-        }
-    }, 1000);
+    if (!firstDepositDate) {
+      // If restriction is ON but user has no deposits, they can't withdraw anyway
+      // but we show the form. The check will happen on submission attempt.
+      setIsRestrictionActive(false); 
+      return;
+    }
 
+    const firstDepositTime = new Date(firstDepositDate).getTime();
+    const restrictionEndTime = firstDepositTime + (withdrawalRestrictionDays * 24 * 60 * 60 * 1000);
+    
+    const checkRestriction = () => {
+        if (Date.now() < restrictionEndTime) {
+            setIsRestrictionActive(true);
+        } else {
+            setIsRestrictionActive(false);
+        }
+    };
+
+    checkRestriction();
+    const interval = setInterval(checkRestriction, 1000);
     return () => clearInterval(interval);
 
-  }, [firstDepositDate]);
+  }, [firstDepositDate, isWithdrawalRestrictionEnabled, withdrawalRestrictionDays]);
   
   const handleOpenEditDialog = () => {
     setIsAddressDialogOpen(true);
@@ -88,11 +99,20 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
 
   const handleWithdraw = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isRestrictionActive) {
+    if (isWithdrawalRestrictionEnabled && isRestrictionActive) {
       toast({
           variant: "destructive",
           title: "Withdrawal Locked",
-          description: `You must wait ${WITHDRAWAL_WAIT_DAYS} days after your first deposit to make a withdrawal.`,
+          description: `You must wait ${withdrawalRestrictionDays} days after your first deposit to make a withdrawal.`,
+      });
+      return;
+    }
+    
+    if (isWithdrawalRestrictionEnabled && !firstDepositDate) {
+        toast({
+          variant: "destructive",
+          title: "Withdrawal Locked",
+          description: `Withdrawals are currently restricted. Please make a deposit to start the waiting period.`,
       });
       return;
     }
@@ -140,8 +160,8 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
     setAmount("");
   };
 
-  if (isRestrictionActive) {
-    return <WithdrawalTimer firstDepositDate={firstDepositDate} waitDays={WITHDRAWAL_WAIT_DAYS} />
+  if (isWithdrawalRestrictionEnabled && isRestrictionActive) {
+    return <WithdrawalTimer firstDepositDate={firstDepositDate} waitDays={withdrawalRestrictionDays} />
   }
 
   return (

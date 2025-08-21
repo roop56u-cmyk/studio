@@ -24,6 +24,13 @@ export default function SystemSettingsPage() {
     const [isWithdrawalRestriction, setIsWithdrawalRestriction] = useState(true);
 
     const handleSaveChanges = () => {
+        // In a real app, these would be saved to a database.
+        // For now, we use localStorage to simulate a persistent backend.
+        localStorage.setItem('system_withdrawal_restriction_enabled', JSON.stringify(isWithdrawalRestriction));
+        localStorage.setItem('system_withdrawal_restriction_days', withdrawalDays);
+        localStorage.setItem('system_referral_bonus', referralBonus);
+        localStorage.setItem('system_min_deposit_for_bonus', minDepositForBonus);
+        
         toast({
             title: "Settings Saved",
             description: "Global system settings have been updated.",
@@ -62,17 +69,17 @@ export default function SystemSettingsPage() {
         <CardHeader>
           <CardTitle>Withdrawal Restrictions</CardTitle>
           <CardDescription>
-            Set rules for when users can make withdrawals.
+            Set rules for when users can make withdrawals. This applies to all users based on their first deposit date.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
             <div className="flex items-center space-x-2">
                 <Switch id="withdrawal-restriction-toggle" checked={isWithdrawalRestriction} onCheckedChange={setIsWithdrawalRestriction} />
-                <Label htmlFor="withdrawal-restriction-toggle">Enable {withdrawalDays}-Day Withdrawal Restriction</Label>
+                <Label htmlFor="withdrawal-restriction-toggle">Enable Withdrawal Restriction</Label>
             </div>
             <div className="space-y-2">
                 <Label htmlFor="withdrawal-days">Number of Days for Restriction</Label>
-                <Input id="withdrawal-days" type="number" value={withdrawalDays} onChange={e => setWithdrawalDays(e.target.value)} />
+                <Input id="withdrawal-days" type="number" value={withdrawalDays} onChange={e => setWithdrawalDays(e.target.value)} disabled={!isWithdrawalRestriction}/>
             </div>
         </CardContent>
       </Card>

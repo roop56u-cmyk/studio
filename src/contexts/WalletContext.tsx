@@ -66,6 +66,8 @@ interface WalletContextType {
   setWithdrawalAddress: (address: Omit<WithdrawalAddress, 'id'>) => void;
   clearWithdrawalAddress: () => void;
   firstDepositDate: string | null;
+  isWithdrawalRestrictionEnabled: boolean;
+  withdrawalRestrictionDays: number;
 }
 
 export type CounterType = 'task' | 'interest';
@@ -83,6 +85,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
+  // Global system settings
+  const [isWithdrawalRestrictionEnabled, setIsWithdrawalRestrictionEnabled] = useState(true);
+  const [withdrawalRestrictionDays, setWithdrawalRestrictionDays] = useState(45);
+
   const getInitialState = (key: string, defaultValue: any) => {
     if (typeof window === 'undefined' || !currentUser) {
       return defaultValue;
@@ -94,6 +100,21 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error) {
       console.error(`Failed to parse ${key} from localStorage`, error);
+    }
+    return defaultValue;
+  };
+  
+  const getGlobalSetting = (key: string, defaultValue: any) => {
+     if (typeof window === 'undefined') {
+      return defaultValue;
+    }
+    try {
+      const storedValue = localStorage.getItem(key);
+      if (storedValue) {
+        return JSON.parse(storedValue);
+      }
+    } catch (error) {
+      console.error(`Failed to parse global setting ${key} from localStorage`, error);
     }
     return defaultValue;
   };
@@ -131,8 +152,12 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   }, [currentUser]);
 
   useEffect(() => {
+    setIsLoading(true);
+    // Load global settings
+    setIsWithdrawalRestrictionEnabled(getGlobalSetting('system_withdrawal_restriction_enabled', true));
+    setWithdrawalRestrictionDays(parseInt(getGlobalSetting('system_withdrawal_restriction_days', '45'), 10));
+
     if (currentUser) {
-      setIsLoading(true);
       const today = new Date().toISOString().split('T')[0];
       const lastCompletionDate = getInitialState('lastTaskCompletionDate', '');
       if (today !== lastCompletionDate) {
@@ -155,7 +180,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       setCompletedTasks(getInitialState('completedTasks', []));
       setWithdrawalAddressState(getInitialState('withdrawalAddress', null));
       setFirstDepositDate(getInitialState('firstDepositDate', null));
-      setIsLoading(false);
     } else {
         setMainBalance(0);
         setTaskRewardsBalance(0);
@@ -171,6 +195,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setWithdrawalAddressState(null);
         setFirstDepositDate(null);
     }
+    setIsLoading(false);
   }, [currentUser, setPersistentState]);
 
 
@@ -394,6 +419,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setWithdrawalAddress,
         clearWithdrawalAddress,
         firstDepositDate,
+        isWithdrawalRestrictionEnabled,
+        withdrawalRestrictionDays,
       }}
     >
       {children}
@@ -408,5 +435,3 @@ export const useWallet = () => {
   }
   return context;
 };
-
-    
