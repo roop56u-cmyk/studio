@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -48,7 +49,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="mx-auto w-full max-w-sm">
         <CardHeader className="text-center">
           <Logo className="justify-center mb-4"/>

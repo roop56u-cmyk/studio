@@ -1,13 +1,20 @@
 
 "use client";
 
+import React from "react";
 import { RechargePanel } from "@/components/dashboard/recharge-panel";
 import { useWallet } from "@/contexts/WalletContext";
 import { useRequests } from "@/contexts/RequestContext";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function RechargePage() {
     const { addRecharge } = useWallet();
     const { addRequest } = useRequests();
+    const [isClient, setIsClient] = React.useState(false);
+
+    React.useEffect(() => {
+        setIsClient(true);
+    }, []);
 
   return (
     <div className="grid gap-8">
@@ -18,7 +25,11 @@ export default function RechargePage() {
         </p>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2">
-        <RechargePanel onRecharge={addRecharge} onAddRequest={addRequest} />
+        {isClient ? (
+            <RechargePanel onRecharge={addRecharge} onAddRequest={addRequest} />
+        ) : (
+            <Skeleton className="h-[400px] w-full" />
+        )}
       </div>
     </div>
   );

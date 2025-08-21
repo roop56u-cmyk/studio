@@ -1,12 +1,20 @@
 
 "use client";
 
+import React from "react";
 import { WithdrawalPanel } from "@/components/dashboard/withdrawal-panel";
 import { useRequests } from "@/contexts/RequestContext";
 import { useWallet } from "@/contexts/WalletContext";
+import { Skeleton } from "@/components/ui/skeleton";
+
 
 export default function WithdrawalPage() {
     const { addRequest } = useRequests();
+    const [isClient, setIsClient] = React.useState(false);
+
+    React.useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     const handleAddRequest = (requestData: Omit<any, 'id' | 'date' | 'user' | 'status'>) => {
         addRequest({
@@ -24,7 +32,11 @@ export default function WithdrawalPage() {
         </p>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2">
-        <WithdrawalPanel onAddRequest={handleAddRequest} />
+        {isClient ? (
+            <WithdrawalPanel onAddRequest={handleAddRequest} />
+        ) : (
+            <Skeleton className="h-[400px] w-full" />
+        )}
       </div>
     </div>
   );
