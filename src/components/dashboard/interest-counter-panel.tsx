@@ -96,15 +96,15 @@ export function InterestCounterPanel({
   if (isLocked) {
     return (
         <Card className="h-full">
-            <CardHeader className="p-4">
-                <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="p-3">
+                <div className="flex flex-row items-center justify-between space-y-0 pb-1">
                     <CardTitle className="text-sm font-medium">{title}</CardTitle>
                     <Lock className="h-4 w-4 text-muted-foreground" />
                 </div>
             </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center text-center h-full pb-4">
-                <div className="text-xl font-bold">-.--%</div>
-                <p className="text-xs text-muted-foreground pt-2">
+            <CardContent className="flex flex-col items-center justify-center text-center h-full pb-3">
+                <div className="text-lg font-bold">-.--%</div>
+                <p className="text-xs text-muted-foreground pt-1">
                     Unlock by committing at least $100.
                 </p>
             </CardContent>
@@ -114,27 +114,27 @@ export function InterestCounterPanel({
 
   return (
     <Card>
-      <CardHeader className="p-4">
-        <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className="p-3">
+        <div className="flex flex-row items-center justify-between space-y-0 pb-1">
           <CardTitle className="text-sm font-medium">{title}</CardTitle>
           <Percent className="h-4 w-4 text-muted-foreground" />
         </div>
-        <CardDescription>Current APY: {currentRate.toFixed(2)}%</CardDescription>
+        <CardDescription className="text-xs">Current APY: {currentRate.toFixed(2)}%</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3 p-4 pt-0">
-        <div className="text-center bg-muted p-2 rounded-lg">
-            <div className="flex items-center justify-center gap-2 text-muted-foreground text-xs">
-                <Timer className="h-4 w-4" />
+      <CardContent className="space-y-2 p-3 pt-0">
+        <div className="text-center bg-muted p-1 rounded-lg">
+            <div className="flex items-center justify-center gap-1 text-muted-foreground text-xs">
+                <Timer className="h-3 w-3" />
                 <span>Time Remaining</span>
             </div>
-            <div className="text-2xl font-bold font-mono tracking-tight">
+            <div className="text-xl font-bold font-mono tracking-tight">
                 {isRunning ? formatTime(timeLeft) : "24:00:00"}
             </div>
         </div>
         
         <div className="text-center">
             <p className="text-xs text-muted-foreground">Accrued Interest</p>
-            <p className="text-base font-semibold text-primary">
+            <p className="text-sm font-semibold text-primary">
                 {accruedInterest.toFixed(6)} USDT
             </p>
         </div>

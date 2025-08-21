@@ -37,16 +37,16 @@ export function ReferralCard() {
 
   return (
     <Card>
-      <CardHeader className="p-4">
-        <CardTitle className="text-lg">Invite Friends</CardTitle>
-        <CardDescription>
+      <CardHeader className="p-3">
+        <CardTitle className="text-base">Invite Friends</CardTitle>
+        <CardDescription className="text-xs">
           Share your referral code to invite new members.
         </CardDescription>
       </CardHeader>
-      <CardContent className="p-4 pt-0">
+      <CardContent className="p-3 pt-0">
         <div className="flex items-center space-x-2">
-          <Input value={code} readOnly className="font-mono text-center text-sm h-9" />
-          <Button variant="outline" size="icon" onClick={handleCopy} disabled={code === "Generating..."} className="h-9 w-9">
+          <Input value={code} readOnly className="font-mono text-center text-xs h-8" />
+          <Button variant="outline" size="icon" onClick={handleCopy} disabled={code === "Generating..."} className="h-8 w-8">
             {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
           </Button>
         </div>
