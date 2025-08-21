@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from "next/link";
@@ -55,10 +56,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { WalletProvider, useWallet } from "@/contexts/WalletContext";
 import { RequestProvider } from "@/contexts/RequestContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
 
 function SidebarContentComponent() {
   const pathname = usePathname();
+  const { logout } = useAuth();
   const { 
     mainBalance,
     amount, 
@@ -199,56 +202,59 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+    const { logout } = useAuth();
   return (
-    <RequestProvider>
-      <WalletProvider>
-        <SidebarProvider>
-          <div className="flex min-h-screen">
-            <Sidebar>
-              <SidebarContentComponent />
-            </Sidebar>
-            <div className="flex flex-1 flex-col">
-              <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-                <SidebarTrigger className="md:hidden" />
-                <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
-                  <div className="ml-auto flex-1 sm:flex-initial">
-                    {/* Optional Search */}
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="secondary" size="icon" className="rounded-full">
-                        <Avatar>
-                          <AvatarImage src="https://placehold.co/40x40.png" alt="User Avatar" data-ai-hint="user avatar" />
-                          <AvatarFallback>U</AvatarFallback>
-                        </Avatar>
-                        <span className="sr-only">Toggle user menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem>
-                        <Settings className="mr-2 h-4 w-4" />
-                        <span>Settings</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <Link href="/login">
-                          <LogOut className="mr-2 h-4 w-4" />
-                          <span>Log out</span>
-                        </Link>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+    <AuthProvider>
+        <RequestProvider>
+        <WalletProvider>
+            <SidebarProvider>
+            <div className="flex min-h-screen">
+                <Sidebar>
+                <SidebarContentComponent />
+                </Sidebar>
+                <div className="flex flex-1 flex-col">
+                <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+                    <SidebarTrigger className="md:hidden" />
+                    <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
+                    <div className="ml-auto flex-1 sm:flex-initial">
+                        {/* Optional Search */}
+                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                        <Button variant="secondary" size="icon" className="rounded-full">
+                            <Avatar>
+                            <AvatarImage src="https://placehold.co/40x40.png" alt="User Avatar" data-ai-hint="user avatar" />
+                            <AvatarFallback>U</AvatarFallback>
+                            </Avatar>
+                            <span className="sr-only">Toggle user menu</span>
+                        </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem>
+                            <Settings className="mr-2 h-4 w-4" />
+                            <span>Settings</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                            <Link href="/login" onClick={logout}>
+                                <LogOut className="mr-2 h-4 w-4" />
+                                <span>Log out</span>
+                            </Link>
+                        </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    </div>
+                </header>
+                <main className="flex-1 p-4 md:p-6 lg:p-8">
+                    {children}
+                </main>
                 </div>
-              </header>
-              <main className="flex-1 p-4 md:p-6 lg:p-8">
-                {children}
-              </main>
             </div>
-          </div>
-        </SidebarProvider>
-      </WalletProvider>
-    </RequestProvider>
+            </SidebarProvider>
+        </WalletProvider>
+        </RequestProvider>
+    </AuthProvider>
   );
 }

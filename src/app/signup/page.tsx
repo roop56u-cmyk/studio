@@ -16,31 +16,34 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/logo";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { signup } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [invitationCode, setInvitationCode] = useState("");
-
-  // In a real app, you would fetch and validate this from a backend.
-  const validReferralCodes = ["ADMINREF001"];
 
   const handleSignUp = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validReferralCodes.includes(invitationCode)) {
+    const result = signup(email, password, invitationCode);
+
+    if (result.success) {
       toast({
-        variant: "destructive",
-        title: "Invalid Invitation Code",
-        description: "Please enter a valid code to create an account.",
-      });
-      return;
-    }
-    // Mock sign-up: in a real app, you'd create a user record.
-    toast({
         title: "Account Created!",
         description: "Welcome! You are now being redirected to your dashboard.",
-    });
-    router.push("/dashboard");
+      });
+      router.push("/dashboard");
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Sign-up Failed",
+        description: result.message,
+      });
+    }
   };
 
   return (
@@ -57,7 +60,13 @@ export default function SignupPage() {
           <form onSubmit={handleSignUp} className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="full-name">Full Name</Label>
-              <Input id="full-name" placeholder="John Doe" required />
+              <Input 
+                id="full-name" 
+                placeholder="John Doe" 
+                required 
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
@@ -66,11 +75,19 @@ export default function SignupPage() {
                 type="email"
                 placeholder="m@example.com"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" required />
+              <Input 
+                id="password" 
+                type="password" 
+                required 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="invitation-code">Invitation Code</Label>

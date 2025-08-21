@@ -2,6 +2,7 @@
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode } from 'react';
+import { useAuth } from './AuthContext';
 
 export type Request = {
     id: string;
@@ -19,7 +20,7 @@ export type Request = {
 
 interface RequestContextType {
   requests: Request[];
-  addRequest: (request: Omit<Request, 'id' | 'date' | 'status'>) => void;
+  addRequest: (request: Omit<Request, 'id' | 'date' | 'status' | 'user'>) => void;
   updateRequestStatus: (id: string, status: 'Approved' | 'Declined' | 'On Hold') => void;
 }
 
@@ -69,14 +70,19 @@ const RequestContext = createContext<RequestContextType | undefined>(undefined);
 
 export const RequestProvider = ({ children }: { children: ReactNode }) => {
   const [requests, setRequests] = useState<Request[]>(mockRequests);
+  const { currentUser } = useAuth();
 
-  const addRequest = (requestData: Omit<Request, 'id' | 'date' | 'status'>) => {
+  const addRequest = (requestData: Omit<Request, 'id' | 'date' | 'status' | 'user'>) => {
+    if (!currentUser) {
+        console.error("Cannot add request: no user logged in.");
+        return;
+    }
     const newRequest: Request = {
         ...requestData,
         id: `REQ-${String(requests.length + 1).padStart(3, '0')}`,
         date: new Date().toISOString().split('T')[0],
         status: 'Pending',
-        user: 'currentuser@example.com' // Mock current user
+        user: currentUser.email
     };
     setRequests(prev => [newRequest, ...prev]);
   };

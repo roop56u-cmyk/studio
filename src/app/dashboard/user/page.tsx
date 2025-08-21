@@ -6,6 +6,7 @@ import { ReviewForm } from "@/components/dashboard/review-form";
 import { InterestRateCounter } from "@/components/dashboard/interest-rate-counter";
 import { LevelTiers } from "@/components/dashboard/level-tiers";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
+import { HistoryPanel } from "@/components/dashboard/history-panel";
 import { useWallet } from "@/contexts/WalletContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import Link from "next/link";
@@ -30,11 +31,18 @@ export default function UserDashboardPage() {
         </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-          <WalletBalance 
-            title="Task Rewards"
-            balance={taskRewardsBalance.toFixed(2)}
-            description="Balance from completed tasks."
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <WalletBalance 
+              title="Task Rewards"
+              balance={taskRewardsBalance.toFixed(2)}
+              description="Balance from completed tasks."
+            />
+             <WalletBalance 
+              title="Interest Earnings"
+              balance={interestEarningsBalance.toFixed(2)}
+              description="Balance from interest."
+            />
+          </div>
           {isLocked ? (
             <Card>
                 <CardHeader>
@@ -55,14 +63,12 @@ export default function UserDashboardPage() {
           )}
         </div>
         <div className="space-y-8">
-           <WalletBalance 
-            title="Interest Earnings"
-            balance={interestEarningsBalance.toFixed(2)}
-            description="Balance from interest."
-          />
           <InterestRateCounter isLocked={isLocked} />
           <ReferralCard />
         </div>
+      </div>
+      <div>
+        <HistoryPanel />
       </div>
     </div>
   );
