@@ -8,10 +8,13 @@ type User = {
     email: string;
     password?: string; // Password is now optional for security reasons after login
     isAdmin: boolean;
+    referralCode: string;
+    referredBy: string | null; // Stores the referral code of the user who referred them
 };
 
 interface AuthContextType {
   currentUser: User | null;
+  users: User[];
   login: (email: string, password: string) => { success: boolean, message: string, isAdmin?: boolean };
   signup: (email: string, password: string, referralCode: string) => { success: boolean, message: string };
   logout: () => void;
@@ -20,10 +23,11 @@ interface AuthContextType {
 const initialAdminUser: User = {
     email: 'admin@stakinghub.com',
     password: 'admin123',
-    isAdmin: true
+    isAdmin: true,
+    referralCode: "ADMINREF001",
+    referredBy: null,
 };
 
-const validReferralCodes = ["ADMINREF001"];
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -35,7 +39,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         try {
             const storedUsers = localStorage.getItem('users');
             if (storedUsers) {
-                return JSON.parse(storedUsers);
+                const parsedUsers = JSON.parse(storedUsers);
+                // Ensure admin user always exists and has the correct properties
+                const adminExists = parsedUsers.some((u: User) => u.email === initialAdminUser.email);
+                if (!adminExists) {
+                    return [initialAdminUser, ...parsedUsers];
+                }
+                return parsedUsers.map((u: User) => u.email === initialAdminUser.email ? initialAdminUser : u);
             }
         } catch (error) {
             console.error("Failed to parse users from localStorage", error);
@@ -90,24 +100,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             return { success: false, message: 'Incorrect password. Please try again.' };
         }
 
-        const userToStore = { email: user.email, isAdmin: user.isAdmin };
-        setCurrentUser(userToStore);
+        setCurrentUser(user);
         return { success: true, message: 'Logged in successfully!', isAdmin: user.isAdmin };
     };
 
     const signup = (email: string, password: string, referralCode: string) => {
-        if (!validReferralCodes.includes(referralCode)) {
+        const referrer = users.find(u => u.referralCode === referralCode);
+
+        if (!referrer) {
             return { success: false, message: 'Invalid invitation code.' };
         }
         if (users.find(u => u.email === email)) {
             return { success: false, message: 'An account with this email already exists.' };
         }
 
-        const newUser: User = { email, password, isAdmin: false };
+        const newUser: User = { 
+            email, 
+            password, 
+            isAdmin: false,
+            referralCode: "TRH-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
+            referredBy: referralCode,
+        };
         setUsers(prev => [...prev, newUser]);
         
-        const userToStore = { email: newUser.email, isAdmin: newUser.isAdmin };
-        setCurrentUser(userToStore);
+        setCurrentUser(newUser);
 
         return { success: true, message: 'Account created successfully!' };
     };
@@ -118,7 +134,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ currentUser, login, signup, logout }}>
+        <AuthContext.Provider value={{ currentUser, users, login, signup, logout }}>
             {children}
         </AuthContext.Provider>
     );

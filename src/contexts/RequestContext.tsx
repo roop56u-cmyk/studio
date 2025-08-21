@@ -4,6 +4,7 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { useWallet } from './WalletContext';
+import { useToast } from '@/hooks/use-toast';
 
 export type Request = {
     id: string;
@@ -71,8 +72,9 @@ const mockRequests: Request[] = [
 const RequestContext = createContext<RequestContextType | undefined>(undefined);
 
 export const RequestProvider = ({ children }: { children: ReactNode }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, users } = useAuth();
   const { getWalletData, approveRecharge, refundWithdrawal, approveWithdrawal } = useWallet();
+  const { toast } = useToast();
 
   const [requests, setRequests] = useState<Request[]>(() => {
     if (typeof window === 'undefined') {
@@ -128,44 +130,81 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
     setRequests(prev => [newRequest, ...prev]);
   };
 
+  const handleReferralBonus = (userEmail: string, amount: number) => {
+    // 1. Check if this is the user's first approved recharge
+    const userDepositsKey = `${userEmail}_deposits`;
+    const depositCount = parseInt(localStorage.getItem(userDepositsKey) || '0');
+    if (depositCount > 1) return; // Not the first deposit
+
+    // 2. Check if the deposit is >= $100
+    if (amount < 100) return;
+
+    // 3. Find who referred this user
+    const referredUser = users.find(u => u.email === userEmail);
+    if (!referredUser || !referredUser.referredBy) return;
+
+    // 4. Find the referrer
+    const referrer = users.find(u => u.referralCode === referredUser.referredBy);
+    if (!referrer) return;
+
+    // 5. Check if referrer is at Level 1 or higher
+    const referrerTaskBalanceKey = `${referrer.email}_taskRewardsBalance`;
+    const referrerInterestBalanceKey = `${referrer.email}_interestEarningsBalance`;
+    const referrerTaskBalance = parseFloat(localStorage.getItem(referrerTaskBalanceKey) || '0');
+    const referrerInterestBalance = parseFloat(localStorage.getItem(referrerInterestBalanceKey) || '0');
+    const referrerCommittedBalance = referrerTaskBalance + referrerInterestBalance;
+    if (referrerCommittedBalance < 100) return; // Referrer not at Level 1
+
+    // 6. Credit $5 to referrer's main balance
+    const referrerMainBalanceKey = `${referrer.email}_mainBalance`;
+    const referrerCurrentBalance = parseFloat(localStorage.getItem(referrerMainBalanceKey) || '0');
+    localStorage.setItem(referrerMainBalanceKey, (referrerCurrentBalance + 5).toString());
+
+    // If the referrer is the currently logged-in user, we can show a toast.
+    if (currentUser?.email === referrer.email) {
+      toast({
+        title: "Referral Bonus!",
+        description: `You've received a $5 bonus because your referral ${userEmail} made their first deposit!`,
+      });
+    }
+  }
+
   const updateRequestStatus = (id: string, status: 'Approved' | 'Declined' | 'On Hold', userEmail: string, type: 'Recharge' | 'Withdrawal', amount: number) => {
     setRequests(prev => prev.map(req => req.id === id ? { ...req, status } : req));
     
-    // Only perform wallet actions if the request belongs to the current user
-    if (currentUser?.email === userEmail) {
-        if (status === 'Approved') {
-            if (type === 'Recharge') {
-                approveRecharge(amount);
-            } else { // Withdrawal
-                approveWithdrawal(); // This just updates withdrawal count
-            }
-        } else if (status === 'Declined') {
-            if (type === 'Withdrawal') {
-                refundWithdrawal(amount);
-            }
-        }
-    } else {
-        // This part handles updates for users who are NOT currently logged in,
-        // which is necessary for the admin panel to function correctly.
-        if (status === 'Approved' && type === 'Recharge') {
-            const userMainBalanceKey = `${userEmail}_mainBalance`;
-            const currentBalance = parseFloat(localStorage.getItem(userMainBalanceKey) || '0');
-            localStorage.setItem(userMainBalanceKey, (currentBalance + amount).toString());
+    // Logic for the user who made the request
+    const userIsCurrentUser = currentUser?.email === userEmail;
 
-            const userDepositsKey = `${userEmail}_deposits`;
-            const currentDeposits = parseInt(localStorage.getItem(userDepositsKey) || '0');
-            localStorage.setItem(userDepositsKey, (currentDeposits + 1).toString());
-        } else if (status === 'Approved' && type === 'Withdrawal') {
-             const userWithdrawalsKey = `${userEmail}_withdrawals`;
-            const currentWithdrawals = parseInt(localStorage.getItem(userWithdrawalsKey) || '0');
-            localStorage.setItem(userWithdrawalsKey, (currentWithdrawals + 1).toString());
-        } else if (status === 'Declined' && type === 'Withdrawal') {
-            const userMainBalanceKey = `${userEmail}_mainBalance`;
-            const currentBalance = parseFloat(localStorage.getItem(userMainBalanceKey) || '0');
-            localStorage.setItem(userMainBalanceKey, (currentBalance + amount).toString());
-        }
+    if (status === 'Approved') {
+      if (type === 'Recharge') {
+        if (userIsCurrentUser) approveRecharge(amount);
+        
+        // Update localStorage for non-current user
+        const userMainBalanceKey = `${userEmail}_mainBalance`;
+        const currentBalance = parseFloat(localStorage.getItem(userMainBalanceKey) || '0');
+        localStorage.setItem(userMainBalanceKey, (currentBalance + amount).toString());
+
+        const userDepositsKey = `${userEmail}_deposits`;
+        const currentDeposits = parseInt(localStorage.getItem(userDepositsKey) || '0');
+        localStorage.setItem(userDepositsKey, (currentDeposits + 1).toString());
+
+        handleReferralBonus(userEmail, amount);
+
+      } else { // Withdrawal
+        if (userIsCurrentUser) approveWithdrawal();
+        const userWithdrawalsKey = `${userEmail}_withdrawals`;
+        const currentWithdrawals = parseInt(localStorage.getItem(userWithdrawalsKey) || '0');
+        localStorage.setItem(userWithdrawalsKey, (currentWithdrawals + 1).toString());
+      }
+    } else if (status === 'Declined' && type === 'Withdrawal') {
+      if (userIsCurrentUser) {
+        refundWithdrawal(amount);
+      } else {
+        const userMainBalanceKey = `${userEmail}_mainBalance`;
+        const currentBalance = parseFloat(localStorage.getItem(userMainBalanceKey) || '0');
+        localStorage.setItem(userMainBalanceKey, (currentBalance + amount).toString());
+      }
     }
-
   };
 
 

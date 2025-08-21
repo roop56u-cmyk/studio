@@ -13,19 +13,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function ReferralCard() {
-  const [code, setCode] = useState("Generating...");
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
-
-  useEffect(() => {
-    // Generate a unique code on the client-side to avoid hydration mismatch
-    const newCode = "TRH-" + Math.random().toString(36).substring(2, 10).toUpperCase();
-    setCode(newCode);
-  }, []);
+  const { currentUser } = useAuth();
+  const code = currentUser?.referralCode || "Generating...";
 
   const handleCopy = () => {
+    if (code === "Generating...") return;
     navigator.clipboard.writeText(code);
     setCopied(true);
     toast({
