@@ -10,6 +10,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Copy, Check } from "lucide-react";
@@ -20,14 +31,18 @@ import type { Request } from "@/contexts/RequestContext";
 interface RechargePanelProps {
     onRecharge: (amount: number) => void;
     onAddRequest: (request: Omit<Request, 'id' | 'date' | 'user' | 'status'>) => void;
+    onManageAddresses: () => void;
 }
 
-export function RechargePanel({ onRecharge, onAddRequest }: RechargePanelProps) {
+export function RechargePanel({ onRecharge, onAddRequest, onManageAddresses }: RechargePanelProps) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [amount, setAmount] = useState("");
-  const { getWalletData } = useWallet();
+  const { getWalletData, withdrawalAddresses } = useWallet();
   const rechargeAddress = "0x4D26340f3B52DCf82dd537cBF3c7e4C1D9b53BDc";
+
+  const [isAddressAlertOpen, setIsAddressAlertOpen] = useState(false);
+  const [isConfirmAlertOpen, setIsConfirmAlertOpen] = useState(false);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(rechargeAddress);
@@ -38,6 +53,22 @@ export function RechargePanel({ onRecharge, onAddRequest }: RechargePanelProps) 
     });
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const proceedWithSubmit = () => {
+     const numericAmount = parseFloat(amount);
+     onAddRequest({
+        ...getWalletData(),
+        type: 'Recharge',
+        amount: numericAmount,
+        address: null, // No withdrawal address for recharges
+    });
+
+    toast({
+      title: "Recharge Request Submitted",
+      description: `Your request to recharge ${numericAmount.toFixed(2)} USDT is pending approval.`,
+    });
+    setAmount("");
+  }
 
   const handleSubmitRequest = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,68 +82,96 @@ export function RechargePanel({ onRecharge, onAddRequest }: RechargePanelProps) 
         return;
     }
     
-    // In a real scenario, you'd wait for admin approval.
-    // Here we'll just create the request for the admin to see.
-    onAddRequest({
-        ...getWalletData(),
-        type: 'Recharge',
-        amount: numericAmount,
-        address: null, // No withdrawal address for recharges
-    });
+    // Check 1: User must have a withdrawal address
+    if (withdrawalAddresses.length === 0) {
+        setIsAddressAlertOpen(true);
+        return;
+    }
 
-    toast({
-      title: "Recharge Request Submitted",
-      description: `Your request to recharge ${numericAmount.toFixed(2)} USDT is pending approval.`,
-    });
-    setAmount("");
+    // Check 2: Show confirmation dialog
+    setIsConfirmAlertOpen(true);
   };
 
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Recharge Funds</CardTitle>
-        <CardDescription>
-          Submit a request to add funds to your main balance.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmitRequest} className="space-y-6">
-            <div className="space-y-4">
-                <Label htmlFor="recharge-address">Official USDT BEP20 Recharge Address</Label>
-                <div className="flex items-center space-x-2">
-                <Input
-                    id="recharge-address"
-                    value={rechargeAddress}
-                    readOnly
-                    className="font-mono text-center text-sm"
-                />
-                <Button variant="outline" size="icon" type="button" onClick={handleCopy}>
-                    {copied ? (
-                    <Check className="h-4 w-4 text-green-500" />
-                    ) : (
-                    <Copy className="h-4 w-4" />
-                    )}
-                </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                First send funds to the address above, then submit a request below with the amount you sent.
-                </p>
-            </div>
-             <div className="space-y-2">
-                <Label htmlFor="amount">Recharge Amount (USDT)</Label>
-                <Input 
-                    id="amount" 
-                    type="number" 
-                    placeholder="100.00" 
-                    required 
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                />
-            </div>
-            <Button type="submit" className="w-full">Submit Recharge Request</Button>
-        </form>
-      </CardContent>
-    </Card>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Recharge Funds</CardTitle>
+          <CardDescription>
+            Submit a request to add funds to your main balance.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmitRequest} className="space-y-6">
+              <div className="space-y-4">
+                  <Label htmlFor="recharge-address">Official USDT BEP20 Recharge Address</Label>
+                  <div className="flex items-center space-x-2">
+                  <Input
+                      id="recharge-address"
+                      value={rechargeAddress}
+                      readOnly
+                      className="font-mono text-center text-sm"
+                  />
+                  <Button variant="outline" size="icon" type="button" onClick={handleCopy}>
+                      {copied ? (
+                      <Check className="h-4 w-4 text-green-500" />
+                      ) : (
+                      <Copy className="h-4 w-4" />
+                      )}
+                  </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                  First send funds to the address above, then submit a request below with the amount you sent.
+                  </p>
+              </div>
+              <div className="space-y-2">
+                  <Label htmlFor="amount">Recharge Amount (USDT)</Label>
+                  <Input 
+                      id="amount" 
+                      type="number" 
+                      placeholder="100.00" 
+                      required 
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                  />
+              </div>
+              <Button type="submit" className="w-full">Submit Recharge Request</Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Alert for missing withdrawal address */}
+      <AlertDialog open={isAddressAlertOpen} onOpenChange={setIsAddressAlertOpen}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>Withdrawal Address Required</AlertDialogTitle>
+                  <AlertDialogDescription>
+                      Please update your USDT BEP20 withdrawal address first before making a recharge request.
+                  </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={onManageAddresses}>Update Address</AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Alert for confirming the deposit source */}
+      <AlertDialog open={isConfirmAlertOpen} onOpenChange={setIsConfirmAlertOpen}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>Confirm Deposit Source</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Please make sure you updated same wallet withdrawal address from which you deposit or send usdt on above recharge address different address cause permanent loss of funds.
+                  </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={proceedWithSubmit}>Confirm</AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
