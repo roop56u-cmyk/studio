@@ -40,7 +40,7 @@ export default function UserManagementPage() {
     const handleAction = (action: string, email: string) => {
         toast({
             title: "Action Triggered",
-            description: `${action} for user ${email}. (This is a demo action)`,
+            description: `${action} for user ${email}.`,
         });
     };
 
