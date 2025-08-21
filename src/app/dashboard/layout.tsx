@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -44,9 +45,12 @@ import {
   Wallet,
   ArrowUpCircle,
   ArrowDownCircle,
-  ChevronDown
+  ChevronDown,
+  Gift,
+  TrendingUp
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
+import { useToast } from "@/hooks/use-toast";
 
 export default function DashboardLayout({
   children,
@@ -54,6 +58,15 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const { toast } = useToast();
+
+  const handleMoveFunds = (destination: string) => {
+    toast({
+      title: "Funds Moved",
+      description: `Your USDT has been notionally moved to ${destination}.`,
+    });
+  };
+
 
   return (
     <SidebarProvider>
@@ -135,8 +148,18 @@ export default function DashboardLayout({
                         </SidebarMenuButton>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
-                        <div className="p-2">
+                        <div className="p-2 space-y-2">
                             <WalletBalance />
+                            <div className="grid grid-cols-1 gap-2">
+                                <Button variant="outline" size="sm" className="justify-start gap-2" onClick={() => handleMoveFunds("Task Rewards")}>
+                                    <Gift className="h-4 w-4 text-primary" />
+                                    <span>Move to Task Rewards</span>
+                                </Button>
+                                <Button variant="outline" size="sm" className="justify-start gap-2" onClick={() => handleMoveFunds("Interest Earnings")}>
+                                    <TrendingUp className="h-4 w-4 text-accent" />
+                                    <span>Move to Interest</span>
+                                </Button>
+                            </div>
                         </div>
                     </CollapsibleContent>
                 </Collapsible>
