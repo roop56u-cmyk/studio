@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import React, { useState } from "react";
 import {
   Avatar,
   AvatarFallback,
@@ -51,6 +52,8 @@ import {
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function DashboardLayout({
   children,
@@ -59,13 +62,44 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const { toast } = useToast();
+  const [amount, setAmount] = useState("");
 
-  const handleMoveFunds = (destination: string) => {
+  const [taskRewardsBalance, setTaskRewardsBalance] = useState(0);
+  const [interestEarningsBalance, setInterestEarningsBalance] = useState(0);
+
+  const handleMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings') => {
+    const numericAmount = parseFloat(amount);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+        toast({
+            variant: "destructive",
+            title: "Invalid Amount",
+            description: "Please enter a valid positive number to move.",
+        });
+        return;
+    }
+
+    if (destination === "Task Rewards") {
+        setTaskRewardsBalance(prev => prev + numericAmount);
+    } else if (destination === "Interest Earnings") {
+        setInterestEarningsBalance(prev => prev + numericAmount);
+    }
+
     toast({
       title: "Funds Moved",
-      description: `Your USDT has been notionally moved to ${destination}.`,
+      description: `${numericAmount.toFixed(2)} USDT has been notionally moved to ${destination}.`,
     });
+    setAmount("");
   };
+
+  const childrenWithProps = React.Children.map(children, child => {
+    if (React.isValidElement(child)) {
+      return React.cloneElement(child, {
+        taskRewardsBalance,
+        interestEarningsBalance,
+      } as any);
+    }
+    return child;
+  });
 
 
   return (
@@ -148,8 +182,22 @@ export default function DashboardLayout({
                         </SidebarMenuButton>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
-                        <div className="p-2 space-y-2">
-                            <WalletBalance />
+                        <div className="p-2 space-y-4">
+                            <WalletBalance 
+                              title="Main Balance"
+                              balance="1234.56"
+                              description="Total available funds."
+                            />
+                            <div className="space-y-2">
+                                <Label htmlFor="move-amount">Amount (USDT)</Label>
+                                <Input 
+                                    id="move-amount"
+                                    type="number"
+                                    placeholder="e.g., 50.00"
+                                    value={amount}
+                                    onChange={(e) => setAmount(e.target.value)}
+                                />
+                            </div>
                             <div className="grid grid-cols-1 gap-2">
                                 <Button variant="outline" size="sm" className="justify-start gap-2" onClick={() => handleMoveFunds("Task Rewards")}>
                                     <Gift className="h-4 w-4 text-primary" />
@@ -230,7 +278,7 @@ export default function DashboardLayout({
             </div>
           </header>
           <main className="flex-1 p-4 md:p-6 lg:p-8">
-            {children}
+            {childrenWithProps}
           </main>
         </div>
       </div>
