@@ -18,15 +18,10 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useRequests } from "@/contexts/RequestContext";
-import { useAuth } from "@/contexts/AuthContext";
 
 export function HistoryPanel() {
-  const { requests } = useRequests();
-  const { currentUser } = useAuth();
+  const { userRequests } = useRequests();
   
-  // Filter requests for the currently logged-in user
-  const userRequests = requests.filter(req => req.user === currentUser?.email);
-
   return (
     <Card>
       <CardHeader>

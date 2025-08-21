@@ -205,7 +205,7 @@ export default function DashboardLayout({
     const { logout } = useAuth();
   return (
     <AuthProvider>
-        <RequestProvider>
+      <RequestProvider>
         <WalletProvider>
             <SidebarProvider>
             <div className="flex min-h-screen">
@@ -254,7 +254,7 @@ export default function DashboardLayout({
             </div>
             </SidebarProvider>
         </WalletProvider>
-        </RequestProvider>
+      </RequestProvider>
     </AuthProvider>
   );
 }

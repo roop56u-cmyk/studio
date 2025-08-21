@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 
 export type Request = {
@@ -22,6 +22,7 @@ interface RequestContextType {
   requests: Request[];
   addRequest: (request: Omit<Request, 'id' | 'date' | 'status' | 'user'>) => void;
   updateRequestStatus: (id: string, status: 'Approved' | 'Declined' | 'On Hold') => void;
+  userRequests: Request[];
 }
 
 const mockRequests: Request[] = [
@@ -51,9 +52,9 @@ const mockRequests: Request[] = [
     status: "Approved",
     date: "2024-07-30",
   },
-  {
+   {
     id: "REQ-003",
-    user: "user3@example.com",
+    user: "admin@stakinghub.com",
     type: "Withdrawal",
     amount: 300.00,
     address: "0xEfGh...5678",
@@ -70,7 +71,17 @@ const RequestContext = createContext<RequestContextType | undefined>(undefined);
 
 export const RequestProvider = ({ children }: { children: ReactNode }) => {
   const [requests, setRequests] = useState<Request[]>(mockRequests);
+  const [userRequests, setUserRequests] = useState<Request[]>([]);
   const { currentUser } = useAuth();
+
+  useEffect(() => {
+    if (currentUser) {
+        setUserRequests(requests.filter(req => req.user === currentUser.email));
+    } else {
+        setUserRequests([]);
+    }
+  }, [currentUser, requests]);
+
 
   const addRequest = (requestData: Omit<Request, 'id' | 'date' | 'status' | 'user'>) => {
     if (!currentUser) {
@@ -98,6 +109,7 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
         requests,
         addRequest,
         updateRequestStatus,
+        userRequests,
       }}
     >
       {children}
