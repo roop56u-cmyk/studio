@@ -90,7 +90,7 @@ export function ReviewForm() {
        });
 
       // The core logic is now in the wallet context
-      completeTask();
+      completeTask(task);
 
       // Fetch a new task if the user hasn't reached their quota
       if (tasksCompletedToday + 1 < dailyTaskQuota) {
