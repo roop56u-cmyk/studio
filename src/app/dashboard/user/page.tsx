@@ -4,7 +4,7 @@
 import React from "react";
 import { ReferralCard } from "@/components/dashboard/referral-card";
 import { InterestCounterPanel } from "@/components/dashboard/interest-counter-panel";
-import { LevelTiers, Level } from "@/components/dashboard/level-tiers";
+import { LevelTiers, Level, levels } from "@/components/dashboard/level-tiers";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { TransactionHistoryPanel } from "@/components/dashboard/transaction-history-panel";
 import { TaskHistoryPanel } from "@/components/dashboard/task-history-panel";
