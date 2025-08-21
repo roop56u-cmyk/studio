@@ -104,18 +104,12 @@ export default function DashboardLayout({
     setAmount("");
   };
 
-  // Clone the child element and pass the balance props to it.
-  // This is necessary for the state changes in the layout to trigger re-renders in the page components.
-   const childrenWithProps = React.Children.map(children, (child) => {
-    // Checking isValidElement is the safe way to avoid attempting to clone null or other primitive values.
+  const childrenWithProps = React.Children.map(children, child => {
     if (React.isValidElement(child)) {
-      // The `key` prop is added to ensure React treats navigations as distinct component instances.
-      // Balances are passed to keep the UI in sync with the state managed here.
-      return React.cloneElement(child, {
-        key: pathname, // Force re-render on path change
-        taskRewardsBalance,
-        interestEarningsBalance,
-      } as React.Attributes & { taskRewardsBalance: number; interestEarningsBalance: number; });
+      return React.cloneElement(child, { 
+        taskRewardsBalance, 
+        interestEarningsBalance 
+      } as any);
     }
     return child;
   });
