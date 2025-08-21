@@ -1,6 +1,7 @@
 
 "use client";
 
+import React from "react";
 import {
   Card,
   CardContent,
@@ -27,10 +28,16 @@ import {
 import { MoreHorizontal } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRequests } from "@/contexts/RequestContext";
+import { Skeleton } from "../ui/skeleton";
 
 export function AdminProfile() {
     const { toast } = useToast();
     const { requests, updateRequestStatus } = useRequests();
+    const [isClient, setIsClient] = React.useState(false);
+
+    React.useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     const handleAction = (requestId: string, action: 'Approved' | 'Declined' | 'On Hold') => {
         const request = requests.find(r => r.id === requestId);
@@ -52,6 +59,9 @@ export function AdminProfile() {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {!isClient ? (
+            <Skeleton className="h-48 w-full" />
+        ) : (
         <Table>
           <TableHeader>
             <TableRow>
@@ -119,6 +129,7 @@ export function AdminProfile() {
             ))}
           </TableBody>
         </Table>
+        )}
       </CardContent>
     </Card>
   );
