@@ -8,8 +8,9 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Users, DollarSign, Percent, TrendingUp, CheckCircle, Lock } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Users, DollarSign, Percent, TrendingUp, CheckCircle, Lock, PlayCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const levels = [
@@ -47,9 +48,11 @@ const levels = [
 
 interface LevelTiersProps {
     currentBalance: number;
+    onStartTasks: () => void;
+    isTaskLocked: boolean;
 }
 
-export function LevelTiers({ currentBalance }: LevelTiersProps) {
+export function LevelTiers({ currentBalance, onStartTasks, isTaskLocked }: LevelTiersProps) {
     
   const currentLevel = levels.slice().reverse().find(level => currentBalance >= level.minAmount)?.level ?? 0;
 
@@ -107,6 +110,18 @@ export function LevelTiers({ currentBalance }: LevelTiersProps) {
                                     </div>
                                 )}
                             </CardContent>
+                             {isCurrentLevel && (
+                                <CardFooter>
+                                    <Button 
+                                        onClick={onStartTasks} 
+                                        disabled={isTaskLocked}
+                                        className="w-full"
+                                    >
+                                        <PlayCircle className="mr-2 h-4 w-4" />
+                                        {isTaskLocked ? "Tasks Locked" : "Start Tasks"}
+                                    </Button>
+                                </CardFooter>
+                            )}
                         </Card>
                     </div>
                 </CarouselItem>

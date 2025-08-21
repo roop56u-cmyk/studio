@@ -1,8 +1,8 @@
 
 "use client";
 
+import React from "react";
 import { ReferralCard } from "@/components/dashboard/referral-card";
-import { ReviewForm } from "@/components/dashboard/review-form";
 import { InterestCounterPanel } from "@/components/dashboard/interest-counter-panel";
 import { LevelTiers } from "@/components/dashboard/level-tiers";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Lock } from "lucide-react";
 import { EarningsPanel } from "@/components/dashboard/earnings-panel";
+import { TaskDialog } from "@/components/dashboard/task-dialog";
 
 export default function UserDashboardPage() {
   const { 
@@ -25,17 +26,17 @@ export default function UserDashboardPage() {
     isLoading 
   } = useWallet();
 
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = React.useState(false);
+
   const isTaskLocked = taskRewardsBalance < 100;
   const isInterestLocked = interestEarningsBalance < 100;
-  const areBothLocked = isTaskLocked && isInterestLocked;
-
 
   if (isLoading) {
     return (
         <div className="grid gap-4">
             <div>
                 <Skeleton className="h-9 w-1/2" />
-                <Skeleton className="h-5 w-1/3 mt-2" />
+                <Skeleton className="h-5 w-3/3 mt-2" />
             </div>
              <div className="space-y-4">
                 <Skeleton className="h-48 w-full" />
@@ -72,7 +73,11 @@ export default function UserDashboardPage() {
         </p>
       </div>
        <div className="space-y-4">
-          <LevelTiers currentBalance={committedBalance} />
+          <LevelTiers 
+            currentBalance={committedBalance} 
+            onStartTasks={() => setIsTaskDialogOpen(true)}
+            isTaskLocked={isTaskLocked}
+          />
         </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 space-y-4">
@@ -100,7 +105,7 @@ export default function UserDashboardPage() {
                 />
             </div>
           </div>
-          {areBothLocked ? (
+          {(isTaskLocked && isInterestLocked) && (
              <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center"><Lock className="mr-2 h-5 w-5" /> Features Locked</CardTitle>
@@ -118,22 +123,6 @@ export default function UserDashboardPage() {
                     </p>
                 </CardContent>
             </Card>
-          ) : (
-            <>
-              {isTaskLocked ? (
-                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center"><Lock className="mr-2 h-5 w-5" /> Review Tasks Locked</CardTitle>
-                        <CardDescription>Move at least $100 to the Task Rewards wallet to unlock reviews.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                       <p className="text-sm text-muted-foreground">Your current Task Rewards balance is ${taskRewardsBalance.toFixed(2)}.</p>
-                    </CardContent>
-                </Card>
-              ) : (
-                <ReviewForm />
-              )}
-            </>
           )}
         </div>
         <div className="space-y-4">
@@ -152,6 +141,7 @@ export default function UserDashboardPage() {
         <TransactionHistoryPanel />
         <TaskHistoryPanel />
       </div>
+      <TaskDialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen} />
     </div>
   );
 }
