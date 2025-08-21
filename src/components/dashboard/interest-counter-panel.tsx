@@ -138,21 +138,22 @@ export function InterestCounterPanel({
                 {accruedInterest.toFixed(6)} USDT
             </p>
         </div>
-
-        {!isRunning ? (
-          <Button className="w-full" size="sm" onClick={handleStart}>
-            <Zap className="mr-2 h-4 w-4" /> Start Earning
-          </Button>
-        ) : (
-          <Button
-            className="w-full"
-            size="sm"
-            onClick={handleClaim}
-            disabled={timeLeft === null || timeLeft > 0}
-          >
-            {timeLeft !== null && timeLeft > 0 ? "Claiming..." : "Claim & Restart"}
-          </Button>
-        )}
+        
+        <div className="flex justify-center">
+            {!isRunning ? (
+            <Button size="sm" onClick={handleStart}>
+                <Zap className="mr-2 h-4 w-4" /> Start Earning
+            </Button>
+            ) : (
+            <Button
+                size="sm"
+                onClick={handleClaim}
+                disabled={timeLeft === null || timeLeft > 0}
+            >
+                {timeLeft !== null && timeLeft > 0 ? "Claiming..." : "Claim & Restart"}
+            </Button>
+            )}
+        </div>
       </CardContent>
     </Card>
   );
