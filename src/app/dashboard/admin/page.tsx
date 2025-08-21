@@ -2,7 +2,6 @@
 "use client";
 
 import { AdminProfile } from "@/components/dashboard/admin-profile";
-import { RateDisplayPanel } from "@/components/dashboard/interest-rate-counter";
 
 export default function AdminDashboardPage() {
   return (
@@ -13,13 +12,8 @@ export default function AdminDashboardPage() {
             Welcome, Admin. Manage user requests.
             </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="md:col-span-3">
-                <AdminProfile />
-            </div>
-            <div className="space-y-8">
-                <RateDisplayPanel title="Platform Interest Rate" isLocked={false} rate={1.8} />
-            </div>
+        <div className="grid grid-cols-1">
+            <AdminProfile />
         </div>
     </div>
   );
