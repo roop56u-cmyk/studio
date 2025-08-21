@@ -2,6 +2,8 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/contexts/AuthContext';
+import { RequestProvider } from '@/contexts/RequestContext';
+import { WalletProvider } from '@/contexts/WalletContext';
 
 export const metadata: Metadata = {
   title: 'TaskReview Hub',
@@ -22,7 +24,11 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <AuthProvider>
-            {children}
+          <RequestProvider>
+            <WalletProvider>
+              {children}
+            </WalletProvider>
+          </RequestProvider>
         </AuthProvider>
         <Toaster />
       </body>
