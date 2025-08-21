@@ -11,10 +11,9 @@ import { TaskHistoryPanel } from "@/components/dashboard/task-history-panel";
 import { useWallet } from "@/contexts/WalletContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Lock } from "lucide-react";
+import { Lock, Star } from "lucide-react";
 import { EarningsPanel } from "@/components/dashboard/earnings-panel";
-import { TaskDialog } from "@/components/dashboard/task-dialog";
-import { LevelDetailDialog } from "@/components/dashboard/level-detail-dialog";
+import { ReviewForm } from "@/components/dashboard/review-form";
 
 
 export default function UserDashboardPage() {
@@ -27,9 +26,6 @@ export default function UserDashboardPage() {
     committedBalance,
     isLoading 
   } = useWallet();
-
-  const [isTaskDialogOpen, setIsTaskDialogOpen] = React.useState(false);
-  const [selectedLevel, setSelectedLevel] = React.useState<Level | null>(null);
 
   const isTaskLocked = taskRewardsBalance < 100;
   const isInterestLocked = interestEarningsBalance < 100;
@@ -78,7 +74,6 @@ export default function UserDashboardPage() {
        <div className="space-y-4">
           <LevelTiers 
             currentBalance={committedBalance} 
-            onLevelSelect={setSelectedLevel}
           />
         </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -107,7 +102,7 @@ export default function UserDashboardPage() {
                 />
             </div>
           </div>
-          {(isTaskLocked && isInterestLocked) && (
+          {(isTaskLocked && isInterestLocked) ? (
              <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center"><Lock className="mr-2 h-5 w-5" /> Features Locked</CardTitle>
@@ -125,7 +120,17 @@ export default function UserDashboardPage() {
                     </p>
                 </CardContent>
             </Card>
-          )}
+          ) : !isTaskLocked ? (
+             <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center"><Star className="mr-2 h-5 w-5" /> Submit a Review</CardTitle>
+                  <CardDescription>Complete daily tasks to earn rewards.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ReviewForm />
+                </CardContent>
+             </Card>
+          ) : null}
         </div>
         <div className="space-y-4">
             <div className="grid grid-cols-1 gap-4">
@@ -143,25 +148,6 @@ export default function UserDashboardPage() {
         <TransactionHistoryPanel />
         <TaskHistoryPanel />
       </div>
-      <TaskDialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen} />
-
-      {selectedLevel && (
-        <LevelDetailDialog
-          level={selectedLevel}
-          open={!!selectedLevel}
-          onOpenChange={(isOpen) => {
-            if (!isOpen) {
-              setSelectedLevel(null);
-            }
-          }}
-          isCurrentLevel={selectedLevel.level === (levels.slice().reverse().find(l => committedBalance >= l.minAmount)?.level ?? 0)}
-          isTaskLocked={isTaskLocked}
-          onStartTasks={() => {
-              setSelectedLevel(null); // Close detail dialog
-              setIsTaskDialogOpen(true); // Open task dialog
-          }}
-        />
-      )}
     </div>
   );
 }

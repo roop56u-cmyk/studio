@@ -54,10 +54,9 @@ export type Level = typeof levels[0];
 
 interface LevelTiersProps {
     currentBalance: number;
-    onLevelSelect: (level: Level) => void;
 }
 
-export function LevelTiers({ currentBalance, onLevelSelect }: LevelTiersProps) {
+export function LevelTiers({ currentBalance }: LevelTiersProps) {
     
   const currentLevel = levels.slice().reverse().find(level => currentBalance >= level.minAmount)?.level ?? 0;
 
@@ -80,10 +79,9 @@ export function LevelTiers({ currentBalance, onLevelSelect }: LevelTiersProps) {
                     <div className="p-1">
                         <Card 
                             className={cn(
-                                "h-full flex flex-col cursor-pointer hover:border-primary", 
+                                "h-full flex flex-col", 
                                 isCurrentLevel && "border-primary ring-2 ring-primary"
                             )}
-                            onClick={() => onLevelSelect(level)}
                         >
                             <CardHeader>
                                 <CardTitle className="flex items-center justify-between">

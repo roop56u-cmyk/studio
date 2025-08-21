@@ -57,9 +57,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useWallet } from "@/contexts/WalletContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { RechargeDialog } from "@/components/dashboard/recharge-dialog";
+import { WithdrawalDialog } from "@/components/dashboard/withdrawal-dialog";
 
 
-function SidebarContentComponent() {
+function SidebarContentComponent({ onRechargeClick, onWithdrawalClick }: { onRechargeClick: () => void, onWithdrawalClick: () => void }) {
   const pathname = usePathname();
   const { logout } = useAuth();
   const { 
@@ -177,27 +179,21 @@ function SidebarContentComponent() {
 
         <SidebarMenuItem>
           <SidebarMenuButton
-            asChild
-            isActive={pathname === "/dashboard/recharge"}
+            onClick={onRechargeClick}
             tooltip={{ children: "Recharge" }}
           >
-            <Link href="/dashboard/recharge">
               <ArrowUpCircle />
               <span>Recharge</span>
-            </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
 
          <SidebarMenuItem>
           <SidebarMenuButton
-            asChild
-            isActive={pathname === "/dashboard/withdrawal"}
+            onClick={onWithdrawalClick}
             tooltip={{ children: "Withdrawal" }}
           >
-            <Link href="/dashboard/withdrawal">
               <ArrowDownCircle />
               <span>Withdrawal</span>
-            </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
 
@@ -213,11 +209,17 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
     const { logout } = useAuth();
+    const [isRechargeOpen, setIsRechargeOpen] = React.useState(false);
+    const [isWithdrawalOpen, setIsWithdrawalOpen] = React.useState(false);
+
   return (
       <SidebarProvider>
       <div className="flex min-h-screen">
           <Sidebar>
-          <SidebarContentComponent />
+            <SidebarContentComponent 
+                onRechargeClick={() => setIsRechargeOpen(true)}
+                onWithdrawalClick={() => setIsWithdrawalOpen(true)}
+            />
           </Sidebar>
           <div className="flex flex-1 flex-col">
           <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
@@ -259,6 +261,8 @@ export default function DashboardLayout({
           </main>
           </div>
       </div>
+       <RechargeDialog open={isRechargeOpen} onOpenChange={setIsRechargeOpen} />
+       <WithdrawalDialog open={isWithdrawalOpen} onOpenChange={setIsWithdrawalOpen} />
       </SidebarProvider>
   );
 }
