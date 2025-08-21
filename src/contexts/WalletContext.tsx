@@ -21,6 +21,7 @@ interface WalletContextType {
   interestEarningsBalance: number;
   taskRewardsEarned: number;
   interestEarned: number;
+  committedBalance: number;
   currentLevel: number;
   currentRate: number;
   amount: string;
@@ -38,6 +39,18 @@ interface WalletContextType {
   refundWithdrawal: (amount: number) => void;
   approveWithdrawal: () => void;
   isLoading: boolean;
+  // New state for interest counters
+  taskCounter: CounterState;
+  interestCounter: CounterState;
+  startCounter: (type: 'task' | 'interest') => void;
+  claimAndRestartCounter: (type: 'task' | 'interest') => void;
+}
+
+export type CounterType = 'task' | 'interest';
+
+export interface CounterState {
+    isRunning: boolean;
+    startTime: number | null;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -48,7 +61,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
-  const getInitialState = (key: string, defaultValue: number) => {
+  const getInitialState = (key: string, defaultValue: any) => {
     if (typeof window === 'undefined' || !currentUser) {
       return defaultValue;
     }
@@ -71,6 +84,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [deposits, setDeposits] = useState(() => getInitialState('deposits', 0));
   const [withdrawals, setWithdrawals] = useState(() => getInitialState('withdrawals', 0));
   
+  // State for the counters
+  const [taskCounter, setTaskCounter] = useState<CounterState>(() => getInitialState('taskCounter', { isRunning: false, startTime: null }));
+  const [interestCounter, setInterestCounter] = useState<CounterState>(() => getInitialState('interestCounter', { isRunning: false, startTime: null }));
+
   const committedBalance = taskRewardsBalance + interestEarningsBalance;
   const currentLevel = levels.slice().reverse().find(level => committedBalance >= level.minAmount)?.level ?? 0;
   const currentRate = levels.find(level => level.level === currentLevel)?.rate ?? 0;
@@ -96,6 +113,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       setInterestEarned(getInitialState('interestEarned', 0));
       setDeposits(getInitialState('deposits', 0));
       setWithdrawals(getInitialState('withdrawals', 0));
+      setTaskCounter(getInitialState('taskCounter', { isRunning: false, startTime: null }));
+      setInterestCounter(getInitialState('interestCounter', { isRunning: false, startTime: null }));
       setIsLoading(false);
     } else {
         // Reset to default when user logs out
@@ -106,26 +125,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setInterestEarned(0);
         setDeposits(0);
         setWithdrawals(0);
+        setTaskCounter({ isRunning: false, startTime: null });
+        setInterestCounter({ isRunning: false, startTime: null });
     }
   }, [currentUser]);
-
-  // Effect to calculate daily earnings
-  useEffect(() => {
-    const calculateEarnings = () => {
-      if(currentLevel > 0) {
-        const dailyRate = currentRate / 100 / 365;
-        const taskEarnings = taskRewardsBalance * dailyRate;
-        const interestEarnings = interestEarningsBalance * dailyRate;
-        
-        setTaskRewardsEarned(prev => prev + taskEarnings);
-        setInterestEarned(prev => prev + interestEarnings);
-      }
-    };
-
-    const intervalId = setInterval(calculateEarnings, 24 * 60 * 60 * 1000); // Run once a day
-
-    return () => clearInterval(intervalId);
-  }, [taskRewardsBalance, interestEarningsBalance, currentRate, currentLevel]);
 
 
   useEffect(() => setPersistentState('mainBalance', mainBalance), [mainBalance, setPersistentState]);
@@ -135,6 +138,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => setPersistentState('interestEarned', interestEarned), [interestEarned, setPersistentState]);
   useEffect(() => setPersistentState('deposits', deposits), [deposits, setPersistentState]);
   useEffect(() => setPersistentState('withdrawals', withdrawals), [withdrawals, setPersistentState]);
+  useEffect(() => setPersistentState('taskCounter', taskCounter), [taskCounter, setPersistentState]);
+  useEffect(() => setPersistentState('interestCounter', interestCounter), [interestCounter, setPersistentState]);
 
 
   const handleMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings') => {
@@ -172,7 +177,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setAmount("");
   };
 
-  // Called by admin action
   const approveRecharge = (rechargeAmount: number) => {
     setMainBalance(prev => prev + rechargeAmount);
     setDeposits(prev => prev + 1);
@@ -205,11 +209,39 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   
   const getWalletData = useCallback(() => {
     const totalBalance = mainBalance + taskRewardsBalance + interestEarningsBalance;
-    const committed = taskRewardsBalance + interestEarningsBalance;
-    const level = levels.slice().reverse().find(l => committed >= l.minAmount)?.level ?? 0;
+    const level = levels.slice().reverse().find(l => committedBalance >= l.minAmount)?.level ?? 0;
 
     return { balance: totalBalance, level, deposits, withdrawals };
-  }, [mainBalance, taskRewardsBalance, interestEarningsBalance, deposits, withdrawals]);
+  }, [mainBalance, taskRewardsBalance, interestEarningsBalance, committedBalance, deposits, withdrawals]);
+
+  // Counter Logic
+  const startCounter = (type: CounterType) => {
+      const now = Date.now();
+      if (type === 'task') {
+          setTaskCounter({ isRunning: true, startTime: now });
+          toast({ title: "Task Interest Started", description: "Your 24-hour earning cycle has begun." });
+      } else {
+          setInterestCounter({ isRunning: true, startTime: now });
+           toast({ title: "Daily Interest Started", description: "Your 24-hour earning cycle has begun." });
+      }
+  };
+
+  const claimAndRestartCounter = (type: CounterType) => {
+      const dailyRate = currentRate / 100 / 365;
+      
+      if (type === 'task') {
+          const earnings = taskRewardsBalance * dailyRate * 24 * 60 * 60 * 1000 / (1000 * 60 * 60 * 24); // simplified
+          setTaskRewardsEarned(prev => prev + earnings);
+          setTaskCounter({ isRunning: true, startTime: Date.now() });
+          toast({ title: "Task Interest Claimed!", description: `You earned ${earnings.toFixed(4)} USDT. A new cycle has started.`});
+      } else {
+          const earnings = interestEarningsBalance * dailyRate;
+          setInterestEarned(prev => prev + earnings);
+          setInterestCounter({ isRunning: true, startTime: Date.now() });
+          toast({ title: "Daily Interest Claimed!", description: `You earned ${earnings.toFixed(4)} USDT. A new cycle has started.`});
+      }
+  };
+
 
   return (
     <WalletContext.Provider
@@ -219,6 +251,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         interestEarningsBalance,
         taskRewardsEarned,
         interestEarned,
+        committedBalance,
         currentLevel,
         currentRate,
         amount,
@@ -231,6 +264,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         refundWithdrawal,
         approveWithdrawal,
         isLoading,
+        taskCounter,
+        interestCounter,
+        startCounter,
+        claimAndRestartCounter,
       }}
     >
       {children}

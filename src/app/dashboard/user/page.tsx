@@ -3,15 +3,13 @@
 
 import { ReferralCard } from "@/components/dashboard/referral-card";
 import { ReviewForm } from "@/components/dashboard/review-form";
-import { RateDisplayPanel } from "@/components/dashboard/interest-rate-counter";
+import { InterestCounterPanel } from "@/components/dashboard/interest-counter-panel";
 import { LevelTiers } from "@/components/dashboard/level-tiers";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { HistoryPanel } from "@/components/dashboard/history-panel";
 import { useWallet } from "@/contexts/WalletContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
 import { EarningsPanel } from "@/components/dashboard/earnings-panel";
 
@@ -22,12 +20,10 @@ export default function UserDashboardPage() {
     interestEarningsBalance, 
     taskRewardsEarned,
     interestEarned,
-    currentLevel,
-    currentRate,
+    committedBalance,
     isLoading 
   } = useWallet();
 
-  const committedBalance = taskRewardsBalance + interestEarningsBalance;
   const isTaskLocked = taskRewardsBalance < 100;
   const isInterestLocked = interestEarningsBalance < 100;
   const areBothLocked = isTaskLocked && isInterestLocked;
@@ -141,8 +137,18 @@ export default function UserDashboardPage() {
         </div>
         <div className="space-y-8">
             <div className="grid grid-cols-1 gap-8">
-                <RateDisplayPanel isLocked={isTaskLocked} rate={currentRate} title="Task Rate" />
-                <RateDisplayPanel isLocked={isInterestLocked} rate={currentRate} title="Interest Rate" />
+                <InterestCounterPanel
+                    title="Task Rewards Interest"
+                    isLocked={isTaskLocked}
+                    balance={taskRewardsBalance}
+                    counterType="task"
+                />
+                <InterestCounterPanel
+                    title="Daily Interest"
+                    isLocked={isInterestLocked}
+                    balance={interestEarningsBalance}
+                    counterType="interest"
+                />
             </div>
           <ReferralCard />
         </div>
