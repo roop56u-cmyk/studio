@@ -4,6 +4,8 @@ import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/contexts/AuthContext';
 import { RequestProvider } from '@/contexts/RequestContext';
 import { WalletProvider } from '@/contexts/WalletContext';
+import { TeamProvider } from '@/contexts/TeamContext';
+import { InboxProvider } from '@/contexts/InboxContext';
 
 export const metadata: Metadata = {
   title: 'TaskReview Hub',
@@ -26,7 +28,11 @@ export default function RootLayout({
         <AuthProvider>
           <WalletProvider>
             <RequestProvider>
-              {children}
+                <TeamProvider>
+                    <InboxProvider>
+                        {children}
+                    </InboxProvider>
+                </TeamProvider>
             </RequestProvider>
           </WalletProvider>
         </AuthProvider>
