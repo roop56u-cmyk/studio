@@ -5,14 +5,28 @@ import React, { createContext, useState, useContext, ReactNode, useCallback, use
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from './AuthContext';
 
+const levels = [
+  { level: 0, minAmount: 0, rate: 0, referrals: null },
+  { level: 1, minAmount: 100, rate: 1.8, referrals: null },
+  { level: 2, minAmount: 500, rate: 2.8, referrals: 8 },
+  { level: 3, minAmount: 2000, rate: 3.8, referrals: 16 },
+  { level: 4, minAmount: 6000, rate: 4.8, referrals: 36 },
+  { level: 5, minAmount: 20000, rate: 5.8, referrals: 55 },
+];
+
+
 interface WalletContextType {
   mainBalance: number;
   taskRewardsBalance: number;
   interestEarningsBalance: number;
+  taskRewardsEarned: number;
+  interestEarned: number;
+  currentLevel: number;
+  currentRate: number;
   amount: string;
   setAmount: (amount: string) => void;
   handleMoveFunds: (destination: 'Task Rewards' | 'Interest Earnings') => void;
-  addRecharge: (amount: number) => void; // Kept for direct calls if needed elsewhere
+  addRecharge: (amount: number) => void;
   getWalletData: () => {
     balance: number;
     level: number;
@@ -52,8 +66,15 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [mainBalance, setMainBalance] = useState(() => getInitialState('mainBalance', 0));
   const [taskRewardsBalance, setTaskRewardsBalance] = useState(() => getInitialState('taskRewardsBalance', 0));
   const [interestEarningsBalance, setInterestEarningsBalance] = useState(() => getInitialState('interestEarningsBalance', 0));
+  const [taskRewardsEarned, setTaskRewardsEarned] = useState(() => getInitialState('taskRewardsEarned', 0));
+  const [interestEarned, setInterestEarned] = useState(() => getInitialState('interestEarned', 0));
   const [deposits, setDeposits] = useState(() => getInitialState('deposits', 0));
   const [withdrawals, setWithdrawals] = useState(() => getInitialState('withdrawals', 0));
+  
+  const committedBalance = taskRewardsBalance + interestEarningsBalance;
+  const currentLevel = levels.slice().reverse().find(level => committedBalance >= level.minAmount)?.level ?? 0;
+  const currentRate = levels.find(level => level.level === currentLevel)?.rate ?? 0;
+
 
   const setPersistentState = useCallback((key: string, value: any) => {
      if (typeof window !== 'undefined' && currentUser) {
@@ -67,26 +88,51 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (currentUser) {
+      setIsLoading(true);
       setMainBalance(getInitialState('mainBalance', 0));
       setTaskRewardsBalance(getInitialState('taskRewardsBalance', 0));
       setInterestEarningsBalance(getInitialState('interestEarningsBalance', 0));
+      setTaskRewardsEarned(getInitialState('taskRewardsEarned', 0));
+      setInterestEarned(getInitialState('interestEarned', 0));
       setDeposits(getInitialState('deposits', 0));
       setWithdrawals(getInitialState('withdrawals', 0));
+      setIsLoading(false);
     } else {
         // Reset to default when user logs out
         setMainBalance(0);
         setTaskRewardsBalance(0);
         setInterestEarningsBalance(0);
+        setTaskRewardsEarned(0);
+        setInterestEarned(0);
         setDeposits(0);
         setWithdrawals(0);
     }
-    setIsLoading(false);
   }, [currentUser]);
+
+  // Effect to calculate daily earnings
+  useEffect(() => {
+    const calculateEarnings = () => {
+      if(currentLevel > 0) {
+        const dailyRate = currentRate / 100 / 365;
+        const taskEarnings = taskRewardsBalance * dailyRate;
+        const interestEarnings = interestEarningsBalance * dailyRate;
+        
+        setTaskRewardsEarned(prev => prev + taskEarnings);
+        setInterestEarned(prev => prev + interestEarnings);
+      }
+    };
+
+    const intervalId = setInterval(calculateEarnings, 24 * 60 * 60 * 1000); // Run once a day
+
+    return () => clearInterval(intervalId);
+  }, [taskRewardsBalance, interestEarningsBalance, currentRate, currentLevel]);
 
 
   useEffect(() => setPersistentState('mainBalance', mainBalance), [mainBalance, setPersistentState]);
   useEffect(() => setPersistentState('taskRewardsBalance', taskRewardsBalance), [taskRewardsBalance, setPersistentState]);
   useEffect(() => setPersistentState('interestEarningsBalance', interestEarningsBalance), [interestEarningsBalance, setPersistentState]);
+  useEffect(() => setPersistentState('taskRewardsEarned', taskRewardsEarned), [taskRewardsEarned, setPersistentState]);
+  useEffect(() => setPersistentState('interestEarned', interestEarned), [interestEarned, setPersistentState]);
   useEffect(() => setPersistentState('deposits', deposits), [deposits, setPersistentState]);
   useEffect(() => setPersistentState('withdrawals', withdrawals), [withdrawals, setPersistentState]);
 
@@ -159,17 +205,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   
   const getWalletData = useCallback(() => {
     const totalBalance = mainBalance + taskRewardsBalance + interestEarningsBalance;
-    const committedBalance = taskRewardsBalance + interestEarningsBalance;
-
-    const levels = [
-        { minAmount: 20000, level: 5, referrals: 55 },
-        { minAmount: 6000, level: 4, referrals: 36 },
-        { minAmount: 2000, level: 3, referrals: 16 },
-        { minAmount: 500, level: 2, referrals: 8 },
-        { minAmount: 100, level: 1, referrals: null },
-    ];
-    // Level is now based on the committed balance (Task + Interest)
-    const level = levels.find(l => committedBalance >= l.minAmount)?.level ?? 0;
+    const committed = taskRewardsBalance + interestEarningsBalance;
+    const level = levels.slice().reverse().find(l => committed >= l.minAmount)?.level ?? 0;
 
     return { balance: totalBalance, level, deposits, withdrawals };
   }, [mainBalance, taskRewardsBalance, interestEarningsBalance, deposits, withdrawals]);
@@ -180,6 +217,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         mainBalance,
         taskRewardsBalance,
         interestEarningsBalance,
+        taskRewardsEarned,
+        interestEarned,
+        currentLevel,
+        currentRate,
         amount,
         setAmount,
         handleMoveFunds,

@@ -3,7 +3,7 @@
 
 import { ReferralCard } from "@/components/dashboard/referral-card";
 import { ReviewForm } from "@/components/dashboard/review-form";
-import { InterestRateCounter } from "@/components/dashboard/interest-rate-counter";
+import { RateDisplayPanel } from "@/components/dashboard/interest-rate-counter";
 import { LevelTiers } from "@/components/dashboard/level-tiers";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { HistoryPanel } from "@/components/dashboard/history-panel";
@@ -13,9 +13,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
+import { EarningsPanel } from "@/components/dashboard/earnings-panel";
 
 export default function UserDashboardPage() {
-  const { mainBalance, taskRewardsBalance, interestEarningsBalance, isLoading } = useWallet();
+  const { 
+    mainBalance, 
+    taskRewardsBalance, 
+    interestEarningsBalance, 
+    taskRewardsEarned,
+    interestEarned,
+    currentLevel,
+    currentRate,
+    isLoading 
+  } = useWallet();
+
   const committedBalance = taskRewardsBalance + interestEarningsBalance;
   const isTaskLocked = taskRewardsBalance < 100;
   const isInterestLocked = interestEarningsBalance < 100;
@@ -35,13 +46,16 @@ export default function UserDashboardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                         <Skeleton className="h-28 w-full" />
-                         <Skeleton className="h-28 w-full" />
+                         <Skeleton className="h-40 w-full" />
+                         <Skeleton className="h-40 w-full" />
                     </div>
                      <Skeleton className="h-64 w-full" />
                 </div>
                 <div className="space-y-8">
-                    <Skeleton className="h-32 w-full" />
+                    <div className="grid grid-cols-1 gap-8">
+                      <Skeleton className="h-32 w-full" />
+                      <Skeleton className="h-32 w-full" />
+                    </div>
                     <Skeleton className="h-40 w-full" />
                 </div>
             </div>
@@ -66,16 +80,28 @@ export default function UserDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <WalletBalance 
-              title="Task Rewards"
-              balance={taskRewardsBalance.toFixed(2)}
-              description="Balance from completed tasks."
-            />
-             <WalletBalance 
-              title="Interest Earnings"
-              balance={interestEarningsBalance.toFixed(2)}
-              description="Balance from interest."
-            />
+            <div className="space-y-2">
+                <WalletBalance 
+                title="Task Rewards"
+                balance={taskRewardsBalance.toFixed(2)}
+                description="Balance from completed tasks."
+                />
+                <EarningsPanel 
+                    title="Total Earned"
+                    amount={taskRewardsEarned.toFixed(2)}
+                />
+            </div>
+             <div className="space-y-2">
+                <WalletBalance 
+                title="Interest Earnings"
+                balance={interestEarningsBalance.toFixed(2)}
+                description="Balance from interest."
+                />
+                 <EarningsPanel 
+                    title="Total Earned"
+                    amount={interestEarned.toFixed(2)}
+                />
+            </div>
           </div>
           {areBothLocked ? (
              <Card>
@@ -114,7 +140,10 @@ export default function UserDashboardPage() {
           )}
         </div>
         <div className="space-y-8">
-          <InterestRateCounter isLocked={isInterestLocked} />
+            <div className="grid grid-cols-1 gap-8">
+                <RateDisplayPanel isLocked={isTaskLocked} rate={currentRate} title="Task Rate" />
+                <RateDisplayPanel isLocked={isInterestLocked} rate={currentRate} title="Interest Rate" />
+            </div>
           <ReferralCard />
         </div>
       </div>
