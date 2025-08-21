@@ -27,9 +27,7 @@ import type { AnalyzeReviewSentimentOutput } from "@/ai/flows/analyze-review-sen
 import { generateTaskSuggestion } from "@/app/actions";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Label } from "../ui/label";
 import { Skeleton } from "../ui/skeleton";
-import { Textarea } from "../ui/textarea";
 import { cn } from "@/lib/utils";
 
 const reviewSchema = z.object({
@@ -79,7 +77,8 @@ export function ReviewForm() {
     setIsLoading(true);
     setSentiment(null);
     try {
-      const result = await submitReview({ reviewText: task });
+      // The review text for sentiment analysis is the task title itself.
+      const result = await submitReview({ reviewText: `${task} - ${data.rating} stars` });
       if (result) {
         setSentiment(result);
         toast({
@@ -118,16 +117,13 @@ export function ReviewForm() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2">
-                <Label>Your Task to Review</Label>
+                <FormLabel>Your Task to Review</FormLabel>
                 {isGeneratingTask ? (
-                     <Skeleton className="h-24 w-full" />
+                     <Skeleton className="h-10 w-full" />
                 ) : (
-                    <Textarea
-                        readOnly
-                        value={task}
-                        className="h-24 resize-none bg-muted"
-                        placeholder="Generating a task for you..."
-                    />
+                    <div className="rounded-md border bg-muted px-3 py-2 text-sm font-medium min-h-[40px] flex items-center">
+                        {task || "Generating a task for you..."}
+                    </div>
                 )}
             </div>
             
@@ -148,7 +144,7 @@ export function ReviewForm() {
             <div className="flex items-center justify-between">
               <Button type="submit" disabled={isLoading || isGeneratingTask || !task}>
                 {(isLoading || isGeneratingTask) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isLoading ? "Analyzing..." : "Submit and Analyze"}
+                {isLoading ? "Analyzing..." : "Submit Review"}
               </Button>
               {sentiment && !isLoading && (
                 <SentimentResult sentiment={sentiment.sentiment} confidence={sentiment.confidence} />
