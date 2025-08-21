@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -47,6 +47,7 @@ interface ManageAddressesDialogProps {
 
 export function ManageAddressesDialog({ open, onOpenChange }: ManageAddressesDialogProps) {
   const { withdrawalAddresses, addWithdrawalAddress, updateWithdrawalAddress, deleteWithdrawalAddress } = useWallet();
+  const [showForm, setShowForm] = useState(false);
   const [editingAddress, setEditingAddress] = useState<WithdrawalAddress | null>(null);
 
   const form = useForm<AddressFormValues>({
@@ -54,9 +55,35 @@ export function ManageAddressesDialog({ open, onOpenChange }: ManageAddressesDia
     defaultValues: { name: "", address: "" },
   });
 
-  const handleOpenForm = (address: WithdrawalAddress | null) => {
+  useEffect(() => {
+    // If there are no addresses, show the form by default
+    if (withdrawalAddresses.length === 0 && open) {
+      setShowForm(true);
+      setEditingAddress(null);
+      form.reset({ name: "", address: "" });
+    } else if (!open) {
+      // Reset form state when dialog closes
+      setShowForm(false);
+      setEditingAddress(null);
+    }
+  }, [withdrawalAddresses.length, open, form]);
+
+  const handleAddNew = () => {
+    setEditingAddress(null);
+    form.reset({ name: "", address: "" });
+    setShowForm(true);
+  };
+
+  const handleEdit = (address: WithdrawalAddress) => {
     setEditingAddress(address);
-    form.reset(address ? { name: address.name, address: address.address } : { name: "", address: "" });
+    form.reset({ name: address.name, address: address.address });
+    setShowForm(true);
+  };
+
+  const handleCancel = () => {
+    setShowForm(false);
+    setEditingAddress(null);
+    form.reset();
   };
 
   const onSubmit = (data: AddressFormValues) => {
@@ -65,8 +92,7 @@ export function ManageAddressesDialog({ open, onOpenChange }: ManageAddressesDia
     } else {
       addWithdrawalAddress(data);
     }
-    setEditingAddress(null);
-    form.reset({ name: "", address: "" });
+    handleCancel(); // Hide form and reset state after submission
   };
 
   return (
@@ -76,73 +102,74 @@ export function ManageAddressesDialog({ open, onOpenChange }: ManageAddressesDia
           <DialogTitle>Manage Withdrawal Addresses</DialogTitle>
           <DialogDescription>Add, edit, or remove your saved BEP20 addresses.</DialogDescription>
         </DialogHeader>
-
+        
         <div className="space-y-4 py-4">
-          {editingAddress !== null || withdrawalAddresses.length === 0 ? (
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 border rounded-md">
-              <h4 className="font-medium">{editingAddress ? "Edit Address" : "Add New Address"}</h4>
-              <div className="space-y-2">
-                <Label htmlFor="name">Label / Name</Label>
-                <Input id="name" {...form.register("name")} />
-                {form.formState.errors.name && <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="address">BEP20 Address</Label>
-                <Input id="address" {...form.register("address")} placeholder="0x..." />
-                {form.formState.errors.address && <p className="text-xs text-destructive">{form.formState.errors.address.message}</p>}
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="ghost" onClick={() => setEditingAddress(null)}>Cancel</Button>
-                <Button type="submit">{editingAddress ? "Save Changes" : "Add Address"}</Button>
-              </div>
-            </form>
-          ) : (
-            <div className="space-y-2">
-              <Button variant="outline" className="w-full" onClick={() => handleOpenForm(null)}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Add New Address
-              </Button>
-              <Separator />
-               <p className="text-sm text-muted-foreground text-center">Your saved addresses:</p>
-            </div>
-          )}
-
-          {withdrawalAddresses.length > 0 && editingAddress === null && (
             <div className="space-y-2 max-h-60 overflow-y-auto">
-              {withdrawalAddresses.map(addr => (
-                <div key={addr.id} className="flex items-center justify-between p-2 border rounded-md">
-                  <div>
-                    <p className="font-medium text-sm">{addr.name}</p>
-                    <p className="text-xs text-muted-foreground font-mono">{addr.address.slice(0, 10)}...{addr.address.slice(-8)}</p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenForm(addr)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                     <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
-                            <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will permanently delete the address "{addr.name}". This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => deleteWithdrawalAddress(addr.id)}>Delete</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </div>
-              ))}
+                {withdrawalAddresses.length > 0 ? (
+                    withdrawalAddresses.map(addr => (
+                        <div key={addr.id} className="flex items-center justify-between p-2 border rounded-md">
+                        <div>
+                            <p className="font-medium text-sm">{addr.name}</p>
+                            <p className="text-xs text-muted-foreground font-mono">{addr.address.slice(0, 10)}...{addr.address.slice(-8)}</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(addr)}>
+                            <Edit className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will permanently delete the address "{addr.name}". This action cannot be undone.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => deleteWithdrawalAddress(addr.id)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                        </div>
+                    ))
+                ) : (
+                    !showForm && (
+                        <p className="text-sm text-muted-foreground text-center py-4">You have no saved addresses.</p>
+                    )
+                )}
             </div>
-          )}
+
+            {showForm ? (
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 border rounded-md bg-muted/50">
+                    <h4 className="font-medium text-sm">{editingAddress ? "Edit Address" : "Add New Address"}</h4>
+                    <div className="space-y-2">
+                        <Label htmlFor="name">Label / Name</Label>
+                        <Input id="name" {...form.register("name")} />
+                        {form.formState.errors.name && <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>}
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="address">BEP20 Address</Label>
+                        <Input id="address" {...form.register("address")} placeholder="0x..." />
+                        {form.formState.errors.address && <p className="text-xs text-destructive">{form.formState.errors.address.message}</p>}
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <Button type="button" variant="ghost" onClick={handleCancel}>Cancel</Button>
+                        <Button type="submit">{editingAddress ? "Save Changes" : "Add Address"}</Button>
+                    </div>
+                </form>
+            ) : (
+                 <Button variant="outline" className="w-full" onClick={handleAddNew}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add New Address
+                </Button>
+            )}
         </div>
+
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="secondary">Close</Button>
