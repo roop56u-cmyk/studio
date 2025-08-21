@@ -191,7 +191,7 @@ export function ReviewForm() {
                     <FormControl>
                         <RadioGroup
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value}
                         className="flex flex-col space-y-1"
                         >
                         {task?.options?.map((option, index) => (
