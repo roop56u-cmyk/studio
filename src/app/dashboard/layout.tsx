@@ -37,6 +37,7 @@ import {
   Search,
   LogOut,
   Settings,
+  Shield,
 } from "lucide-react";
 
 export default function DashboardLayout({
@@ -58,10 +59,10 @@ export default function DashboardLayout({
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
-                  isActive={pathname === "/dashboard"}
+                  isActive={pathname === "/dashboard/user"}
                   tooltip={{ children: "Dashboard" }}
                 >
-                  <Link href="/dashboard">
+                  <Link href="/dashboard/user">
                     <Home />
                     <span>Dashboard</span>
                   </Link>
@@ -73,7 +74,7 @@ export default function DashboardLayout({
                   isActive={pathname.startsWith("/dashboard/review")}
                   tooltip={{ children: "Submit Review" }}
                 >
-                  <Link href="/dashboard">
+                  <Link href="/dashboard/user">
                     <Star />
                     <span>Submit Review</span>
                   </Link>
@@ -85,7 +86,7 @@ export default function DashboardLayout({
                   isActive={pathname.startsWith("/dashboard/profile")}
                   tooltip={{ children: "Profile" }}
                 >
-                  <Link href="/dashboard">
+                  <Link href="/dashboard/user">
                     <User />
                     <span>Profile</span>
                   </Link>
@@ -97,9 +98,21 @@ export default function DashboardLayout({
                   isActive={pathname.startsWith("/dashboard/referrals")}
                   tooltip={{ children: "Referrals" }}
                 >
-                  <Link href="/dashboard">
+                  <Link href="/dashboard/user">
                     <Users />
                     <span>Referrals</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+               <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith("/dashboard/admin")}
+                  tooltip={{ children: "Admin" }}
+                >
+                  <Link href="/dashboard/admin">
+                    <Shield />
+                    <span>Admin</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
