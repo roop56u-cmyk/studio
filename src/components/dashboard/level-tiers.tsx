@@ -68,7 +68,7 @@ export function LevelTiers({ currentBalance }: LevelTiersProps) {
                 const isUnlocked = currentBalance >= level.minAmount;
                 const isCurrentLevel = level.level === currentLevel;
                 return (
-                <CarouselItem key={level.level} className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                <CarouselItem key={level.level} className="basis-full sm:basis-1/2 md:basis-1/3">
                     <div className="p-1">
                         <Card className={cn("h-full flex flex-col", isCurrentLevel && "border-primary ring-2 ring-primary")}>
                             <CardHeader>

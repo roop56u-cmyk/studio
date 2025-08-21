@@ -34,11 +34,10 @@ export function InterestCounterPanel({
     currentRate,
     startCounter,
     claimAndRestartCounter,
-    taskCounter,
     interestCounter,
   } = useWallet();
   
-  const counter = counterType === 'task' ? taskCounter : interestCounter;
+  const counter = interestCounter; // Only using interest counter now
   const { isRunning, startTime } = counter;
 
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
@@ -97,14 +96,14 @@ export function InterestCounterPanel({
   if (isLocked) {
     return (
         <Card className="h-full">
-            <CardHeader>
+            <CardHeader className="p-4">
                 <div className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">{title}</CardTitle>
                     <Lock className="h-4 w-4 text-muted-foreground" />
                 </div>
             </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center text-center h-full pb-6">
-                <div className="text-2xl font-bold">-.--%</div>
+            <CardContent className="flex flex-col items-center justify-center text-center h-full pb-4">
+                <div className="text-xl font-bold">-.--%</div>
                 <p className="text-xs text-muted-foreground pt-2">
                     Unlock by committing at least $100.
                 </p>
@@ -115,42 +114,43 @@ export function InterestCounterPanel({
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="p-4">
         <div className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">{title}</CardTitle>
           <Percent className="h-4 w-4 text-muted-foreground" />
         </div>
         <CardDescription>Current APY: {currentRate.toFixed(2)}%</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="text-center bg-muted p-4 rounded-lg">
-            <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm">
+      <CardContent className="space-y-3 p-4 pt-0">
+        <div className="text-center bg-muted p-2 rounded-lg">
+            <div className="flex items-center justify-center gap-2 text-muted-foreground text-xs">
                 <Timer className="h-4 w-4" />
                 <span>Time Remaining</span>
             </div>
-            <div className="text-3xl font-bold font-mono tracking-tight">
+            <div className="text-2xl font-bold font-mono tracking-tight">
                 {isRunning ? formatTime(timeLeft) : "24:00:00"}
             </div>
         </div>
         
         <div className="text-center">
             <p className="text-xs text-muted-foreground">Accrued Interest</p>
-            <p className="text-lg font-semibold text-primary">
+            <p className="text-base font-semibold text-primary">
                 {accruedInterest.toFixed(6)} USDT
             </p>
         </div>
 
         {!isRunning ? (
-          <Button className="w-full" onClick={handleStart}>
+          <Button className="w-full" size="sm" onClick={handleStart}>
             <Zap className="mr-2 h-4 w-4" /> Start Earning
           </Button>
         ) : (
           <Button
             className="w-full"
+            size="sm"
             onClick={handleClaim}
             disabled={timeLeft === null || timeLeft > 0}
           >
-            {timeLeft !== null && timeLeft > 0 ? "Claiming available in " + formatTime(timeLeft) : "Claim & Restart"}
+            {timeLeft !== null && timeLeft > 0 ? "Claiming..." : "Claim & Restart"}
           </Button>
         )}
       </CardContent>
