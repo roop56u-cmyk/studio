@@ -22,9 +22,7 @@ import {
 } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { StarRating } from "@/components/dashboard/star-rating";
-import { SentimentResult } from "@/components/dashboard/sentiment-result";
 import { submitReview } from "@/app/actions";
-import type { AnalyzeReviewSentimentOutput } from "@/ai/flows/analyze-review-sentiment";
 import { generateTaskSuggestion } from "@/app/actions";
 import type { GenerateTaskSuggestionOutput } from "@/ai/flows/generate-task-suggestions";
 import { Loader2, RefreshCw } from "lucide-react";
@@ -45,7 +43,6 @@ export function ReviewForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingTask, setIsGeneratingTask] = useState(true);
   const [task, setTask] = useState<GenerateTaskSuggestionOutput | null>(null);
-  const [sentiment, setSentiment] = useState<AnalyzeReviewSentimentOutput | null>(null);
   const { toast } = useToast();
 
   const form = useForm<ReviewFormValues>({
@@ -58,7 +55,6 @@ export function ReviewForm() {
   const fetchTask = async () => {
     try {
       setIsGeneratingTask(true);
-      setSentiment(null);
       form.reset();
       const result = await generateTaskSuggestion();
       setTask(result);
@@ -80,23 +76,25 @@ export function ReviewForm() {
   const onSubmit = async (data: ReviewFormValues) => {
     if (!task) return;
     setIsLoading(true);
-    setSentiment(null);
     try {
-      // The review text for sentiment analysis includes the title, rating, and selected option.
-      const reviewText = `${task.taskTitle} - ${data.rating} stars: "${data.option}"`;
-      const result = await submitReview({ reviewText });
-      if (result) {
-        setSentiment(result);
+      const result = await submitReview({ 
+        taskTitle: task.taskTitle,
+        rating: data.rating,
+        option: data.option,
+       });
+      if (result.success) {
         toast({
-            title: "Review Analyzed!",
-            description: "We've successfully analyzed the sentiment of your review.",
+            title: "Review Submitted!",
+            description: "Thank you! Your USDT reward will be processed shortly.",
         });
+        // Fetch a new task for the user
+        fetchTask();
       }
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to analyze review. Please try again.",
+        description: "Failed to submit review. Please try again.",
       });
     } finally {
       setIsLoading(false);
@@ -200,11 +198,8 @@ export function ReviewForm() {
             <div className="flex items-center justify-between">
               <Button type="submit" disabled={isLoading || isGeneratingTask || !task}>
                 {(isLoading || isGeneratingTask) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isLoading ? "Analyzing..." : "Submit Review"}
+                {isLoading ? "Submitting..." : "Submit Review"}
               </Button>
-              {sentiment && !isLoading && (
-                <SentimentResult sentiment={sentiment.sentiment} confidence={sentiment.confidence} />
-              )}
             </div>
           </form>
         </Form>
