@@ -30,6 +30,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Label } from "../ui/label";
 import { Skeleton } from "../ui/skeleton";
 import { Textarea } from "../ui/textarea";
+import { cn } from "@/lib/utils";
 
 const reviewSchema = z.object({
   rating: z.number().min(1, "Please provide a rating.").max(5),
