@@ -34,7 +34,7 @@ interface AddressDialogProps {
 }
 
 export function AddressDialog({ open, onOpenChange, address }: AddressDialogProps) {
-  const { addWithdrawalAddress, updateWithdrawalAddress } = useWallet();
+  const { setWithdrawalAddress } = useWallet();
 
   const form = useForm<AddressFormValues>({
     resolver: zodResolver(addressSchema),
@@ -51,11 +51,7 @@ export function AddressDialog({ open, onOpenChange, address }: AddressDialogProp
 
 
   const onSubmit = (data: AddressFormValues) => {
-    if (address) {
-      updateWithdrawalAddress({ ...address, ...data });
-    } else {
-      addWithdrawalAddress(data);
-    }
+    setWithdrawalAddress(data);
     onOpenChange(false);
   };
 
@@ -63,9 +59,9 @@ export function AddressDialog({ open, onOpenChange, address }: AddressDialogProp
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{address ? "Edit" : "Add"} Withdrawal Address</DialogTitle>
+          <DialogTitle>{address ? "Edit" : "Set"} Withdrawal Address</DialogTitle>
           <DialogDescription>
-            {address ? "Update the details for your saved address." : "Save a new BEP20 address for withdrawals."}
+            {address ? "Update the details for your saved address." : "Save your BEP20 address for withdrawals."}
           </DialogDescription>
         </DialogHeader>
         
@@ -84,7 +80,7 @@ export function AddressDialog({ open, onOpenChange, address }: AddressDialogProp
                 <DialogClose asChild>
                     <Button type="button" variant="secondary">Cancel</Button>
                 </DialogClose>
-                <Button type="submit">{address ? "Save Changes" : "Add Address"}</Button>
+                <Button type="submit">{address ? "Save Changes" : "Set Address"}</Button>
             </DialogFooter>
         </form>
 
@@ -92,4 +88,3 @@ export function AddressDialog({ open, onOpenChange, address }: AddressDialogProp
     </Dialog>
   );
 }
-

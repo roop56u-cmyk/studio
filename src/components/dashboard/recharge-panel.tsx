@@ -37,7 +37,7 @@ export function RechargePanel({ onAddRequest, onManageAddresses }: RechargePanel
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [amount, setAmount] = useState("");
-  const { withdrawalAddresses } = useWallet();
+  const { withdrawalAddress } = useWallet();
   const rechargeAddress = "0x4D26340f3B52DCf82dd537cBF3c7e4C1D9b53BDc";
 
   const [isAddressAlertOpen, setIsAddressAlertOpen] = useState(false);
@@ -81,7 +81,7 @@ export function RechargePanel({ onAddRequest, onManageAddresses }: RechargePanel
     }
     
     // Check 1: User must have a withdrawal address
-    if (withdrawalAddresses.length === 0) {
+    if (!withdrawalAddress) {
         setIsAddressAlertOpen(true);
         return;
     }

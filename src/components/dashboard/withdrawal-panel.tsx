@@ -15,13 +15,6 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import type { Request } from "@/contexts/RequestContext";
 import { useWallet } from "@/contexts/WalletContext";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { AddressDialog } from "./address-dialog";
 import {
   AlertDialog,
@@ -43,11 +36,15 @@ interface WithdrawalPanelProps {
 
 export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
   const { toast } = useToast();
-  const [selectedAddress, setSelectedAddress] = useState("");
   const [amount, setAmount] = useState("");
-  const { getWalletData, mainBalance, requestWithdrawal, withdrawalAddresses, deleteWithdrawalAddress } = useWallet();
+  const { 
+      getWalletData, 
+      mainBalance, 
+      requestWithdrawal, 
+      withdrawalAddress, 
+      clearWithdrawalAddress 
+  } = useWallet();
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
-  const [editingAddress, setEditingAddress] = useState<WithdrawalAddress | null>(null);
 
   const { level } = getWalletData();
   const numericAmount = parseFloat(amount) || 0;
@@ -60,28 +57,10 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
   }, [numericAmount, level]);
 
   const netWithdrawal = numericAmount - adminFee;
-
-  const handleOpenAddDialog = () => {
-    setEditingAddress(null);
-    setIsAddressDialogOpen(true);
-  };
   
   const handleOpenEditDialog = () => {
-    const addressToEdit = withdrawalAddresses.find(addr => addr.address === selectedAddress);
-    if (addressToEdit) {
-      setEditingAddress(addressToEdit);
-      setIsAddressDialogOpen(true);
-    }
+    setIsAddressDialogOpen(true);
   };
-
-  const handleDeleteAddress = () => {
-      const addressToDelete = withdrawalAddresses.find(addr => addr.address === selectedAddress);
-      if (addressToDelete) {
-          deleteWithdrawalAddress(addressToDelete.id);
-          setSelectedAddress(""); // Reset selection
-      }
-  };
-
 
   const handleWithdraw = (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,11 +72,11 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
         });
         return;
     }
-     if (!selectedAddress) {
+     if (!withdrawalAddress) {
         toast({
             variant: "destructive",
-            title: "Invalid Address",
-            description: "Please select a withdrawal address.",
+            title: "No Address Set",
+            description: "Please set a withdrawal address before withdrawing.",
         });
         return;
     }
@@ -116,7 +95,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
 
     onAddRequest({
         amount: numericAmount,
-        address: selectedAddress,
+        address: withdrawalAddress.address,
         type: 'Withdrawal',
     });
 
@@ -125,7 +104,6 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
       description: `Your request to withdraw ${numericAmount.toFixed(2)} USDT is pending approval. The amount has been deducted from your balance.`,
     });
 
-    setSelectedAddress("");
     setAmount("");
   };
 
@@ -146,56 +124,48 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
                     Your USDT BEP20 Address
                 </Label>
                 <div className="flex items-center gap-2">
-                    {withdrawalAddresses.length > 0 ? (
-                        <Select onValueChange={setSelectedAddress} value={selectedAddress}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a saved address" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {withdrawalAddresses.map(addr => (
-                                    <SelectItem key={addr.id} value={addr.address}>{addr.name} - {addr.address.slice(0,6)}...{addr.address.slice(-4)}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                    {withdrawalAddress ? (
+                       <Input 
+                            value={`${withdrawalAddress.name} - ${withdrawalAddress.address.slice(0,6)}...${withdrawalAddress.address.slice(-4)}`}
+                            readOnly
+                        />
                     ) : (
-                        <Button variant="outline" className="w-full justify-start text-muted-foreground" type="button" onClick={handleOpenAddDialog}>
+                        <Button variant="outline" className="w-full justify-start text-muted-foreground" type="button" onClick={() => setIsAddressDialogOpen(true)}>
                             <PlusCircle className="mr-2 h-4 w-4" />
-                            Add your first address
+                            Add Withdrawal Address
                         </Button>
                     )}
-                    
-                    <Button variant="ghost" size="icon" type="button" onClick={handleOpenAddDialog} className="shrink-0">
-                        <PlusCircle className="h-4 w-4" />
-                        <span className="sr-only">Add new address</span>
-                    </Button>
-                    <Button variant="ghost" size="icon" type="button" onClick={handleOpenEditDialog} disabled={!selectedAddress} className="shrink-0">
-                        <Edit className="h-4 w-4" />
-                        <span className="sr-only">Edit selected address</span>
-                    </Button>
-
+                </div>
+            </div>
+             <div className="flex items-center justify-end gap-2">
+                <Button variant="ghost" size="sm" type="button" onClick={handleOpenEditDialog}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    {withdrawalAddress ? 'Edit' : 'Add'} Address
+                </Button>
+                {withdrawalAddress && (
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                             <Button variant="ghost" size="icon" type="button" disabled={!selectedAddress} className="shrink-0 text-destructive hover:text-destructive">
-                                <Trash2 className="h-4 w-4" />
-                                <span className="sr-only">Delete selected address</span>
+                                <Button variant="ghost" size="sm" type="button" className="text-destructive hover:text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
                             </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete the selected address.
+                                    This action cannot be undone. This will permanently delete your saved withdrawal address.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDeleteAddress}>Delete</AlertDialogAction>
+                                <AlertDialogAction onClick={clearWithdrawalAddress}>Delete</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
-
-                </div>
+                )}
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="amount">Amount (USDT)</Label>
               <Input 
@@ -217,7 +187,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
                     <span>${netWithdrawal > 0 ? netWithdrawal.toFixed(2) : '0.00'}</span>
                 </div>
             </div>
-            <Button type="submit" className="w-full" disabled={!selectedAddress}>
+            <Button type="submit" className="w-full" disabled={!withdrawalAddress}>
               Request Withdrawal
             </Button>
           </div>
@@ -227,7 +197,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
     <AddressDialog 
         open={isAddressDialogOpen}
         onOpenChange={setIsAddressDialogOpen}
-        address={editingAddress}
+        address={withdrawalAddress}
     />
     </>
   );
