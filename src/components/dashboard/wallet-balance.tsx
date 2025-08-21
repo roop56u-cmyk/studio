@@ -1,6 +1,7 @@
 
 "use client";
 
+import React, { useState } from "react";
 import {
   Card,
   CardContent,
@@ -11,16 +12,47 @@ import {
 } from "@/components/ui/card";
 import { Wallet2, ArrowLeftRight } from 'lucide-react';
 import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { useToast } from "@/hooks/use-toast";
 
 interface WalletBalanceProps {
     title: string;
     description: string;
     balance: string;
-    onMoveToMain?: () => void;
+    onMoveToMain?: (amount: number) => void;
 }
 
 export function WalletBalance({ title, description, balance = "0.00", onMoveToMain }: WalletBalanceProps) {
+  const [moveAmount, setMoveAmount] = useState("");
+  const { toast } = useToast();
   const canMove = parseFloat(balance) > 0;
+
+  const handleMoveClick = () => {
+    if (!onMoveToMain) return;
+
+    const numericAmount = parseFloat(moveAmount);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      toast({
+        variant: "destructive",
+        title: "Invalid Amount",
+        description: "Please enter a valid positive amount to move.",
+      });
+      return;
+    }
+    
+    if (numericAmount > parseFloat(balance)) {
+      toast({
+        variant: "destructive",
+        title: "Insufficient Funds",
+        description: `You cannot move more than the available balance of $${balance}.`,
+      });
+      return;
+    }
+    
+    onMoveToMain(numericAmount);
+    setMoveAmount("");
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -38,17 +70,28 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
         </p>
       </CardContent>
        {onMoveToMain && (
-        <CardFooter className="pt-0">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="w-full"
-            onClick={onMoveToMain}
-            disabled={!canMove}
+        <CardFooter className="pt-0 flex-col items-start gap-2">
+          <div className="w-full flex items-center gap-2">
+            <Input 
+              type="number" 
+              placeholder="Amount" 
+              className="h-8 text-xs"
+              value={moveAmount}
+              onChange={(e) => setMoveAmount(e.target.value)}
+              disabled={!canMove}
+            />
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-8"
+              onClick={handleMoveClick}
+              disabled={!canMove}
             >
-            <ArrowLeftRight className="mr-2 h-3 w-3" />
-            Move to Main Wallet
-          </Button>
+              <ArrowLeftRight className="mr-2 h-3 w-3" />
+              Move
+            </Button>
+          </div>
+           <p className="text-xs text-muted-foreground">Move funds back to your Main Wallet.</p>
         </CardFooter>
       )}
     </Card>

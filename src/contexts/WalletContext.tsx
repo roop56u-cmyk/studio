@@ -44,7 +44,7 @@ interface WalletContextType {
   completedTasks: CompletedTask[];
   amount: string;
   setAmount: (amount: string) => void;
-  handleMoveFunds: (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', amountToMove: number, fromSubAccount?: boolean) => void;
+  handleMoveFunds: (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', amountToMove: number, fromAccount?: 'Task Rewards' | 'Interest Earnings') => void;
   addRecharge: (amount: number) => void;
   getWalletData: () => {
     balance: number;
@@ -183,8 +183,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => setPersistentState('withdrawalAddress', withdrawalAddress), [withdrawalAddress, setPersistentState]);
 
 
- const handleMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', amountToMove: number, fromSubAccount: boolean = false) => {
-    const numericAmount = fromSubAccount ? amountToMove : parseFloat(amount);
+ const handleMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', amountToMove: number, fromAccount?: 'Task Rewards' | 'Interest Earnings') => {
+    const numericAmount = fromAccount ? amountToMove : parseFloat(amount);
+
     if (isNaN(numericAmount) || numericAmount <= 0) {
       toast({
         variant: 'destructive',
@@ -194,21 +195,24 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    if (fromSubAccount) {
-      if (destination === 'Main Wallet') {
-        if (amountToMove > (sourceBalance || 0)) {
-          toast({ variant: "destructive", title: "Insufficient Funds", description: `Cannot move more than available in the source wallet.` });
+    if (fromAccount) { // Moving from sub-account to main wallet
+        if (destination !== 'Main Wallet') return;
+
+        let sourceBalance = fromAccount === 'Task Rewards' ? taskRewardsBalance : interestEarningsBalance;
+        if (numericAmount > sourceBalance) {
+          toast({ variant: "destructive", title: "Insufficient Funds", description: `Cannot move more than available in ${fromAccount}.` });
           return;
         }
+
         setMainBalance(prev => prev + numericAmount);
-        if (sourceName === 'Task Rewards') {
+        if (fromAccount === 'Task Rewards') {
           setTaskRewardsBalance(prev => prev - numericAmount);
         } else {
           setInterestEarningsBalance(prev => prev - numericAmount);
         }
         toast({ title: "Funds Moved", description: `${numericAmount.toFixed(2)} USDT has been moved to your Main Wallet.` });
-      }
-    } else {
+
+    } else { // Moving from main wallet to sub-account
         if (numericAmount > mainBalance) {
             toast({
                 variant: "destructive",

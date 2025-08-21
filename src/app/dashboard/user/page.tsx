@@ -91,10 +91,10 @@ export default function UserDashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
                 <WalletBalance 
-                title="Task Rewards"
-                balance={taskRewardsBalance.toFixed(2)}
-                description="Balance from completed tasks."
-                onMoveToMain={() => handleMoveFunds('Task Rewards', taskRewardsBalance, true)}
+                    title="Task Rewards"
+                    balance={taskRewardsBalance.toFixed(2)}
+                    description="Balance from completed tasks."
+                    onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Task Rewards')}
                 />
                 <EarningsPanel 
                     title="Total Earned"
@@ -103,10 +103,10 @@ export default function UserDashboardPage() {
             </div>
              <div className="space-y-2">
                 <WalletBalance 
-                title="Interest Earnings"
-                balance={interestEarningsBalance.toFixed(2)}
-                description="Balance from interest."
-                onMoveToMain={() => handleMoveFunds('Interest Earnings', interestEarningsBalance, true)}
+                    title="Interest Earnings"
+                    balance={interestEarningsBalance.toFixed(2)}
+                    description="Balance from interest."
+                    onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Interest Earnings')}
                 />
                  <EarningsPanel 
                     title="Total Earned"
