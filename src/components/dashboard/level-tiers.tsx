@@ -56,7 +56,7 @@ export function LevelTiers() {
         >
             <CarouselContent>
             {levels.map((level) => (
-                <CarouselItem key={level.level} className="basis-full md:basis-1/2 lg:basis-1/3">
+                <CarouselItem key={level.level} className="basis-1/2 md:basis-1/3 lg:basis-1/4">
                     <div className="p-1">
                         <Card className="h-full flex flex-col">
                             <CardHeader>
