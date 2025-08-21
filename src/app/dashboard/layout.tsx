@@ -42,9 +42,11 @@ import {
   Settings,
   Shield,
   Wallet,
+  ArrowUpCircle,
+  ArrowDownCircle,
   ChevronDown
 } from "lucide-react";
-import { WalletPanel } from "@/components/dashboard/wallet-panel";
+import { WalletBalance } from "@/components/dashboard/wallet-balance";
 
 export default function DashboardLayout({
   children,
@@ -122,7 +124,7 @@ export default function DashboardLayout({
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-
+              
                <SidebarMenuItem>
                 <Collapsible>
                     <CollapsibleTrigger asChild>
@@ -134,10 +136,36 @@ export default function DashboardLayout({
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                         <div className="p-2">
-                            <WalletPanel />
+                            <WalletBalance />
                         </div>
                     </CollapsibleContent>
                 </Collapsible>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === "/dashboard/recharge"}
+                  tooltip={{ children: "Recharge" }}
+                >
+                  <Link href="/dashboard/recharge">
+                    <ArrowUpCircle />
+                    <span>Recharge</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+               <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === "/dashboard/withdrawal"}
+                  tooltip={{ children: "Withdrawal" }}
+                >
+                  <Link href="/dashboard/withdrawal">
+                    <ArrowDownCircle />
+                    <span>Withdrawal</span>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
 
             </SidebarMenu>
