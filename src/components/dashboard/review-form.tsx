@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -20,23 +20,20 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { StarRating } from "@/components/dashboard/star-rating";
 import { SentimentResult } from "@/components/dashboard/sentiment-result";
 import { submitReview } from "@/app/actions";
 import type { AnalyzeReviewSentimentOutput } from "@/ai/flows/analyze-review-sentiment";
+import { generateTaskSuggestions } from "@/app/actions";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Label } from "../ui/label";
+import { Skeleton } from "../ui/skeleton";
 
 const reviewSchema = z.object({
-  category: z.string({ required_error: "Please select a category." }),
+  task: z.string({ required_error: "Please select a task." }),
   rating: z.number().min(1, "Please provide a rating.").max(5),
   reviewText: z.string().min(10, "Review must be at least 10 characters.").max(1000),
 });
@@ -45,6 +42,8 @@ type ReviewFormValues = z.infer<typeof reviewSchema>;
 
 export function ReviewForm() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingTasks, setIsGeneratingTasks] = useState(true);
+  const [taskSuggestions, setTaskSuggestions] = useState<string[]>([]);
   const [sentiment, setSentiment] = useState<AnalyzeReviewSentimentOutput | null>(null);
   const { toast } = useToast();
 
@@ -55,6 +54,25 @@ export function ReviewForm() {
       reviewText: "",
     },
   });
+
+  useEffect(() => {
+    async function fetchTasks() {
+      try {
+        setIsGeneratingTasks(true);
+        const { tasks } = await generateTaskSuggestions();
+        setTaskSuggestions(tasks);
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Error Generating Tasks",
+          description: "Could not fetch AI-powered task suggestions. Please try again later.",
+        });
+      } finally {
+        setIsGeneratingTasks(false);
+      }
+    }
+    fetchTasks();
+  }, [toast]);
 
   const onSubmit = async (data: ReviewFormValues) => {
     setIsLoading(true);
@@ -84,50 +102,61 @@ export function ReviewForm() {
       <CardHeader>
         <CardTitle>Submit a Review</CardTitle>
         <CardDescription>
-          Rate and review a service. We&apos;ll analyze its sentiment.
+          Select a task, then rate and review it. We&apos;ll analyze its sentiment.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="hotel">Hotels</SelectItem>
-                        <SelectItem value="hospital">Hospitals</SelectItem>
-                        <SelectItem value="restaurant">Restaurants</SelectItem>
-                        <SelectItem value="shopping">Shopping</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="rating"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Rating</FormLabel>
+            <FormField
+              control={form.control}
+              name="task"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Select a Task to Review</FormLabel>
+                   {isGeneratingTasks ? (
+                    <div className="space-y-2">
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-6 w-1/2" />
+                        <Skeleton className="h-6 w-2/3" />
+                        <Skeleton className="h-6 w-3/4" />
+                    </div>
+                   ) : (
                     <FormControl>
-                      <StarRating rating={field.value} setRating={field.onChange} />
+                        <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex flex-col space-y-1"
+                        >
+                        {taskSuggestions.map((task, index) => (
+                            <FormItem key={index} className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
+                                    <RadioGroupItem value={task} />
+                                </FormControl>
+                                <Label className="font-normal">{task}</Label>
+                            </FormItem>
+                        ))}
+                        </RadioGroup>
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                   )}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="rating"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Rating</FormLabel>
+                  <FormControl>
+                    <StarRating rating={field.value} setRating={field.onChange} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
@@ -148,8 +177,8 @@ export function ReviewForm() {
             />
 
             <div className="flex items-center justify-between">
-              <Button type="submit" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button type="submit" disabled={isLoading || isGeneratingTasks}>
+                {(isLoading || isGeneratingTasks) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isLoading ? "Analyzing..." : "Submit and Analyze"}
               </Button>
               {sentiment && !isLoading && (
