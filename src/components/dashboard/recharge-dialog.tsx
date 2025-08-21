@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { RechargePanel } from "@/components/dashboard/recharge-panel";
 import { useRequests } from "@/contexts/RequestContext";
-import { ManageAddressesDialog } from "./manage-addresses-dialog";
+import { AddressDialog } from "./address-dialog";
 
 
 interface RechargeDialogProps {
@@ -21,7 +21,7 @@ interface RechargeDialogProps {
 
 export function RechargeDialog({ open, onOpenChange }: RechargeDialogProps) {
   const { addRequest } = useRequests();
-  const [isManageAddressOpen, setIsManageAddressOpen] = useState(false);
+  const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
 
   return (
     <>
@@ -37,12 +37,16 @@ export function RechargeDialog({ open, onOpenChange }: RechargeDialogProps) {
             onAddRequest={addRequest} 
             onManageAddresses={() => {
               onOpenChange(false); // Close recharge dialog
-              setIsManageAddressOpen(true); // Open manage address dialog
+              setIsAddressDialogOpen(true); // Open manage address dialog
             }}
           />
         </DialogContent>
       </Dialog>
-      <ManageAddressesDialog open={isManageAddressOpen} onOpenChange={setIsManageAddressOpen} />
+      <AddressDialog 
+        open={isAddressDialogOpen} 
+        onOpenChange={setIsAddressDialogOpen} 
+        address={null} 
+      />
     </>
   );
 }
