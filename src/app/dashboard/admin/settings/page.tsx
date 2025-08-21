@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -24,6 +24,28 @@ export default function SystemSettingsPage() {
     const [withdrawalDays, setWithdrawalDays] = useState("45");
     const [isWithdrawalRestriction, setIsWithdrawalRestriction] = useState(true);
     const [withdrawalRestrictionMessage, setWithdrawalRestrictionMessage] = useState("Please wait for 45 days to initiate withdrawal request.");
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        // Load settings from localStorage when the component mounts on the client
+        const savedReferralBonus = localStorage.getItem('system_referral_bonus');
+        if (savedReferralBonus) setReferralBonus(savedReferralBonus);
+        
+        const savedMinDeposit = localStorage.getItem('system_min_deposit_for_bonus');
+        if (savedMinDeposit) setMinDepositForBonus(savedMinDeposit);
+        
+        const savedWithdrawalRestriction = localStorage.getItem('system_withdrawal_restriction_enabled');
+        if (savedWithdrawalRestriction) setIsWithdrawalRestriction(JSON.parse(savedWithdrawalRestriction));
+
+        const savedWithdrawalDays = localStorage.getItem('system_withdrawal_restriction_days');
+        if (savedWithdrawalDays) setWithdrawalDays(savedWithdrawalDays);
+        
+        const savedWithdrawalMessage = localStorage.getItem('system_withdrawal_restriction_message');
+        if (savedWithdrawalMessage) setWithdrawalRestrictionMessage(savedWithdrawalMessage);
+        
+        setIsClient(true);
+    }, []);
+
 
     const handleSaveChanges = () => {
         // In a real app, these would be saved to a database.
@@ -39,6 +61,10 @@ export default function SystemSettingsPage() {
             description: "Global system settings have been updated.",
         });
     };
+    
+    if (!isClient) {
+        return null; // or a loading skeleton
+    }
 
   return (
     <div className="grid gap-8">

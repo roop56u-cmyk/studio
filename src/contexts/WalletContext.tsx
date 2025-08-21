@@ -106,14 +106,17 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     return defaultValue;
   };
   
-  const getGlobalSetting = (key: string, defaultValue: any) => {
+  const getGlobalSetting = (key: string, defaultValue: any, isJson: boolean = false) => {
      if (typeof window === 'undefined') {
       return defaultValue;
     }
     try {
       const storedValue = localStorage.getItem(key);
       if (storedValue) {
-        return JSON.parse(storedValue);
+        if (isJson) {
+            return JSON.parse(storedValue);
+        }
+        return storedValue;
       }
     } catch (error) {
       console.error(`Failed to parse global setting ${key} from localStorage`, error);
@@ -156,7 +159,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     setIsLoading(true);
     // Load global settings
-    setIsWithdrawalRestrictionEnabled(getGlobalSetting('system_withdrawal_restriction_enabled', true));
+    setIsWithdrawalRestrictionEnabled(getGlobalSetting('system_withdrawal_restriction_enabled', true, true));
     setWithdrawalRestrictionDays(parseInt(getGlobalSetting('system_withdrawal_restriction_days', '45'), 10));
     setWithdrawalRestrictionMessage(getGlobalSetting('system_withdrawal_restriction_message', "Please wait for 45 days to initiate withdrawal request."));
 
@@ -439,5 +442,3 @@ export const useWallet = () => {
   }
   return context;
 };
-
-    
