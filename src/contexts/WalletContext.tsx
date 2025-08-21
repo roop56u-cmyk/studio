@@ -68,6 +68,7 @@ interface WalletContextType {
   firstDepositDate: string | null;
   isWithdrawalRestrictionEnabled: boolean;
   withdrawalRestrictionDays: number;
+  withdrawalRestrictionMessage: string;
 }
 
 export type CounterType = 'task' | 'interest';
@@ -88,6 +89,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   // Global system settings
   const [isWithdrawalRestrictionEnabled, setIsWithdrawalRestrictionEnabled] = useState(true);
   const [withdrawalRestrictionDays, setWithdrawalRestrictionDays] = useState(45);
+  const [withdrawalRestrictionMessage, setWithdrawalRestrictionMessage] = useState("Please wait for 45 days to initiate withdrawal request.");
 
   const getInitialState = (key: string, defaultValue: any) => {
     if (typeof window === 'undefined' || !currentUser) {
@@ -156,6 +158,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     // Load global settings
     setIsWithdrawalRestrictionEnabled(getGlobalSetting('system_withdrawal_restriction_enabled', true));
     setWithdrawalRestrictionDays(parseInt(getGlobalSetting('system_withdrawal_restriction_days', '45'), 10));
+    setWithdrawalRestrictionMessage(getGlobalSetting('system_withdrawal_restriction_message', "Please wait for 45 days to initiate withdrawal request."));
 
     if (currentUser) {
       const today = new Date().toISOString().split('T')[0];
@@ -421,6 +424,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         firstDepositDate,
         isWithdrawalRestrictionEnabled,
         withdrawalRestrictionDays,
+        withdrawalRestrictionMessage,
       }}
     >
       {children}

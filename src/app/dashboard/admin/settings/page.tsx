@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function SystemSettingsPage() {
     const { toast } = useToast();
@@ -22,12 +23,14 @@ export default function SystemSettingsPage() {
     const [minDepositForBonus, setMinDepositForBonus] = useState("100");
     const [withdrawalDays, setWithdrawalDays] = useState("45");
     const [isWithdrawalRestriction, setIsWithdrawalRestriction] = useState(true);
+    const [withdrawalRestrictionMessage, setWithdrawalRestrictionMessage] = useState("Please wait for 45 days to initiate withdrawal request.");
 
     const handleSaveChanges = () => {
         // In a real app, these would be saved to a database.
         // For now, we use localStorage to simulate a persistent backend.
         localStorage.setItem('system_withdrawal_restriction_enabled', JSON.stringify(isWithdrawalRestriction));
         localStorage.setItem('system_withdrawal_restriction_days', withdrawalDays);
+        localStorage.setItem('system_withdrawal_restriction_message', withdrawalRestrictionMessage);
         localStorage.setItem('system_referral_bonus', referralBonus);
         localStorage.setItem('system_min_deposit_for_bonus', minDepositForBonus);
         
@@ -80,6 +83,16 @@ export default function SystemSettingsPage() {
             <div className="space-y-2">
                 <Label htmlFor="withdrawal-days">Number of Days for Restriction</Label>
                 <Input id="withdrawal-days" type="number" value={withdrawalDays} onChange={e => setWithdrawalDays(e.target.value)} disabled={!isWithdrawalRestriction}/>
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="withdrawal-message">Restriction Popup Message</Label>
+                <Textarea 
+                    id="withdrawal-message" 
+                    value={withdrawalRestrictionMessage} 
+                    onChange={e => setWithdrawalRestrictionMessage(e.target.value)}
+                    disabled={!isWithdrawalRestriction}
+                    rows={3}
+                />
             </div>
         </CardContent>
       </Card>

@@ -25,14 +25,26 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { PlusCircle, Edit, Trash2, Info } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Timer } from "lucide-react";
 import type { WithdrawalAddress } from "@/contexts/WalletContext";
-import { WithdrawalTimer } from "./withdrawal-timer";
 
 interface WithdrawalPanelProps {
     onAddRequest: (request: Partial<Omit<Request, 'id' | 'date' | 'user' | 'status'>>) => void;
+}
+
+const formatTimeLeft = (ms: number) => {
+    if (ms <= 0) return "00:00:00:00";
+    const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((ms % (1000 * 60)) / 1000);
+    return `${String(days).padStart(2, "0")}:${String(hours).padStart(
+      2,
+      "0"
+    )}:${String(minutes).padStart(2, "0")}:${String(
+      seconds
+    ).padStart(2, "0")}`;
 }
 
 
@@ -48,9 +60,11 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
       firstDepositDate,
       isWithdrawalRestrictionEnabled,
       withdrawalRestrictionDays,
+      withdrawalRestrictionMessage,
   } = useWallet();
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
-  const [isRestrictionActive, setIsRestrictionActive] = useState(false);
+  const [isRestrictionAlertOpen, setIsRestrictionAlertOpen] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0);
 
   const { level } = getWalletData();
   const numericAmount = parseFloat(amount) || 0;
@@ -65,27 +79,25 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
   const netWithdrawal = numericAmount - adminFee;
 
   useEffect(() => {
-    if (!isWithdrawalRestrictionEnabled || !firstDepositDate) {
-      setIsRestrictionActive(false);
-      return;
-    }
+    if (!isRestrictionAlertOpen) return;
 
-    const firstDepositTime = new Date(firstDepositDate).getTime();
-    const restrictionEndTime = firstDepositTime + (withdrawalRestrictionDays * 24 * 60 * 60 * 1000);
-    
-    const checkRestriction = () => {
-        if (Date.now() < restrictionEndTime) {
-            setIsRestrictionActive(true);
-        } else {
-            setIsRestrictionActive(false);
-        }
+    const calculateTimeLeft = () => {
+        if (!firstDepositDate) return 0;
+        const firstDepositTime = new Date(firstDepositDate).getTime();
+        const restrictionEndTime = firstDepositTime + (withdrawalRestrictionDays * 24 * 60 * 60 * 1000);
+        return Math.max(0, restrictionEndTime - Date.now());
     };
+    
+    setTimeLeft(calculateTimeLeft());
 
-    checkRestriction();
-    const interval = setInterval(checkRestriction, 1000);
+    const interval = setInterval(() => {
+        setTimeLeft(calculateTimeLeft());
+    }, 1000);
+
     return () => clearInterval(interval);
 
-  }, [firstDepositDate, isWithdrawalRestrictionEnabled, withdrawalRestrictionDays]);
+  }, [isRestrictionAlertOpen, firstDepositDate, withdrawalRestrictionDays]);
+
   
   const handleOpenEditDialog = () => {
     setIsAddressDialogOpen(true);
@@ -93,24 +105,17 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
 
   const handleWithdraw = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isWithdrawalRestrictionEnabled && isRestrictionActive) {
-      toast({
-          variant: "destructive",
-          title: "Withdrawal Locked",
-          description: `You must wait ${withdrawalRestrictionDays} days after your first deposit to make a withdrawal.`,
-      });
-      return;
+    const isActiveUser = !!firstDepositDate;
+    
+    if (isWithdrawalRestrictionEnabled && isActiveUser) {
+        const firstDepositTime = new Date(firstDepositDate!).getTime();
+        const restrictionEndTime = firstDepositTime + (withdrawalRestrictionDays * 24 * 60 * 60 * 1000);
+        if (Date.now() < restrictionEndTime) {
+            setIsRestrictionAlertOpen(true);
+            return;
+        }
     }
     
-    if (isWithdrawalRestrictionEnabled && !firstDepositDate) {
-        toast({
-          variant: "destructive",
-          title: "Withdrawal Locked",
-          description: `Withdrawals are currently restricted. Please make a deposit to start the waiting period.`,
-      });
-      return;
-    }
-
     if (isNaN(numericAmount) || numericAmount <= 0) {
         toast({
             variant: "destructive",
@@ -153,32 +158,6 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
 
     setAmount("");
   };
-
-  if (isWithdrawalRestrictionEnabled) {
-    if (isRestrictionActive) {
-      return <WithdrawalTimer firstDepositDate={firstDepositDate} waitDays={withdrawalRestrictionDays} />;
-    }
-    if (!firstDepositDate) {
-        return (
-            <Card className="text-center">
-                 <CardHeader>
-                    <div className="mx-auto bg-primary/10 text-primary rounded-full p-3 w-fit">
-                        <Info className="h-8 w-8" />
-                    </div>
-                    <CardTitle className="mt-4">Withdrawals Restricted</CardTitle>
-                    <CardDescription>
-                        To ensure account security, withdrawals are enabled only after a waiting period begins.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                        Please make your first deposit to start the withdrawal countdown timer.
-                    </p>
-                </CardContent>
-            </Card>
-        );
-    }
-  }
 
 
   return (
@@ -273,6 +252,29 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
         onOpenChange={setIsAddressDialogOpen}
         address={withdrawalAddress}
     />
+     <AlertDialog open={isRestrictionAlertOpen} onOpenChange={setIsRestrictionAlertOpen}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>Withdrawal Locked</AlertDialogTitle>
+                  <AlertDialogDescription>
+                      {withdrawalRestrictionMessage}
+                  </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="flex flex-col items-center justify-center p-4 bg-muted rounded-md">
+                 <div className="flex items-center gap-2 text-muted-foreground">
+                     <Timer className="h-5 w-5" />
+                    <span className="text-sm">Time Remaining</span>
+                 </div>
+                 <div className="text-2xl font-bold font-mono tracking-tighter mt-2">
+                    {formatTimeLeft(timeLeft)}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">DD:HH:MM:SS</p>
+              </div>
+              <AlertDialogFooter>
+                  <AlertDialogAction onClick={() => setIsRestrictionAlertOpen(false)}>OK</AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
