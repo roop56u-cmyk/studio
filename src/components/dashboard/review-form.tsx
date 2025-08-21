@@ -21,7 +21,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Textarea } from "@/components/ui/textarea";
 import { StarRating } from "@/components/dashboard/star-rating";
 import { SentimentResult } from "@/components/dashboard/sentiment-result";
 import { submitReview } from "@/app/actions";
@@ -31,11 +30,11 @@ import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "../ui/label";
 import { Skeleton } from "../ui/skeleton";
+import { Textarea } from "../ui/textarea";
 
 const reviewSchema = z.object({
   task: z.string({ required_error: "Please select a task." }),
   rating: z.number().min(1, "Please provide a rating.").max(5),
-  reviewText: z.string().min(10, "Review must be at least 10 characters.").max(1000),
 });
 
 type ReviewFormValues = z.infer<typeof reviewSchema>;
@@ -51,9 +50,10 @@ export function ReviewForm() {
     resolver: zodResolver(reviewSchema),
     defaultValues: {
       rating: 0,
-      reviewText: "",
     },
   });
+
+  const selectedTask = form.watch("task");
 
   useEffect(() => {
     async function fetchTasks() {
@@ -78,7 +78,8 @@ export function ReviewForm() {
     setIsLoading(true);
     setSentiment(null);
     try {
-      const result = await submitReview({ reviewText: data.reviewText });
+      // Use the selected task content as the review text
+      const result = await submitReview({ reviewText: data.task });
       if (result) {
         setSentiment(result);
         toast({
@@ -102,7 +103,7 @@ export function ReviewForm() {
       <CardHeader>
         <CardTitle>Submit a Review</CardTitle>
         <CardDescription>
-          Select a task, then rate and review it. We&apos;ll analyze its sentiment.
+          Select a task and rate it. We&apos;ll analyze its sentiment for you.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -143,6 +144,17 @@ export function ReviewForm() {
                 </FormItem>
               )}
             />
+
+            {selectedTask && (
+                <div className="space-y-2">
+                    <Label>Selected Task Content</Label>
+                    <Textarea
+                        readOnly
+                        value={selectedTask}
+                        className="h-24 resize-none bg-muted"
+                    />
+                </div>
+            )}
             
             <FormField
               control={form.control}
@@ -152,24 +164,6 @@ export function ReviewForm() {
                   <FormLabel>Rating</FormLabel>
                   <FormControl>
                     <StarRating rating={field.value} setRating={field.onChange} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="reviewText"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Detailed Review</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Share your experience in detail..."
-                      rows={6}
-                      {...field}
-                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
