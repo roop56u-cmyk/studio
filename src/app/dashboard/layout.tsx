@@ -50,7 +50,8 @@ import {
   ArrowDownCircle,
   ChevronDown,
   Gift,
-  TrendingUp
+  TrendingUp,
+  SlidersHorizontal
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -63,7 +64,7 @@ import { WithdrawalDialog } from "@/components/dashboard/withdrawal-dialog";
 
 function SidebarContentComponent({ onRechargeClick, onWithdrawalClick }: { onRechargeClick: () => void, onWithdrawalClick: () => void }) {
   const pathname = usePathname();
-  const { logout } = useAuth();
+  const { logout, currentUser } = useAuth();
   const { 
     mainBalance,
     amount, 
@@ -71,6 +72,8 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick }: { onRec
     handleMoveFunds,
     isLoading
   } = useWallet();
+  
+  const isAdmin = currentUser?.isAdmin;
 
   return (
     <SidebarContent>
@@ -78,137 +81,159 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick }: { onRec
         <Logo />
       </SidebarHeader>
       <SidebarMenu>
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            asChild
-            isActive={pathname === "/dashboard/user"}
-            tooltip={{ children: "Dashboard" }}
-          >
-            <Link href="/dashboard/user">
-              <Home />
-              <span>Dashboard</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            asChild
-            isActive={pathname.startsWith("/dashboard/team")}
-            tooltip={{ children: "Team" }}
-          >
-            <Link href="/dashboard/team">
-              <Users />
-              <span>Team</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            asChild
-            isActive={pathname.startsWith("/dashboard/review")}
-            tooltip={{ children: "Submit Review" }}
-          >
-            <Link href="/dashboard/user">
-              <Star />
-              <span>Submit Review</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            asChild
-            isActive={pathname.startsWith("/dashboard/profile")}
-            tooltip={{ children: "Profile" }}
-          >
-            <Link href="/dashboard/user">
-              <User />
-              <span>Profile</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            asChild
-            isActive={pathname.startsWith("/dashboard/referrals")}
-            tooltip={{ children: "Referrals" }}
-          >
-            <Link href="/dashboard/user">
-              <Users />
-              <span>Referrals</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-        
-         <SidebarMenuItem>
-          <Collapsible>
-              <CollapsibleTrigger asChild>
-                   <SidebarMenuButton>
-                      <Wallet />
-                      <span>Wallet</span>
-                      <ChevronDown className="ml-auto h-4 w-4 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                  </SidebarMenuButton>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                  <div className="p-2 space-y-4">
-                      {isLoading ? (
-                        <div className="space-y-2">
-                           <Skeleton className="h-6 w-24" />
-                           <Skeleton className="h-8 w-full" />
-                           <Skeleton className="h-4 w-32" />
+        {isAdmin ? (
+            <>
+                <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin"} tooltip={{ children: "Dashboard" }}>
+                        <Link href="/dashboard/admin">
+                            <Home />
+                            <span>Dashboard</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/admin/levels")} tooltip={{ children: "Manage Levels" }}>
+                        <Link href="/dashboard/admin/levels">
+                            <SlidersHorizontal />
+                            <span>Manage Levels</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            </>
+        ) : (
+            <>
+                <SidebarMenuItem>
+                <SidebarMenuButton
+                    asChild
+                    isActive={pathname === "/dashboard/user"}
+                    tooltip={{ children: "Dashboard" }}
+                >
+                    <Link href="/dashboard/user">
+                    <Home />
+                    <span>Dashboard</span>
+                    </Link>
+                </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith("/dashboard/team")}
+                    tooltip={{ children: "Team" }}
+                >
+                    <Link href="/dashboard/team">
+                    <Users />
+                    <span>Team</span>
+                    </Link>
+                </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith("/dashboard/review")}
+                    tooltip={{ children: "Submit Review" }}
+                >
+                    <Link href="/dashboard/user">
+                    <Star />
+                    <span>Submit Review</span>
+                    </Link>
+                </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith("/dashboard/profile")}
+                    tooltip={{ children: "Profile" }}
+                >
+                    <Link href="/dashboard/user">
+                    <User />
+                    <span>Profile</span>
+                    </Link>
+                </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith("/dashboard/referrals")}
+                    tooltip={{ children: "Referrals" }}
+                >
+                    <Link href="/dashboard/user">
+                    <Users />
+                    <span>Referrals</span>
+                    </Link>
+                </SidebarMenuButton>
+                </SidebarMenuItem>
+                
+                <SidebarMenuItem>
+                <Collapsible>
+                    <CollapsibleTrigger asChild>
+                        <SidebarMenuButton>
+                            <Wallet />
+                            <span>Wallet</span>
+                            <ChevronDown className="ml-auto h-4 w-4 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                        </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                        <div className="p-2 space-y-4">
+                            {isLoading ? (
+                                <div className="space-y-2">
+                                <Skeleton className="h-6 w-24" />
+                                <Skeleton className="h-8 w-full" />
+                                <Skeleton className="h-4 w-32" />
+                                </div>
+                            ) : (
+                                <WalletBalance 
+                                title="Main Balance"
+                                balance={mainBalance.toFixed(2)}
+                                description="Total available funds."
+                                />
+                            )}
+                            <div className="space-y-2">
+                                <Label htmlFor="move-amount">Amount (USDT)</Label>
+                                <Input 
+                                    id="move-amount"
+                                    type="number"
+                                    placeholder="e.g., 50.00"
+                                    value={amount}
+                                    onChange={(e) => setAmount(e.target.value)}
+                                    disabled={isLoading}
+                                />
+                            </div>
+                            <div className="grid grid-cols-1 gap-2">
+                                <Button variant="outline" size="sm" className="justify-start gap-2" onClick={() => handleMoveFunds("Task Rewards", 0)} disabled={isLoading}>
+                                    <Gift className="h-4 w-4 text-primary" />
+                                    <span>Move to Task Rewards</span>
+                                </Button>
+                                <Button variant="outline" size="sm" className="justify-start gap-2" onClick={() => handleMoveFunds("Interest Earnings", 0)} disabled={isLoading}>
+                                    <TrendingUp className="h-4 w-4 text-accent" />
+                                    <span>Move to Interest</span>
+                                </Button>
+                            </div>
                         </div>
-                      ) : (
-                        <WalletBalance 
-                          title="Main Balance"
-                          balance={mainBalance.toFixed(2)}
-                          description="Total available funds."
-                        />
-                      )}
-                      <div className="space-y-2">
-                          <Label htmlFor="move-amount">Amount (USDT)</Label>
-                          <Input 
-                              id="move-amount"
-                              type="number"
-                              placeholder="e.g., 50.00"
-                              value={amount}
-                              onChange={(e) => setAmount(e.target.value)}
-                              disabled={isLoading}
-                          />
-                      </div>
-                      <div className="grid grid-cols-1 gap-2">
-                          <Button variant="outline" size="sm" className="justify-start gap-2" onClick={() => handleMoveFunds("Task Rewards")} disabled={isLoading}>
-                              <Gift className="h-4 w-4 text-primary" />
-                              <span>Move to Task Rewards</span>
-                          </Button>
-                          <Button variant="outline" size="sm" className="justify-start gap-2" onClick={() => handleMoveFunds("Interest Earnings")} disabled={isLoading}>
-                              <TrendingUp className="h-4 w-4 text-accent" />
-                              <span>Move to Interest</span>
-                          </Button>
-                      </div>
-                  </div>
-              </CollapsibleContent>
-          </Collapsible>
-        </SidebarMenuItem>
+                    </CollapsibleContent>
+                </Collapsible>
+                </SidebarMenuItem>
 
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            onClick={onRechargeClick}
-            tooltip={{ children: "Recharge" }}
-          >
-              <ArrowUpCircle />
-              <span>Recharge</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
+                <SidebarMenuItem>
+                <SidebarMenuButton
+                    onClick={onRechargeClick}
+                    tooltip={{ children: "Recharge" }}
+                >
+                    <ArrowUpCircle />
+                    <span>Recharge</span>
+                </SidebarMenuButton>
+                </SidebarMenuItem>
 
-         <SidebarMenuItem>
-          <SidebarMenuButton
-            onClick={onWithdrawalClick}
-            tooltip={{ children: "Withdrawal" }}
-          >
-              <ArrowDownCircle />
-              <span>Withdrawal</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-
+                <SidebarMenuItem>
+                <SidebarMenuButton
+                    onClick={onWithdrawalClick}
+                    tooltip={{ children: "Withdrawal" }}
+                >
+                    <ArrowDownCircle />
+                    <span>Withdrawal</span>
+                </SidebarMenuButton>
+                </SidebarMenuItem>
+            </>
+        )}
       </SidebarMenu>
     </SidebarContent>
   );
@@ -220,7 +245,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-    const { logout } = useAuth();
+    const { logout, currentUser } = useAuth();
     const [isRechargeOpen, setIsRechargeOpen] = React.useState(false);
     const [isWithdrawalOpen, setIsWithdrawalOpen] = React.useState(false);
 
@@ -245,7 +270,7 @@ export default function DashboardLayout({
                   <Button variant="secondary" size="icon" className="rounded-full">
                       <Avatar>
                       <AvatarImage src="https://placehold.co/40x40.png" alt="User Avatar" data-ai-hint="user avatar" />
-                      <AvatarFallback>U</AvatarFallback>
+                      <AvatarFallback>{currentUser?.email?.[0].toUpperCase() ?? 'U'}</AvatarFallback>
                       </Avatar>
                       <span className="sr-only">Toggle user menu</span>
                   </Button>
@@ -253,9 +278,11 @@ export default function DashboardLayout({
                   <DropdownMenuContent align="end">
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Settings</span>
+                  <DropdownMenuItem asChild>
+                      <Link href="/dashboard/settings">
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Settings</span>
+                      </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
