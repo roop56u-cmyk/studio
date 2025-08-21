@@ -104,9 +104,7 @@ export default function DashboardLayout({
   };
 
   const childrenWithProps = React.Children.map(children, child => {
-    // Check if the child is a valid React element before cloning
     if (React.isValidElement(child)) {
-      // Clone the child element and pass the updated balances as props
       return React.cloneElement(child, { 
         taskRewardsBalance, 
         interestEarningsBalance 
