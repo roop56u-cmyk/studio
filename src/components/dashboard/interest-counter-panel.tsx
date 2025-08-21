@@ -96,13 +96,13 @@ export function InterestCounterPanel({
   if (isLocked) {
     return (
         <Card className="h-full">
-            <CardHeader className="p-2">
+            <CardHeader>
                 <div className="flex flex-row items-center justify-between space-y-0 pb-1">
                     <CardTitle className="text-xs font-medium">{title}</CardTitle>
                     <Lock className="h-3 w-3 text-muted-foreground" />
                 </div>
             </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center text-center h-full p-2 pt-0">
+            <CardContent className="flex flex-col items-center justify-center text-center h-full pt-0">
                 <div className="text-base font-bold">-.--%</div>
                 <p className="text-xs text-muted-foreground pt-1">
                     Unlock by committing at least $100.
@@ -114,20 +114,20 @@ export function InterestCounterPanel({
 
   return (
     <Card>
-      <CardHeader className="p-2">
+      <CardHeader>
         <div className="flex flex-row items-center justify-between space-y-0 pb-1">
           <CardTitle className="text-xs font-medium">{title}</CardTitle>
           <Percent className="h-3 w-3 text-muted-foreground" />
         </div>
         <CardDescription className="text-xs">Current APY: {currentRate.toFixed(2)}%</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-2 p-2 pt-0">
+      <CardContent className="space-y-2 pt-0">
         <div className="text-center bg-muted p-1 rounded-md">
             <div className="flex items-center justify-center gap-1 text-muted-foreground text-xs">
                 <Timer className="h-3 w-3" />
                 <span>Time Remaining</span>
             </div>
-            <div className="text-lg font-bold font-mono tracking-tight">
+            <div className="text-base font-bold font-mono tracking-tight">
                 {isRunning ? formatTime(timeLeft) : "24:00:00"}
             </div>
         </div>

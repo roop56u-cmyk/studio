@@ -32,24 +32,24 @@ export default function UserDashboardPage() {
 
   if (isLoading) {
     return (
-        <div className="grid gap-8">
+        <div className="grid gap-4">
             <div>
                 <Skeleton className="h-9 w-1/2" />
                 <Skeleton className="h-5 w-1/3 mt-2" />
             </div>
-             <div className="space-y-8">
+             <div className="space-y-4">
                 <Skeleton className="h-48 w-full" />
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                          <Skeleton className="h-40 w-full" />
                          <Skeleton className="h-40 w-full" />
                     </div>
                      <Skeleton className="h-64 w-full" />
                 </div>
-                <div className="space-y-8">
-                    <div className="grid grid-cols-1 gap-8">
+                <div className="space-y-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <Skeleton className="h-32 w-full" />
                       <Skeleton className="h-32 w-full" />
                     </div>
@@ -64,18 +64,18 @@ export default function UserDashboardPage() {
   }
 
   return (
-    <div className="grid gap-8">
+    <div className="grid gap-4">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">User Dashboard</h1>
         <p className="text-muted-foreground">
           Welcome back! Here's your space to manage reviews.
         </p>
       </div>
-       <div className="space-y-8">
+       <div className="space-y-4">
           <LevelTiers currentBalance={committedBalance} />
         </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
                 <WalletBalance 
@@ -136,8 +136,8 @@ export default function UserDashboardPage() {
             </>
           )}
         </div>
-        <div className="space-y-8">
-            <div className="grid grid-cols-1 gap-8">
+        <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-4">
                 <InterestCounterPanel
                     title="Daily Interest"
                     isLocked={isInterestLocked}
@@ -148,7 +148,7 @@ export default function UserDashboardPage() {
           <ReferralCard />
         </div>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <TransactionHistoryPanel />
         <TaskHistoryPanel />
       </div>
