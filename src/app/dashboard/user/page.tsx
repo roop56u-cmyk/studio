@@ -1,5 +1,6 @@
 import { ReferralCard } from "@/components/dashboard/referral-card";
 import { ReviewForm } from "@/components/dashboard/review-form";
+import { InterestRateCounter } from "@/components/dashboard/interest-rate-counter";
 
 export default function UserDashboardPage() {
   return (
@@ -15,6 +16,7 @@ export default function UserDashboardPage() {
           <ReviewForm />
         </div>
         <div className="space-y-8">
+          <InterestRateCounter />
           <ReferralCard />
         </div>
       </div>
