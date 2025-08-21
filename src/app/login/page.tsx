@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -16,11 +17,16 @@ import { Logo } from "@/components/logo";
 
 export default function LoginPage() {
   const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleSignIn = (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock authentication: in a real app, you'd verify credentials.
-    router.push("/dashboard");
+    if (email === "admin@example.com" && password === "password") {
+      router.push("/dashboard/admin");
+    } else {
+      router.push("/dashboard/user");
+    }
   };
 
   return (
@@ -42,11 +48,19 @@ export default function LoginPage() {
                 type="email"
                 placeholder="m@example.com"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" required />
+              <Input 
+                id="password" 
+                type="password" 
+                required 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
             </div>
             <Button type="submit" className="w-full">
               Sign In
