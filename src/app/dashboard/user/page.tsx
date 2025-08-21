@@ -138,12 +138,6 @@ export default function UserDashboardPage() {
         <div className="space-y-8">
             <div className="grid grid-cols-1 gap-8">
                 <InterestCounterPanel
-                    title="Task Rewards Interest"
-                    isLocked={isTaskLocked}
-                    balance={taskRewardsBalance}
-                    counterType="task"
-                />
-                <InterestCounterPanel
                     title="Daily Interest"
                     isLocked={isInterestLocked}
                     balance={interestEarningsBalance}

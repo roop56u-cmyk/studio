@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -29,6 +30,7 @@ import { Loader2, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "../ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useWallet } from "@/contexts/WalletContext";
 
 const reviewSchema = z.object({
   rating: z.number().min(1, "Please provide a rating.").max(5),
@@ -44,6 +46,7 @@ export function ReviewForm() {
   const [isGeneratingTask, setIsGeneratingTask] = useState(true);
   const [task, setTask] = useState<GenerateTaskSuggestionOutput | null>(null);
   const { toast } = useToast();
+  const { completeTask, tasksCompletedToday, dailyTaskQuota } = useWallet();
 
   const form = useForm<ReviewFormValues>({
     resolver: zodResolver(reviewSchema),
@@ -70,26 +73,32 @@ export function ReviewForm() {
   };
 
   useEffect(() => {
-    fetchTask();
-  }, []);
+    if (tasksCompletedToday < dailyTaskQuota) {
+        fetchTask();
+    }
+  }, [tasksCompletedToday, dailyTaskQuota]);
 
   const onSubmit = async (data: ReviewFormValues) => {
     if (!task) return;
     setIsLoading(true);
     try {
-      const result = await submitReview({ 
+      // This is a dummy submission, in a real app you'd likely wait for this.
+      await submitReview({ 
         taskTitle: task.taskTitle,
         rating: data.rating,
         option: data.option,
        });
-      if (result.success) {
-        toast({
-            title: "Review Submitted!",
-            description: "Thank you! Your USDT reward will be processed shortly.",
-        });
-        // Fetch a new task for the user
-        fetchTask();
+
+      // The core logic is now in the wallet context
+      completeTask();
+
+      // Fetch a new task if the user hasn't reached their quota
+      if (tasksCompletedToday + 1 < dailyTaskQuota) {
+          fetchTask();
+      } else {
+          setTask(null); // No more tasks for today
       }
+
     } catch (error) {
       toast({
         variant: "destructive",
@@ -101,6 +110,8 @@ export function ReviewForm() {
     }
   };
 
+  const allTasksCompleted = tasksCompletedToday >= dailyTaskQuota;
+
   return (
     <Card>
       <CardHeader>
@@ -108,101 +119,108 @@ export function ReviewForm() {
             <div>
                 <CardTitle>Submit a Review</CardTitle>
                 <CardDescription>
-                  Complete the fields below to submit your review.
+                  Tasks Completed Today: {tasksCompletedToday} / {dailyTaskQuota}
                 </CardDescription>
             </div>
-            <Button variant="outline" size="icon" onClick={fetchTask} disabled={isGeneratingTask}>
+             <Button variant="outline" size="icon" onClick={fetchTask} disabled={isGeneratingTask || allTasksCompleted}>
                 <RefreshCw className={cn("h-4 w-4", isGeneratingTask && "animate-spin")} />
                 <span className="sr-only">Get new task</span>
             </Button>
         </div>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="space-y-4">
-                <div>
-                    <FormLabel>Your Task</FormLabel>
-                    {isGeneratingTask ? (
-                         <Skeleton className="h-10 w-full mt-2" />
-                    ) : (
-                        <div className="rounded-md border bg-muted px-3 py-2 text-sm font-semibold min-h-[40px] flex items-center mt-2">
-                            {task?.taskTitle || "..."}
-                        </div>
-                    )}
-                </div>
-                <div>
-                    <FormLabel>About the Task</FormLabel>
-                     {isGeneratingTask ? (
-                         <Skeleton className="h-8 w-full mt-2" />
-                    ) : (
-                        <p className="text-sm text-muted-foreground mt-2">
-                           {task?.taskDescription || "..."}
-                        </p>
-                    )}
-                </div>
+         {allTasksCompleted ? (
+            <div className="text-center py-8">
+                <h3 className="text-lg font-semibold">All Tasks Completed!</h3>
+                <p className="text-muted-foreground text-sm mt-1">You have reached your daily limit. Please come back tomorrow for more tasks.</p>
             </div>
-            
-            <FormField
-              control={form.control}
-              name="rating"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Your Rating</FormLabel>
-                  <FormControl>
-                    <StarRating rating={field.value} setRating={field.onChange} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="option"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Select an Option</FormLabel>
-                  {isGeneratingTask ? (
-                    <div className="space-y-2">
-                        <Skeleton className="h-6 w-3/4" />
-                        <Skeleton className="h-6 w-1/2" />
-                        <Skeleton className="h-6 w-2/3" />
-                        <Skeleton className="h-6 w-3/5" />
+        ) : (
+            <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <div className="space-y-4">
+                    <div>
+                        <FormLabel>Your Task</FormLabel>
+                        {isGeneratingTask ? (
+                            <Skeleton className="h-10 w-full mt-2" />
+                        ) : (
+                            <div className="rounded-md border bg-muted px-3 py-2 text-sm font-semibold min-h-[40px] flex items-center mt-2">
+                                {task?.taskTitle || "..."}
+                            </div>
+                        )}
                     </div>
-                  ) : (
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex flex-col space-y-1"
-                    >
-                      {task?.options?.map((option, index) => (
-                        <FormItem key={index} className="flex items-center space-x-3 space-y-0">
-                          <FormControl>
-                            <RadioGroupItem value={option} />
-                          </FormControl>
-                          <FormLabel className="font-normal">
-                            {option}
-                          </FormLabel>
-                        </FormItem>
-                      ))}
-                    </RadioGroup>
-                  </FormControl>
-                  )}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <div>
+                        <FormLabel>About the Task</FormLabel>
+                        {isGeneratingTask ? (
+                            <Skeleton className="h-8 w-full mt-2" />
+                        ) : (
+                            <p className="text-sm text-muted-foreground mt-2">
+                            {task?.taskDescription || "..."}
+                            </p>
+                        )}
+                    </div>
+                </div>
+                
+                <FormField
+                control={form.control}
+                name="rating"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Your Rating</FormLabel>
+                    <FormControl>
+                        <StarRating rating={field.value} setRating={field.onChange} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                
+                <FormField
+                control={form.control}
+                name="option"
+                render={({ field }) => (
+                    <FormItem className="space-y-3">
+                    <FormLabel>Select an Option</FormLabel>
+                    {isGeneratingTask ? (
+                        <div className="space-y-2">
+                            <Skeleton className="h-6 w-3/4" />
+                            <Skeleton className="h-6 w-1/2" />
+                            <Skeleton className="h-6 w-2/3" />
+                            <Skeleton className="h-6 w-3/5" />
+                        </div>
+                    ) : (
+                    <FormControl>
+                        <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex flex-col space-y-1"
+                        >
+                        {task?.options?.map((option, index) => (
+                            <FormItem key={index} className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                                <RadioGroupItem value={option} />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                                {option}
+                            </FormLabel>
+                            </FormItem>
+                        ))}
+                        </RadioGroup>
+                    </FormControl>
+                    )}
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
 
-            <div className="flex items-center justify-between">
-              <Button type="submit" disabled={isLoading || isGeneratingTask || !task}>
-                {(isLoading || isGeneratingTask) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isLoading ? "Submitting..." : "Submit Review"}
-              </Button>
-            </div>
-          </form>
-        </Form>
+                <div className="flex items-center justify-between">
+                <Button type="submit" disabled={isLoading || isGeneratingTask || !task}>
+                    {(isLoading || isGeneratingTask) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isLoading ? "Submitting..." : "Submit Review"}
+                </Button>
+                </div>
+            </form>
+            </Form>
+        )}
       </CardContent>
     </Card>
   );
