@@ -144,7 +144,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setTasksCompletedToday(0);
         setLastTaskCompletionDate('');
     }
-  }, [currentUser]);
+  }, [currentUser, setPersistentState]);
 
 
   useEffect(() => setPersistentState('mainBalance', mainBalance), [mainBalance, setPersistentState]);
@@ -225,11 +225,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   }
   
   const getWalletData = useCallback(() => {
-    const totalBalance = mainBalance + taskRewardsBalance + interestEarningsBalance;
-    const level = levels.slice().reverse().find(l => committedBalance >= l.minAmount)?.level ?? 0;
-
-    return { balance: totalBalance, level, deposits, withdrawals };
-  }, [mainBalance, taskRewardsBalance, interestEarningsBalance, committedBalance, deposits, withdrawals]);
+    return { balance: mainBalance, level: currentLevel, deposits, withdrawals };
+  }, [mainBalance, currentLevel, deposits, withdrawals]);
 
   const startCounter = (type: CounterType) => {
       const now = Date.now();
@@ -263,7 +260,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       // Calculate earnings for this single task
       const dailyRate = currentRate / 100 / 365;
       const potentialDailyEarning = taskRewardsBalance * dailyRate;
-      const earningPerTask = potentialDailyEarning / dailyTaskQuota;
+      
+      // Ensure dailyTaskQuota is not zero to avoid division by zero
+      const earningPerTask = dailyTaskQuota > 0 ? potentialDailyEarning / dailyTaskQuota : 0;
 
       if (earningPerTask > 0) {
         setTaskRewardsEarned(prev => prev + earningPerTask);
