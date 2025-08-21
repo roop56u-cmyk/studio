@@ -10,7 +10,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Users, DollarSign, CheckSquare, CheckCircle, Lock, PlayCircle } from "lucide-react";
+import { Users, DollarSign, CheckSquare, CheckCircle, Lock, PlayCircle, Repeat } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 
@@ -21,6 +21,7 @@ export const levels = [
     rate: 1.8,
     referrals: null,
     dailyTasks: 15,
+    monthlyWithdrawals: 1,
   },
   {
     level: 2,
@@ -28,6 +29,7 @@ export const levels = [
     rate: 2.8,
     referrals: 8,
     dailyTasks: 25,
+    monthlyWithdrawals: 1,
   },
   {
     level: 3,
@@ -35,6 +37,7 @@ export const levels = [
     rate: 3.8,
     referrals: 16,
     dailyTasks: 35,
+    monthlyWithdrawals: 1,
   },
   {
     level: 4,
@@ -42,6 +45,7 @@ export const levels = [
     rate: 4.8,
     referrals: 36,
     dailyTasks: 45,
+    monthlyWithdrawals: 1,
   },
   {
     level: 5,
@@ -49,6 +53,7 @@ export const levels = [
     rate: 5.8,
     referrals: 55,
     dailyTasks: 55,
+    monthlyWithdrawals: 2,
   },
 ];
 
@@ -123,6 +128,13 @@ export function LevelTiers({ currentBalance, onStartTasks, isTaskLocked }: Level
                                             </div>
                                         </div>
                                     )}
+                                    <div className="flex items-center">
+                                        <Repeat className="h-5 w-5 mr-3 text-muted-foreground" />
+                                        <div className="text-sm">
+                                            <p className="font-semibold">{level.monthlyWithdrawals}x Monthly</p>
+                                            <p className="text-muted-foreground text-xs">Withdrawal Limit</p>
+                                        </div>
+                                    </div>
                                 </CardContent>
                             </div>
                              {isCurrentLevel && (

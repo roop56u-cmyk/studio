@@ -93,6 +93,18 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick }: { onRec
         <SidebarMenuItem>
           <SidebarMenuButton
             asChild
+            isActive={pathname.startsWith("/dashboard/team")}
+            tooltip={{ children: "Team" }}
+          >
+            <Link href="/dashboard/team">
+              <Users />
+              <span>Team</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            asChild
             isActive={pathname.startsWith("/dashboard/review")}
             tooltip={{ children: "Submit Review" }}
           >

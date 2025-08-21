@@ -26,7 +26,8 @@ export default function UserDashboardPage() {
     committedBalance,
     isLoading,
     dailyTaskQuota,
-    tasksCompletedToday
+    tasksCompletedToday,
+    handleMoveFunds
   } = useWallet();
 
   const [isTaskDialogOpen, setIsTaskDialogOpen] = React.useState(false);
@@ -93,6 +94,7 @@ export default function UserDashboardPage() {
                 title="Task Rewards"
                 balance={taskRewardsBalance.toFixed(2)}
                 description="Balance from completed tasks."
+                onMoveToMain={() => handleMoveFunds('Task Rewards', taskRewardsBalance, true)}
                 />
                 <EarningsPanel 
                     title="Total Earned"
@@ -104,6 +106,7 @@ export default function UserDashboardPage() {
                 title="Interest Earnings"
                 balance={interestEarningsBalance.toFixed(2)}
                 description="Balance from interest."
+                onMoveToMain={() => handleMoveFunds('Interest Earnings', interestEarningsBalance, true)}
                 />
                  <EarningsPanel 
                     title="Total Earned"

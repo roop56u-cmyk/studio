@@ -5,18 +5,22 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Wallet2 } from 'lucide-react';
+import { Wallet2, ArrowLeftRight } from 'lucide-react';
+import { Button } from "../ui/button";
 
 interface WalletBalanceProps {
     title: string;
     description: string;
     balance: string;
+    onMoveToMain?: () => void;
 }
 
-export function WalletBalance({ title, description, balance = "0.00" }: WalletBalanceProps) {
+export function WalletBalance({ title, description, balance = "0.00", onMoveToMain }: WalletBalanceProps) {
+  const canMove = parseFloat(balance) > 0;
   return (
     <Card>
       <CardHeader>
@@ -33,6 +37,20 @@ export function WalletBalance({ title, description, balance = "0.00" }: WalletBa
           {description}
         </p>
       </CardContent>
+       {onMoveToMain && (
+        <CardFooter className="pt-0">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full"
+            onClick={onMoveToMain}
+            disabled={!canMove}
+            >
+            <ArrowLeftRight className="mr-2 h-3 w-3" />
+            Move to Main Wallet
+          </Button>
+        </CardFooter>
+      )}
     </Card>
   );
 }

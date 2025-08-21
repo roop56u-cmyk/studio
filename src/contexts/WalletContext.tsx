@@ -7,12 +7,12 @@ import { useAuth } from './AuthContext';
 import { GenerateTaskSuggestionOutput } from '@/ai/flows/generate-task-suggestions';
 
 const levels = [
-  { level: 0, minAmount: 0, rate: 0, referrals: null, dailyTasks: 0 },
-  { level: 1, minAmount: 100, rate: 1.8, referrals: null, dailyTasks: 15 },
-  { level: 2, minAmount: 500, rate: 2.8, referrals: 8, dailyTasks: 25 },
-  { level: 3, minAmount: 2000, rate: 3.8, referrals: 16, dailyTasks: 35 },
-  { level: 4, minAmount: 6000, rate: 4.8, referrals: 36, dailyTasks: 45 },
-  { level: 5, minAmount: 20000, rate: 5.8, referrals: 55, dailyTasks: 55 },
+  { level: 0, minAmount: 0, rate: 0, referrals: null, dailyTasks: 0, monthlyWithdrawals: 0 },
+  { level: 1, minAmount: 100, rate: 1.8, referrals: null, dailyTasks: 15, monthlyWithdrawals: 1 },
+  { level: 2, minAmount: 500, rate: 2.8, referrals: 8, dailyTasks: 25, monthlyWithdrawals: 1 },
+  { level: 3, minAmount: 2000, rate: 3.8, referrals: 16, dailyTasks: 35, monthlyWithdrawals: 1 },
+  { level: 4, minAmount: 6000, rate: 4.8, referrals: 36, dailyTasks: 45, monthlyWithdrawals: 1 },
+  { level: 5, minAmount: 20000, rate: 5.8, referrals: 55, dailyTasks: 55, monthlyWithdrawals: 2 },
 ];
 
 export type CompletedTask = {
@@ -44,7 +44,7 @@ interface WalletContextType {
   completedTasks: CompletedTask[];
   amount: string;
   setAmount: (amount: string) => void;
-  handleMoveFunds: (destination: 'Task Rewards' | 'Interest Earnings') => void;
+  handleMoveFunds: (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', amountToMove: number, fromSubAccount?: boolean) => void;
   addRecharge: (amount: number) => void;
   getWalletData: () => {
     balance: number;
@@ -183,39 +183,55 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => setPersistentState('withdrawalAddress', withdrawalAddress), [withdrawalAddress, setPersistentState]);
 
 
-  const handleMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings') => {
-    const numericAmount = parseFloat(amount);
+ const handleMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', amountToMove: number, fromSubAccount: boolean = false) => {
+    const numericAmount = fromSubAccount ? amountToMove : parseFloat(amount);
     if (isNaN(numericAmount) || numericAmount <= 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid Amount',
+        description: 'Please enter a valid positive number to move.',
+      });
+      return;
+    }
+
+    if (fromSubAccount) {
+      if (destination === 'Main Wallet') {
+        if (amountToMove > (sourceBalance || 0)) {
+          toast({ variant: "destructive", title: "Insufficient Funds", description: `Cannot move more than available in the source wallet.` });
+          return;
+        }
+        setMainBalance(prev => prev + numericAmount);
+        if (sourceName === 'Task Rewards') {
+          setTaskRewardsBalance(prev => prev - numericAmount);
+        } else {
+          setInterestEarningsBalance(prev => prev - numericAmount);
+        }
+        toast({ title: "Funds Moved", description: `${numericAmount.toFixed(2)} USDT has been moved to your Main Wallet.` });
+      }
+    } else {
+        if (numericAmount > mainBalance) {
+            toast({
+                variant: "destructive",
+                title: "Insufficient Funds",
+                description: "You cannot move more than your main balance.",
+            });
+            return;
+        }
+
+        setMainBalance(prev => prev - numericAmount);
+
+        if (destination === "Task Rewards") {
+            setTaskRewardsBalance(prev => prev + numericAmount);
+        } else if (destination === "Interest Earnings") {
+            setInterestEarningsBalance(prev => prev + numericAmount);
+        }
+
         toast({
-            variant: "destructive",
-            title: "Invalid Amount",
-            description: "Please enter a valid positive number to move.",
+          title: "Funds Moved",
+          description: `${numericAmount.toFixed(2)} USDT has been notionally moved to ${destination}.`,
         });
-        return;
+        setAmount("");
     }
-
-    if (numericAmount > mainBalance) {
-        toast({
-            variant: "destructive",
-            title: "Insufficient Funds",
-            description: "You cannot move more than your main balance.",
-        });
-        return;
-    }
-
-    setMainBalance(prev => prev - numericAmount);
-
-    if (destination === "Task Rewards") {
-        setTaskRewardsBalance(prev => prev + numericAmount);
-    } else if (destination === "Interest Earnings") {
-        setInterestEarningsBalance(prev => prev + numericAmount);
-    }
-
-    toast({
-      title: "Funds Moved",
-      description: `${numericAmount.toFixed(2)} USDT has been notionally moved to ${destination}.`,
-    });
-    setAmount("");
   };
 
   const approveRecharge = (rechargeAmount: number) => {
