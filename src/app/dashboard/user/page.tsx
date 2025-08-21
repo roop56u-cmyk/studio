@@ -1,6 +1,5 @@
 import { ReferralCard } from "@/components/dashboard/referral-card";
 import { ReviewForm } from "@/components/dashboard/review-form";
-import { WalletPanel } from "@/components/dashboard/wallet-panel";
 
 export default function UserDashboardPage() {
   return (
@@ -17,7 +16,6 @@ export default function UserDashboardPage() {
         </div>
         <div className="space-y-8">
           <ReferralCard />
-          <WalletPanel />
         </div>
       </div>
     </div>
