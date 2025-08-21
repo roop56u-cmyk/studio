@@ -1,6 +1,7 @@
 
 "use client";
 
+import React from "react";
 import {
   Carousel,
   CarouselContent,
@@ -11,6 +12,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Users, DollarSign, CheckSquare, CheckCircle, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "../ui/button";
+import { PlayCircle } from "lucide-react";
 
 export const levels = [
   {
@@ -54,9 +57,10 @@ export type Level = typeof levels[0];
 
 interface LevelTiersProps {
     currentBalance: number;
+    onLevelClick: (level: Level) => void;
 }
 
-export function LevelTiers({ currentBalance }: LevelTiersProps) {
+export function LevelTiers({ currentBalance, onLevelClick }: LevelTiersProps) {
     
   const currentLevel = levels.slice().reverse().find(level => currentBalance >= level.minAmount)?.level ?? 0;
 
@@ -78,8 +82,9 @@ export function LevelTiers({ currentBalance }: LevelTiersProps) {
                 <CarouselItem key={level.level} className="basis-full sm:basis-1/2 md:basis-1/3">
                     <div className="p-1">
                         <Card 
+                            onClick={() => onLevelClick(level)}
                             className={cn(
-                                "h-full flex flex-col", 
+                                "h-full flex flex-col cursor-pointer hover:border-primary", 
                                 isCurrentLevel && "border-primary ring-2 ring-primary"
                             )}
                         >
@@ -94,7 +99,7 @@ export function LevelTiers({ currentBalance }: LevelTiersProps) {
                                 {isCurrentLevel && <CardDescription className="text-primary font-semibold">Current Level</CardDescription>}
                                 {!isCurrentLevel && <CardDescription>Unlock new earning potentials.</CardDescription>}
                             </CardHeader>
-                            <CardContent className="flex-grow space-y-4">
+                            <CardContent className="flex-grow space-y-3">
                                 <div className="flex items-center">
                                     <DollarSign className="h-5 w-5 mr-3 text-muted-foreground" />
                                     <div className="text-sm">

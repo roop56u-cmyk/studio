@@ -11,9 +11,10 @@ import { TaskHistoryPanel } from "@/components/dashboard/task-history-panel";
 import { useWallet } from "@/contexts/WalletContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Lock, Star } from "lucide-react";
+import { Lock } from "lucide-react";
 import { EarningsPanel } from "@/components/dashboard/earnings-panel";
-import { ReviewForm } from "@/components/dashboard/review-form";
+import { LevelDetailDialog } from "@/components/dashboard/level-detail-dialog";
+import { TaskDialog } from "@/components/dashboard/task-dialog";
 
 
 export default function UserDashboardPage() {
@@ -24,11 +25,19 @@ export default function UserDashboardPage() {
     taskRewardsEarned,
     interestEarned,
     committedBalance,
-    isLoading 
+    isLoading,
+    dailyTaskQuota,
+    tasksCompletedToday
   } = useWallet();
+
+  const [selectedLevel, setSelectedLevel] = React.useState<Level | null>(null);
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = React.useState(false);
 
   const isTaskLocked = taskRewardsBalance < 100;
   const isInterestLocked = interestEarningsBalance < 100;
+  
+  const currentLevel = levels.slice().reverse().find(level => committedBalance >= level.minAmount);
+  const allTasksCompleted = tasksCompletedToday >= dailyTaskQuota;
 
   if (isLoading) {
     return (
@@ -43,17 +52,17 @@ export default function UserDashboardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div className="lg:col-span-2 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                         <Skeleton className="h-40 w-full" />
-                         <Skeleton className="h-40 w-full" />
+                         <Skeleton className="h-24 w-full" />
+                         <Skeleton className="h-24 w-full" />
                     </div>
-                     <Skeleton className="h-64 w-full" />
+                     <Skeleton className="h-40 w-full" />
                 </div>
                 <div className="space-y-4">
                     <div className="grid grid-cols-1 gap-4">
                       <Skeleton className="h-32 w-full" />
                       <Skeleton className="h-32 w-full" />
                     </div>
-                    <Skeleton className="h-40 w-full" />
+                    <Skeleton className="h-24 w-full" />
                 </div>
             </div>
              <div>
@@ -74,6 +83,7 @@ export default function UserDashboardPage() {
        <div className="space-y-4">
           <LevelTiers 
             currentBalance={committedBalance} 
+            onLevelClick={setSelectedLevel}
           />
         </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -120,14 +130,14 @@ export default function UserDashboardPage() {
                     </p>
                 </CardContent>
             </Card>
-          ) : !isTaskLocked ? (
-             <Card>
+          ) : allTasksCompleted ? (
+              <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center"><Star className="mr-2 h-5 w-5" /> Submit a Review</CardTitle>
-                  <CardDescription>Complete daily tasks to earn rewards.</CardDescription>
+                    <CardTitle>All Tasks Completed!</CardTitle>
+                    <CardDescription>You have reached your daily limit.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ReviewForm />
+                    <p className="text-sm">Please come back tomorrow for more tasks.</p>
                 </CardContent>
              </Card>
           ) : null}
@@ -148,6 +158,24 @@ export default function UserDashboardPage() {
         <TransactionHistoryPanel />
         <TaskHistoryPanel />
       </div>
+
+       {selectedLevel && (
+        <LevelDetailDialog
+          level={selectedLevel}
+          open={!!selectedLevel}
+          onOpenChange={() => setSelectedLevel(null)}
+          isCurrentLevel={selectedLevel.level === currentLevel?.level}
+          isTaskLocked={isTaskLocked || allTasksCompleted}
+          onStartTasks={() => {
+            setSelectedLevel(null);
+            setIsTaskDialogOpen(true);
+          }}
+        />
+      )}
+      <TaskDialog
+        open={isTaskDialogOpen}
+        onOpenChange={setIsTaskDialogOpen}
+      />
     </div>
   );
 }
