@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect } from 'react';
@@ -200,23 +201,34 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    if (fromAccount) { // Moving from sub-account to main wallet
-        if (destination !== 'Main Wallet') return;
+    if (fromAccount) { // Moving from sub-account
+        let sourceBalance;
+        let setSourceBalance;
 
-        let sourceBalance = fromAccount === 'Task Rewards' ? taskRewardsBalance : interestEarningsBalance;
+        if (fromAccount === 'Task Rewards') {
+            sourceBalance = taskRewardsBalance;
+            setSourceBalance = setTaskRewardsBalance;
+        } else {
+            sourceBalance = interestEarningsBalance;
+            setSourceBalance = setInterestEarningsBalance;
+        }
+
         if (numericAmount > sourceBalance) {
           toast({ variant: "destructive", title: "Insufficient Funds", description: `Cannot move more than available in ${fromAccount}.` });
           return;
         }
 
-        setMainBalance(prev => prev + numericAmount);
-        if (fromAccount === 'Task Rewards') {
-          setTaskRewardsBalance(prev => prev - numericAmount);
-        } else {
-          setInterestEarningsBalance(prev => prev - numericAmount);
-        }
-        toast({ title: "Funds Moved", description: `${numericAmount.toFixed(2)} USDT has been moved to your Main Wallet.` });
+        setSourceBalance(prev => prev - numericAmount);
 
+        if (destination === 'Main Wallet') {
+            setMainBalance(prev => prev + numericAmount);
+        } else if (destination === 'Interest Earnings') {
+            setInterestEarningsBalance(prev => prev + numericAmount);
+        } else if (destination === 'Task Rewards') {
+            setTaskRewardsBalance(prev => prev + numericAmount);
+        }
+
+        toast({ title: "Funds Moved", description: `${numericAmount.toFixed(2)} USDT has been moved from ${fromAccount} to ${destination}.` });
     } else { // Moving from main wallet to sub-account
         if (numericAmount > mainBalance) {
             toast({
@@ -237,7 +249,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
         toast({
           title: "Funds Moved",
-          description: `${numericAmount.toFixed(2)} USDT has been notionally moved to ${destination}.`,
+          description: `${numericAmount.toFixed(2)} USDT has been moved from Main Wallet to ${destination}.`,
         });
         setAmount("");
     }
@@ -396,3 +408,5 @@ export const useWallet = () => {
   }
   return context;
 };
+
+    

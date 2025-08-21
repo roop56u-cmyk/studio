@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React from "react";
@@ -95,6 +96,7 @@ export default function UserDashboardPage() {
                     balance={taskRewardsBalance.toFixed(2)}
                     description="Balance from completed tasks."
                     onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Task Rewards')}
+                    showMoveToOther={true}
                 />
                 <EarningsPanel 
                     title="Total Earned"
@@ -107,6 +109,7 @@ export default function UserDashboardPage() {
                     balance={interestEarningsBalance.toFixed(2)}
                     description="Balance from interest."
                     onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Interest Earnings')}
+                    showMoveToOther={true}
                 />
                  <EarningsPanel 
                     title="Total Earned"
@@ -168,3 +171,5 @@ export default function UserDashboardPage() {
     </div>
   );
 }
+
+    

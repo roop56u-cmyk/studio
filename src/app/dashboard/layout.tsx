@@ -51,7 +51,12 @@ import {
   ChevronDown,
   Gift,
   TrendingUp,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Mail,
+  UserCog,
+  Settings2,
+  Activity,
+  Megaphone
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -103,10 +108,50 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick }: { onRec
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/admin/users")} tooltip={{ children: "Manage Users" }}>
+                        <Link href="/dashboard/admin/users">
+                            <UserCog />
+                            <span>User Management</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
                     <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/admin/levels")} tooltip={{ children: "Manage Levels" }}>
                         <Link href="/dashboard/admin/levels">
                             <SlidersHorizontal />
                             <span>Manage Levels</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/admin/notices")} tooltip={{ children: "Manage Notices" }}>
+                        <Link href="/dashboard/admin/notices">
+                            <Megaphone />
+                            <span>Manage Notices</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/admin/settings")} tooltip={{ children: "System Settings" }}>
+                        <Link href="/dashboard/admin/settings">
+                            <Settings2 />
+                            <span>System Settings</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/admin/activity-log")} tooltip={{ children: "Activity Log" }}>
+                        <Link href="/dashboard/admin/activity-log">
+                            <Activity />
+                            <span>Activity Log</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/inbox")} tooltip={{ children: "Inbox" }}>
+                        <Link href="/dashboard/inbox">
+                            <Mail />
+                            <span>Inbox</span>
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -140,36 +185,24 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick }: { onRec
                 <SidebarMenuItem>
                 <SidebarMenuButton
                     asChild
-                    isActive={pathname.startsWith("/dashboard/review")}
-                    tooltip={{ children: "Submit Review" }}
+                    isActive={pathname.startsWith("/dashboard/notices")}
+                    tooltip={{ children: "Notices" }}
                 >
-                    <Link href="/dashboard/user">
-                    <Star />
-                    <span>Submit Review</span>
+                    <Link href="/dashboard/notices">
+                    <Megaphone />
+                    <span>Notices</span>
                     </Link>
                 </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                 <SidebarMenuButton
                     asChild
-                    isActive={pathname.startsWith("/dashboard/profile")}
-                    tooltip={{ children: "Profile" }}
+                    isActive={pathname.startsWith("/dashboard/inbox")}
+                    tooltip={{ children: "Inbox" }}
                 >
-                    <Link href="/dashboard/user">
-                    <User />
-                    <span>Profile</span>
-                    </Link>
-                </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith("/dashboard/referrals")}
-                    tooltip={{ children: "Referrals" }}
-                >
-                    <Link href="/dashboard/user">
-                    <Users />
-                    <span>Referrals</span>
+                    <Link href="/dashboard/inbox">
+                    <Mail />
+                    <span>Inbox</span>
                     </Link>
                 </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -325,3 +358,5 @@ export default function DashboardLayout({
       </SidebarProvider>
   );
 }
+
+    

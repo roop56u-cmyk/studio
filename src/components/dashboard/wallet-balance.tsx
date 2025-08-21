@@ -10,21 +10,24 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Wallet2, ArrowLeftRight } from 'lucide-react';
+import { Wallet2, ArrowLeftRight, ArrowRight } from 'lucide-react';
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { useWallet } from "@/contexts/WalletContext";
 
 interface WalletBalanceProps {
     title: string;
     description: string;
     balance: string;
     onMoveToMain?: (amount: number) => void;
+    showMoveToOther?: boolean;
 }
 
-export function WalletBalance({ title, description, balance = "0.00", onMoveToMain }: WalletBalanceProps) {
+export function WalletBalance({ title, description, balance = "0.00", onMoveToMain, showMoveToOther = false }: WalletBalanceProps) {
   const [moveAmount, setMoveAmount] = useState("");
   const { toast } = useToast();
+  const { handleMoveFunds } = useWallet();
   const canMove = parseFloat(balance) > 0;
 
   const handleMoveClick = () => {
@@ -53,6 +56,26 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
     setMoveAmount("");
   };
 
+  const handleMoveToOther = () => {
+      const numericAmount = parseFloat(moveAmount);
+       if (isNaN(numericAmount) || numericAmount <= 0) {
+          toast({ variant: "destructive", title: "Invalid Amount", description: "Please enter a valid amount." });
+          return;
+        }
+
+        if (numericAmount > parseFloat(balance)) {
+            toast({ variant: "destructive", title: "Insufficient Funds" });
+            return;
+        }
+
+        if (title === "Task Rewards") {
+            handleMoveFunds("Interest Earnings", numericAmount, "Task Rewards");
+        } else {
+            handleMoveFunds("Task Rewards", numericAmount, "Interest Earnings");
+        }
+        setMoveAmount("");
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -69,7 +92,7 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
           {description}
         </p>
       </CardContent>
-       {onMoveToMain && (
+       {(onMoveToMain || showMoveToOther) && (
         <CardFooter className="pt-0 flex-col items-start gap-2">
           <div className="w-full flex items-center gap-2">
             <Input 
@@ -80,20 +103,35 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
               onChange={(e) => setMoveAmount(e.target.value)}
               disabled={!canMove}
             />
-            <Button 
+            {onMoveToMain && (
+                <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8"
+                onClick={handleMoveClick}
+                disabled={!canMove}
+                >
+                <ArrowLeftRight className="mr-2 h-3 w-3" />
+                To Main
+                </Button>
+            )}
+          </div>
+           {showMoveToOther && (
+             <Button 
               variant="outline" 
               size="sm" 
-              className="h-8"
-              onClick={handleMoveClick}
+              className="h-8 w-full"
+              onClick={handleMoveToOther}
               disabled={!canMove}
             >
-              <ArrowLeftRight className="mr-2 h-3 w-3" />
-              Move
+              <ArrowRight className="mr-2 h-3 w-3" />
+              Move to {title === "Task Rewards" ? "Interest Earnings" : "Task Rewards"}
             </Button>
-          </div>
-           <p className="text-xs text-muted-foreground">Move funds back to your Main Wallet.</p>
+           )}
         </CardFooter>
       )}
     </Card>
   );
 }
+
+    
