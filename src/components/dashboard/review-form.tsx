@@ -20,11 +20,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { StarRating } from "@/components/dashboard/star-rating";
 import { SentimentResult } from "@/components/dashboard/sentiment-result";
 import { submitReview } from "@/app/actions";
 import type { AnalyzeReviewSentimentOutput } from "@/ai/flows/analyze-review-sentiment";
 import { generateTaskSuggestion } from "@/app/actions";
+import type { GenerateTaskSuggestionOutput } from "@/ai/flows/generate-task-suggestions";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "../ui/skeleton";
@@ -32,6 +34,9 @@ import { cn } from "@/lib/utils";
 
 const reviewSchema = z.object({
   rating: z.number().min(1, "Please provide a rating.").max(5),
+  option: z.string({
+    required_error: "You need to select a review option.",
+  }),
 });
 
 type ReviewFormValues = z.infer<typeof reviewSchema>;
@@ -39,7 +44,7 @@ type ReviewFormValues = z.infer<typeof reviewSchema>;
 export function ReviewForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingTask, setIsGeneratingTask] = useState(true);
-  const [task, setTask] = useState<string>("");
+  const [task, setTask] = useState<GenerateTaskSuggestionOutput | null>(null);
   const [sentiment, setSentiment] = useState<AnalyzeReviewSentimentOutput | null>(null);
   const { toast } = useToast();
 
@@ -55,8 +60,8 @@ export function ReviewForm() {
       setIsGeneratingTask(true);
       setSentiment(null);
       form.reset();
-      const { task } = await generateTaskSuggestion();
-      setTask(task);
+      const result = await generateTaskSuggestion();
+      setTask(result);
     } catch (error) {
       toast({
         variant: "destructive",
@@ -77,8 +82,9 @@ export function ReviewForm() {
     setIsLoading(true);
     setSentiment(null);
     try {
-      // The review text for sentiment analysis is the task title itself.
-      const result = await submitReview({ reviewText: `${task} - ${data.rating} stars` });
+      // The review text for sentiment analysis includes the title, rating, and selected option.
+      const reviewText = `${task.taskTitle} - ${data.rating} stars: "${data.option}"`;
+      const result = await submitReview({ reviewText });
       if (result) {
         setSentiment(result);
         toast({
@@ -104,7 +110,7 @@ export function ReviewForm() {
             <div>
                 <CardTitle>Submit a Review</CardTitle>
                 <CardDescription>
-                Rate the task below. We&apos;ll analyze its sentiment for you.
+                  Complete the fields below to submit your review.
                 </CardDescription>
             </div>
             <Button variant="outline" size="icon" onClick={fetchTask} disabled={isGeneratingTask}>
@@ -116,15 +122,27 @@ export function ReviewForm() {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="space-y-2">
-                <FormLabel>Your Task to Review</FormLabel>
-                {isGeneratingTask ? (
-                     <Skeleton className="h-10 w-full" />
-                ) : (
-                    <div className="rounded-md border bg-muted px-3 py-2 text-sm font-medium min-h-[40px] flex items-center">
-                        {task || "Generating a task for you..."}
-                    </div>
-                )}
+            <div className="space-y-4">
+                <div>
+                    <FormLabel>Your Task</FormLabel>
+                    {isGeneratingTask ? (
+                         <Skeleton className="h-10 w-full mt-2" />
+                    ) : (
+                        <div className="rounded-md border bg-muted px-3 py-2 text-sm font-semibold min-h-[40px] flex items-center mt-2">
+                            {task?.taskTitle || "..."}
+                        </div>
+                    )}
+                </div>
+                <div>
+                    <FormLabel>About the Task</FormLabel>
+                     {isGeneratingTask ? (
+                         <Skeleton className="h-8 w-full mt-2" />
+                    ) : (
+                        <p className="text-sm text-muted-foreground mt-2">
+                           {task?.taskDescription || "..."}
+                        </p>
+                    )}
+                </div>
             </div>
             
             <FormField
@@ -136,6 +154,44 @@ export function ReviewForm() {
                   <FormControl>
                     <StarRating rating={field.value} setRating={field.onChange} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="option"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Select an Option</FormLabel>
+                  {isGeneratingTask ? (
+                    <div className="space-y-2">
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-6 w-1/2" />
+                        <Skeleton className="h-6 w-2/3" />
+                        <Skeleton className="h-6 w-3/5" />
+                    </div>
+                  ) : (
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex flex-col space-y-1"
+                    >
+                      {task?.options?.map((option, index) => (
+                        <FormItem key={index} className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value={option} />
+                          </FormControl>
+                          <FormLabel className="font-normal">
+                            {option}
+                          </FormLabel>
+                        </FormItem>
+                      ))}
+                    </RadioGroup>
+                  </FormControl>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
