@@ -72,6 +72,11 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick }: { onRec
     handleMoveFunds,
     isLoading
   } = useWallet();
+  const [isClient, setIsClient] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
   
   const isAdmin = currentUser?.isAdmin;
 
@@ -81,7 +86,13 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick }: { onRec
         <Logo />
       </SidebarHeader>
       <SidebarMenu>
-        {isAdmin ? (
+        {!isClient ? (
+            <div className="p-2 space-y-2">
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+            </div>
+        ) : isAdmin ? (
             <>
                 <SidebarMenuItem>
                     <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin"} tooltip={{ children: "Dashboard" }}>
