@@ -6,7 +6,8 @@ import { ReviewForm } from "@/components/dashboard/review-form";
 import { InterestCounterPanel } from "@/components/dashboard/interest-counter-panel";
 import { LevelTiers } from "@/components/dashboard/level-tiers";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
-import { HistoryPanel } from "@/components/dashboard/history-panel";
+import { TransactionHistoryPanel } from "@/components/dashboard/transaction-history-panel";
+import { TaskHistoryPanel } from "@/components/dashboard/task-history-panel";
 import { useWallet } from "@/contexts/WalletContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -147,8 +148,9 @@ export default function UserDashboardPage() {
           <ReferralCard />
         </div>
       </div>
-      <div>
-        <HistoryPanel />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <TransactionHistoryPanel />
+        <TaskHistoryPanel />
       </div>
     </div>
   );

@@ -2,6 +2,13 @@
 "use client";
 
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
   Table,
   TableBody,
   TableCell,
@@ -16,35 +23,45 @@ export function TaskHistoryPanel() {
   const { completedTasks } = useWallet();
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Task Title</TableHead>
-          <TableHead className="text-right">Earnings (USDT)</TableHead>
-          <TableHead>Date</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {completedTasks.length > 0 ? (
-          completedTasks.map((task) => (
-            <TableRow key={task.id}>
-              <TableCell className="font-medium">{task.title}</TableCell>
-              <TableCell className="text-right font-mono text-green-600">
-                +${task.earnings.toFixed(4)}
-              </TableCell>
-              <TableCell>
-                {format(new Date(task.completedAt), "PPpp")}
-              </TableCell>
+    <Card>
+      <CardHeader>
+        <CardTitle>Task History</CardTitle>
+        <CardDescription>
+          A log of your recently completed tasks.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Task Title</TableHead>
+              <TableHead className="text-right">Earnings (USDT)</TableHead>
+              <TableHead>Date</TableHead>
             </TableRow>
-          ))
-        ) : (
-          <TableRow>
-            <TableCell colSpan={3} className="text-center">
-              You have not completed any tasks yet.
-            </TableCell>
-          </TableRow>
-        )}
-      </TableBody>
-    </Table>
+          </TableHeader>
+          <TableBody>
+            {completedTasks.length > 0 ? (
+              completedTasks.map((task) => (
+                <TableRow key={task.id}>
+                  <TableCell className="font-medium">{task.title}</TableCell>
+                  <TableCell className="text-right font-mono text-green-600">
+                    +${task.earnings.toFixed(4)}
+                  </TableCell>
+                  <TableCell>
+                    {format(new Date(task.completedAt), "PPpp")}
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={3} className="text-center">
+                  You have not completed any tasks yet.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }
