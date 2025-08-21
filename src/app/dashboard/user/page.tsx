@@ -15,8 +15,8 @@ import { Lock } from "lucide-react";
 
 export default function UserDashboardPage() {
   const { mainBalance, taskRewardsBalance, interestEarningsBalance } = useWallet();
-  const totalBalance = mainBalance + taskRewardsBalance + interestEarningsBalance;
-  const isLocked = totalBalance < 100;
+  const committedBalance = taskRewardsBalance + interestEarningsBalance;
+  const isLocked = committedBalance < 100;
 
   return (
     <div className="grid gap-8">
@@ -27,7 +27,7 @@ export default function UserDashboardPage() {
         </p>
       </div>
        <div className="space-y-8">
-          <LevelTiers currentBalance={totalBalance} />
+          <LevelTiers currentBalance={committedBalance} />
         </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
@@ -47,15 +47,15 @@ export default function UserDashboardPage() {
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center"><Lock className="mr-2 h-5 w-5" /> Features Locked</CardTitle>
-                    <CardDescription>You need to have at least $100 to unlock reviews.</CardDescription>
+                    <CardDescription>Move at least $100 to Task or Interest wallets to unlock reviews.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <p className="text-sm mb-4">
-                        Your current total balance is ${totalBalance.toFixed(2)}. Please recharge your account to reach Level 1 and start completing tasks.
+                        Your current committed balance is ${committedBalance.toFixed(2)}. Move funds from your main wallet using the sidebar to reach Level 1 and start completing tasks.
                     </p>
-                    <Button asChild>
-                        <Link href="/dashboard/recharge">Recharge Now</Link>
-                    </Button>
+                    <p className="text-sm text-muted-foreground">
+                        Your main balance is ${mainBalance.toFixed(2)}.
+                    </p>
                 </CardContent>
             </Card>
           ) : (

@@ -155,7 +155,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   }
   
   const getWalletData = useCallback(() => {
-    const balance = mainBalance + taskRewardsBalance + interestEarningsBalance;
+    const totalBalance = mainBalance + taskRewardsBalance + interestEarningsBalance;
+    const committedBalance = taskRewardsBalance + interestEarningsBalance;
+
     const levels = [
         { minAmount: 20000, level: 5 },
         { minAmount: 6000, level: 4 },
@@ -163,9 +165,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         { minAmount: 500, level: 2 },
         { minAmount: 100, level: 1 },
     ];
-    const level = levels.find(l => balance >= l.minAmount)?.level ?? 0;
+    // Level is now based on the committed balance (Task + Interest)
+    const level = levels.find(l => committedBalance >= l.minAmount)?.level ?? 0;
 
-    return { balance, level, deposits, withdrawals };
+    return { balance: totalBalance, level, deposits, withdrawals };
   }, [mainBalance, taskRewardsBalance, interestEarningsBalance, deposits, withdrawals]);
 
   return (
