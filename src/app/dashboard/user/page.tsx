@@ -7,9 +7,10 @@ import { InterestRateCounter } from "@/components/dashboard/interest-rate-counte
 import { LevelTiers } from "@/components/dashboard/level-tiers";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 
+// This interface defines the props that are passed down from the layout.
 interface UserDashboardPageProps {
-    taskRewardsBalance: number;
-    interestEarningsBalance: number;
+    taskRewardsBalance?: number;
+    interestEarningsBalance?: number;
 }
 
 export default function UserDashboardPage({ taskRewardsBalance = 0, interestEarningsBalance = 0 }: UserDashboardPageProps) {

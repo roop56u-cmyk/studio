@@ -112,7 +112,7 @@ export default function DashboardLayout({
       // which is important for components that rely on path-based logic.
       // Balances are passed to keep the UI in sync with the state managed here.
       return React.cloneElement(child, {
-        key: pathname,
+        key: pathname, // Force re-render on path change
         taskRewardsBalance,
         interestEarningsBalance,
       } as any);
