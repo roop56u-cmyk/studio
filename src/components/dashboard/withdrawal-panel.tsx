@@ -27,7 +27,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { PlusCircle, Edit, Trash2 } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Info } from "lucide-react";
 import type { WithdrawalAddress } from "@/contexts/WalletContext";
 import { WithdrawalTimer } from "./withdrawal-timer";
 
@@ -65,14 +65,8 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
   const netWithdrawal = numericAmount - adminFee;
 
   useEffect(() => {
-    if (!isWithdrawalRestrictionEnabled) {
+    if (!isWithdrawalRestrictionEnabled || !firstDepositDate) {
       setIsRestrictionActive(false);
-      return;
-    }
-    if (!firstDepositDate) {
-      // If restriction is ON but user has no deposits, they can't withdraw anyway
-      // but we show the form. The check will happen on submission attempt.
-      setIsRestrictionActive(false); 
       return;
     }
 
@@ -160,9 +154,32 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
     setAmount("");
   };
 
-  if (isWithdrawalRestrictionEnabled && isRestrictionActive) {
-    return <WithdrawalTimer firstDepositDate={firstDepositDate} waitDays={withdrawalRestrictionDays} />
+  if (isWithdrawalRestrictionEnabled) {
+    if (isRestrictionActive) {
+      return <WithdrawalTimer firstDepositDate={firstDepositDate} waitDays={withdrawalRestrictionDays} />;
+    }
+    if (!firstDepositDate) {
+        return (
+            <Card className="text-center">
+                 <CardHeader>
+                    <div className="mx-auto bg-primary/10 text-primary rounded-full p-3 w-fit">
+                        <Info className="h-8 w-8" />
+                    </div>
+                    <CardTitle className="mt-4">Withdrawals Restricted</CardTitle>
+                    <CardDescription>
+                        To ensure account security, withdrawals are enabled only after a waiting period begins.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                        Please make your first deposit to start the withdrawal countdown timer.
+                    </p>
+                </CardContent>
+            </Card>
+        );
+    }
   }
+
 
   return (
     <>
@@ -259,3 +276,5 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
     </>
   );
 }
+
+    

@@ -284,7 +284,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setMainBalance(prev => prev + rechargeAmount);
     setDeposits(prev => {
         const newDeposits = prev + 1;
-        if (newDeposits === 1) { // First deposit
+        if (newDeposits === 1 && !firstDepositDate) { // First deposit only
             setFirstDepositDate(new Date().toISOString());
         }
         return newDeposits;
@@ -435,3 +435,5 @@ export const useWallet = () => {
   }
   return context;
 };
+
+    

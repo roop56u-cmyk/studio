@@ -134,10 +134,14 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
     // 1. Check if this is the user's first approved recharge
     const userDepositsKey = `${userEmail}_deposits`;
     const depositCount = parseInt(localStorage.getItem(userDepositsKey) || '0');
-    if (depositCount > 1) return; // Not the first deposit
+    
+    // The check is for > 1 because approveRecharge increments it *before* this function is called.
+    // So if it's 1, it was 0 before.
+    if (depositCount > 1) return;
 
     // 2. Check if the deposit is >= $100
-    if (amount < 100) return;
+    const minDepositForBonus = parseInt(localStorage.getItem('system_min_deposit_for_bonus') || '100');
+    if (amount < minDepositForBonus) return;
 
     // 3. Find who referred this user
     const referredUser = users.find(u => u.email === userEmail);
@@ -147,24 +151,17 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
     const referrer = users.find(u => u.referralCode === referredUser.referredBy);
     if (!referrer) return;
 
-    // 5. Check if referrer is at Level 1 or higher
-    const referrerTaskBalanceKey = `${referrer.email}_taskRewardsBalance`;
-    const referrerInterestBalanceKey = `${referrer.email}_interestEarningsBalance`;
-    const referrerTaskBalance = parseFloat(localStorage.getItem(referrerTaskBalanceKey) || '0');
-    const referrerInterestBalance = parseFloat(localStorage.getItem(referrerInterestBalanceKey) || '0');
-    const referrerCommittedBalance = referrerTaskBalance + referrerInterestBalance;
-    if (referrerCommittedBalance < 100) return; // Referrer not at Level 1
-
-    // 6. Credit $5 to referrer's main balance
+    // 5. Credit bonus to referrer's main balance
+    const referralBonus = parseInt(localStorage.getItem('system_referral_bonus') || '5');
     const referrerMainBalanceKey = `${referrer.email}_mainBalance`;
     const referrerCurrentBalance = parseFloat(localStorage.getItem(referrerMainBalanceKey) || '0');
-    localStorage.setItem(referrerMainBalanceKey, (referrerCurrentBalance + 5).toString());
+    localStorage.setItem(referrerMainBalanceKey, (referrerCurrentBalance + referralBonus).toString());
 
     // If the referrer is the currently logged-in user, we can show a toast.
     if (currentUser?.email === referrer.email) {
       toast({
         title: "Referral Bonus!",
-        description: `You've received a $5 bonus because your referral ${userEmail} made their first deposit!`,
+        description: `You've received a $${referralBonus} bonus because your referral ${userEmail} made their first qualifying deposit!`,
       });
     }
   }
@@ -172,14 +169,9 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
   const updateRequestStatus = (id: string, status: 'Approved' | 'Declined' | 'On Hold', userEmail: string, type: 'Recharge' | 'Withdrawal', amount: number) => {
     setRequests(prev => prev.map(req => req.id === id ? { ...req, status } : req));
     
-    // Logic for the user who made the request
-    const userIsCurrentUser = currentUser?.email === userEmail;
-
+    // This logic handles updates for both current and non-current (admin-edited) users by directly manipulating localStorage.
     if (status === 'Approved') {
       if (type === 'Recharge') {
-        if (userIsCurrentUser) approveRecharge(amount);
-        
-        // Update localStorage for non-current user
         const userMainBalanceKey = `${userEmail}_mainBalance`;
         const currentBalance = parseFloat(localStorage.getItem(userMainBalanceKey) || '0');
         localStorage.setItem(userMainBalanceKey, (currentBalance + amount).toString());
@@ -187,22 +179,35 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
         const userDepositsKey = `${userEmail}_deposits`;
         const currentDeposits = parseInt(localStorage.getItem(userDepositsKey) || '0');
         localStorage.setItem(userDepositsKey, (currentDeposits + 1).toString());
+        
+        const firstDepositDateKey = `${userEmail}_firstDepositDate`;
+        if (!localStorage.getItem(firstDepositDateKey)) {
+             localStorage.setItem(firstDepositDateKey, JSON.stringify(new Date().toISOString()));
+        }
 
         handleReferralBonus(userEmail, amount);
+        
+        // If the action is for the current user, trigger a context refresh via approveRecharge
+        if (currentUser?.email === userEmail) {
+            approveRecharge(amount);
+        }
 
       } else { // Withdrawal
-        if (userIsCurrentUser) approveWithdrawal();
         const userWithdrawalsKey = `${userEmail}_withdrawals`;
         const currentWithdrawals = parseInt(localStorage.getItem(userWithdrawalsKey) || '0');
         localStorage.setItem(userWithdrawalsKey, (currentWithdrawals + 1).toString());
+
+         if (currentUser?.email === userEmail) {
+            approveWithdrawal();
+        }
       }
     } else if (status === 'Declined' && type === 'Withdrawal') {
-      if (userIsCurrentUser) {
+       const userMainBalanceKey = `${userEmail}_mainBalance`;
+       const currentBalance = parseFloat(localStorage.getItem(userMainBalanceKey) || '0');
+       localStorage.setItem(userMainBalanceKey, (currentBalance + amount).toString());
+
+       if (currentUser?.email === userEmail) {
         refundWithdrawal(amount);
-      } else {
-        const userMainBalanceKey = `${userEmail}_mainBalance`;
-        const currentBalance = parseFloat(localStorage.getItem(userMainBalanceKey) || '0');
-        localStorage.setItem(userMainBalanceKey, (currentBalance + amount).toString());
       }
     }
   };
@@ -229,3 +234,5 @@ export const useRequests = () => {
   }
   return context;
 };
+
+    
