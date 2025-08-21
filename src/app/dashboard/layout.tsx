@@ -65,6 +65,7 @@ export default function DashboardLayout({
   const { toast } = useToast();
   const [amount, setAmount] = useState("");
 
+  const [mainBalance, setMainBalance] = useState(1234.56);
   const [taskRewardsBalance, setTaskRewardsBalance] = useState(0);
   const [interestEarningsBalance, setInterestEarningsBalance] = useState(0);
 
@@ -78,6 +79,17 @@ export default function DashboardLayout({
         });
         return;
     }
+
+    if (numericAmount > mainBalance) {
+        toast({
+            variant: "destructive",
+            title: "Insufficient Funds",
+            description: "You cannot move more than your main balance.",
+        });
+        return;
+    }
+
+    setMainBalance(prev => prev - numericAmount);
 
     if (destination === "Task Rewards") {
         setTaskRewardsBalance(prev => prev + numericAmount);
@@ -192,7 +204,7 @@ export default function DashboardLayout({
                         <div className="p-2 space-y-4">
                             <WalletBalance 
                               title="Main Balance"
-                              balance="1234.56"
+                              balance={mainBalance.toFixed(2)}
                               description="Total available funds."
                             />
                             <div className="space-y-2">
