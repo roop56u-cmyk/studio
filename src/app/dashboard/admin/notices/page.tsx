@@ -1,16 +1,46 @@
 
 "use client";
 
+import { useState } from "react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter
 } from "@/components/ui/card";
-import { Megaphone } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminNoticesPage() {
+  const { toast } = useToast();
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+
+  const handlePublish = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title || !content) {
+      toast({
+        variant: "destructive",
+        title: "Missing fields",
+        description: "Please fill out both the title and content for the notice.",
+      });
+      return;
+    }
+    // In a real app, this would be saved to a database.
+    // For now, we'll just show a success toast and clear the form.
+    toast({
+      title: "Notice Published!",
+      description: `The notice "${title}" has been posted for all users.`,
+    });
+    setTitle("");
+    setContent("");
+  };
+
   return (
     <div className="grid gap-8">
       <div>
@@ -19,23 +49,42 @@ export default function AdminNoticesPage() {
           Create, edit, and publish notices for all users.
         </p>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Notices Control Panel</CardTitle>
-          <CardDescription>
-            This section will allow you to manage announcements and events.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center text-center p-12">
-            <Megaphone className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold">Coming Soon</h3>
-            <p className="text-muted-foreground mt-1">
-                The notice management system is under construction.
-            </p>
-        </CardContent>
-      </Card>
+      <form onSubmit={handlePublish}>
+        <Card>
+          <CardHeader>
+            <CardTitle>Create a New Notice</CardTitle>
+            <CardDescription>
+              This notice will be visible to all users on their dashboard.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="notice-title">Notice Title</Label>
+              <Input
+                id="notice-title"
+                placeholder="e.g., Scheduled Maintenance"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="notice-content">Content</Label>
+              <Textarea
+                id="notice-content"
+                placeholder="Write the full details of the notice here..."
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                required
+                rows={6}
+              />
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button type="submit">Publish Notice</Button>
+          </CardFooter>
+        </Card>
+      </form>
     </div>
   );
 }
-
-    

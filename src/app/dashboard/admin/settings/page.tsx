@@ -1,16 +1,35 @@
 
 "use client";
 
+import { useState } from "react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
-import { Settings2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 
 export default function SystemSettingsPage() {
+    const { toast } = useToast();
+    const [referralBonus, setReferralBonus] = useState("5");
+    const [minDepositForBonus, setMinDepositForBonus] = useState("100");
+    const [withdrawalDays, setWithdrawalDays] = useState("45");
+    const [isWithdrawalRestriction, setIsWithdrawalRestriction] = useState(true);
+
+    const handleSaveChanges = () => {
+        toast({
+            title: "Settings Saved",
+            description: "Global system settings have been updated.",
+        });
+    };
+
   return (
     <div className="grid gap-8">
       <div>
@@ -19,23 +38,49 @@ export default function SystemSettingsPage() {
           Manage global application settings and features.
         </p>
       </div>
+
       <Card>
         <CardHeader>
-          <CardTitle>Global Configuration</CardTitle>
+          <CardTitle>Referral Program</CardTitle>
           <CardDescription>
-            This section will contain controls for referral bonuses, withdrawal restrictions, and more.
+            Configure the bonuses for user referrals.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center text-center p-12">
-            <Settings2 className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold">Coming Soon</h3>
-            <p className="text-muted-foreground mt-1">
-                The system settings panel is under construction.
-            </p>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="referral-bonus">Referral Bonus ($)</Label>
+            <Input id="referral-bonus" type="number" value={referralBonus} onChange={e => setReferralBonus(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="min-deposit">Min First Deposit for Bonus ($)</Label>
+            <Input id="min-deposit" type="number" value={minDepositForBonus} onChange={e => setMinDepositForBonus(e.target.value)} />
+          </div>
         </CardContent>
       </Card>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Withdrawal Restrictions</CardTitle>
+          <CardDescription>
+            Set rules for when users can make withdrawals.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            <div className="flex items-center space-x-2">
+                <Switch id="withdrawal-restriction-toggle" checked={isWithdrawalRestriction} onCheckedChange={setIsWithdrawalRestriction} />
+                <Label htmlFor="withdrawal-restriction-toggle">Enable {withdrawalDays}-Day Withdrawal Restriction</Label>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="withdrawal-days">Number of Days for Restriction</Label>
+                <Input id="withdrawal-days" type="number" value={withdrawalDays} onChange={e => setWithdrawalDays(e.target.value)} />
+            </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end">
+          <Button onClick={handleSaveChanges}>Save All Settings</Button>
+      </div>
+
     </div>
   );
 }
-
-    

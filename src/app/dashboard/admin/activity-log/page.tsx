@@ -8,7 +8,40 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Activity } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+
+// Mock data for demonstration
+const activities = [
+  {
+    id: "ACT-001",
+    admin: "admin@stakinghub.com",
+    action: "Approved Request",
+    target: "REQ-002",
+    date: "2024-07-30 10:00 AM",
+  },
+    {
+    id: "ACT-002",
+    admin: "admin@stakinghub.com",
+    action: "Declined Request",
+    target: "REQ-003",
+    date: "2024-07-29 02:15 PM",
+  },
+    {
+    id: "ACT-003",
+    admin: "admin@stakinghub.com",
+    action: "Updated Level 3",
+    target: "Level Management",
+    date: "2024-07-28 09:30 AM",
+  },
+];
 
 export default function ActivityLogPage() {
   return (
@@ -26,16 +59,37 @@ export default function ActivityLogPage() {
             A chronological record of all admin activities.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center text-center p-12">
-            <Activity className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold">Coming Soon</h3>
-            <p className="text-muted-foreground mt-1">
-                The activity log system is under construction.
-            </p>
+        <CardContent>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Admin</TableHead>
+                        <TableHead>Action</TableHead>
+                        <TableHead>Target</TableHead>
+                        <TableHead>Date</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {activities.length > 0 ? (
+                        activities.map((activity) => (
+                            <TableRow key={activity.id}>
+                                <TableCell>{activity.admin}</TableCell>
+                                <TableCell>
+                                    <Badge variant={activity.action.includes('Approved') ? 'default' : activity.action.includes('Declined') ? 'destructive' : 'secondary'}>{activity.action}</Badge>
+                                </TableCell>
+                                <TableCell className="font-mono text-xs">{activity.target}</TableCell>
+                                <TableCell>{activity.date}</TableCell>
+                            </TableRow>
+                        ))
+                    ) : (
+                        <TableRow>
+                            <TableCell colSpan={4} className="text-center">No activities recorded yet.</TableCell>
+                        </TableRow>
+                    )}
+                </TableBody>
+            </Table>
         </CardContent>
       </Card>
     </div>
   );
 }
-
-    

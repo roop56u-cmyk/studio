@@ -1,6 +1,7 @@
 
 "use client";
 
+import React from "react";
 import {
   Card,
   CardContent,
@@ -8,9 +9,54 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { UserCog } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { MoreHorizontal, UserCog } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 export default function UserManagementPage() {
+    const { users } = useAuth();
+    const { toast } = useToast();
+    const [isClient, setIsClient] = React.useState(false);
+
+    React.useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    const handleAction = (action: string, email: string) => {
+        toast({
+            title: "Action Triggered",
+            description: `${action} for user ${email}. (This is a demo action)`,
+        });
+    };
+
+    if (!isClient) {
+        return (
+             <div className="grid gap-8">
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
+                <p className="text-muted-foreground">
+                  Manage all users from this panel.
+                </p>
+              </div>
+            </div>
+        );
+    }
+
   return (
     <div className="grid gap-8">
       <div>
@@ -21,21 +67,50 @@ export default function UserManagementPage() {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>User Control Panel</CardTitle>
+          <CardTitle>All Users</CardTitle>
           <CardDescription>
-            This section will allow you to edit user details, balances, and permissions.
+            A list of all users registered on the platform.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center text-center p-12">
-            <UserCog className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold">Coming Soon</h3>
-            <p className="text-muted-foreground mt-1">
-                The user management system is under construction.
-            </p>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Email</TableHead>
+                <TableHead>Referral Code</TableHead>
+                <TableHead>Referred By</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {users.map((user) => (
+                <TableRow key={user.email}>
+                  <TableCell className="font-medium">{user.email}{user.isAdmin && <span className="ml-2 text-xs text-primary">(Admin)</span>}</TableCell>
+                  <TableCell className="font-mono text-xs">{user.referralCode}</TableCell>
+                  <TableCell className="font-mono text-xs">{user.referredBy ?? 'N/A'}</TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">User Actions</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleAction('Edit User', user.email)}>Edit User</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleAction('Reset Password', user.email)}>Reset Password</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleAction('Delete User', user.email)}>
+                          Delete User
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>
   );
 }
-
-    
