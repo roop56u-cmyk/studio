@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -25,51 +26,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-const mockRequests = [
-  {
-    id: "REQ-001",
-    user: "user1@example.com",
-    type: "Withdrawal",
-    amount: "150.00 USDT",
-    status: "Pending",
-    date: "2024-07-30",
-  },
-  {
-    id: "REQ-002",
-    user: "user2@example.com",
-    type: "Withdrawal",
-    amount: "75.50 USDT",
-    status: "Approved",
-    date: "2024-07-29",
-  },
-  {
-    id: "REQ-003",
-    user: "user3@example.com",
-    type: "Withdrawal",
-    amount: "300.00 USDT",
-    status: "Declined",
-    date: "2024-07-28",
-  },
-   {
-    id: "REQ-004",
-    user: "user4@example.com",
-    type: "Withdrawal",
-    amount: "50.00 USDT",
-    status: "Pending",
-    date: "2024-07-30",
-  },
-];
+import { useRequests } from "@/contexts/RequestContext";
 
 export function AdminProfile() {
     const { toast } = useToast();
+    const { requests, updateRequestStatus } = useRequests();
 
-    const handleAction = (requestId: string, action: 'Approve' | 'Decline' | 'Hold') => {
+    const handleAction = (requestId: string, action: 'Approved' | 'Declined' | 'On Hold') => {
+        updateRequestStatus(requestId, action);
         toast({
-            title: `Request ${action}d`,
+            title: `Request ${action}`,
             description: `Request ID ${requestId} has been marked as ${action.toLowerCase()}.`,
         });
-        // In a real app, you would update the state and make an API call here.
     };
 
   return (
@@ -77,7 +45,7 @@ export function AdminProfile() {
       <CardHeader>
         <CardTitle>Admin Panel</CardTitle>
         <CardDescription>
-          Manage all user withdrawal requests from this panel.
+          Manage all user recharge and withdrawal requests from this panel.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -88,20 +56,31 @@ export function AdminProfile() {
               <TableHead>User</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Amount</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Address</TableHead>
+              <TableHead>Level</TableHead>
+              <TableHead>History (D/W)</TableHead>
+              <TableHead>Balance</TableHead>
               <TableHead>Date</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead>
                 <span className="sr-only">Actions</span>
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockRequests.map((request) => (
+            {requests.map((request) => (
               <TableRow key={request.id}>
                 <TableCell className="font-medium">{request.id}</TableCell>
                 <TableCell>{request.user}</TableCell>
-                <TableCell>{request.type}</TableCell>
-                <TableCell>{request.amount}</TableCell>
+                <TableCell>
+                    <Badge variant={request.type === 'Withdrawal' ? 'destructive' : 'secondary'}>{request.type}</Badge>
+                </TableCell>
+                <TableCell>${request.amount.toFixed(2)}</TableCell>
+                <TableCell className="font-mono text-xs truncate max-w-[100px]">{request.address || 'N/A'}</TableCell>
+                <TableCell>{request.level}</TableCell>
+                <TableCell>{request.deposits}/{request.withdrawals}</TableCell>
+                <TableCell>${request.balance.toFixed(2)}</TableCell>
+                <TableCell>{request.date}</TableCell>
                 <TableCell>
                   <Badge
                     variant={
@@ -116,7 +95,6 @@ export function AdminProfile() {
                     {request.status}
                   </Badge>
                 </TableCell>
-                <TableCell>{request.date}</TableCell>
                 <TableCell>
                     {request.status === 'Pending' && (
                         <DropdownMenu>
@@ -127,9 +105,9 @@ export function AdminProfile() {
                             </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleAction(request.id, 'Approve')}>Approve</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleAction(request.id, 'Decline')}>Decline</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleAction(request.id, 'Hold')}>Hold</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleAction(request.id, 'Approved')}>Approve</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleAction(request.id, 'Declined')}>Decline</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleAction(request.id, 'On Hold')}>On Hold</DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     )}

@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useCallback } from 'react';
 import { useToast } from "@/hooks/use-toast";
 
 interface WalletContextType {
@@ -11,6 +11,13 @@ interface WalletContextType {
   amount: string;
   setAmount: (amount: string) => void;
   handleMoveFunds: (destination: 'Task Rewards' | 'Interest Earnings') => void;
+  addRecharge: (amount: number) => void;
+  getWalletData: () => {
+    balance: number;
+    level: number;
+    deposits: number;
+    withdrawals: number;
+  }
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -21,6 +28,11 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [mainBalance, setMainBalance] = useState(0);
   const [taskRewardsBalance, setTaskRewardsBalance] = useState(0);
   const [interestEarningsBalance, setInterestEarningsBalance] = useState(0);
+
+  // Mock deposit/withdrawal counts
+  const [deposits, setDeposits] = useState(0);
+  const [withdrawals, setWithdrawals] = useState(0);
+
 
   const handleMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings') => {
     const numericAmount = parseFloat(amount);
@@ -57,6 +69,25 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setAmount("");
   };
 
+  const addRecharge = (rechargeAmount: number) => {
+    setMainBalance(prev => prev + rechargeAmount);
+    setDeposits(prev => prev + 1);
+  };
+  
+  const getWalletData = useCallback(() => {
+    const balance = mainBalance + taskRewardsBalance + interestEarningsBalance;
+    const levels = [
+        { minAmount: 20000, level: 5 },
+        { minAmount: 6000, level: 4 },
+        { minAmount: 2000, level: 3 },
+        { minAmount: 500, level: 2 },
+        { minAmount: 100, level: 1 },
+    ];
+    const level = levels.find(l => balance >= l.minAmount)?.level ?? 0;
+
+    return { balance, level, deposits, withdrawals };
+  }, [mainBalance, taskRewardsBalance, interestEarningsBalance, deposits, withdrawals]);
+
   return (
     <WalletContext.Provider
       value={{
@@ -66,6 +97,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         amount,
         setAmount,
         handleMoveFunds,
+        addRecharge,
+        getWalletData,
       }}
     >
       {children}
