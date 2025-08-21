@@ -27,7 +27,7 @@ export function HistoryPanel() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Activity History</CardTitle>
+        <CardTitle>Recent Activity</CardTitle>
         <CardDescription>
           A log of your recent platform activity.
         </CardDescription>

@@ -21,10 +21,10 @@ export function EarningsPanel({ title, amount = "0.00" }: EarningsPanelProps) {
         <CardTitle className="text-xs font-medium">
           {title}
         </CardTitle>
-        <Coins className="h-4 w-4 text-muted-foreground" />
+        <Coins className="h-3 w-3 text-muted-foreground" />
       </CardHeader>
       <CardContent className="p-2 pt-0">
-        <div className="text-sm font-bold">${amount}</div>
+        <div className="text-xs font-bold">${amount}</div>
       </CardContent>
     </Card>
   );
