@@ -6,14 +6,11 @@ import { ReviewForm } from "@/components/dashboard/review-form";
 import { InterestRateCounter } from "@/components/dashboard/interest-rate-counter";
 import { LevelTiers } from "@/components/dashboard/level-tiers";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
+import { useWallet } from "@/contexts/WalletContext";
 
-// This interface defines the props that are passed down from the layout.
-interface UserDashboardPageProps {
-    taskRewardsBalance?: number;
-    interestEarningsBalance?: number;
-}
+export default function UserDashboardPage() {
+  const { taskRewardsBalance, interestEarningsBalance } = useWallet();
 
-export default function UserDashboardPage({ taskRewardsBalance = 0, interestEarningsBalance = 0 }: UserDashboardPageProps) {
   return (
     <div className="grid gap-8">
       <div>
