@@ -1,7 +1,7 @@
 "use server";
 
 import { analyzeReviewSentiment, AnalyzeReviewSentimentInput, AnalyzeReviewSentimentOutput } from "@/ai/flows/analyze-review-sentiment";
-import { generateTaskSuggestions as generateTaskSuggestionsFlow, GenerateTaskSuggestionsOutput } from "@/ai/flows/generate-task-suggestions";
+import { generateTaskSuggestion as generateTaskSuggestionFlow, GenerateTaskSuggestionOutput } from "@/ai/flows/generate-task-suggestions";
 
 export async function submitReview(input: AnalyzeReviewSentimentInput): Promise<AnalyzeReviewSentimentOutput | null> {
   try {
@@ -15,12 +15,12 @@ export async function submitReview(input: AnalyzeReviewSentimentInput): Promise<
   }
 }
 
-export async function generateTaskSuggestions(): Promise<GenerateTaskSuggestionsOutput> {
+export async function generateTaskSuggestion(): Promise<GenerateTaskSuggestionOutput> {
     try {
-        const result = await generateTaskSuggestionsFlow();
+        const result = await generateTaskSuggestionFlow();
         return result;
     } catch (error) {
-        console.error("Error generating task suggestions:", error);
-        throw new Error("Failed to generate task suggestions.");
+        console.error("Error generating task suggestion:", error);
+        throw new Error("Failed to generate task suggestion.");
     }
 }

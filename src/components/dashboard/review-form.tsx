@@ -20,20 +20,18 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { StarRating } from "@/components/dashboard/star-rating";
 import { SentimentResult } from "@/components/dashboard/sentiment-result";
 import { submitReview } from "@/app/actions";
 import type { AnalyzeReviewSentimentOutput } from "@/ai/flows/analyze-review-sentiment";
-import { generateTaskSuggestions } from "@/app/actions";
-import { Loader2 } from "lucide-react";
+import { generateTaskSuggestion } from "@/app/actions";
+import { Loader2, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "../ui/label";
 import { Skeleton } from "../ui/skeleton";
 import { Textarea } from "../ui/textarea";
 
 const reviewSchema = z.object({
-  task: z.string({ required_error: "Please select a task." }),
   rating: z.number().min(1, "Please provide a rating.").max(5),
 });
 
@@ -41,8 +39,8 @@ type ReviewFormValues = z.infer<typeof reviewSchema>;
 
 export function ReviewForm() {
   const [isLoading, setIsLoading] = useState(false);
-  const [isGeneratingTasks, setIsGeneratingTasks] = useState(true);
-  const [taskSuggestions, setTaskSuggestions] = useState<string[]>([]);
+  const [isGeneratingTask, setIsGeneratingTask] = useState(true);
+  const [task, setTask] = useState<string>("");
   const [sentiment, setSentiment] = useState<AnalyzeReviewSentimentOutput | null>(null);
   const { toast } = useToast();
 
@@ -53,33 +51,34 @@ export function ReviewForm() {
     },
   });
 
-  const selectedTask = form.watch("task");
+  const fetchTask = async () => {
+    try {
+      setIsGeneratingTask(true);
+      setSentiment(null);
+      form.reset();
+      const { task } = await generateTaskSuggestion();
+      setTask(task);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error Generating Task",
+        description: "Could not fetch an AI-powered task suggestion. Please try again later.",
+      });
+    } finally {
+      setIsGeneratingTask(false);
+    }
+  };
 
   useEffect(() => {
-    async function fetchTasks() {
-      try {
-        setIsGeneratingTasks(true);
-        const { tasks } = await generateTaskSuggestions();
-        setTaskSuggestions(tasks);
-      } catch (error) {
-        toast({
-          variant: "destructive",
-          title: "Error Generating Tasks",
-          description: "Could not fetch AI-powered task suggestions. Please try again later.",
-        });
-      } finally {
-        setIsGeneratingTasks(false);
-      }
-    }
-    fetchTasks();
-  }, [toast]);
+    fetchTask();
+  }, []);
 
   const onSubmit = async (data: ReviewFormValues) => {
+    if (!task) return;
     setIsLoading(true);
     setSentiment(null);
     try {
-      // Use the selected task content as the review text
-      const result = await submitReview({ reviewText: data.task });
+      const result = await submitReview({ reviewText: task });
       if (result) {
         setSentiment(result);
         toast({
@@ -101,67 +100,42 @@ export function ReviewForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Submit a Review</CardTitle>
-        <CardDescription>
-          Select a task and rate it. We&apos;ll analyze its sentiment for you.
-        </CardDescription>
+        <div className="flex justify-between items-start">
+            <div>
+                <CardTitle>Submit a Review</CardTitle>
+                <CardDescription>
+                Rate the task below. We&apos;ll analyze its sentiment for you.
+                </CardDescription>
+            </div>
+            <Button variant="outline" size="icon" onClick={fetchTask} disabled={isGeneratingTask}>
+                <RefreshCw className={cn("h-4 w-4", isGeneratingTask && "animate-spin")} />
+                <span className="sr-only">Get new task</span>
+            </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="task"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Select a Task to Review</FormLabel>
-                   {isGeneratingTasks ? (
-                    <div className="space-y-2">
-                        <Skeleton className="h-6 w-3/4" />
-                        <Skeleton className="h-6 w-1/2" />
-                        <Skeleton className="h-6 w-2/3" />
-                        <Skeleton className="h-6 w-3/4" />
-                    </div>
-                   ) : (
-                    <FormControl>
-                        <RadioGroup
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        className="flex flex-col space-y-1"
-                        >
-                        {taskSuggestions.map((task, index) => (
-                            <FormItem key={index} className="flex items-center space-x-3 space-y-0">
-                                <FormControl>
-                                    <RadioGroupItem value={task} />
-                                </FormControl>
-                                <Label className="font-normal">{task}</Label>
-                            </FormItem>
-                        ))}
-                        </RadioGroup>
-                    </FormControl>
-                   )}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {selectedTask && (
-                <div className="space-y-2">
-                    <Label>Selected Task Content</Label>
+            <div className="space-y-2">
+                <Label>Your Task to Review</Label>
+                {isGeneratingTask ? (
+                     <Skeleton className="h-24 w-full" />
+                ) : (
                     <Textarea
                         readOnly
-                        value={selectedTask}
+                        value={task}
                         className="h-24 resize-none bg-muted"
+                        placeholder="Generating a task for you..."
                     />
-                </div>
-            )}
+                )}
+            </div>
             
             <FormField
               control={form.control}
               name="rating"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Rating</FormLabel>
+                  <FormLabel>Your Rating</FormLabel>
                   <FormControl>
                     <StarRating rating={field.value} setRating={field.onChange} />
                   </FormControl>
@@ -171,8 +145,8 @@ export function ReviewForm() {
             />
 
             <div className="flex items-center justify-between">
-              <Button type="submit" disabled={isLoading || isGeneratingTasks}>
-                {(isLoading || isGeneratingTasks) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button type="submit" disabled={isLoading || isGeneratingTask || !task}>
+                {(isLoading || isGeneratingTask) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isLoading ? "Analyzing..." : "Submit and Analyze"}
               </Button>
               {sentiment && !isLoading && (
