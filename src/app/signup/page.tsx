@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,12 +14,26 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/logo";
+import { useToast } from "@/hooks/use-toast";
 
 export default function SignupPage() {
   const router = useRouter();
+  const { toast } = useToast();
+  const [invitationCode, setInvitationCode] = useState("");
+
+  // In a real app, you would fetch and validate this from a backend.
+  const validReferralCodes = ["ADMINREF001"];
 
   const handleSignUp = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validReferralCodes.includes(invitationCode)) {
+      toast({
+        variant: "destructive",
+        title: "Invalid Invitation Code",
+        description: "Please enter a valid code to create an account.",
+      });
+      return;
+    }
     // Mock sign-up: in a real app, you'd create a user record.
     router.push("/dashboard");
   };
@@ -51,6 +66,16 @@ export default function SignupPage() {
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" required />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="invitation-code">Invitation Code</Label>
+              <Input
+                id="invitation-code"
+                placeholder="ADMINREF001"
+                required
+                value={invitationCode}
+                onChange={(e) => setInvitationCode(e.target.value)}
+              />
             </div>
             <Button type="submit" className="w-full">
               Create Account

@@ -22,7 +22,7 @@ export default function LoginPage() {
 
   const handleSignIn = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email === "admin@example.com" && password === "password") {
+    if (email === "admin@stakinghub.com" && password === "admin123") {
       router.push("/dashboard/admin");
     } else {
       router.push("/dashboard/user");
