@@ -64,6 +64,7 @@ interface WalletContextType {
   withdrawalAddress: WithdrawalAddress | null;
   setWithdrawalAddress: (address: Omit<WithdrawalAddress, 'id'>) => void;
   clearWithdrawalAddress: () => void;
+  firstDepositDate: string | null;
 }
 
 export type CounterType = 'task' | 'interest';
@@ -103,6 +104,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [interestEarned, setInterestEarned] = useState(() => getInitialState('interestEarned', 0));
   const [deposits, setDeposits] = useState(() => getInitialState('deposits', 0));
   const [withdrawals, setWithdrawals] = useState(() => getInitialState('withdrawals', 0));
+  const [firstDepositDate, setFirstDepositDate] = useState<string | null>(() => getInitialState('firstDepositDate', null));
   
   const [interestCounter, setInterestCounter] = useState<CounterState>(() => getInitialState('interestCounter', { isRunning: false, startTime: null }));
 
@@ -151,6 +153,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       setInterestCounter(getInitialState('interestCounter', { isRunning: false, startTime: null }));
       setCompletedTasks(getInitialState('completedTasks', []));
       setWithdrawalAddressState(getInitialState('withdrawalAddress', null));
+      setFirstDepositDate(getInitialState('firstDepositDate', null));
       setIsLoading(false);
     } else {
         setMainBalance(0);
@@ -165,6 +168,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setLastTaskCompletionDate('');
         setCompletedTasks([]);
         setWithdrawalAddressState(null);
+        setFirstDepositDate(null);
     }
   }, [currentUser, setPersistentState]);
 
@@ -181,6 +185,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => setPersistentState('lastTaskCompletionDate', lastTaskCompletionDate), [lastTaskCompletionDate, setPersistentState]);
   useEffect(() => setPersistentState('completedTasks', completedTasks), [completedTasks, setPersistentState]);
   useEffect(() => setPersistentState('withdrawalAddress', withdrawalAddress), [withdrawalAddress, setPersistentState]);
+  useEffect(() => setPersistentState('firstDepositDate', firstDepositDate), [firstDepositDate, setPersistentState]);
 
 
  const handleMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', amountToMove: number, fromAccount?: 'Task Rewards' | 'Interest Earnings') => {
@@ -240,7 +245,13 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
   const approveRecharge = (rechargeAmount: number) => {
     setMainBalance(prev => prev + rechargeAmount);
-    setDeposits(prev => prev + 1);
+    setDeposits(prev => {
+        const newDeposits = prev + 1;
+        if (newDeposits === 1) { // First deposit
+            setFirstDepositDate(new Date().toISOString());
+        }
+        return newDeposits;
+    });
      toast({
       title: "Recharge Approved",
       description: `Your balance has been updated by ${rechargeAmount.toFixed(2)} USDT.`,
@@ -370,6 +381,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         withdrawalAddress,
         setWithdrawalAddress,
         clearWithdrawalAddress,
+        firstDepositDate,
       }}
     >
       {children}

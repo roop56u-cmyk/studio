@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -29,10 +29,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { PlusCircle, Edit, Trash2 } from "lucide-react";
 import type { WithdrawalAddress } from "@/contexts/WalletContext";
+import { WithdrawalTimer } from "./withdrawal-timer";
 
 interface WithdrawalPanelProps {
     onAddRequest: (request: Partial<Omit<Request, 'id' | 'date' | 'user' | 'status'>>) => void;
 }
+
+const WITHDRAWAL_WAIT_DAYS = 45;
 
 export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
   const { toast } = useToast();
@@ -42,9 +45,11 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
       mainBalance, 
       requestWithdrawal, 
       withdrawalAddress, 
-      clearWithdrawalAddress 
+      clearWithdrawalAddress,
+      firstDepositDate,
   } = useWallet();
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
+  const [isRestrictionActive, setIsRestrictionActive] = useState(true);
 
   const { level } = getWalletData();
   const numericAmount = parseFloat(amount) || 0;
@@ -57,6 +62,25 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
   }, [numericAmount, level]);
 
   const netWithdrawal = numericAmount - adminFee;
+
+  useEffect(() => {
+    if (!firstDepositDate) {
+      setIsRestrictionActive(true);
+      return;
+    }
+    const firstDepositTime = new Date(firstDepositDate).getTime();
+    const restrictionEndTime = firstDepositTime + (WITHDRAWAL_WAIT_DAYS * 24 * 60 * 60 * 1000);
+    
+    const interval = setInterval(() => {
+        if (Date.now() >= restrictionEndTime) {
+            setIsRestrictionActive(false);
+            clearInterval(interval);
+        }
+    }, 1000);
+
+    return () => clearInterval(interval);
+
+  }, [firstDepositDate]);
   
   const handleOpenEditDialog = () => {
     setIsAddressDialogOpen(true);
@@ -64,6 +88,15 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
 
   const handleWithdraw = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isRestrictionActive) {
+      toast({
+          variant: "destructive",
+          title: "Withdrawal Locked",
+          description: `You must wait ${WITHDRAWAL_WAIT_DAYS} days after your first deposit to make a withdrawal.`,
+      });
+      return;
+    }
+
     if (isNaN(numericAmount) || numericAmount <= 0) {
         toast({
             variant: "destructive",
@@ -106,6 +139,10 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
 
     setAmount("");
   };
+
+  if (isRestrictionActive) {
+    return <WithdrawalTimer firstDepositDate={firstDepositDate} waitDays={WITHDRAWAL_WAIT_DAYS} />
+  }
 
   return (
     <>
