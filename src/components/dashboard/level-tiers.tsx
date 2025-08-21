@@ -56,12 +56,11 @@ export type Level = typeof levels[0];
 
 interface LevelTiersProps {
     currentBalance: number;
-    onLevelClick: (level: Level) => void;
     onStartTasks: () => void;
     isTaskLocked: boolean;
 }
 
-export function LevelTiers({ currentBalance, onLevelClick, onStartTasks, isTaskLocked }: LevelTiersProps) {
+export function LevelTiers({ currentBalance, onStartTasks, isTaskLocked }: LevelTiersProps) {
     
   const currentLevel = levels.slice().reverse().find(level => currentBalance >= level.minAmount)?.level ?? 0;
 
@@ -88,7 +87,7 @@ export function LevelTiers({ currentBalance, onLevelClick, onStartTasks, isTaskL
                                 isCurrentLevel && "border-primary ring-2 ring-primary"
                             )}
                         >
-                            <div className="flex-grow cursor-pointer hover:bg-muted/50" onClick={() => onLevelClick(level)}>
+                            <div className="flex-grow">
                                 <CardHeader>
                                     <CardTitle className="flex items-center justify-between">
                                         <span className="flex items-center gap-2">

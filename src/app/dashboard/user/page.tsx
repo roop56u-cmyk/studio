@@ -13,7 +13,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Lock } from "lucide-react";
 import { EarningsPanel } from "@/components/dashboard/earnings-panel";
-import { LevelDetailDialog } from "@/components/dashboard/level-detail-dialog";
 import { TaskDialog } from "@/components/dashboard/task-dialog";
 
 
@@ -30,13 +29,11 @@ export default function UserDashboardPage() {
     tasksCompletedToday
   } = useWallet();
 
-  const [selectedLevel, setSelectedLevel] = React.useState<Level | null>(null);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = React.useState(false);
 
   const isTaskLocked = taskRewardsBalance < 100;
   const isInterestLocked = interestEarningsBalance < 100;
   
-  const currentLevel = levels.slice().reverse().find(level => committedBalance >= level.minAmount);
   const allTasksCompleted = tasksCompletedToday >= dailyTaskQuota;
   const finalIsTaskLocked = isTaskLocked || allTasksCompleted;
 
@@ -84,7 +81,6 @@ export default function UserDashboardPage() {
        <div className="space-y-4">
           <LevelTiers 
             currentBalance={committedBalance} 
-            onLevelClick={setSelectedLevel}
             onStartTasks={() => setIsTaskDialogOpen(true)}
             isTaskLocked={finalIsTaskLocked}
           />
@@ -162,14 +158,6 @@ export default function UserDashboardPage() {
         <TaskHistoryPanel />
       </div>
 
-       {selectedLevel && (
-        <LevelDetailDialog
-          level={selectedLevel}
-          open={!!selectedLevel}
-          onOpenChange={() => setSelectedLevel(null)}
-          isCurrentLevel={selectedLevel.level === currentLevel?.level}
-        />
-      )}
       <TaskDialog
         open={isTaskDialogOpen}
         onOpenChange={setIsTaskDialogOpen}
