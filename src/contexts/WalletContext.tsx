@@ -23,6 +23,7 @@ interface WalletContextType {
   approveRecharge: (amount: number) => void;
   refundWithdrawal: (amount: number) => void;
   approveWithdrawal: () => void;
+  isLoading: boolean;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -31,6 +32,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
   const { currentUser } = useAuth();
   const [amount, setAmount] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   const getInitialState = (key: string, defaultValue: number) => {
     if (typeof window === 'undefined' || !currentUser) {
@@ -78,6 +80,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setDeposits(0);
         setWithdrawals(0);
     }
+    setIsLoading(false);
   }, [currentUser]);
 
 
@@ -159,11 +162,11 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const committedBalance = taskRewardsBalance + interestEarningsBalance;
 
     const levels = [
-        { minAmount: 20000, level: 5 },
-        { minAmount: 6000, level: 4 },
-        { minAmount: 2000, level: 3 },
-        { minAmount: 500, level: 2 },
-        { minAmount: 100, level: 1 },
+        { minAmount: 20000, level: 5, referrals: 55 },
+        { minAmount: 6000, level: 4, referrals: 36 },
+        { minAmount: 2000, level: 3, referrals: 16 },
+        { minAmount: 500, level: 2, referrals: 8 },
+        { minAmount: 100, level: 1, referrals: null },
     ];
     // Level is now based on the committed balance (Task + Interest)
     const level = levels.find(l => committedBalance >= l.minAmount)?.level ?? 0;
@@ -185,7 +188,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         requestWithdrawal,
         approveRecharge,
         refundWithdrawal,
-        approveWithdrawal
+        approveWithdrawal,
+        isLoading,
       }}
     >
       {children}

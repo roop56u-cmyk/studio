@@ -34,6 +34,7 @@ import {
   CollapsibleTrigger,
   CollapsibleContent
 } from "@/components/ui/sidebar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Logo } from "@/components/logo";
 import {
   Home,
@@ -65,7 +66,8 @@ function SidebarContentComponent() {
     mainBalance,
     amount, 
     setAmount, 
-    handleMoveFunds 
+    handleMoveFunds,
+    isLoading
   } = useWallet();
 
   return (
@@ -134,11 +136,19 @@ function SidebarContentComponent() {
               </CollapsibleTrigger>
               <CollapsibleContent>
                   <div className="p-2 space-y-4">
-                      <WalletBalance 
-                        title="Main Balance"
-                        balance={mainBalance.toFixed(2)}
-                        description="Total available funds."
-                      />
+                      {isLoading ? (
+                        <div className="space-y-2">
+                           <Skeleton className="h-6 w-24" />
+                           <Skeleton className="h-8 w-full" />
+                           <Skeleton className="h-4 w-32" />
+                        </div>
+                      ) : (
+                        <WalletBalance 
+                          title="Main Balance"
+                          balance={mainBalance.toFixed(2)}
+                          description="Total available funds."
+                        />
+                      )}
                       <div className="space-y-2">
                           <Label htmlFor="move-amount">Amount (USDT)</Label>
                           <Input 
@@ -147,14 +157,15 @@ function SidebarContentComponent() {
                               placeholder="e.g., 50.00"
                               value={amount}
                               onChange={(e) => setAmount(e.target.value)}
+                              disabled={isLoading}
                           />
                       </div>
                       <div className="grid grid-cols-1 gap-2">
-                          <Button variant="outline" size="sm" className="justify-start gap-2" onClick={() => handleMoveFunds("Task Rewards")}>
+                          <Button variant="outline" size="sm" className="justify-start gap-2" onClick={() => handleMoveFunds("Task Rewards")} disabled={isLoading}>
                               <Gift className="h-4 w-4 text-primary" />
                               <span>Move to Task Rewards</span>
                           </Button>
-                          <Button variant="outline" size="sm" className="justify-start gap-2" onClick={() => handleMoveFunds("Interest Earnings")}>
+                          <Button variant="outline" size="sm" className="justify-start gap-2" onClick={() => handleMoveFunds("Interest Earnings")} disabled={isLoading}>
                               <TrendingUp className="h-4 w-4 text-accent" />
                               <span>Move to Interest</span>
                           </Button>
