@@ -257,8 +257,13 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
     const { logout, currentUser } = useAuth();
+    const [isClient, setIsClient] = React.useState(false);
     const [isRechargeOpen, setIsRechargeOpen] = React.useState(false);
     const [isWithdrawalOpen, setIsWithdrawalOpen] = React.useState(false);
+
+    React.useEffect(() => {
+        setIsClient(true);
+    }, []);
 
   return (
       <SidebarProvider>
@@ -276,34 +281,38 @@ export default function DashboardLayout({
               <div className="ml-auto flex-1 sm:flex-initial">
                   {/* Optional Search */}
               </div>
-              <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                  <Button variant="secondary" size="icon" className="rounded-full">
-                      <Avatar>
-                      <AvatarImage src="https://placehold.co/40x40.png" alt="User Avatar" data-ai-hint="user avatar" />
-                      <AvatarFallback>{currentUser?.email?.[0].toUpperCase() ?? 'U'}</AvatarFallback>
-                      </Avatar>
-                      <span className="sr-only">Toggle user menu</span>
-                  </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                      <Link href="/dashboard/settings">
-                        <Settings className="mr-2 h-4 w-4" />
-                        <span>Settings</span>
-                      </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                      <Link href="/login" onClick={logout}>
-                          <LogOut className="mr-2 h-4 w-4" />
-                          <span>Log out</span>
-                      </Link>
-                  </DropdownMenuItem>
-                  </DropdownMenuContent>
-              </DropdownMenu>
+              {!isClient ? (
+                <Skeleton className="h-8 w-8 rounded-full" />
+                ) : (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                    <Button variant="secondary" size="icon" className="rounded-full">
+                        <Avatar>
+                        <AvatarImage src="https://placehold.co/40x40.png" alt="User Avatar" data-ai-hint="user avatar" />
+                        <AvatarFallback>{currentUser?.email?.[0].toUpperCase() ?? 'U'}</AvatarFallback>
+                        </Avatar>
+                        <span className="sr-only">Toggle user menu</span>
+                    </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                        <Link href="/dashboard/settings">
+                            <Settings className="mr-2 h-4 w-4" />
+                            <span>Settings</span>
+                        </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                        <Link href="/login" onClick={logout}>
+                            <LogOut className="mr-2 h-4 w-4" />
+                            <span>Log out</span>
+                        </Link>
+                    </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+              )}
               </div>
           </header>
           <main className="flex-1 p-4 md:p-6 lg:p-8">
