@@ -32,13 +32,14 @@ export function HistoryPanel() {
           A log of your recent platform activity.
         </CardDescription>
       </CardHeader>
-      <CardContent>
         <Tabs defaultValue="transactions" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="transactions">Transactions</TabsTrigger>
-            <TabsTrigger value="tasks">Task History</TabsTrigger>
-          </TabsList>
-          <TabsContent value="transactions">
+            <div className="px-4">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="transactions">Transactions</TabsTrigger>
+                <TabsTrigger value="tasks">Task History</TabsTrigger>
+              </TabsList>
+            </div>
+          <TabsContent value="transactions" className="p-4 pt-2">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -85,11 +86,10 @@ export function HistoryPanel() {
               </TableBody>
             </Table>
           </TabsContent>
-          <TabsContent value="tasks">
+          <TabsContent value="tasks" className="p-4 pt-2">
             <TaskHistoryPanel />
           </TabsContent>
         </Tabs>
-      </CardContent>
     </Card>
   );
 }
