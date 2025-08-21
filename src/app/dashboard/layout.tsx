@@ -27,6 +27,9 @@ import {
   SidebarFooter,
   SidebarTrigger,
   SidebarInset,
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent
 } from "@/components/ui/sidebar";
 import { Logo } from "@/components/logo";
 import {
@@ -38,6 +41,8 @@ import {
   LogOut,
   Settings,
   Shield,
+  Wallet,
+  ChevronDown
 } from "lucide-react";
 import { WalletPanel } from "@/components/dashboard/wallet-panel";
 
@@ -117,11 +122,26 @@ export default function DashboardLayout({
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+
+               <SidebarMenuItem>
+                <Collapsible>
+                    <CollapsibleTrigger asChild>
+                         <SidebarMenuButton>
+                            <Wallet />
+                            <span>Wallet</span>
+                            <ChevronDown className="ml-auto h-4 w-4 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                        </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                        <div className="p-2">
+                            <WalletPanel />
+                        </div>
+                    </CollapsibleContent>
+                </Collapsible>
+              </SidebarMenuItem>
+
             </SidebarMenu>
           </SidebarContent>
-          <SidebarFooter>
-            <WalletPanel />
-          </SidebarFooter>
         </Sidebar>
         <div className="flex flex-1 flex-col">
           <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
