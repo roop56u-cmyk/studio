@@ -251,14 +251,13 @@ export default function ManageTasksPage() {
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="space-y-2 py-2">
-                    <Label htmlFor="ai-task-count">Number of Tasks to Generate (1-100)</Label>
+                    <Label htmlFor="ai-task-count">Number of Tasks to Generate</Label>
                     <Input 
                         id="ai-task-count"
                         type="number"
                         min="1"
-                        max="100"
                         value={aiTaskCount}
-                        onChange={(e) => setAiTaskCount(Math.max(1, Math.min(100, Number(e.target.value))))}
+                        onChange={(e) => setAiTaskCount(Math.max(1, Number(e.target.value)))}
                     />
                 </div>
                 <AlertDialogFooter>

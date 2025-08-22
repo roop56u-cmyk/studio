@@ -24,7 +24,7 @@ const TaskLibrarySchema = z.object({
 export type TaskLibrary = z.infer<typeof TaskLibrarySchema>;
 
 const GenerateTaskLibraryInputSchema = z.object({
-  count: z.number().min(1).max(100).default(20),
+  count: z.number().min(1).default(20),
 });
 export type GenerateTaskLibraryInput = z.infer<typeof GenerateTaskLibraryInputSchema>;
 
