@@ -103,7 +103,10 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (currentUser) {
-        setUserRequests(requests.filter(req => req.user === currentUser.email));
+        const sortedUserRequests = requests
+            .filter(req => req.user === currentUser.email)
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setUserRequests(sortedUserRequests);
     } else {
         setUserRequests([]);
     }
@@ -131,33 +134,25 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const handleReferralBonus = (userEmail: string, amount: number) => {
-    // 1. Check if this is the user's first approved recharge
     const userDepositsKey = `${userEmail}_deposits`;
     const depositCount = parseInt(localStorage.getItem(userDepositsKey) || '0');
     
-    // The check is for > 1 because approveRecharge increments it *before* this function is called.
-    // So if it's 1, it was 0 before.
     if (depositCount > 1) return;
 
-    // 2. Check if the deposit is >= $100
     const minDepositForBonus = parseInt(localStorage.getItem('system_min_deposit_for_bonus') || '100');
     if (amount < minDepositForBonus) return;
 
-    // 3. Find who referred this user
     const referredUser = users.find(u => u.email === userEmail);
     if (!referredUser || !referredUser.referredBy) return;
 
-    // 4. Find the referrer
     const referrer = users.find(u => u.referralCode === referredUser.referredBy);
     if (!referrer) return;
 
-    // 5. Credit bonus to referrer's main balance
     const referralBonus = parseInt(localStorage.getItem('system_referral_bonus') || '5');
     const referrerMainBalanceKey = `${referrer.email}_mainBalance`;
     const referrerCurrentBalance = parseFloat(localStorage.getItem(referrerMainBalanceKey) || '0');
     localStorage.setItem(referrerMainBalanceKey, (referrerCurrentBalance + referralBonus).toString());
 
-    // If the referrer is the currently logged-in user, we can show a toast.
     if (currentUser?.email === referrer.email) {
       toast({
         title: "Referral Bonus!",
@@ -169,7 +164,6 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
   const updateRequestStatus = (id: string, status: 'Approved' | 'Declined' | 'On Hold', userEmail: string, type: 'Recharge' | 'Withdrawal', amount: number) => {
     setRequests(prev => prev.map(req => req.id === id ? { ...req, status } : req));
     
-    // This logic handles updates for both current and non-current (admin-edited) users by directly manipulating localStorage.
     if (status === 'Approved') {
       if (type === 'Recharge') {
         const userMainBalanceKey = `${userEmail}_mainBalance`;
@@ -187,7 +181,6 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
 
         handleReferralBonus(userEmail, amount);
         
-        // If the action is for the current user, trigger a context refresh via approveRecharge
         if (currentUser?.email === userEmail) {
             approveRecharge(amount);
         }
@@ -196,6 +189,14 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
         const userWithdrawalsKey = `${userEmail}_withdrawals`;
         const currentWithdrawals = parseInt(localStorage.getItem(userWithdrawalsKey) || '0');
         localStorage.setItem(userWithdrawalsKey, (currentWithdrawals + 1).toString());
+        
+        const monthlyWithdrawalsCountKey = `${userEmail}_monthlyWithdrawalsCount`;
+        const currentMonthlyCount = parseInt(localStorage.getItem(monthlyWithdrawalsCountKey) || '0');
+        localStorage.setItem(monthlyWithdrawalsCountKey, (currentMonthlyCount + 1).toString());
+        
+        const lastWithdrawalMonthKey = `${userEmail}_lastWithdrawalMonth`;
+        localStorage.setItem(lastWithdrawalMonthKey, new Date().getMonth().toString());
+
 
          if (currentUser?.email === userEmail) {
             approveWithdrawal();
@@ -234,5 +235,3 @@ export const useRequests = () => {
   }
   return context;
 };
-
-    

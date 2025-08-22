@@ -41,6 +41,8 @@ interface WalletContextType {
   currentLevel: number;
   currentRate: number;
   dailyTaskQuota: number;
+  monthlyWithdrawalLimit: number;
+  monthlyWithdrawalsCount: number;
   tasksCompletedToday: number;
   completedTasks: CompletedTask[];
   amount: string;
@@ -143,10 +145,13 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>(() => getInitialState('completedTasks', []));
   const [withdrawalAddress, setWithdrawalAddressState] = useState<WithdrawalAddress | null>(() => getInitialState('withdrawalAddress', null));
 
+  const [monthlyWithdrawalsCount, setMonthlyWithdrawalsCount] = useState(() => getInitialState('monthlyWithdrawalsCount', 0));
+  const [lastWithdrawalMonth, setLastWithdrawalMonth] = useState(() => getInitialState('lastWithdrawalMonth', -1));
+
 
   const committedBalance = taskRewardsBalance + interestEarningsBalance;
   const currentLevelData = levels.slice().reverse().find(level => committedBalance >= level.minAmount) ?? levels[0];
-  const { level: currentLevel, rate: currentRate, dailyTasks: dailyTaskQuota } = currentLevelData;
+  const { level: currentLevel, rate: currentRate, dailyTasks: dailyTaskQuota, monthlyWithdrawals: monthlyWithdrawalLimit } = currentLevelData;
 
 
   const setPersistentState = useCallback((key: string, value: any) => {
@@ -179,6 +184,19 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setTasksCompletedToday(getInitialState('tasksCompletedToday', 0));
       }
+
+      // Check and reset monthly withdrawal count
+      const currentMonth = new Date().getMonth();
+      const lastMonth = getInitialState('lastWithdrawalMonth', -1);
+      if (currentMonth !== lastMonth) {
+        setMonthlyWithdrawalsCount(0);
+        setPersistentState('monthlyWithdrawalsCount', 0);
+        setLastWithdrawalMonth(currentMonth);
+        setPersistentState('lastWithdrawalMonth', currentMonth);
+      } else {
+         setMonthlyWithdrawalsCount(getInitialState('monthlyWithdrawalsCount', 0));
+      }
+
       
       setMainBalance(getInitialState('mainBalance', 0));
       setTaskRewardsBalance(getInitialState('taskRewardsBalance', 0));
@@ -205,6 +223,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setCompletedTasks([]);
         setWithdrawalAddressState(null);
         setFirstDepositDate(null);
+        setMonthlyWithdrawalsCount(0);
+        setLastWithdrawalMonth(-1);
     }
     setIsLoading(false);
   }, [currentUser, setPersistentState, getInitialState]);
@@ -223,6 +243,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => setPersistentState('completedTasks', completedTasks), [completedTasks, setPersistentState]);
   useEffect(() => setPersistentState('withdrawalAddress', withdrawalAddress), [withdrawalAddress, setPersistentState]);
   useEffect(() => setPersistentState('firstDepositDate', firstDepositDate), [firstDepositDate, setPersistentState]);
+  useEffect(() => setPersistentState('monthlyWithdrawalsCount', monthlyWithdrawalsCount), [monthlyWithdrawalsCount, setPersistentState]);
+  useEffect(() => setPersistentState('lastWithdrawalMonth', lastWithdrawalMonth), [lastWithdrawalMonth, setPersistentState]);
 
 
  const handleMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', amountToMove: number, fromAccount?: 'Task Rewards' | 'Interest Earnings') => {
@@ -315,6 +337,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
   const approveWithdrawal = () => {
     setWithdrawals(prev => prev + 1);
+    setMonthlyWithdrawalsCount(prev => prev + 1);
+    const currentMonth = new Date().getMonth();
+    setLastWithdrawalMonth(currentMonth);
   }
 
   const refundWithdrawal = (withdrawalAmount: number) => {
@@ -409,6 +434,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         currentLevel,
         currentRate,
         dailyTaskQuota,
+        monthlyWithdrawalLimit,
+        monthlyWithdrawalsCount,
         tasksCompletedToday,
         completedTasks,
         amount,
