@@ -27,25 +27,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { PlusCircle, Edit, Trash2, Timer } from "lucide-react";
+import { PlusCircle, Edit, Trash2 } from "lucide-react";
 import type { WithdrawalAddress } from "@/contexts/WalletContext";
 
 interface WithdrawalPanelProps {
     onAddRequest: (request: Partial<Omit<Request, 'id' | 'date' | 'user' | 'status'>>) => void;
-}
-
-const formatTimeLeft = (ms: number) => {
-    if (ms <= 0) return "00:00:00:00";
-    const days = Math.floor(ms / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((ms % (1000 * 60)) / 1000);
-    return `${String(days).padStart(2, "0")}:${String(hours).padStart(
-      2,
-      "0"
-    )}:${String(minutes).padStart(2, "0")}:${String(
-      seconds
-    ).padStart(2, "0")}`;
 }
 
 
@@ -53,53 +39,28 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
   const { toast } = useToast();
   const [amount, setAmount] = useState("");
   const { 
-      getWalletData, 
       mainBalance, 
       requestWithdrawal, 
       withdrawalAddress, 
       clearWithdrawalAddress,
-      firstDepositDate,
+      currentLevel,
       isWithdrawalRestrictionEnabled,
-      withdrawalRestrictionDays,
       withdrawalRestrictionMessage,
       withdrawalRestrictedLevels,
   } = useWallet();
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
   const [isRestrictionAlertOpen, setIsRestrictionAlertOpen] = useState(false);
-  const [isNoDepositAlertOpen, setIsNoDepositAlertOpen] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(0);
 
-  const { level } = getWalletData();
   const numericAmount = parseFloat(amount) || 0;
 
   const adminFee = useMemo(() => {
-    if (level === 1) return numericAmount * 0.05; // 5%
-    if (level === 2) return numericAmount * 0.03; // 3%
-    if (level >= 3) return numericAmount * 0.01; // 1%
+    if (currentLevel === 1) return numericAmount * 0.05; // 5%
+    if (currentLevel === 2) return numericAmount * 0.03; // 3%
+    if (currentLevel >= 3) return numericAmount * 0.01; // 1%
     return 0; // No fee for level 0
-  }, [numericAmount, level]);
+  }, [numericAmount, currentLevel]);
 
   const netWithdrawal = numericAmount - adminFee;
-
-  useEffect(() => {
-    if (!isRestrictionAlertOpen) return;
-
-    const calculateTimeLeft = () => {
-        if (!firstDepositDate) return 0;
-        const firstDepositTime = new Date(firstDepositDate).getTime();
-        const restrictionEndTime = firstDepositTime + (withdrawalRestrictionDays * 24 * 60 * 60 * 1000);
-        return Math.max(0, restrictionEndTime - Date.now());
-    };
-    
-    setTimeLeft(calculateTimeLeft());
-
-    const interval = setInterval(() => {
-        setTimeLeft(calculateTimeLeft());
-    }, 1000);
-
-    return () => clearInterval(interval);
-
-  }, [isRestrictionAlertOpen, firstDepositDate, withdrawalRestrictionDays]);
 
   
   const handleOpenEditDialog = () => {
@@ -108,23 +69,6 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
 
   const handleWithdraw = (e: React.FormEvent) => {
     e.preventDefault();
-
-    const restrictionIsEnabledForLevel = isWithdrawalRestrictionEnabled && withdrawalRestrictedLevels.includes(level);
-    
-    if (restrictionIsEnabledForLevel) {
-        if (!firstDepositDate) {
-            setIsNoDepositAlertOpen(true);
-            return; 
-        }
-
-        const firstDepositTime = new Date(firstDepositDate).getTime();
-        const restrictionEndTime = firstDepositTime + (withdrawalRestrictionDays * 24 * 60 * 60 * 1000);
-        
-        if (Date.now() < restrictionEndTime) {
-            setIsRestrictionAlertOpen(true);
-            return;
-        }
-    }
     
     if (isNaN(numericAmount) || numericAmount <= 0) {
         toast({
@@ -149,6 +93,15 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
             title: "Insufficient Funds",
             description: `You cannot withdraw more than your main balance of $${mainBalance.toFixed(2)}.`,
         });
+        return;
+    }
+
+    // New Restriction Logic
+    const isLevelRestricted = withdrawalRestrictedLevels.includes(currentLevel);
+    const hasBalance = mainBalance > 0;
+
+    if (isWithdrawalRestrictionEnabled && (isLevelRestricted || hasBalance)) {
+        setIsRestrictionAlertOpen(true);
         return;
     }
     
@@ -241,7 +194,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
             </div>
             <div className="rounded-md border p-4 space-y-2 text-sm">
                 <div className="flex justify-between">
-                    <span className="text-muted-foreground">Admin Fee ({level === 1 ? '5%' : level === 2 ? '3%' : level >= 3 ? '1%' : '0%'}):</span>
+                    <span className="text-muted-foreground">Admin Fee ({currentLevel === 1 ? '5%' : currentLevel === 2 ? '3%' : currentLevel >= 3 ? '1%' : '0%'}):</span>
                     <span className="font-medium">${adminFee.toFixed(2)}</span>
                 </div>
                  <div className="flex justify-between font-semibold">
@@ -269,36 +222,11 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
                       {withdrawalRestrictionMessage}
                   </AlertDialogDescription>
               </AlertDialogHeader>
-              <div className="flex flex-col items-center justify-center p-4 bg-muted rounded-md">
-                 <div className="flex items-center gap-2 text-muted-foreground">
-                     <Timer className="h-5 w-5" />
-                    <span className="text-sm">Time Remaining</span>
-                 </div>
-                 <div className="text-2xl font-bold font-mono tracking-tighter mt-2">
-                    {formatTimeLeft(timeLeft)}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">DD:HH:MM:SS</p>
-              </div>
               <AlertDialogFooter>
                   <AlertDialogAction onClick={() => setIsRestrictionAlertOpen(false)}>OK</AlertDialogAction>
-              </AlertDialogFooter>
-          </AlertDialogContent>
-      </AlertDialog>
-      <AlertDialog open={isNoDepositAlertOpen} onOpenChange={setIsNoDepositAlertOpen}>
-          <AlertDialogContent>
-              <AlertDialogHeader>
-                  <AlertDialogTitle>Withdrawal Restricted</AlertDialogTitle>
-                  <AlertDialogDescription>
-                      Withdrawals are currently restricted. Please make your first deposit to start the waiting period.
-                  </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                  <AlertDialogAction onClick={() => setIsNoDepositAlertOpen(false)}>OK</AlertDialogAction>
               </AlertDialogFooter>
           </AlertDialogContent>
       </AlertDialog>
     </>
   );
 }
-
-
