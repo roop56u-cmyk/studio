@@ -457,7 +457,7 @@ export default function DashboardLayout({
                     <DropdownMenuTrigger asChild>
                     <Button variant="secondary" size="icon" className="rounded-full">
                         <Avatar>
-                        <AvatarImage src="https://placehold.co/40x40.png" alt="User Avatar" data-ai-hint="user avatar" />
+                        <AvatarImage src="https://placehold.co/40x40/673ab7/ffffff.png" alt="User Avatar" data-ai-hint="user avatar" />
                         <AvatarFallback>{currentUser?.email?.[0].toUpperCase() ?? 'U'}</AvatarFallback>
                         </Avatar>
                         <span className="sr-only">Toggle user menu</span>

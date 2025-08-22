@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo } from "react";
@@ -110,7 +111,7 @@ export default function InboxPage() {
                                         <div key={msg.id} className={`flex items-start gap-3 ${!isFromUser ? 'justify-end' : ''}`}>
                                             {isFromUser && (
                                                 <Avatar className="h-8 w-8">
-                                                    <AvatarImage src={`https://placehold.co/40x40.png?text=${fallback}`} alt={senderName} />
+                                                    <AvatarImage src={`https://placehold.co/40x40/ffffff/000000.png?text=${fallback}`} alt={senderName} />
                                                     <AvatarFallback>{fallback}</AvatarFallback>
                                                 </Avatar>
                                             )}
@@ -121,7 +122,7 @@ export default function InboxPage() {
                                             </div>
                                             {!isFromUser && (
                                                 <Avatar className="h-8 w-8">
-                                                    <AvatarImage src={`https://placehold.co/40x40.png?text=${fallback}`} alt={senderName} />
+                                                    <AvatarImage src={`https://placehold.co/40x40/673ab7/ffffff.png?text=${fallback}`} alt={senderName} />
                                                     <AvatarFallback>{fallback}</AvatarFallback>
                                                 </Avatar>
                                             )}
@@ -181,7 +182,7 @@ export default function InboxPage() {
                     <div key={msg.id} className={`flex items-start gap-3 ${isCurrentUser ? 'justify-end' : ''}`}>
                         {!isCurrentUser && (
                             <Avatar className="h-8 w-8">
-                                <AvatarImage src={`https://placehold.co/40x40.png?text=${fallback}`} alt={senderName} />
+                                <AvatarImage src={`https://placehold.co/40x40/673ab7/ffffff.png?text=${fallback}`} alt={senderName} />
                                 <AvatarFallback>{fallback}</AvatarFallback>
                             </Avatar>
                         )}
@@ -192,7 +193,7 @@ export default function InboxPage() {
                         </div>
                         {isCurrentUser && (
                             <Avatar className="h-8 w-8">
-                                <AvatarImage src={`https://placehold.co/40x40.png?text=${fallback}`} alt={senderName} />
+                                <AvatarImage src={`https://placehold.co/40x40/ffffff/000000.png?text=${fallback}`} alt={senderName} />
                                 <AvatarFallback>{fallback}</AvatarFallback>
                             </Avatar>
                         )}
