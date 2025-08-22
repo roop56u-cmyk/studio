@@ -6,18 +6,15 @@ import {
   Card,
   CardContent,
   CardHeader,
-  CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import { Timer } from "lucide-react";
-import { useWallet } from "@/contexts/WalletContext";
 
 interface WithdrawalTimerProps {
   waitDays: number;
+  startDate: string;
 }
 
-export function WithdrawalTimer({ waitDays }: WithdrawalTimerProps) {
-  const { getInitialState } = useWallet();
+export function WithdrawalTimer({ waitDays, startDate }: WithdrawalTimerProps) {
   const [timeLeft, setTimeLeft] = useState<{
     days: number;
     hours: number;
@@ -25,21 +22,12 @@ export function WithdrawalTimer({ waitDays }: WithdrawalTimerProps) {
     seconds: number;
   } | null>(null);
 
-  const [restrictionStartDate, setRestrictionStartDate] = useState<string | null>(null);
-
   useEffect(() => {
-    // We fetch the start date from localStorage.
-    const startDate = getInitialState('restrictionStartDate', null);
-    setRestrictionStartDate(startDate);
-  }, [getInitialState]);
-
-
-  useEffect(() => {
-    if (!restrictionStartDate) {
+    if (!startDate) {
       return;
     }
 
-    const restrictionEndTime = new Date(restrictionStartDate).getTime() + (waitDays * 24 * 60 * 60 * 1000);
+    const restrictionEndTime = new Date(startDate).getTime() + (waitDays * 24 * 60 * 60 * 1000);
 
     const interval = setInterval(() => {
       const now = Date.now();
@@ -60,7 +48,7 @@ export function WithdrawalTimer({ waitDays }: WithdrawalTimerProps) {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [restrictionStartDate, waitDays]);
+  }, [startDate, waitDays]);
 
   const formatTime = (time: typeof timeLeft) => {
     if (!time) return "00:00:00:00";
@@ -79,25 +67,14 @@ export function WithdrawalTimer({ waitDays }: WithdrawalTimerProps) {
         </div>
       </CardHeader>
       <CardContent className="pt-4">
-        {restrictionStartDate ? (
-            <div>
-                 <p className="text-sm text-muted-foreground">Time Remaining</p>
-                <div className="text-3xl font-bold font-mono tracking-tighter mt-2">
-                    {timeLeft ? formatTime(timeLeft) : "00:00:00:00"}
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">DD:HH:MM:SS</p>
+        <div>
+             <p className="text-sm text-muted-foreground">Time Remaining</p>
+            <div className="text-3xl font-bold font-mono tracking-tighter mt-2">
+                {timeLeft ? formatTime(timeLeft) : "00:00:00:00"}
             </div>
-        ) : (
-             <div>
-                 <p className="text-sm text-muted-foreground">Time Remaining</p>
-                <div className="text-3xl font-bold font-mono tracking-tighter mt-2 animate-pulse">
-                    --:--:--:--
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">Calculating...</p>
-            </div>
-        )}
+            <p className="text-xs text-muted-foreground mt-2">DD:HH:MM:SS</p>
+        </div>
       </CardContent>
     </Card>
   );
 }
-

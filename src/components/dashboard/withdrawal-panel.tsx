@@ -57,7 +57,9 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
   useEffect(() => {
     // This simulates getting the start date for the timer for an existing user.
     const storedStartDate = getInitialState('restrictionStartDate', null);
-    setRestrictionStartDate(storedStartDate);
+    if(storedStartDate) {
+      setRestrictionStartDate(storedStartDate);
+    }
   }, [getInitialState]);
 
 
@@ -100,7 +102,10 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
         let startDate = restrictionStartDate;
         if (!startDate) {
             startDate = new Date().toISOString();
-            localStorage.setItem(`${localStorage.getItem('currentUser')}_restrictionStartDate`, JSON.stringify(startDate));
+            const currentUserEmail = localStorage.getItem('currentUser');
+            if(currentUserEmail) {
+                localStorage.setItem(`${JSON.parse(currentUserEmail).email}_restrictionStartDate`, JSON.stringify(startDate));
+            }
             setRestrictionStartDate(startDate);
         }
         
@@ -217,12 +222,17 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
      <AlertDialog open={isRestrictionAlertOpen} onOpenChange={setIsRestrictionAlertOpen}>
           <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Withdrawal Restricted</AlertDialogTitle>
-                <AlertDialogDescription>
-                    {withdrawalRestrictionMessage}
-                </AlertDialogDescription>
+                  <AlertDialogTitle>Withdrawal Restricted</AlertDialogTitle>
+                  <AlertDialogDescription>
+                      {withdrawalRestrictionMessage}
+                  </AlertDialogDescription>
               </AlertDialogHeader>
-              <WithdrawalTimer waitDays={withdrawalRestrictionDays} />
+              {restrictionStartDate && (
+                <WithdrawalTimer 
+                    waitDays={withdrawalRestrictionDays} 
+                    startDate={restrictionStartDate}
+                />
+              )}
               <AlertDialogFooter>
                   <AlertDialogAction onClick={() => setIsRestrictionAlertOpen(false)}>OK</AlertDialogAction>
               </AlertDialogFooter>
