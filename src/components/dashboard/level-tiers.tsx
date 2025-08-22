@@ -10,7 +10,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Users, DollarSign, CheckSquare, CheckCircle, Lock, PlayCircle, Repeat, Landmark } from "lucide-react";
+import { Users, DollarSign, CheckSquare, CheckCircle, Lock, PlayCircle, Repeat, Landmark, Percent } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 
@@ -119,7 +119,6 @@ export function LevelTiers({ currentBalance, onStartTasks, isTaskLocked }: Level
                                             Level {level.level}
                                             {isUnlocked ? <CheckCircle className="h-5 w-5 text-green-500" /> : <Lock className="h-5 w-5 text-muted-foreground" />}
                                         </span>
-                                        <span className="text-sm font-normal text-primary bg-primary/10 px-2 py-1 rounded-full">{level.rate}% Daily</span>
                                     </CardTitle>
                                     {isCurrentLevel && <CardDescription className="text-primary font-semibold">Current Level</CardDescription>}
                                     {!isCurrentLevel && <CardDescription>Unlock new earning potentials.</CardDescription>}
@@ -129,44 +128,21 @@ export function LevelTiers({ currentBalance, onStartTasks, isTaskLocked }: Level
                                         <DollarSign className="h-5 w-5 mr-3 text-muted-foreground" />
                                         <div className="text-sm">
                                             <p className="font-semibold">${level.minAmount.toLocaleString()}</p>
-                                            <p className="text-muted-foreground text-xs">Minimum Amount to Unlock</p>
+                                            <p className="text-muted-foreground text-xs">Min. Amount</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center">
                                         <CheckSquare className="h-5 w-5 mr-3 text-muted-foreground" />
                                         <div className="text-sm">
                                             <p className="font-semibold">{level.dailyTasks} Tasks / Day</p>
-                                            <p className="text-muted-foreground text-xs">Daily Task Quota</p>
+                                            <p className="text-muted-foreground text-xs">Daily Quota</p>
                                         </div>
                                     </div>
-                                     <div className="flex items-center">
-                                        <DollarSign className="h-5 w-5 mr-3 text-muted-foreground" />
-                                        <div className="text-sm">
-                                            <p className="font-semibold">${level.earningPerTask.toFixed(4)} / Task</p>
-                                            <p className="text-muted-foreground text-xs">Earning Per Task</p>
-                                        </div>
-                                    </div>
-                                    {level.referrals !== null && (
-                                        <div className="flex items-center">
-                                            <Users className="h-5 w-5 mr-3 text-muted-foreground" />
-                                            <div className="text-sm">
-                                                <p className="font-semibold">{level.referrals} Direct Referrals</p>
-                                                <p className="text-muted-foreground text-xs">Required to Unlock</p>
-                                            </div>
-                                        </div>
-                                    )}
                                     <div className="flex items-center">
-                                        <Repeat className="h-5 w-5 mr-3 text-muted-foreground" />
+                                        <Percent className="h-5 w-5 mr-3 text-muted-foreground" />
                                         <div className="text-sm">
-                                            <p className="font-semibold">{level.monthlyWithdrawals}x per Month</p>
-                                            <p className="text-muted-foreground text-xs">Withdrawal Limit</p>
-                                        </div>
-                                    </div>
-                                     <div className="flex items-center">
-                                        <Landmark className="h-5 w-5 mr-3 text-muted-foreground" />
-                                        <div className="text-sm">
-                                            <p className="font-semibold">${level.minWithdrawal.toLocaleString()}</p>
-                                            <p className="text-muted-foreground text-xs">Minimum Withdrawal</p>
+                                            <p className="font-semibold">{level.rate}%</p>
+                                            <p className="text-muted-foreground text-xs">Daily Rate</p>
                                         </div>
                                     </div>
                                 </CardContent>
