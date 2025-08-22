@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from 'next/link';
@@ -35,7 +36,7 @@ export default function Home() {
           <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
             <Link href="/signup">Get Started</Link>
           </Button>
-          <Button asChild size="lg" variant="outline">
+          <Button asChild size="lg" variant="secondary">
             <Link href="/login">Sign In</Link>
           </Button>
         </div>

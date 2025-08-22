@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -14,12 +15,14 @@ import { Timer, Zap, Lock, Percent } from "lucide-react";
 import { useWallet } from "@/contexts/WalletContext";
 import type { CounterType } from "@/contexts/WalletContext";
 import { Skeleton } from "../ui/skeleton";
+import { cn } from "@/lib/utils";
 
 interface InterestCounterPanelProps {
   title: string;
   isLocked?: boolean;
   balance: number;
   counterType: CounterType;
+  accentColor?: string;
 }
 
 const DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -29,6 +32,7 @@ export function InterestCounterPanel({
   isLocked = false,
   balance,
   counterType,
+  accentColor = "bg-primary",
 }: InterestCounterPanelProps) {
   const {
     currentRate,
@@ -95,7 +99,8 @@ export function InterestCounterPanel({
 
   if (isLocked) {
     return (
-        <Card className="h-full">
+        <Card className="h-full relative overflow-hidden">
+             <div className={cn("absolute top-0 left-0 h-1 w-full", accentColor)} />
             <CardHeader>
                 <div className="flex flex-row items-center justify-between space-y-0 pb-1">
                     <CardTitle className="text-xs font-medium">{title}</CardTitle>
@@ -113,7 +118,8 @@ export function InterestCounterPanel({
   }
 
   return (
-    <Card>
+    <Card className="relative overflow-hidden">
+      <div className={cn("absolute top-0 left-0 h-1 w-full", accentColor)} />
       <CardHeader>
         <div className="flex flex-row items-center justify-between space-y-0 pb-1">
           <CardTitle className="text-xs font-medium">{title}</CardTitle>

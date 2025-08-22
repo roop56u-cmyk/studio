@@ -114,14 +114,16 @@ export default function UserDashboardPage() {
         <div className="lg:col-span-2 space-y-4">
           {isPanelEnabled("walletBalances") && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <WalletBalance 
+                <WalletBalance
+                    accentColor="bg-chart-1"
                     title="Task Rewards"
                     balance={taskRewardsBalance.toFixed(2)}
                     description="Balance from completed tasks."
                     onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Task Rewards')}
                     showMoveToOther={true}
                 />
-                <WalletBalance 
+                <WalletBalance
+                    accentColor="bg-chart-2"
                     title="Interest Earnings"
                     balance={interestEarningsBalance.toFixed(2)}
                     description="Balance from interest."
@@ -168,6 +170,7 @@ export default function UserDashboardPage() {
             {isPanelEnabled("interestCounter") && (
                 <div className="grid grid-cols-1 gap-4">
                     <InterestCounterPanel
+                        accentColor="bg-chart-3"
                         title="Daily Interest"
                         isLocked={isInterestLocked}
                         balance={interestEarningsBalance}

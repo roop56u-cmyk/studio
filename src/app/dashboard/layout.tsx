@@ -379,6 +379,10 @@ const AnimatedDashboardBackground = () => {
     React.useEffect(() => {
         setIsClient(true);
         setTheme(localStorage.getItem('landing_theme') || '');
+    }, []);
+
+    React.useEffect(() => {
+        if (!isClient) return;
 
         const generatedStars = Array.from({ length: 50 }).map((_, i) => {
             const size = Math.random() * 2 + 1;
@@ -390,7 +394,7 @@ const AnimatedDashboardBackground = () => {
             return <StarParticle key={i} size={size} style={style} />;
         });
         setStars(generatedStars);
-    }, []);
+    }, [isClient]);
     
     if (!isClient || theme !== 'cosmic-voyage') {
         return null;
@@ -459,7 +463,7 @@ export default function DashboardLayout({
                     <DropdownMenuTrigger asChild>
                     <Button variant="secondary" size="icon" className="rounded-full">
                         <Avatar>
-                        <AvatarImage src="https://placehold.co/40/673ab7/ffffff.png?text=A" alt="User Avatar" data-ai-hint="user avatar" />
+                        <AvatarImage src={`https://placehold.co/40x40/${'673ab7'}/${'ffffff'}.png?text=A`} alt="User Avatar" data-ai-hint="user avatar" />
                         <AvatarFallback>{currentUser?.email?.[0].toUpperCase() ?? 'U'}</AvatarFallback>
                         </Avatar>
                         <span className="sr-only">Toggle user menu</span>

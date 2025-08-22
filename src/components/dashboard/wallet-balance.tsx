@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState } from "react";
@@ -15,6 +16,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useWallet } from "@/contexts/WalletContext";
+import { cn } from "@/lib/utils";
 
 interface WalletBalanceProps {
     title: string;
@@ -22,9 +24,10 @@ interface WalletBalanceProps {
     balance: string;
     onMoveToMain?: (amount: number) => void;
     showMoveToOther?: boolean;
+    accentColor?: string;
 }
 
-export function WalletBalance({ title, description, balance = "0.00", onMoveToMain, showMoveToOther = false }: WalletBalanceProps) {
+export function WalletBalance({ title, description, balance = "0.00", onMoveToMain, showMoveToOther = false, accentColor = "bg-primary" }: WalletBalanceProps) {
   const [moveAmount, setMoveAmount] = useState("");
   const { toast } = useToast();
   const { handleMoveFunds } = useWallet();
@@ -77,7 +80,8 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
   };
 
   return (
-    <Card>
+    <Card className="relative overflow-hidden">
+      <div className={cn("absolute top-0 left-0 h-1 w-full", accentColor)} />
       <CardHeader>
         <div className="flex flex-row items-center justify-between space-y-0 pb-1">
           <CardTitle className="text-sm font-medium">
