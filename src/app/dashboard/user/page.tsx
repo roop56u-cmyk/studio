@@ -175,7 +175,6 @@ export default function UserDashboardPage() {
                     />
                 </div>
             )}
-            {isPanelEnabled("referralCard") && <ReferralCard />}
         </div>
       </div>
 
@@ -186,6 +185,3 @@ export default function UserDashboardPage() {
     </div>
   );
 }
-
-    
-

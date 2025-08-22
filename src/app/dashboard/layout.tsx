@@ -69,7 +69,8 @@ import {
   Palette,
   LayoutGrid,
   History,
-  ClipboardList
+  ClipboardList,
+  UserPlus
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -81,9 +82,10 @@ import { WithdrawalDialog } from "@/components/dashboard/withdrawal-dialog";
 import { useTeamCommission } from "@/hooks/use-team-commission";
 import { TransactionHistoryPanel } from "@/components/dashboard/transaction-history-panel";
 import { TaskHistoryPanel } from "@/components/dashboard/task-history-panel";
+import { ReferralCard } from "@/components/dashboard/referral-card";
 
 
-function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransactionHistoryClick, onTaskHistoryClick }: { onRechargeClick: () => void, onWithdrawalClick: () => void, onTransactionHistoryClick: () => void, onTaskHistoryClick: () => void }) {
+function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransactionHistoryClick, onTaskHistoryClick, onReferralClick }: { onRechargeClick: () => void, onWithdrawalClick: () => void, onTransactionHistoryClick: () => void, onTaskHistoryClick: () => void, onReferralClick: () => void }) {
   const pathname = usePathname();
   const { logout, currentUser } = useAuth();
   const { 
@@ -232,6 +234,15 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                 <SidebarMenuButton
+                    onClick={onReferralClick}
+                    tooltip={{ children: "Invite Friends" }}
+                >
+                    <UserPlus />
+                    <span>Invite Friends</span>
+                </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                <SidebarMenuButton
                     asChild
                     isActive={pathname.startsWith("/dashboard/notices")}
                     tooltip={{ children: "Notices" }}
@@ -361,6 +372,7 @@ export default function DashboardLayout({
     const [isWithdrawalOpen, setIsWithdrawalOpen] = React.useState(false);
     const [isHistoryOpen, setIsHistoryOpen] = React.useState(false);
     const [isTaskHistoryOpen, setIsTaskHistoryOpen] = React.useState(false);
+    const [isReferralOpen, setIsReferralOpen] = React.useState(false);
 
     useTeamCommission();
 
@@ -377,6 +389,7 @@ export default function DashboardLayout({
                 onWithdrawalClick={() => setIsWithdrawalOpen(true)}
                 onTransactionHistoryClick={() => setIsHistoryOpen(true)}
                 onTaskHistoryClick={() => setIsTaskHistoryOpen(true)}
+                onReferralClick={() => setIsReferralOpen(true)}
             />
           </Sidebar>
           <div className="flex flex-1 flex-col">
@@ -453,13 +466,19 @@ export default function DashboardLayout({
                 </div>
             </SheetContent>
         </Sheet>
+         <Sheet open={isReferralOpen} onOpenChange={setIsReferralOpen}>
+            <SheetContent className="w-full sm:max-w-sm">
+                <SheetHeader>
+                    <SheetTitle>Invite Friends</SheetTitle>
+                    <SheetDescription>
+                        Share your code to earn commissions from your team.
+                    </SheetDescription>
+                </SheetHeader>
+                <div className="mt-4">
+                    <ReferralCard />
+                </div>
+            </SheetContent>
+        </Sheet>
       </SidebarProvider>
   );
 }
-
-    
-
-    
-
-    
-
