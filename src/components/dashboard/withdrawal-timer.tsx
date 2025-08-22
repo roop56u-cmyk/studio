@@ -88,9 +88,16 @@ export function WithdrawalTimer({ waitDays }: WithdrawalTimerProps) {
                 <p className="text-xs text-muted-foreground mt-2">DD:HH:MM:SS</p>
             </div>
         ) : (
-            <p className="text-muted-foreground">Calculating remaining time...</p>
+             <div>
+                 <p className="text-sm text-muted-foreground">Time Remaining</p>
+                <div className="text-3xl font-bold font-mono tracking-tighter mt-2 animate-pulse">
+                    --:--:--:--
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">Calculating...</p>
+            </div>
         )}
       </CardContent>
     </Card>
   );
 }
+

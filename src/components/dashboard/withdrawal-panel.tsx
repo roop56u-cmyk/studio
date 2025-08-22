@@ -52,8 +52,6 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
   const [isRestrictionAlertOpen, setIsRestrictionAlertOpen] = useState(false);
   
-  // We need a stable date to calculate the timer from, since we are not using firstDepositDate.
-  // We'll use a date stored when the user first encounters the restriction.
   const [restrictionStartDate, setRestrictionStartDate] = useState<string | null>(null);
 
   useEffect(() => {
@@ -95,11 +93,10 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
         return;
     }
 
-    // This is the corrected logic as per your instructions.
     const userIsEligibleForRestriction = mainBalance > 0 || currentLevel >= 1;
 
     if (isWithdrawalRestrictionEnabled && userIsEligibleForRestriction) {
-        // If there's no start date for the timer, set it now.
+        // If there's no start date for the timer, set it now. This makes the timer start on first attempt.
         let startDate = restrictionStartDate;
         if (!startDate) {
             startDate = new Date().toISOString();
