@@ -1,9 +1,24 @@
+
+"use client";
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { WelcomeAnimation } from '@/components/landing/welcome-animation';
 import { Logo } from '@/components/logo';
+import { useState, useEffect } from 'react';
 
 export default function Home() {
+  const [title, setTitle] = useState("Welcome to TaskReview Hub");
+  const [subtitle, setSubtitle] = useState("Your central place to rate, review, and analyze tasks and services. Get started by creating an account or signing in.");
+
+  useEffect(() => {
+    const savedTitle = localStorage.getItem('website_title');
+    if (savedTitle) setTitle(savedTitle);
+    
+    const savedSubtitle = localStorage.getItem('website_subtitle');
+    if (savedSubtitle) setSubtitle(savedSubtitle);
+  }, []);
+
   return (
     <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-background">
       <WelcomeAnimation />
@@ -11,11 +26,10 @@ export default function Home() {
       <div className="relative z-10 flex flex-col items-center justify-center text-center">
         <Logo className="mb-8 text-5xl md:text-7xl" />
         <h1 className="text-4xl font-bold tracking-tighter text-foreground sm:text-5xl md:text-6xl">
-          Welcome to TaskReview Hub
+          {title}
         </h1>
         <p className="mt-4 max-w-2xl text-lg text-muted-foreground md:text-xl">
-          Your central place to rate, review, and analyze tasks and services.
-          Get started by creating an account or signing in.
+          {subtitle}
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-4">
           <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">

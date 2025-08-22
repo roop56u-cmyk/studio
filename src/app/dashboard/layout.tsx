@@ -58,7 +58,8 @@ import {
   Activity,
   Megaphone,
   ListChecks,
-  Percent
+  Percent,
+  Palette
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -147,6 +148,14 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick }: { onRec
                         <Link href="/dashboard/admin/notices">
                             <Megaphone />
                             <span>Manage Notices</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/admin/website-ui")} tooltip={{ children: "Website & UI" }}>
+                        <Link href="/dashboard/admin/website-ui">
+                            <Palette />
+                            <span>Website &amp; UI</span>
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -383,3 +392,4 @@ export default function DashboardLayout({
     
 
     
+
