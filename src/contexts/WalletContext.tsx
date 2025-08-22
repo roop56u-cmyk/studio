@@ -68,7 +68,6 @@ interface WalletContextType {
   withdrawalAddress: WithdrawalAddress | null;
   setWithdrawalAddress: (address: Omit<WithdrawalAddress, 'id'>) => void;
   clearWithdrawalAddress: () => void;
-  firstDepositDate: string | null;
   isWithdrawalRestrictionEnabled: boolean;
   withdrawalRestrictionDays: number;
   withdrawalRestrictionMessage: string;
@@ -136,7 +135,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [interestEarned, setInterestEarned] = useState(() => getInitialState('interestEarned', 0));
   const [deposits, setDeposits] = useState(() => getInitialState('deposits', 0));
   const [withdrawals, setWithdrawals] = useState(() => getInitialState('withdrawals', 0));
-  const [firstDepositDate, setFirstDepositDate] = useState<string | null>(() => getInitialState('firstDepositDate', null));
   
   const [interestCounter, setInterestCounter] = useState<CounterState>(() => getInitialState('interestCounter', { isRunning: false, startTime: null }));
 
@@ -174,16 +172,30 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
 
     if (currentUser) {
-      const today = new Date().toISOString().split('T')[0];
-      const lastCompletionDate = getInitialState('lastTaskCompletionDate', '');
-      if (today !== lastCompletionDate) {
-        setTasksCompletedToday(0);
-        setPersistentState('tasksCompletedToday', 0);
-        setLastTaskCompletionDate(today);
-        setPersistentState('lastTaskCompletionDate', today);
-      } else {
-        setTasksCompletedToday(getInitialState('tasksCompletedToday', 0));
-      }
+        // --- Daily Task Reset Logic ---
+        const now = new Date();
+        const IST_OFFSET = 5.5 * 60 * 60 * 1000; // 5.5 hours in milliseconds
+        const nowIST = new Date(now.getTime() + IST_OFFSET);
+        
+        const resetHourIST = 9;
+        const resetMinuteIST = 30;
+
+        let lastReset = new Date(nowIST);
+        lastReset.setUTCHours(resetHourIST, resetMinuteIST, 0, 0);
+
+        if (nowIST < lastReset) {
+            lastReset.setUTCDate(lastReset.getUTCDate() - 1);
+        }
+
+        const lastCompletionTime = getInitialState('lastCompletionTime', 0);
+        
+        if (lastCompletionTime < lastReset.getTime()) {
+             setTasksCompletedToday(0);
+             setPersistentState('tasksCompletedToday', 0);
+        } else {
+             setTasksCompletedToday(getInitialState('tasksCompletedToday', 0));
+        }
+
 
       // Check and reset monthly withdrawal count
       const currentMonth = new Date().getMonth();
@@ -208,7 +220,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       setInterestCounter(getInitialState('interestCounter', { isRunning: false, startTime: null }));
       setCompletedTasks(getInitialState('completedTasks', []));
       setWithdrawalAddressState(getInitialState('withdrawalAddress', null));
-      setFirstDepositDate(getInitialState('firstDepositDate', null));
     } else {
         setMainBalance(0);
         setTaskRewardsBalance(0);
@@ -219,10 +230,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setWithdrawals(0);
         setInterestCounter({ isRunning: false, startTime: null });
         setTasksCompletedToday(0);
-        setLastTaskCompletionDate('');
         setCompletedTasks([]);
         setWithdrawalAddressState(null);
-        setFirstDepositDate(null);
         setMonthlyWithdrawalsCount(0);
         setLastWithdrawalMonth(-1);
     }
@@ -239,10 +248,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => setPersistentState('withdrawals', withdrawals), [withdrawals, setPersistentState]);
   useEffect(() => setPersistentState('interestCounter', interestCounter), [interestCounter, setPersistentState]);
   useEffect(() => setPersistentState('tasksCompletedToday', tasksCompletedToday), [tasksCompletedToday, setPersistentState]);
-  useEffect(() => setPersistentState('lastTaskCompletionDate', lastTaskCompletionDate), [lastTaskCompletionDate, setPersistentState]);
   useEffect(() => setPersistentState('completedTasks', completedTasks), [completedTasks, setPersistentState]);
   useEffect(() => setPersistentState('withdrawalAddress', withdrawalAddress), [withdrawalAddress, setPersistentState]);
-  useEffect(() => setPersistentState('firstDepositDate', firstDepositDate), [firstDepositDate, setPersistentState]);
   useEffect(() => setPersistentState('monthlyWithdrawalsCount', monthlyWithdrawalsCount), [monthlyWithdrawalsCount, setPersistentState]);
   useEffect(() => setPersistentState('lastWithdrawalMonth', lastWithdrawalMonth), [lastWithdrawalMonth, setPersistentState]);
 
@@ -317,8 +324,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setMainBalance(prev => prev + rechargeAmount);
     setDeposits(prev => {
         const newDeposits = prev + 1;
-        if (newDeposits === 1 && !firstDepositDate) { // First deposit only
-            setFirstDepositDate(new Date().toISOString());
+        const firstDepositDateKey = `${currentUser?.email}_firstDepositDate`;
+        if (newDeposits === 1 && !localStorage.getItem(firstDepositDateKey)) {
+             localStorage.setItem(firstDepositDateKey, new Date().toISOString());
         }
         return newDeposits;
     });
@@ -364,7 +372,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const claimAndRestartCounter = (type: CounterType) => {
-      const dailyRate = currentRate / 100 / 365;
+      const dailyRate = currentRate / 100;
       
       if (type === 'interest') {
           const earnings = interestEarningsBalance * dailyRate;
@@ -384,7 +392,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
           return;
       }
 
-      const dailyRate = currentRate / 100 / 365;
+      const dailyRate = currentRate / 100;
       const potentialDailyEarning = taskRewardsBalance * dailyRate;
       
       const earningPerTask = dailyTaskQuota > 0 ? potentialDailyEarning / dailyTaskQuota : 0;
@@ -402,7 +410,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       };
       setCompletedTasks(prev => [newCompletedTask, ...prev]);
       
-      setTasksCompletedToday(prev => prev + 1);
+      const newTasksCompleted = tasksCompletedToday + 1;
+      setTasksCompletedToday(newTasksCompleted);
+      setPersistentState('lastCompletionTime', new Date().getTime());
+
 
       toast({
           title: "Task Completed!",
@@ -456,7 +467,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         withdrawalAddress,
         setWithdrawalAddress,
         clearWithdrawalAddress,
-        firstDepositDate,
         isWithdrawalRestrictionEnabled,
         withdrawalRestrictionDays,
         withdrawalRestrictionMessage,
