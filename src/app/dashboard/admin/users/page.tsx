@@ -81,15 +81,9 @@ export default function UserManagementPage() {
   return (
     <>
     <div className="grid gap-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
-        <p className="text-muted-foreground">
-          Manage all users from this panel.
-        </p>
-      </div>
       <Card>
         <CardHeader>
-          <CardTitle>All Users</CardTitle>
+          <CardTitle>All Users ({users.length})</CardTitle>
           <CardDescription>
             A list of all users registered on the platform.
           </CardDescription>

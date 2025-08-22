@@ -86,9 +86,59 @@ import { TaskHistoryPanel } from "@/components/dashboard/task-history-panel";
 import { ReferralCard } from "@/components/dashboard/referral-card";
 import { InboxPanel } from "@/components/dashboard/inbox-panel";
 import { BoosterStorePanel } from "@/components/dashboard/booster-store-panel";
+import { QuestPanel } from "@/components/dashboard/quest-panel";
+
+// Admin Panel Imports
+import AdminDashboardPage from "./admin/page";
+import UserManagementPage from "./admin/users/page";
+import ManageTasksPage from "./admin/tasks/page";
+import ManageQuestsPage from "./admin/quests/page";
+import ManageBoostersPage from "./admin/boosters/page";
+import ManageLevelsPage from "./admin/levels/page";
+import TeamCommissionPage from "./admin/team-commission/page";
+import AdminNoticesPage from "./admin/notices/page";
+import ManageUserPanelsPage from "./admin/user-panels/page";
+import WebsiteUIPage from "./admin/website-ui/page";
+import SystemSettingsPage from "./admin/settings/page";
+import ActivityLogPage from "./admin/activity-log/page";
 
 
-function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransactionHistoryClick, onTaskHistoryClick, onReferralClick, onInboxClick, onBoosterStoreClick }: { onRechargeClick: () => void, onWithdrawalClick: () => void, onTransactionHistoryClick: () => void, onTaskHistoryClick: () => void, onReferralClick: () => void, onInboxClick: () => void, onBoosterStoreClick: () => void }) {
+type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox' | 'adminDashboard';
+
+
+const adminPanelComponents: Record<PanelType, React.ComponentType> = {
+    adminDashboard: AdminDashboardPage,
+    userManagement: UserManagementPage,
+    taskManagement: ManageTasksPage,
+    questManagement: ManageQuestsPage,
+    boosterManagement: ManageBoostersPage,
+    levelManagement: ManageLevelsPage,
+    teamCommission: TeamCommissionPage,
+    noticeManagement: AdminNoticesPage,
+    userPanels: ManageUserPanelsPage,
+    websiteUI: WebsiteUIPage,
+    systemSettings: SystemSettingsPage,
+    activityLog: ActivityLogPage,
+    inbox: InboxPanel,
+};
+
+const adminPanelTitles: Record<PanelType, { title: string; description: string }> = {
+    adminDashboard: { title: "Admin Dashboard", description: "Overview of the platform." },
+    userManagement: { title: "User Management", description: "Manage all user accounts." },
+    taskManagement: { title: "Manage Tasks", description: "Create and configure user tasks." },
+    questManagement: { title: "Manage Quests", description: "Manage daily quests for users." },
+    boosterManagement: { title: "Manage Boosters", description: "Manage booster packs for the store." },
+    levelManagement: { title: "Manage Levels", description: "Configure investment and earning levels." },
+    teamCommission: { title: "Team Commission", description: "Set referral commission rates." },
+    noticeManagement: { title: "Manage Notices", description: "Publish announcements for all users." },
+    userPanels: { title: "User Panels", description: "Control visibility of user dashboard panels." },
+    websiteUI: { title: "Website & UI", description: "Customize the look and feel of the website." },
+    systemSettings: { title: "System Settings", description: "Configure global application settings." },
+    activityLog: { title: "Activity Log", description: "Review administrative actions." },
+    inbox: { title: "Inbox", description: "View and respond to user messages." },
+};
+
+function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransactionHistoryClick, onTaskHistoryClick, onReferralClick, onInboxClick, onBoosterStoreClick, onQuestPanelClick, onAdminPanelClick }: { onRechargeClick: () => void, onWithdrawalClick: () => void, onTransactionHistoryClick: () => void, onTaskHistoryClick: () => void, onReferralClick: () => void, onInboxClick: () => void, onBoosterStoreClick: () => void, onQuestPanelClick: () => void, onAdminPanelClick: (panel: PanelType) => void }) {
   const pathname = usePathname();
   const { logout, currentUser } = useAuth();
   const { 
@@ -121,99 +171,75 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
         ) : isAdmin ? (
             <>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin"} tooltip={{ children: "Dashboard" }}>
-                        <Link href="/dashboard/admin">
-                            <Home />
-                            <span>Dashboard</span>
-                        </Link>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('adminDashboard')} tooltip={{ children: "Dashboard" }}>
+                        <Home />
+                        <span>Dashboard</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/admin/users")} tooltip={{ children: "Manage Users" }}>
-                        <Link href="/dashboard/admin/users">
-                            <UserCog />
-                            <span>User Management</span>
-                        </Link>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('userManagement')} tooltip={{ children: "Manage Users" }}>
+                        <UserCog />
+                        <span>User Management</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/admin/tasks")} tooltip={{ children: "Manage Tasks" }}>
-                        <Link href="/dashboard/admin/tasks">
-                            <ListChecks />
-                            <span>Manage Tasks</span>
-                        </Link>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('taskManagement')} tooltip={{ children: "Manage Tasks" }}>
+                        <ListChecks />
+                        <span>Manage Tasks</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/admin/quests")} tooltip={{ children: "Manage Quests" }}>
-                        <Link href="/dashboard/admin/quests">
-                            <CheckCheck />
-                            <span>Manage Quests</span>
-                        </Link>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('questManagement')} tooltip={{ children: "Manage Quests" }}>
+                        <CheckCheck />
+                        <span>Manage Quests</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/admin/boosters")} tooltip={{ children: "Manage Boosters" }}>
-                        <Link href="/dashboard/admin/boosters">
-                            <Flame />
-                            <span>Manage Boosters</span>
-                        </Link>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('boosterManagement')} tooltip={{ children: "Manage Boosters" }}>
+                        <Flame />
+                        <span>Manage Boosters</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/admin/levels")} tooltip={{ children: "Manage Levels" }}>
-                        <Link href="/dashboard/admin/levels">
-                            <SlidersHorizontal />
-                            <span>Manage Levels</span>
-                        </Link>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('levelManagement')} tooltip={{ children: "Manage Levels" }}>
+                        <SlidersHorizontal />
+                        <span>Manage Levels</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/admin/team-commission")} tooltip={{ children: "Team Commission" }}>
-                        <Link href="/dashboard/admin/team-commission">
-                            <Percent />
-                            <span>Team Commission</span>
-                        </Link>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('teamCommission')} tooltip={{ children: "Team Commission" }}>
+                        <Percent />
+                        <span>Team Commission</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/admin/notices")} tooltip={{ children: "Manage Notices" }}>
-                        <Link href="/dashboard/admin/notices">
-                            <Megaphone />
-                            <span>Manage Notices</span>
-                        </Link>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('noticeManagement')} tooltip={{ children: "Manage Notices" }}>
+                        <Megaphone />
+                        <span>Manage Notices</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/admin/user-panels")} tooltip={{ children: "User Panels" }}>
-                        <Link href="/dashboard/admin/user-panels">
-                            <LayoutGrid />
-                            <span>User Panels</span>
-                        </Link>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('userPanels')} tooltip={{ children: "User Panels" }}>
+                        <LayoutGrid />
+                        <span>User Panels</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/admin/website-ui")} tooltip={{ children: "Website & UI" }}>
-                        <Link href="/dashboard/admin/website-ui">
-                            <Palette />
-                            <span>Website &amp; UI</span>
-                        </Link>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('websiteUI')} tooltip={{ children: "Website & UI" }}>
+                        <Palette />
+                        <span>Website &amp; UI</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/admin/settings")} tooltip={{ children: "System Settings" }}>
-                        <Link href="/dashboard/admin/settings">
-                            <Settings2 />
-                            <span>System Settings</span>
-                        </Link>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('systemSettings')} tooltip={{ children: "System Settings" }}>
+                        <Settings2 />
+                        <span>System Settings</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/admin/activity-log")} tooltip={{ children: "Activity Log" }}>
-                        <Link href="/dashboard/admin/activity-log">
-                            <Activity />
-                            <span>Activity Log</span>
-                        </Link>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('activityLog')} tooltip={{ children: "Activity Log" }}>
+                        <Activity />
+                        <span>Activity Log</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
@@ -236,6 +262,15 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
                     <span>Dashboard</span>
                     </Link>
                 </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton
+                        onClick={onQuestPanelClick}
+                        tooltip={{ children: "Daily Quests" }}
+                    >
+                        <CheckCheck />
+                        <span>Daily Quests</span>
+                    </SidebarMenuButton>
                 </SidebarMenuItem>
                  <SidebarMenuItem>
                 <SidebarMenuButton
@@ -455,12 +490,25 @@ export default function DashboardLayout({
     const [isReferralOpen, setIsReferralOpen] = React.useState(false);
     const [isInboxOpen, setIsInboxOpen] = React.useState(false);
     const [isBoosterStoreOpen, setIsBoosterStoreOpen] = React.useState(false);
+    const [isQuestPanelOpen, setIsQuestPanelOpen] = React.useState(false);
+
+    // Admin panel states
+    const [activeAdminPanel, setActiveAdminPanel] = React.useState<PanelType | null>(null);
+    const AdminPanelComponent = activeAdminPanel ? adminPanelComponents[activeAdminPanel] : null;
 
     useTeamCommission();
 
     React.useEffect(() => {
         setIsClient(true);
     }, []);
+    
+    const handleAdminPanelClick = (panel: PanelType) => {
+        if (panel === 'inbox') {
+            setIsInboxOpen(true);
+        } else {
+            setActiveAdminPanel(panel);
+        }
+    }
 
   return (
       <SidebarProvider>
@@ -472,13 +520,15 @@ export default function DashboardLayout({
                 onTransactionHistoryClick={() => setIsHistoryOpen(true)}
                 onTaskHistoryClick={() => setIsTaskHistoryOpen(true)}
                 onReferralClick={() => setIsReferralOpen(true)}
-                onInboxClick={() => setIsInboxOpen(true)}
+                onInboxClick={() => currentUser?.isAdmin ? handleAdminPanelClick('inbox') : setIsInboxOpen(true)}
                 onBoosterStoreClick={() => setIsBoosterStoreOpen(true)}
+                onQuestPanelClick={() => setIsQuestPanelOpen(true)}
+                onAdminPanelClick={handleAdminPanelClick}
             />
           </Sidebar>
           <div className="flex flex-1 flex-col relative">
            <AnimatedDashboardBackground />
-          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/95 px-4 md:px-6 backdrop-blur-sm bg-opacity-80">
+          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/95 px-4 md:px-6 backdrop-blur-sm">
               <SidebarTrigger className="md:hidden" />
               <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
               <div className="ml-auto flex-1 sm:flex-initial">
@@ -590,8 +640,36 @@ export default function DashboardLayout({
                 </div>
             </SheetContent>
         </Sheet>
+         <Sheet open={isQuestPanelOpen} onOpenChange={setIsQuestPanelOpen}>
+            <SheetContent className="w-full sm:max-w-lg">
+                <SheetHeader>
+                    <SheetTitle>Daily Quests</SheetTitle>
+                    <SheetDescription>
+                        Complete daily quests to earn extra rewards.
+                    </SheetDescription>
+                </SheetHeader>
+                <div className="mt-4">
+                    <QuestPanel />
+                </div>
+            </SheetContent>
+        </Sheet>
+        <Sheet open={!!activeAdminPanel} onOpenChange={(open) => !open && setActiveAdminPanel(null)}>
+             <SheetContent className="w-full sm:max-w-4xl overflow-y-auto">
+                {activeAdminPanel && (
+                    <>
+                        <SheetHeader>
+                            <SheetTitle>{adminPanelTitles[activeAdminPanel].title}</SheetTitle>
+                            <SheetDescription>
+                                {adminPanelTitles[activeAdminPanel].description}
+                            </SheetDescription>
+                        </SheetHeader>
+                        <div className="mt-4">
+                            {AdminPanelComponent && <AdminPanelComponent />}
+                        </div>
+                    </>
+                )}
+            </SheetContent>
+        </Sheet>
       </SidebarProvider>
   );
 }
-
-    
