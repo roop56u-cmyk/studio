@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -15,30 +16,18 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Megaphone } from "lucide-react";
-
-// Mock data for demonstration
-const notices = [
-  {
-    id: 1,
-    title: "Scheduled Maintenance on August 15th",
-    date: "2024-08-01",
-    content: "Please be advised that we will be undergoing scheduled maintenance on August 15th from 2:00 AM to 4:00 AM UTC. The platform may be temporarily unavailable during this time. We apologize for any inconvenience.",
-  },
-  {
-    id: 2,
-    title: "New Referral Bonus System Launched!",
-    date: "2024-07-28",
-    content: "We are excited to announce our new and improved referral bonus system! For every new user you refer who makes a qualifying first deposit, you will now receive a $5 bonus directly to your main wallet. Check the 'Team' page for your referral code.",
-  },
-    {
-    id: 3,
-    title: "Update to Withdrawal Fees",
-    date: "2024-07-25",
-    content: "As of August 1st, we will be adjusting our withdrawal fee structure. Level 1 will have a 5% fee, Level 2 will have a 3% fee, and Levels 3 and above will have a 1% fee. This change allows us to continue providing a secure and efficient platform.",
-  },
-];
+import type { Notice } from "../admin/notices/page";
 
 export default function NoticesPage() {
+  const [notices, setNotices] = useState<Notice[]>([]);
+
+  useEffect(() => {
+    const storedNotices = localStorage.getItem("platform_notices");
+    if (storedNotices) {
+      setNotices(JSON.parse(storedNotices));
+    }
+  }, []);
+
   return (
     <div className="grid gap-8">
       <div>
@@ -62,7 +51,7 @@ export default function NoticesPage() {
                   <AccordionTrigger>
                     <div className="flex flex-col text-left">
                         <span>{notice.title}</span>
-                        <span className="text-xs text-muted-foreground font-normal mt-1">{notice.date}</span>
+                        <span className="text-xs text-muted-foreground font-normal mt-1">{new Date(notice.date).toLocaleDateString()}</span>
                     </div>
                     </AccordionTrigger>
                   <AccordionContent>

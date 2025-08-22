@@ -1,22 +1,30 @@
 
 "use client";
 
-import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 
 export type Message = {
     id: string;
     sender: string; // user email
-    recipient: string; // user email or 'admin'
+    recipient: string; // user email or 'admin@stakinghub.com'
     content: string;
     date: string;
     read: boolean;
 };
 
+type Conversation = {
+    email: string;
+    lastMessage: string;
+    lastMessageDate: string;
+};
+
 interface InboxContextType {
   messages: Message[];
   sendMessage: (content: string) => void;
+  adminSendMessage: (recipientEmail: string, content: string) => void;
   isLoading: boolean;
+  conversations: Conversation[];
 }
 
 const mockMessages: Message[] = [
@@ -65,7 +73,36 @@ export const InboxProvider = ({ children }: { children: ReactNode }) => {
         }
     });
     
-    const [messages, setMessages] = useState<Message[]>([]);
+    // Derived state for the current user's messages
+    const messages = useMemo(() => {
+        if (!currentUser || currentUser.isAdmin) return [];
+        return allMessages
+            .filter(m => m.sender === currentUser.email || m.recipient === currentUser.email)
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    }, [currentUser, allMessages]);
+    
+    // Derived state for admin's conversation list
+    const conversations = useMemo(() => {
+        if (!currentUser?.isAdmin) return [];
+        
+        const convos: {[key: string]: Conversation} = {};
+
+        allMessages.forEach(msg => {
+            const otherParty = msg.sender === 'admin@stakinghub.com' ? msg.recipient : msg.sender;
+            if (otherParty === 'admin@stakinghub.com') return;
+
+            if (!convos[otherParty] || new Date(msg.date) > new Date(convos[otherParty].lastMessageDate)) {
+                convos[otherParty] = {
+                    email: otherParty,
+                    lastMessage: msg.content,
+                    lastMessageDate: msg.date,
+                };
+            }
+        });
+
+        return Object.values(convos).sort((a,b) => new Date(b.lastMessageDate).getTime() - new Date(a.lastMessageDate).getTime());
+
+    }, [currentUser, allMessages]);
 
     useEffect(() => {
         try {
@@ -75,20 +112,6 @@ export const InboxProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [allMessages]);
 
-    useEffect(() => {
-        if (currentUser) {
-            setIsLoading(true);
-            const userMessages = allMessages.filter(
-                m => m.sender === currentUser.email || m.recipient === currentUser.email
-            ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-            setMessages(userMessages);
-            setIsLoading(false);
-        } else {
-            setMessages([]);
-        }
-    }, [currentUser, allMessages]);
-    
-
     const sendMessage = useCallback((content: string) => {
         if (!currentUser) return;
         setIsLoading(true);
@@ -96,13 +119,32 @@ export const InboxProvider = ({ children }: { children: ReactNode }) => {
         const newMessage: Message = {
             id: `MSG-${Date.now()}`,
             sender: currentUser.email,
-            recipient: "admin@stakinghub.com", // All user messages go to admin
+            recipient: "admin@stakinghub.com",
             content,
             date: new Date().toISOString(),
             read: false,
         };
 
-        // Simulate async operation
+        setTimeout(() => {
+            setAllMessages(prev => [...prev, newMessage]);
+            setIsLoading(false);
+        }, 500);
+
+    }, [currentUser]);
+
+    const adminSendMessage = useCallback((recipientEmail: string, content: string) => {
+        if (!currentUser || !currentUser.isAdmin) return;
+        setIsLoading(true);
+        
+        const newMessage: Message = {
+            id: `MSG-${Date.now()}`,
+            sender: currentUser.email,
+            recipient: recipientEmail,
+            content,
+            date: new Date().toISOString(),
+            read: false,
+        };
+        
         setTimeout(() => {
             setAllMessages(prev => [...prev, newMessage]);
             setIsLoading(false);
@@ -112,7 +154,7 @@ export const InboxProvider = ({ children }: { children: ReactNode }) => {
 
 
     return (
-        <InboxContext.Provider value={{ messages, sendMessage, isLoading }}>
+        <InboxContext.Provider value={{ messages, sendMessage, adminSendMessage, isLoading, conversations }}>
             {children}
         </InboxContext.Provider>
     );

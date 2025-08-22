@@ -19,6 +19,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useWallet } from "@/contexts/WalletContext";
 import type { WithdrawalAddress } from "@/contexts/WalletContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const addressSchema = z.object({
   name: z.string().min(1, "Name is required."),
@@ -31,10 +33,13 @@ interface AddressDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   address: WithdrawalAddress | null;
+  userEmail?: string; // Optional user email for admin edits
 }
 
-export function AddressDialog({ open, onOpenChange, address }: AddressDialogProps) {
-  const { setWithdrawalAddress } = useWallet();
+export function AddressDialog({ open, onOpenChange, address, userEmail }: AddressDialogProps) {
+  const { setWithdrawalAddress: setUserAddress } = useWallet();
+  const { currentUser } = useAuth();
+  const { toast } = useToast();
 
   const form = useForm<AddressFormValues>({
     resolver: zodResolver(addressSchema),
@@ -51,7 +56,17 @@ export function AddressDialog({ open, onOpenChange, address }: AddressDialogProp
 
 
   const onSubmit = (data: AddressFormValues) => {
-    setWithdrawalAddress(data);
+    const targetEmail = userEmail || currentUser?.email;
+    if (!targetEmail) return;
+
+    const newAddress = { ...data, id: `ADDR-${Date.now()}` };
+    localStorage.setItem(`${targetEmail}_withdrawalAddress`, JSON.stringify(newAddress));
+
+    if (currentUser?.email === targetEmail) {
+        setUserAddress(data);
+    }
+    
+    toast({ title: "Address Saved", description: "The withdrawal address has been updated." });
     onOpenChange(false);
   };
 
@@ -61,7 +76,8 @@ export function AddressDialog({ open, onOpenChange, address }: AddressDialogProp
         <DialogHeader>
           <DialogTitle>{address ? "Edit" : "Set"} Withdrawal Address</DialogTitle>
           <DialogDescription>
-            {address ? "Update the details for your saved address." : "Save your BEP20 address for withdrawals."}
+            {address ? "Update the details for the saved address." : "Save the BEP20 address for withdrawals."}
+            {userEmail && <span className="font-bold block mt-1">Editing for: {userEmail}</span>}
           </DialogDescription>
         </DialogHeader>
         

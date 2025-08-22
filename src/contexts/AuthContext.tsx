@@ -19,7 +19,7 @@ interface AuthContextType {
   login: (email: string, password: string) => { success: boolean, message: string, isAdmin?: boolean };
   signup: (email: string, password: string, referralCode: string) => { success: boolean, message: string };
   logout: () => void;
-  updateUser: (email: string, updatedData: Partial<User>) => void;
+  updateUser: (email: string, updatedData: Partial<User> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; }) => void;
   deleteUser: (email: string) => void;
 }
 
@@ -146,13 +146,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         router.push('/login');
     };
 
-    const updateUser = (email: string, updatedData: Partial<User>) => {
+    const updateUser = (email: string, updatedData: Partial<User> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; }) => {
+        const { mainBalance, taskRewardsBalance, interestEarningsBalance, ...userData } = updatedData;
+        
+        const originalUser = users.find(u => u.email === email);
+        if (!originalUser) return;
+
+        // If email is being changed, we need to update all localStorage keys
+        if (userData.email && userData.email !== email) {
+            const keysToMigrate = [
+                'mainBalance', 'taskRewardsBalance', 'interestEarningsBalance',
+                'taskRewardsEarned', 'interestEarned', 'deposits', 'withdrawals',
+                'interestCounter', 'tasksCompletedToday', 'lastTaskCompletionDate',
+                'completedTasks', 'withdrawalAddress', 'monthlyWithdrawalsCount',
+                'lastWithdrawalMonth', 'lastTeamCommissionCredit', 'firstDepositDate'
+            ];
+            keysToMigrate.forEach(key => {
+                const oldKey = `${email}_${key}`;
+                const newKey = `${userData.email}_${key}`;
+                const value = localStorage.getItem(oldKey);
+                if (value) {
+                    localStorage.setItem(newKey, value);
+                    localStorage.removeItem(oldKey);
+                }
+            });
+        }
+        
+        const targetEmail = userData.email || email;
+        // Update balances in localStorage
+        if (mainBalance !== undefined) localStorage.setItem(`${targetEmail}_mainBalance`, JSON.stringify(mainBalance));
+        if (taskRewardsBalance !== undefined) localStorage.setItem(`${targetEmail}_taskRewardsBalance`, JSON.stringify(taskRewardsBalance));
+        if (interestEarningsBalance !== undefined) localStorage.setItem(`${targetEmail}_interestEarningsBalance`, JSON.stringify(interestEarningsBalance));
+
         setUsers(prevUsers => prevUsers.map(user => 
-            user.email === email ? { ...user, ...updatedData } : user
+            user.email === email ? { ...user, ...userData } : user
         ));
-         // If the currently logged-in user is being updated, update their session data too
+        
+        // If the currently logged-in user is being updated, update their session data too
         if (currentUser?.email === email) {
-            setCurrentUser(prev => prev ? { ...prev, ...updatedData } : null);
+            setCurrentUser(prev => prev ? { ...prev, ...userData } : null);
         }
     };
 
