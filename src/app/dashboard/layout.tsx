@@ -45,7 +45,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Logo } from "@/components/logo";
 import {
   Home,
-  Star,
   User,
   Users,
   Search,
@@ -360,7 +359,7 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
   );
 }
 
-const Star = ({ size, style }: { size: number, style: React.CSSProperties }) => (
+const StarParticle = ({ size, style }: { size: number, style: React.CSSProperties }) => (
     <div style={{
         position: 'absolute',
         width: `${size}px`,
@@ -383,7 +382,7 @@ const AnimatedDashboardBackground = () => {
                 left: `${Math.random() * 100}%`,
                 animation: `twinkle ${Math.random() * 5 + 2}s linear infinite`,
             };
-            return <Star key={i} size={size} style={style} />;
+            return <StarParticle key={i} size={size} style={style} />;
         });
         setStars(generatedStars);
     }, []);
@@ -457,7 +456,7 @@ export default function DashboardLayout({
                     <DropdownMenuTrigger asChild>
                     <Button variant="secondary" size="icon" className="rounded-full">
                         <Avatar>
-                        <AvatarImage src="https://placehold.co/40x40/673ab7/ffffff.png" alt="User Avatar" data-ai-hint="user avatar" />
+                        <AvatarImage src="https://placehold.co/40/673ab7/ffffff.png" alt="User Avatar" data-ai-hint="user avatar" />
                         <AvatarFallback>{currentUser?.email?.[0].toUpperCase() ?? 'U'}</AvatarFallback>
                         </Avatar>
                         <span className="sr-only">Toggle user menu</span>
@@ -533,3 +532,5 @@ export default function DashboardLayout({
       </SidebarProvider>
   );
 }
+
+    
