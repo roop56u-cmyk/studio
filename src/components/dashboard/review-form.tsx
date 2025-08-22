@@ -29,9 +29,7 @@ import { Label } from "@/components/ui/label";
 
 const reviewSchema = z.object({
   rating: z.number().min(1, "Please provide a rating.").max(5),
-  option: z.string({
-    required_error: "You need to select a review option.",
-  }),
+  // Option is no longer required here as we handle it manually
 });
 
 type ReviewFormValues = z.infer<typeof reviewSchema>;
@@ -49,12 +47,12 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
 
   // Manually manage radio group state to avoid flushSync error
   const [selectedOption, setSelectedOption] = useState<string | undefined>(undefined);
+  const [optionError, setOptionError] = useState<string | null>(null);
 
   const form = useForm<ReviewFormValues>({
     resolver: zodResolver(reviewSchema),
     defaultValues: {
       rating: 0,
-      option: undefined,
     },
   });
 
@@ -63,6 +61,7 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
       setIsGeneratingTask(true);
       form.reset();
       setSelectedOption(undefined);
+      setOptionError(null);
       const result = await generateTaskSuggestion();
       setTask(result);
     } catch (error) {
@@ -84,12 +83,19 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
 
   const onSubmit = async (data: ReviewFormValues) => {
     if (!task) return;
+
+    // Manual validation for the radio group
+    if (!selectedOption) {
+        setOptionError("You need to select a review option.");
+        return;
+    }
+    
     setIsLoading(true);
     try {
       await submitReview({ 
         taskTitle: task.taskTitle,
         rating: data.rating,
-        option: data.option,
+        option: selectedOption,
        });
 
       completeTask(task);
@@ -99,6 +105,7 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
       }
       
       setSelectedOption(undefined); // Reset manual state
+      setOptionError(null);
 
       if (tasksCompletedToday + 1 < dailyTaskQuota) {
           fetchTask();
@@ -119,7 +126,9 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
 
   const handleOptionChange = (value: string) => {
       setSelectedOption(value);
-      form.setValue("option", value, { shouldValidate: true });
+      if (optionError) {
+          setOptionError(null);
+      }
   }
 
   const allTasksCompleted = tasksCompletedToday >= dailyTaskQuota;
@@ -180,7 +189,7 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
         />
         
         <div className="space-y-3">
-          <FormLabel>Select an Option</FormLabel>
+          <Label>Select an Option</Label>
           <RadioGroup
             value={selectedOption}
             onValueChange={handleOptionChange}
@@ -207,7 +216,7 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
               ))
             )}
           </RadioGroup>
-          <FormMessage>{form.formState.errors.option?.message}</FormMessage>
+          {optionError && <p className="text-sm font-medium text-destructive">{optionError}</p>}
         </div>
 
         <div className="flex items-center justify-between">
