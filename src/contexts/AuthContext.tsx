@@ -10,6 +10,7 @@ export type User = {
     isAdmin: boolean;
     referralCode: string;
     referredBy: string | null; // Stores the referral code of the user who referred them
+    status: 'active' | 'disabled';
 };
 
 interface AuthContextType {
@@ -28,6 +29,7 @@ const initialAdminUser: User = {
     isAdmin: true,
     referralCode: "ADMINREF001",
     referredBy: null,
+    status: 'active',
 };
 
 
@@ -47,7 +49,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 if (!adminExists) {
                     return [initialAdminUser, ...parsedUsers];
                 }
-                return parsedUsers.map((u: User) => u.email === initialAdminUser.email ? initialAdminUser : u);
+                // Ensure all users have a status
+                return parsedUsers.map((u: User) => ({
+                    ...u,
+                    status: u.status ?? 'active', // Set default status if missing
+                    ...(u.email === initialAdminUser.email ? initialAdminUser : {}) // Ensure admin data is current
+                }));
             }
         } catch (error) {
             console.error("Failed to parse users from localStorage", error);
@@ -101,6 +108,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (user.password !== password) {
             return { success: false, message: 'Incorrect password. Please try again.' };
         }
+         if (user.status === 'disabled') {
+            return { success: false, message: 'Your account has been disabled. Please contact support.' };
+        }
 
         setCurrentUser(user);
         return { success: true, message: 'Logged in successfully!', isAdmin: user.isAdmin };
@@ -122,6 +132,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             isAdmin: false,
             referralCode: "TRH-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
             referredBy: referralCode,
+            status: 'active',
         };
         setUsers(prev => [...prev, newUser]);
         
@@ -139,6 +150,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUsers(prevUsers => prevUsers.map(user => 
             user.email === email ? { ...user, ...updatedData } : user
         ));
+         // If the currently logged-in user is being updated, update their session data too
+        if (currentUser?.email === email) {
+            setCurrentUser(prev => prev ? { ...prev, ...updatedData } : null);
+        }
     };
 
     const deleteUser = (email: string) => {

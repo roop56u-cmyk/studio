@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,7 +19,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,12 +37,23 @@ export function RechargePanel({ onAddRequest, onManageAddresses }: RechargePanel
   const [copied, setCopied] = useState(false);
   const [amount, setAmount] = useState("");
   const { withdrawalAddress } = useWallet();
-  const rechargeAddress = "0x4D26340f3B52DCf82dd537cBF3c7e4C1D9b53BDc";
+  const [rechargeAddress, setRechargeAddress] = useState("Loading...");
 
   const [isAddressAlertOpen, setIsAddressAlertOpen] = useState(false);
   const [isConfirmAlertOpen, setIsConfirmAlertOpen] = useState(false);
 
+  useEffect(() => {
+    // In a real app, this would be fetched. We use localStorage for this demo.
+    const savedAddress = localStorage.getItem('system_recharge_address');
+    if (savedAddress) {
+        setRechargeAddress(savedAddress);
+    } else {
+        setRechargeAddress("0x4D26340f3B52DCf82dd537cBF3c7e4C1D9b53BDc"); // Default
+    }
+  }, []);
+
   const handleCopy = () => {
+    if (rechargeAddress === "Loading...") return;
     navigator.clipboard.writeText(rechargeAddress);
     setCopied(true);
     toast({

@@ -29,6 +29,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@/contexts/AuthContext";
 import { EditUserDialog } from "@/components/dashboard/edit-user-dialog";
+import { Badge } from "@/components/ui/badge";
 
 export default function UserManagementPage() {
     const { users, deleteUser } = useAuth();
@@ -98,6 +99,7 @@ export default function UserManagementPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Email</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Referral Code</TableHead>
                 <TableHead>Referred By</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -107,6 +109,11 @@ export default function UserManagementPage() {
               {users.map((user) => (
                 <TableRow key={user.email}>
                   <TableCell className="font-medium">{user.email}{user.isAdmin && <span className="ml-2 text-xs text-primary">(Admin)</span>}</TableCell>
+                   <TableCell>
+                        <Badge variant={user.status === 'active' ? 'default' : 'destructive'} className={user.status === 'active' ? 'bg-green-500/20 text-green-700 border-green-500/20' : ''}>
+                          {user.status}
+                        </Badge>
+                   </TableCell>
                   <TableCell className="font-mono text-xs">{user.referralCode}</TableCell>
                   <TableCell className="font-mono text-xs">{user.referredBy ?? 'N/A'}</TableCell>
                   <TableCell className="text-right">
@@ -120,9 +127,11 @@ export default function UserManagementPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => handleEdit(user)}>Edit User</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleResetPassword(user.email)}>Reset Password</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(user.email)}>
-                          Delete User
-                        </DropdownMenuItem>
+                        {!user.isAdmin && (
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(user.email)}>
+                            Delete User
+                            </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

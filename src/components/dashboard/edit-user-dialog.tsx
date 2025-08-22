@@ -29,11 +29,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { levels } from "./level-tiers";
+import { Switch } from "../ui/switch";
 
 const editUserSchema = z.object({
   referralCode: z.string().min(1, "Referral code is required."),
   level: z.number().min(0).max(5),
   mainBalance: z.number().min(0, "Balance must be non-negative."),
+  status: z.enum(['active', 'disabled']),
 });
 
 type EditUserFormValues = z.infer<typeof editUserSchema>;
@@ -56,6 +58,7 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
       referralCode: "",
       level: 0,
       mainBalance: 0,
+      status: 'active',
     },
   });
 
@@ -75,7 +78,8 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
       form.reset({
         referralCode: user.referralCode,
         level: currentLevel,
-        mainBalance: mainBalance
+        mainBalance: mainBalance,
+        status: user.status ?? 'active',
       });
     }
   }, [user, open, form]);
@@ -83,8 +87,11 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
   const onSubmit = (data: EditUserFormValues) => {
     if (!user) return;
     
-    // Update user's referral code
-    updateUser(user.email, { referralCode: data.referralCode });
+    // Update user's details
+    updateUser(user.email, { 
+        referralCode: data.referralCode,
+        status: data.status,
+    });
 
     // Update user's balance
     const mainBalanceKey = `${user.email}_mainBalance`;
@@ -146,6 +153,25 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
                 </div>
             )}
           />
+          <Controller
+            name="status"
+            control={form.control}
+            render={({ field }) => (
+              <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+                <div className="space-y-0.5">
+                  <Label>User Status</Label>
+                  <DialogDescription>
+                    {field.value === 'active' ? 'User can log in.' : 'User is disabled and cannot log in.'}
+                  </DialogDescription>
+                </div>
+                <Switch
+                  checked={field.value === 'active'}
+                  onCheckedChange={(checked) => field.onChange(checked ? 'active' : 'disabled')}
+                />
+              </div>
+            )}
+          />
+
 
           <DialogFooter>
             <DialogClose asChild>

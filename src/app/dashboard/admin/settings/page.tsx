@@ -21,8 +21,9 @@ export default function SystemSettingsPage() {
     const { toast } = useToast();
     const [referralBonus, setReferralBonus] = useState("5");
     const [minDepositForBonus, setMinDepositForBonus] = useState("100");
-    const [withdrawalDays, setWithdrawalDays] = useState("45");
+    const [rechargeAddress, setRechargeAddress] = useState("0x4D26340f3B52DCf82dd537cBF3c7e4C1D9b53BDc");
     const [isWithdrawalRestriction, setIsWithdrawalRestriction] = useState(true);
+    const [withdrawalDays, setWithdrawalDays] = useState("45");
     const [withdrawalRestrictionMessage, setWithdrawalRestrictionMessage] = useState("Please wait for 45 days to initiate withdrawal request.");
     const [isClient, setIsClient] = useState(false);
 
@@ -34,6 +35,9 @@ export default function SystemSettingsPage() {
         const savedMinDeposit = localStorage.getItem('system_min_deposit_for_bonus');
         if (savedMinDeposit) setMinDepositForBonus(savedMinDeposit);
         
+        const savedRechargeAddress = localStorage.getItem('system_recharge_address');
+        if (savedRechargeAddress) setRechargeAddress(savedRechargeAddress);
+
         const savedWithdrawalRestriction = localStorage.getItem('system_withdrawal_restriction_enabled');
         if (savedWithdrawalRestriction) setIsWithdrawalRestriction(JSON.parse(savedWithdrawalRestriction));
 
@@ -50,6 +54,7 @@ export default function SystemSettingsPage() {
     const handleSaveChanges = () => {
         // In a real app, these would be saved to a database.
         // For now, we use localStorage to simulate a persistent backend.
+        localStorage.setItem('system_recharge_address', rechargeAddress);
         localStorage.setItem('system_withdrawal_restriction_enabled', JSON.stringify(isWithdrawalRestriction));
         localStorage.setItem('system_withdrawal_restriction_days', withdrawalDays);
         localStorage.setItem('system_withdrawal_restriction_message', withdrawalRestrictionMessage);
@@ -74,6 +79,23 @@ export default function SystemSettingsPage() {
           Manage global application settings and features.
         </p>
       </div>
+
+       <Card>
+        <CardHeader>
+          <CardTitle>Recharge Settings</CardTitle>
+          <CardDescription>
+            Set the official address where users will send their deposits.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="recharge-address">Official USDT BEP20 Recharge Address</Label>
+            <Input id="recharge-address" type="text" value={rechargeAddress} onChange={e => setRechargeAddress(e.target.value)} />
+             <p className="text-xs text-muted-foreground">This address will be displayed to all users on the recharge page.</p>
+          </div>
+        </CardContent>
+      </Card>
+
 
       <Card>
         <CardHeader>
