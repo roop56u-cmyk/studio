@@ -46,12 +46,11 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
       currentLevel,
       isWithdrawalRestrictionEnabled,
       withdrawalRestrictionDays,
-      firstDepositDate,
+      firstDepositDate, // We will use this to START the timer, but not to CHECK if restriction applies
       withdrawalRestrictedLevels,
   } = useWallet();
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
   const [isRestrictionAlertOpen, setIsRestrictionAlertOpen] = useState(false);
-  const [isNoDepositAlertOpen, setIsNoDepositAlertOpen] = useState(false);
 
 
   const numericAmount = parseFloat(amount) || 0;
@@ -86,18 +85,20 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
         return;
     }
 
-    const isLevelRestricted = withdrawalRestrictedLevels.includes(currentLevel);
+    // New logic as per your instructions:
+    // Check if restriction is enabled by admin.
+    // If so, check if user meets the conditions (balance > 0 OR level >= 1).
+    // The `firstDepositDate` is only used to START the countdown, not to decide IF the restriction applies.
+    const userIsEligibleForRestriction = mainBalance > 0 || currentLevel >= 1;
 
-    if (isWithdrawalRestrictionEnabled && isLevelRestricted) {
-        if (!firstDepositDate) {
-            setIsNoDepositAlertOpen(true);
-            return;
-        }
-
-        const restrictionEndTime = new Date(firstDepositDate).getTime() + (withdrawalRestrictionDays * 24 * 60 * 60 * 1000);
+    if (isWithdrawalRestrictionEnabled && userIsEligibleForRestriction) {
+        // If there's no deposit date, they can't be past the waiting period.
+        // Or if there is one, check if the time has passed.
+        const restrictionEndTime = firstDepositDate ? new Date(firstDepositDate).getTime() + (withdrawalRestrictionDays * 24 * 60 * 60 * 1000) : Date.now() + 1; // A fake future time if no deposit
+        
         if (Date.now() < restrictionEndTime) {
             setIsRestrictionAlertOpen(true);
-            return;
+            return; // Stop the withdrawal
         }
     }
     
@@ -202,20 +203,6 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
         onOpenChange={setIsAddressDialogOpen}
         address={withdrawalAddress}
     />
-    
-    <AlertDialog open={isNoDepositAlertOpen} onOpenChange={setIsNoDepositAlertOpen}>
-          <AlertDialogContent>
-              <AlertDialogHeader>
-                  <AlertDialogTitle>Withdrawal Locked</AlertDialogTitle>
-                  <AlertDialogDescription>
-                      This feature is currently under a time restriction. Please make your first deposit to start the waiting period.
-                  </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                  <AlertDialogAction onClick={() => setIsNoDepositAlertOpen(false)}>OK</AlertDialogAction>
-              </AlertDialogFooter>
-          </AlertDialogContent>
-    </AlertDialog>
 
      <AlertDialog open={isRestrictionAlertOpen} onOpenChange={setIsRestrictionAlertOpen}>
           <AlertDialogContent>
