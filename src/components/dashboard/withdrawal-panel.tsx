@@ -46,12 +46,21 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
       currentLevel,
       isWithdrawalRestrictionEnabled,
       withdrawalRestrictionDays,
-      firstDepositDate, 
-      withdrawalRestrictedLevels,
       withdrawalRestrictionMessage,
+      getInitialState
   } = useWallet();
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
   const [isRestrictionAlertOpen, setIsRestrictionAlertOpen] = useState(false);
+  
+  // We need a stable date to calculate the timer from, since we are not using firstDepositDate.
+  // We'll use a date stored when the user first encounters the restriction.
+  const [restrictionStartDate, setRestrictionStartDate] = useState<string | null>(null);
+
+  useEffect(() => {
+    // This simulates getting the start date for the timer for an existing user.
+    const storedStartDate = getInitialState('restrictionStartDate', null);
+    setRestrictionStartDate(storedStartDate);
+  }, [getInitialState]);
 
 
   const numericAmount = parseFloat(amount) || 0;
@@ -86,14 +95,23 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
         return;
     }
 
+    // This is the corrected logic as per your instructions.
     const userIsEligibleForRestriction = mainBalance > 0 || currentLevel >= 1;
 
     if (isWithdrawalRestrictionEnabled && userIsEligibleForRestriction) {
-        const restrictionEndTime = firstDepositDate ? new Date(firstDepositDate).getTime() + (withdrawalRestrictionDays * 24 * 60 * 60 * 1000) : Date.now() + 1; // A fake future time if no deposit
+        // If there's no start date for the timer, set it now.
+        let startDate = restrictionStartDate;
+        if (!startDate) {
+            startDate = new Date().toISOString();
+            localStorage.setItem(`${localStorage.getItem('currentUser')}_restrictionStartDate`, JSON.stringify(startDate));
+            setRestrictionStartDate(startDate);
+        }
+        
+        const restrictionEndTime = new Date(startDate).getTime() + (withdrawalRestrictionDays * 24 * 60 * 60 * 1000);
         
         if (Date.now() < restrictionEndTime) {
             setIsRestrictionAlertOpen(true);
-            return; // Stop the withdrawal
+            return; // Stop the withdrawal and show the popup
         }
     }
     
@@ -141,7 +159,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
                     {withdrawalAddress ? 'Edit' : 'Add'} Address
                 </Button>
                 {withdrawalAddress && (
-                    <AlertDialog>
+                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="sm" type="button" className="text-destructive hover:text-destructive">
                                 <Trash2 className="mr-2 h-4 w-4" />
@@ -207,7 +225,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
                     {withdrawalRestrictionMessage}
                 </AlertDialogDescription>
               </AlertDialogHeader>
-              <WithdrawalTimer firstDepositDate={firstDepositDate} waitDays={withdrawalRestrictionDays} />
+              <WithdrawalTimer waitDays={withdrawalRestrictionDays} />
               <AlertDialogFooter>
                   <AlertDialogAction onClick={() => setIsRestrictionAlertOpen(false)}>OK</AlertDialogAction>
               </AlertDialogFooter>

@@ -70,6 +70,7 @@ interface WalletContextType {
   withdrawalRestrictionDays: number;
   withdrawalRestrictionMessage: string;
   withdrawalRestrictedLevels: number[];
+  getInitialState: (key: string, defaultValue: any) => any;
 }
 
 export type CounterType = 'task' | 'interest';
@@ -93,7 +94,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [withdrawalRestrictionMessage, setWithdrawalRestrictionMessage] = useState("Please wait for 45 days to initiate withdrawal request.");
   const [withdrawalRestrictedLevels, setWithdrawalRestrictedLevels] = useState<number[]>([1]);
 
-  const getInitialState = (key: string, defaultValue: any) => {
+  const getInitialState = useCallback((key: string, defaultValue: any) => {
     if (typeof window === 'undefined' || !currentUser) {
       return defaultValue;
     }
@@ -106,7 +107,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       console.error(`Failed to parse ${key} from localStorage`, error);
     }
     return defaultValue;
-  };
+  }, [currentUser]);
   
   const getGlobalSetting = (key: string, defaultValue: any, isJson: boolean = false) => {
      if (typeof window === 'undefined') {
@@ -206,7 +207,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setFirstDepositDate(null);
     }
     setIsLoading(false);
-  }, [currentUser, setPersistentState]);
+  }, [currentUser, setPersistentState, getInitialState]);
 
 
   useEffect(() => setPersistentState('mainBalance', mainBalance), [mainBalance, setPersistentState]);
@@ -432,6 +433,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         withdrawalRestrictionDays,
         withdrawalRestrictionMessage,
         withdrawalRestrictedLevels,
+        getInitialState,
       }}
     >
       {children}
