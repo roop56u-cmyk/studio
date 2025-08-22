@@ -62,7 +62,7 @@ export function WithdrawalTimer({ firstDepositDate, waitDays }: WithdrawalTimerP
   };
 
   return (
-    <Card className="text-center">
+    <Card className="text-center border-0 shadow-none">
       <CardHeader>
         <div className="mx-auto bg-primary/10 text-primary rounded-full p-3 w-fit">
           <Timer className="h-8 w-8" />

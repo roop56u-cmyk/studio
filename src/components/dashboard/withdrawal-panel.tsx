@@ -28,7 +28,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { PlusCircle, Edit, Trash2 } from "lucide-react";
-import type { WithdrawalAddress } from "@/contexts/WalletContext";
+import { WithdrawalTimer } from "./withdrawal-timer";
 
 interface WithdrawalPanelProps {
     onAddRequest: (request: Partial<Omit<Request, 'id' | 'date' | 'user' | 'status'>>) => void;
@@ -45,11 +45,14 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
       clearWithdrawalAddress,
       currentLevel,
       isWithdrawalRestrictionEnabled,
-      withdrawalRestrictionMessage,
+      withdrawalRestrictionDays,
+      firstDepositDate,
       withdrawalRestrictedLevels,
   } = useWallet();
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
   const [isRestrictionAlertOpen, setIsRestrictionAlertOpen] = useState(false);
+  const [isNoDepositAlertOpen, setIsNoDepositAlertOpen] = useState(false);
+
 
   const numericAmount = parseFloat(amount) || 0;
 
@@ -71,53 +74,37 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
     e.preventDefault();
     
     if (isNaN(numericAmount) || numericAmount <= 0) {
-        toast({
-            variant: "destructive",
-            title: "Invalid Amount",
-            description: "Please enter a valid amount to withdraw.",
-        });
+        toast({ variant: "destructive", title: "Invalid Amount", description: "Please enter a valid amount to withdraw." });
         return;
     }
      if (!withdrawalAddress) {
-        toast({
-            variant: "destructive",
-            title: "No Address Set",
-            description: "Please set a withdrawal address before withdrawing.",
-        });
+        toast({ variant: "destructive", title: "No Address Set", description: "Please set a withdrawal address before withdrawing." });
         return;
     }
-
     if(numericAmount > mainBalance) {
-        toast({
-            variant: "destructive",
-            title: "Insufficient Funds",
-            description: `You cannot withdraw more than your main balance of $${mainBalance.toFixed(2)}.`,
-        });
+        toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot withdraw more than your main balance of $${mainBalance.toFixed(2)}.` });
         return;
     }
 
-    // New Restriction Logic
     const isLevelRestricted = withdrawalRestrictedLevels.includes(currentLevel);
-    const hasBalance = mainBalance > 0;
 
-    if (isWithdrawalRestrictionEnabled && (isLevelRestricted || hasBalance)) {
-        setIsRestrictionAlertOpen(true);
-        return;
+    if (isWithdrawalRestrictionEnabled && isLevelRestricted) {
+        if (!firstDepositDate) {
+            setIsNoDepositAlertOpen(true);
+            return;
+        }
+
+        const restrictionEndTime = new Date(firstDepositDate).getTime() + (withdrawalRestrictionDays * 24 * 60 * 60 * 1000);
+        if (Date.now() < restrictionEndTime) {
+            setIsRestrictionAlertOpen(true);
+            return;
+        }
     }
     
+    // If all checks pass, proceed with withdrawal
     requestWithdrawal(numericAmount);
-
-    onAddRequest({
-        amount: numericAmount,
-        address: withdrawalAddress.address,
-        type: 'Withdrawal',
-    });
-
-    toast({
-      title: "Withdrawal Request Submitted",
-      description: `Your request to withdraw ${numericAmount.toFixed(2)} USDT is pending approval. The amount has been deducted from your balance.`,
-    });
-
+    onAddRequest({ amount: numericAmount, address: withdrawalAddress.address, type: 'Withdrawal' });
+    toast({ title: "Withdrawal Request Submitted", description: `Your request to withdraw ${numericAmount.toFixed(2)} USDT is pending approval.` });
     setAmount("");
   };
 
@@ -209,19 +196,30 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
         </form>
       </CardContent>
     </Card>
+
     <AddressDialog 
         open={isAddressDialogOpen}
         onOpenChange={setIsAddressDialogOpen}
         address={withdrawalAddress}
     />
-     <AlertDialog open={isRestrictionAlertOpen} onOpenChange={setIsRestrictionAlertOpen}>
+    
+    <AlertDialog open={isNoDepositAlertOpen} onOpenChange={setIsNoDepositAlertOpen}>
           <AlertDialogContent>
               <AlertDialogHeader>
                   <AlertDialogTitle>Withdrawal Locked</AlertDialogTitle>
                   <AlertDialogDescription>
-                      {withdrawalRestrictionMessage}
+                      This feature is currently under a time restriction. Please make your first deposit to start the waiting period.
                   </AlertDialogDescription>
               </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogAction onClick={() => setIsNoDepositAlertOpen(false)}>OK</AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+    </AlertDialog>
+
+     <AlertDialog open={isRestrictionAlertOpen} onOpenChange={setIsRestrictionAlertOpen}>
+          <AlertDialogContent>
+              <WithdrawalTimer firstDepositDate={firstDepositDate} waitDays={withdrawalRestrictionDays} />
               <AlertDialogFooter>
                   <AlertDialogAction onClick={() => setIsRestrictionAlertOpen(false)}>OK</AlertDialogAction>
               </AlertDialogFooter>

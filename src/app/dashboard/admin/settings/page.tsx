@@ -25,6 +25,7 @@ export default function SystemSettingsPage() {
     const [minDepositForBonus, setMinDepositForBonus] = useState("100");
     const [rechargeAddress, setRechargeAddress] = useState("0x4D26340f3B52DCf82dd537cBF3c7e4C1D9b53BDc");
     const [isWithdrawalRestriction, setIsWithdrawalRestriction] = useState(true);
+    const [withdrawalRestrictionDays, setWithdrawalRestrictionDays] = useState("45");
     const [withdrawalRestrictionMessage, setWithdrawalRestrictionMessage] = useState("Please wait for 45 days to initiate withdrawal request.");
     const [restrictedLevels, setRestrictedLevels] = useState<number[]>([1]); // Default to level 1
     const [isClient, setIsClient] = useState(false);
@@ -41,6 +42,9 @@ export default function SystemSettingsPage() {
 
         const savedWithdrawalRestriction = localStorage.getItem('system_withdrawal_restriction_enabled');
         if (savedWithdrawalRestriction) setIsWithdrawalRestriction(JSON.parse(savedWithdrawalRestriction));
+
+        const savedWithdrawalDays = localStorage.getItem('system_withdrawal_restriction_days');
+        if (savedWithdrawalDays) setWithdrawalRestrictionDays(savedWithdrawalDays);
         
         const savedWithdrawalMessage = localStorage.getItem('system_withdrawal_restriction_message');
         if (savedWithdrawalMessage) setWithdrawalRestrictionMessage(savedWithdrawalMessage);
@@ -55,6 +59,7 @@ export default function SystemSettingsPage() {
     const handleSaveChanges = () => {
         localStorage.setItem('system_recharge_address', rechargeAddress);
         localStorage.setItem('system_withdrawal_restriction_enabled', JSON.stringify(isWithdrawalRestriction));
+        localStorage.setItem('system_withdrawal_restriction_days', withdrawalRestrictionDays);
         localStorage.setItem('system_withdrawal_restriction_message', withdrawalRestrictionMessage);
         localStorage.setItem('system_referral_bonus', referralBonus);
         localStorage.setItem('system_min_deposit_for_bonus', minDepositForBonus);
@@ -125,13 +130,24 @@ export default function SystemSettingsPage() {
         <CardHeader>
           <CardTitle>Withdrawal Restrictions</CardTitle>
           <CardDescription>
-            Set rules for when users can make withdrawals. This applies to users based on their level and balance.
+            Set rules for when users can make withdrawals.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
             <div className="flex items-center space-x-2">
                 <Switch id="withdrawal-restriction-toggle" checked={isWithdrawalRestriction} onCheckedChange={setIsWithdrawalRestriction} />
                 <Label htmlFor="withdrawal-restriction-toggle">Enable Withdrawal Restriction</Label>
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="withdrawal-days">Restriction Period (Days)</Label>
+                <Input 
+                    id="withdrawal-days" 
+                    type="number"
+                    value={withdrawalRestrictionDays} 
+                    onChange={e => setWithdrawalRestrictionDays(e.target.value)}
+                    disabled={!isWithdrawalRestriction}
+                />
+                 <p className="text-xs text-muted-foreground">The number of days a user must wait after their first deposit.</p>
             </div>
              <div className="space-y-2">
                 <Label htmlFor="withdrawal-message">Restriction Popup Message</Label>
