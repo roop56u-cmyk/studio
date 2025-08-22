@@ -325,7 +325,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     });
      toast({ title: "Recharge Approved", description: `Your balance has been updated by ${rechargeAmount.toFixed(2)} USDT.` });
   };
-  const addRecharge = (rechargeAmount: number) => {}
+  const addRecharge = (rechargeAmount: number) => {
+    setMainBalance(prev => prev + rechargeAmount);
+  }
   const addCommissionToMainBalance = useCallback((commissionAmount: number) => {
     setMainBalance(prev => prev + commissionAmount);
     toast({ title: "Commission Received!", description: `Your daily team commission of $${commissionAmount.toFixed(2)} has been added to your main wallet.` });
