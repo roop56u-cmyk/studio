@@ -845,7 +845,7 @@ export const taskLibrary: Task[] = [
       "The serum felt sticky and didn't absorb well.",
       "It caused my skin to break out."
     ]
-  },
+},
   {
     taskTitle: "Evaluate a grammar-checking software",
     taskDescription: "Write a document using 'Grammarly' and assess the quality of its suggestions and explanations.",
@@ -1027,3 +1027,5 @@ export const taskLibrary: Task[] = [
     ]
   }
 ];
+
+    
