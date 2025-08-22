@@ -51,6 +51,7 @@ const boosterTypeLabels: { [key in BoosterType]: string } = {
     TASK_QUOTA: "Task Quota Boost (+Tasks)",
     INTEREST_RATE: "Interest Rate Boost (%)",
     REFERRAL_COMMISSION: "Referral Commission Boost (%)",
+    PURCHASE_REFERRAL: "Purchase Referral (+Refs)",
 };
 
 const BoosterForm = ({
@@ -90,15 +91,15 @@ const BoosterForm = ({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="name">Booster Name</Label>
+        <Label htmlFor="name" className="text-foreground">Booster Name</Label>
         <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
+        <Label htmlFor="description" className="text-foreground">Description</Label>
         <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} required />
       </div>
       <div className="space-y-2">
-          <Label htmlFor="type">Booster Type</Label>
+          <Label htmlFor="type" className="text-foreground">Booster Type</Label>
           <Select value={type} onValueChange={(v) => setType(v as BoosterType)}>
               <SelectTrigger id="type">
                   <SelectValue placeholder="Select a booster type" />
@@ -112,15 +113,15 @@ const BoosterForm = ({
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
          <div className="space-y-2">
-            <Label htmlFor="value">Value</Label>
+            <Label htmlFor="value" className="text-foreground">Value</Label>
             <Input id="value" type="number" value={value} onChange={e => setValue(Number(e.target.value))} required />
         </div>
          <div className="space-y-2">
-            <Label htmlFor="price">Price (USDT)</Label>
+            <Label htmlFor="price" className="text-foreground">Price (USDT)</Label>
             <Input id="price" type="number" value={price} onChange={e => setPrice(Number(e.target.value))} required />
         </div>
          <div className="space-y-2">
-            <Label htmlFor="duration">Duration (hours)</Label>
+            <Label htmlFor="duration" className="text-foreground">Duration (hours)</Label>
             <Input id="duration" type="number" value={duration} onChange={e => setDuration(Number(e.target.value))} required />
         </div>
       </div>
@@ -290,7 +291,7 @@ export default function ManageBoostersPage() {
       </div>
       
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogContent className="sm:max-w-lg">
+          <DialogContent className="sm:max-w-lg bg-background">
             <DialogHeader>
                 <DialogTitle>{editingBooster ? 'Edit Booster' : 'Add New Booster'}</DialogTitle>
             </DialogHeader>

@@ -123,7 +123,7 @@ const adminPanelComponents: Record<PanelType, React.ComponentType> = {
 };
 
 const adminPanelTitles: Record<PanelType, { title: string; description: string }> = {
-    adminDashboard: { title: "Admin Dashboard", description: "Overview of the platform." },
+    adminDashboard: { title: "Admin Home", description: "Overview of the platform." },
     userManagement: { title: "User Management", description: "Manage all user accounts." },
     taskManagement: { title: "Manage Tasks", description: "Create and configure user tasks." },
     questManagement: { title: "Manage Quests", description: "Manage daily quests for users." },
@@ -171,9 +171,9 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
         ) : isAdmin ? (
             <>
                 <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => onAdminPanelClick('adminDashboard')} tooltip={{ children: "Dashboard" }}>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('adminDashboard')} tooltip={{ children: "Home" }}>
                         <Home />
-                        <span>Dashboard</span>
+                        <span>Home</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
@@ -255,11 +255,11 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
                 <SidebarMenuButton
                     asChild
                     isActive={pathname === "/dashboard/user"}
-                    tooltip={{ children: "Dashboard" }}
+                    tooltip={{ children: "Home" }}
                 >
                     <Link href="/dashboard/user">
                     <Home />
-                    <span>Dashboard</span>
+                    <span>Home</span>
                     </Link>
                 </SidebarMenuButton>
                 </SidebarMenuItem>

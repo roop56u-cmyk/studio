@@ -96,7 +96,7 @@ export default function UserDashboardPage() {
   return (
     <div className="grid gap-4">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">User Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Home</h1>
         <p className="text-muted-foreground">
           Welcome back! Here's your space to manage reviews.
         </p>

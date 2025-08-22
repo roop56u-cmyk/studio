@@ -23,7 +23,7 @@ export type WithdrawalAddress = {
     address: string;
 };
 
-export type BoosterType = 'TASK_EARNING' | 'TASK_QUOTA' | 'INTEREST_RATE' | 'REFERRAL_COMMISSION';
+export type BoosterType = 'TASK_EARNING' | 'TASK_QUOTA' | 'INTEREST_RATE' | 'REFERRAL_COMMISSION' | 'PURCHASE_REFERRAL';
 
 export type Booster = {
     id: string;
@@ -99,7 +99,7 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
-  const { currentUser } = useAuth();
+  const { currentUser, updateUser } = useAuth();
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -327,7 +327,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   };
   const addRecharge = (rechargeAmount: number) => {
     setMainBalance(prev => prev + rechargeAmount);
-  }
+  };
   const addCommissionToMainBalance = useCallback((commissionAmount: number) => {
     setMainBalance(prev => prev + commissionAmount);
     toast({ title: "Commission Received!", description: `Your daily team commission of $${commissionAmount.toFixed(2)} has been added to your main wallet.` });
@@ -399,22 +399,31 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const purchaseBooster = (booster: Booster): boolean => {
+    if (!currentUser) return false;
     if (mainBalance < booster.price) {
         toast({ variant: 'destructive', title: 'Insufficient Funds', description: 'You do not have enough funds in your main wallet to purchase this booster.'});
         return false;
     }
 
     setMainBalance(prev => prev - booster.price);
-
-    const newActiveBooster: ActiveBooster = {
-        boosterId: booster.id,
-        type: booster.type,
-        value: booster.value,
-        expiresAt: Date.now() + booster.duration * 60 * 60 * 1000,
-    };
-
-    setActiveBoosters(prev => [...prev, newActiveBooster]);
-    toast({ title: 'Booster Purchased!', description: `The "${booster.name}" booster is now active!`});
+    
+    if (booster.type === 'PURCHASE_REFERRAL') {
+        const referralCount = booster.value;
+        const referralsKey = `${currentUser.email}_purchased_referrals`;
+        const currentReferrals = getInitialState('purchased_referrals', 0);
+        setPersistentState('purchased_referrals', currentReferrals + referralCount);
+        toast({ title: 'Referrals Purchased!', description: `You have successfully purchased ${referralCount} referrals.`});
+    } else {
+        const newActiveBooster: ActiveBooster = {
+            boosterId: booster.id,
+            type: booster.type,
+            value: booster.value,
+            expiresAt: Date.now() + booster.duration * 60 * 60 * 1000,
+        };
+        setActiveBoosters(prev => [...prev, newActiveBooster]);
+        toast({ title: 'Booster Purchased!', description: `The "${booster.name}" booster is now active!`});
+    }
+    
     return true;
   };
   

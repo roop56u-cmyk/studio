@@ -92,6 +92,8 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     const calculateTeamData = useCallback((user: User, allUsers: User[]): TeamData => {
+        const purchasedReferrals = parseInt(localStorage.getItem(`${user.email}_purchased_referrals`) || '0');
+
         const calculateLayer = (members: User[]): TeamLevelData => {
             const enrichedMembers: TeamMember[] = members.map(m => ({ ...m, level: getLevelForUser(m.email) }));
             const totalDeposits = enrichedMembers.reduce((sum, m) => sum + getDepositsForUser(m.email), 0);
@@ -116,6 +118,8 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         const level3Members = level2Members.flatMap(l2User => allUsers.filter(u => u.referredBy === l2User.referralCode));
         
         const level1 = calculateLayer(level1Members);
+        level1.count += purchasedReferrals; // Add purchased referrals to level 1 count
+
         const level2 = calculateLayer(level2Members);
         const level3 = calculateLayer(level3Members);
 
@@ -128,6 +132,12 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         if (currentUser && users.length > 1) {
             setIsLoading(true);
             const data = calculateTeamData(currentUser, users);
+            setTeamData(data);
+            setIsLoading(false);
+        } else if (currentUser) {
+            // Handle case where user has no referrals yet but might have purchased some
+            setIsLoading(true);
+            const data = calculateTeamData(currentUser, []);
             setTeamData(data);
             setIsLoading(false);
         }

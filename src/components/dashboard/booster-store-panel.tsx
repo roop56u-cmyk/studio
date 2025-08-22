@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Flame, Star, Zap, Users, ShieldAlert } from "lucide-react";
+import { Flame, Star, Zap, Users, ShieldAlert, UserPlus } from "lucide-react";
 import type { Booster } from "@/contexts/WalletContext";
 import { useWallet } from "@/contexts/WalletContext";
 import {
@@ -34,6 +34,7 @@ const boosterIcons: { [key in Booster['type']]: React.ReactNode } = {
     TASK_QUOTA: <Zap className="h-6 w-6 text-green-500" />,
     INTEREST_RATE: <Zap className="h-6 w-6 text-blue-500" />,
     REFERRAL_COMMISSION: <Users className="h-6 w-6 text-purple-500" />,
+    PURCHASE_REFERRAL: <UserPlus className="h-6 w-6 text-indigo-500" />,
 };
 
 const boosterValueFormatter = (type: Booster['type'], value: number) => {
@@ -44,6 +45,8 @@ const boosterValueFormatter = (type: Booster['type'], value: number) => {
             return `+${value}%`;
         case "TASK_QUOTA":
             return `+${value} Tasks`;
+        case "PURCHASE_REFERRAL":
+             return `+${value} Referrals`;
     }
 }
 
@@ -60,6 +63,7 @@ export function BoosterStorePanel() {
     }, []);
 
     const isBoosterActive = (type: Booster['type']) => {
+        if (type === 'PURCHASE_REFERRAL') return false; // This is a one-time purchase, not an active boost
         return activeBoosters.some(b => b.type === type);
     }
 
@@ -83,7 +87,7 @@ export function BoosterStorePanel() {
                     </CardHeader>
                     <CardContent className="flex-grow">
                         <p className="text-sm text-muted-foreground">
-                            <span className="font-semibold">Duration:</span> {booster.duration} hours
+                             <span className="font-semibold">Duration:</span> {booster.type === 'PURCHASE_REFERRAL' ? 'Instant' : `${booster.duration} hours`}
                         </p>
                     </CardContent>
                     <CardFooter className="flex justify-between items-center">
@@ -128,5 +132,3 @@ export function BoosterStorePanel() {
     </ScrollArea>
   );
 }
-
-    
