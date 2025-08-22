@@ -85,9 +85,10 @@ import { TransactionHistoryPanel } from "@/components/dashboard/transaction-hist
 import { TaskHistoryPanel } from "@/components/dashboard/task-history-panel";
 import { ReferralCard } from "@/components/dashboard/referral-card";
 import { InboxPanel } from "@/components/dashboard/inbox-panel";
+import { BoosterStorePanel } from "@/components/dashboard/booster-store-panel";
 
 
-function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransactionHistoryClick, onTaskHistoryClick, onReferralClick, onInboxClick }: { onRechargeClick: () => void, onWithdrawalClick: () => void, onTransactionHistoryClick: () => void, onTaskHistoryClick: () => void, onReferralClick: () => void, onInboxClick: () => void }) {
+function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransactionHistoryClick, onTaskHistoryClick, onReferralClick, onInboxClick, onBoosterStoreClick }: { onRechargeClick: () => void, onWithdrawalClick: () => void, onTransactionHistoryClick: () => void, onTaskHistoryClick: () => void, onReferralClick: () => void, onInboxClick: () => void, onBoosterStoreClick: () => void }) {
   const pathname = usePathname();
   const { logout, currentUser } = useAuth();
   const { 
@@ -238,14 +239,11 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
                 </SidebarMenuItem>
                  <SidebarMenuItem>
                 <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith("/dashboard/boosters")}
+                    onClick={onBoosterStoreClick}
                     tooltip={{ children: "Boosters" }}
                 >
-                    <Link href="/dashboard/boosters">
                     <Flame />
                     <span>Boosters</span>
-                    </Link>
                 </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
@@ -456,6 +454,7 @@ export default function DashboardLayout({
     const [isTaskHistoryOpen, setIsTaskHistoryOpen] = React.useState(false);
     const [isReferralOpen, setIsReferralOpen] = React.useState(false);
     const [isInboxOpen, setIsInboxOpen] = React.useState(false);
+    const [isBoosterStoreOpen, setIsBoosterStoreOpen] = React.useState(false);
 
     useTeamCommission();
 
@@ -474,11 +473,12 @@ export default function DashboardLayout({
                 onTaskHistoryClick={() => setIsTaskHistoryOpen(true)}
                 onReferralClick={() => setIsReferralOpen(true)}
                 onInboxClick={() => setIsInboxOpen(true)}
+                onBoosterStoreClick={() => setIsBoosterStoreOpen(true)}
             />
           </Sidebar>
           <div className="flex flex-1 flex-col relative">
            <AnimatedDashboardBackground />
-          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/95 px-4 md:px-6 backdrop-blur-sm bg-opacity-80">
               <SidebarTrigger className="md:hidden" />
               <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
               <div className="ml-auto flex-1 sm:flex-initial">
@@ -577,6 +577,21 @@ export default function DashboardLayout({
                 </div>
             </SheetContent>
         </Sheet>
+         <Sheet open={isBoosterStoreOpen} onOpenChange={setIsBoosterStoreOpen}>
+            <SheetContent className="w-full sm:max-w-lg">
+                <SheetHeader>
+                    <SheetTitle>Booster Store</SheetTitle>
+                    <SheetDescription>
+                        Purchase temporary boosts to enhance your earning potential.
+                    </SheetDescription>
+                </SheetHeader>
+                <div className="mt-4">
+                    <BoosterStorePanel />
+                </div>
+            </SheetContent>
+        </Sheet>
       </SidebarProvider>
   );
 }
+
+    
