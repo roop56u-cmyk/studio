@@ -47,10 +47,14 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
   const { toast } = useToast();
   const { completeTask, tasksCompletedToday, dailyTaskQuota } = useWallet();
 
+  // Manually manage radio group state to avoid flushSync error
+  const [selectedOption, setSelectedOption] = useState<string | undefined>(undefined);
+
   const form = useForm<ReviewFormValues>({
     resolver: zodResolver(reviewSchema),
     defaultValues: {
       rating: 0,
+      option: undefined,
     },
   });
 
@@ -58,6 +62,7 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
     try {
       setIsGeneratingTask(true);
       form.reset();
+      setSelectedOption(undefined);
       const result = await generateTaskSuggestion();
       setTask(result);
     } catch (error) {
@@ -77,10 +82,6 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
     }
   }, [tasksCompletedToday, dailyTaskQuota]);
 
-   useEffect(() => {
-    form.register("option");
-  }, [form]);
-
   const onSubmit = async (data: ReviewFormValues) => {
     if (!task) return;
     setIsLoading(true);
@@ -96,6 +97,8 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
       if (onTaskCompleted) {
         onTaskCompleted();
       }
+      
+      setSelectedOption(undefined); // Reset manual state
 
       if (tasksCompletedToday + 1 < dailyTaskQuota) {
           fetchTask();
@@ -113,6 +116,11 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
       setIsLoading(false);
     }
   };
+
+  const handleOptionChange = (value: string) => {
+      setSelectedOption(value);
+      form.setValue("option", value, { shouldValidate: true });
+  }
 
   const allTasksCompleted = tasksCompletedToday >= dailyTaskQuota;
 
@@ -171,10 +179,11 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
         )}
         />
         
-        <FormItem className="space-y-3">
+        <div className="space-y-3">
           <FormLabel>Select an Option</FormLabel>
           <RadioGroup
-            onValueChange={(value) => form.setValue("option", value)}
+            value={selectedOption}
+            onValueChange={handleOptionChange}
             className="flex flex-col space-y-1"
           >
             {isGeneratingTask ? (
@@ -186,22 +195,20 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
               </div>
             ) : (
               task?.options?.map((option, index) => (
-                <FormItem
+                <div
                   key={index}
                   className="flex items-center space-x-3 space-y-0"
                 >
-                  <FormControl>
-                    <RadioGroupItem value={option} id={`option-${index}`} />
-                  </FormControl>
+                  <RadioGroupItem value={option} id={`option-${index}`} />
                   <Label htmlFor={`option-${index}`} className="font-normal">
                     {option}
                   </Label>
-                </FormItem>
+                </div>
               ))
             )}
           </RadioGroup>
           <FormMessage>{form.formState.errors.option?.message}</FormMessage>
-        </FormItem>
+        </div>
 
         <div className="flex items-center justify-between">
         <Button type="submit" disabled={isLoading || isGeneratingTask || !task}>
