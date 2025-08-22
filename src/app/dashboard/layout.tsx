@@ -89,7 +89,6 @@ import { BoosterStorePanel } from "@/components/dashboard/booster-store-panel";
 import { QuestPanel } from "@/components/dashboard/quest-panel";
 
 // Admin Panel Imports
-import AdminDashboardPage from "./admin/page";
 import UserManagementPage from "./admin/users/page";
 import ManageTasksPage from "./admin/tasks/page";
 import ManageQuestsPage from "./admin/quests/page";
@@ -103,11 +102,10 @@ import SystemSettingsPage from "./admin/settings/page";
 import ActivityLogPage from "./admin/activity-log/page";
 
 
-type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox' | 'adminDashboard';
+type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox';
 
 
 const adminPanelComponents: Record<PanelType, React.ComponentType> = {
-    adminDashboard: AdminDashboardPage,
     userManagement: UserManagementPage,
     taskManagement: ManageTasksPage,
     questManagement: ManageQuestsPage,
@@ -123,7 +121,6 @@ const adminPanelComponents: Record<PanelType, React.ComponentType> = {
 };
 
 const adminPanelTitles: Record<PanelType, { title: string; description: string }> = {
-    adminDashboard: { title: "Admin Home", description: "Overview of the platform." },
     userManagement: { title: "User Management", description: "Manage all user accounts." },
     taskManagement: { title: "Manage Tasks", description: "Create and configure user tasks." },
     questManagement: { title: "Manage Quests", description: "Manage daily quests for users." },
@@ -171,9 +168,11 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
         ) : isAdmin ? (
             <>
                 <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => onAdminPanelClick('adminDashboard')} tooltip={{ children: "Home" }}>
-                        <Home />
-                        <span>Home</span>
+                    <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin"} tooltip={{ children: "Home" }}>
+                        <Link href="/dashboard/admin">
+                            <Home />
+                            <span>Home</span>
+                        </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
@@ -482,6 +481,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
     const { logout, currentUser } = useAuth();
+    const pathname = usePathname();
     const [isClient, setIsClient] = React.useState(false);
     const [isRechargeOpen, setIsRechargeOpen] = React.useState(false);
     const [isWithdrawalOpen, setIsWithdrawalOpen] = React.useState(false);
@@ -503,12 +503,19 @@ export default function DashboardLayout({
     }, []);
     
     const handleAdminPanelClick = (panel: PanelType) => {
-        if (panel === 'inbox') {
-            setIsInboxOpen(true);
+        setActiveAdminPanel(panel);
+    }
+    
+    const handleInboxClick = () => {
+        if (currentUser?.isAdmin) {
+            setActiveAdminPanel('inbox');
         } else {
-            setActiveAdminPanel(panel);
+            setIsInboxOpen(true);
         }
     }
+    
+    const isMainAdminPage = pathname === "/dashboard/admin";
+    const sheetOpen = currentUser?.isAdmin ? !!activeAdminPanel && !isMainAdminPage : false;
 
   return (
       <SidebarProvider>
@@ -520,7 +527,7 @@ export default function DashboardLayout({
                 onTransactionHistoryClick={() => setIsHistoryOpen(true)}
                 onTaskHistoryClick={() => setIsTaskHistoryOpen(true)}
                 onReferralClick={() => setIsReferralOpen(true)}
-                onInboxClick={() => currentUser?.isAdmin ? handleAdminPanelClick('inbox') : setIsInboxOpen(true)}
+                onInboxClick={handleInboxClick}
                 onBoosterStoreClick={() => setIsBoosterStoreOpen(true)}
                 onQuestPanelClick={() => setIsQuestPanelOpen(true)}
                 onAdminPanelClick={handleAdminPanelClick}
@@ -653,7 +660,7 @@ export default function DashboardLayout({
                 </div>
             </SheetContent>
         </Sheet>
-        <Sheet open={!!activeAdminPanel} onOpenChange={(open) => !open && setActiveAdminPanel(null)}>
+        <Sheet open={sheetOpen} onOpenChange={(open) => !open && setActiveAdminPanel(null)}>
              <SheetContent className="w-full sm:max-w-4xl overflow-y-auto">
                 {activeAdminPanel && (
                     <>

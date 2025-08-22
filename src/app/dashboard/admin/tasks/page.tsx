@@ -40,6 +40,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { generateNewTaskLibrary } from "@/app/actions";
 
+const ITEMS_PER_PAGE = 5;
+
 const TaskForm = ({
   task,
   onSave,
@@ -75,7 +77,7 @@ const TaskForm = ({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="title">Task Title</Label>
+        <Label htmlFor="title" className="text-foreground">Task Title</Label>
         <Input
           id="title"
           value={title}
@@ -84,7 +86,7 @@ const TaskForm = ({
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="description">Task Description</Label>
+        <Label htmlFor="description" className="text-foreground">Task Description</Label>
         <Textarea
           id="description"
           value={description}
@@ -93,7 +95,7 @@ const TaskForm = ({
         />
       </div>
       <div className="space-y-2">
-        <Label>Review Options</Label>
+        <Label className="text-foreground">Review Options</Label>
         {options.map((option, index) => (
           <Input
             key={index}
@@ -126,6 +128,21 @@ export default function ManageTasksPage() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [aiTaskCount, setAiTaskCount] = useState(20);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const totalPages = Math.ceil(tasks.length / ITEMS_PER_PAGE);
+  const paginatedTasks = tasks.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
+
+  const handlePrevPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  };
 
   useEffect(() => {
     setIsClient(true);
@@ -142,6 +159,11 @@ export default function ManageTasksPage() {
       localStorage.setItem("custom_task_library", JSON.stringify(tasks));
     }
   }, [tasks, isClient]);
+
+  useEffect(() => {
+    // Reset to page 1 if tasks change
+    setCurrentPage(1);
+  }, [tasks]);
 
   const handleGenerateWithAi = async () => {
     setIsLoadingAi(true);
@@ -166,14 +188,12 @@ export default function ManageTasksPage() {
 
   const handleSaveTask = (task: Task) => {
     if (editingIndex !== null) {
-      // Editing existing task
       const newTasks = [...tasks];
       newTasks[editingIndex] = task;
       setTasks(newTasks);
       toast({ title: "Task Updated", description: "The task has been saved." });
     } else {
-      // Adding new task
-      setTasks([...tasks, task]);
+      setTasks([task, ...tasks]); // Add new task to the beginning
       toast({ title: "Task Added", description: "The new task has been added to the library." });
     }
     closeForm();
@@ -185,14 +205,15 @@ export default function ManageTasksPage() {
     setIsFormOpen(true);
   };
 
-  const handleEdit = (index: number) => {
-    setEditingTask(tasks[index]);
-    setEditingIndex(index);
+  const handleEdit = (taskToEdit: Task) => {
+    const originalIndex = tasks.findIndex(t => t.taskTitle === taskToEdit.taskTitle);
+    setEditingTask(taskToEdit);
+    setEditingIndex(originalIndex);
     setIsFormOpen(true);
   };
   
-  const handleDelete = (index: number) => {
-    const newTasks = tasks.filter((_, i) => i !== index);
+  const handleDelete = (taskToDelete: Task) => {
+    const newTasks = tasks.filter(t => t.taskTitle !== taskToDelete.taskTitle);
     setTasks(newTasks);
     toast({ title: "Task Deleted", variant: "destructive" });
   };
@@ -276,7 +297,7 @@ export default function ManageTasksPage() {
             <CardTitle>Current Tasks ({tasks.length})</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {tasks.map((task, index) => (
+            {paginatedTasks.map((task, index) => (
               <div key={index} className="border p-4 rounded-lg flex justify-between items-start">
                 <div>
                   <h3 className="font-semibold">{task.taskTitle}</h3>
@@ -288,7 +309,7 @@ export default function ManageTasksPage() {
                   </ul>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => handleEdit(index)}>
+                    <Button variant="ghost" size="icon" onClick={() => handleEdit(task)}>
                         <Edit className="h-4 w-4" />
                     </Button>
                     <AlertDialog>
@@ -306,7 +327,7 @@ export default function ManageTasksPage() {
                             </AlertDialogHeader>
                              <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete(index)} className="bg-destructive hover:bg-destructive/90">
+                                <AlertDialogAction onClick={() => handleDelete(task)} className="bg-destructive hover:bg-destructive/90">
                                     Delete
                                 </AlertDialogAction>
                             </AlertDialogFooter>
@@ -315,12 +336,38 @@ export default function ManageTasksPage() {
                 </div>
               </div>
             ))}
+             {tasks.length === 0 && (
+                <p className="text-muted-foreground text-center py-12">No tasks created yet.</p>
+            )}
           </CardContent>
+           {totalPages > 1 && (
+            <CardFooter className="flex items-center justify-between mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrevPage}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
+            </CardFooter>
+          )}
         </Card>
       </div>
       
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogContent>
+          <DialogContent className="bg-background">
             <DialogHeader>
                 <DialogTitle>{editingTask ? 'Edit Task' : 'Add New Task'}</DialogTitle>
                 <DialogDescription>
