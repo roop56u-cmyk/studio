@@ -39,7 +39,8 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetDescription
+  SheetDescription,
+  SheetClose
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Logo } from "@/components/logo";
@@ -152,6 +153,7 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
   }, []);
   
   const isAdmin = currentUser?.isAdmin;
+  const isMainAdminPage = pathname === "/dashboard/admin";
 
   return (
     <SidebarContent>
@@ -168,7 +170,7 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
         ) : isAdmin ? (
             <>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname === "/dashboard/admin"} tooltip={{ children: "Home" }}>
+                    <SidebarMenuButton asChild isActive={isMainAdminPage} tooltip={{ children: "Home" }}>
                         <Link href="/dashboard/admin">
                             <Home />
                             <span>Home</span>
@@ -481,7 +483,6 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
     const { logout, currentUser } = useAuth();
-    const pathname = usePathname();
     const [isClient, setIsClient] = React.useState(false);
     const [isRechargeOpen, setIsRechargeOpen] = React.useState(false);
     const [isWithdrawalOpen, setIsWithdrawalOpen] = React.useState(false);
@@ -514,8 +515,7 @@ export default function DashboardLayout({
         }
     }
     
-    const isMainAdminPage = pathname === "/dashboard/admin";
-    const sheetOpen = currentUser?.isAdmin ? !!activeAdminPanel && !isMainAdminPage : false;
+    const sheetOpen = currentUser?.isAdmin ? !!activeAdminPanel : false;
 
   return (
       <SidebarProvider>
@@ -593,6 +593,7 @@ export default function DashboardLayout({
                 <div className="mt-4">
                     <TransactionHistoryPanel />
                 </div>
+                 <SheetClose />
             </SheetContent>
         </Sheet>
         <Sheet open={isTaskHistoryOpen} onOpenChange={setIsTaskHistoryOpen}>
@@ -606,6 +607,7 @@ export default function DashboardLayout({
                 <div className="mt-4">
                     <TaskHistoryPanel />
                 </div>
+                 <SheetClose />
             </SheetContent>
         </Sheet>
          <Sheet open={isReferralOpen} onOpenChange={setIsReferralOpen}>
@@ -619,6 +621,7 @@ export default function DashboardLayout({
                 <div className="mt-4">
                     <ReferralCard />
                 </div>
+                 <SheetClose />
             </SheetContent>
         </Sheet>
         <Sheet open={isInboxOpen} onOpenChange={setIsInboxOpen}>
@@ -632,6 +635,7 @@ export default function DashboardLayout({
                 <div className="mt-4">
                     <InboxPanel />
                 </div>
+                 <SheetClose />
             </SheetContent>
         </Sheet>
          <Sheet open={isBoosterStoreOpen} onOpenChange={setIsBoosterStoreOpen}>
@@ -645,6 +649,7 @@ export default function DashboardLayout({
                 <div className="mt-4">
                     <BoosterStorePanel />
                 </div>
+                 <SheetClose />
             </SheetContent>
         </Sheet>
          <Sheet open={isQuestPanelOpen} onOpenChange={setIsQuestPanelOpen}>
@@ -658,6 +663,7 @@ export default function DashboardLayout({
                 <div className="mt-4">
                     <QuestPanel />
                 </div>
+                 <SheetClose />
             </SheetContent>
         </Sheet>
         <Sheet open={sheetOpen} onOpenChange={(open) => !open && setActiveAdminPanel(null)}>
@@ -675,6 +681,7 @@ export default function DashboardLayout({
                         </div>
                     </>
                 )}
+                 <SheetClose />
             </SheetContent>
         </Sheet>
       </SidebarProvider>
