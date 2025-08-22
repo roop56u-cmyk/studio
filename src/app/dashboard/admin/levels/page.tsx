@@ -51,6 +51,7 @@ export default function ManageLevelsPage() {
             dailyTasks: 0,
             monthlyWithdrawals: 1,
             minWithdrawal: 0,
+            earningPerTask: 0,
         }]);
          toast({ title: "New Level Added", description: "Don't forget to configure and save it." });
     };
@@ -109,18 +110,22 @@ export default function ManageLevelsPage() {
                             </div>
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor={`minAmount-${index}`}>Min Amount (USDT)</Label>
                             <Input id={`minAmount-${index}`} type="number" value={level.minAmount} onChange={(e) => handleInputChange(index, 'minAmount', Number(e.target.value))} />
                         </div>
                          <div className="space-y-2">
-                            <Label htmlFor={`rate-${index}`}>APY Rate (%)</Label>
+                            <Label htmlFor={`rate-${index}`}>Daily Rate (%)</Label>
                             <Input id={`rate-${index}`} type="number" value={level.rate} onChange={(e) => handleInputChange(index, 'rate', Number(e.target.value))} />
                         </div>
                          <div className="space-y-2">
                             <Label htmlFor={`dailyTasks-${index}`}>Daily Tasks</Label>
                             <Input id={`dailyTasks-${index}`} type="number" value={level.dailyTasks} onChange={(e) => handleInputChange(index, 'dailyTasks', Number(e.target.value))} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor={`earningPerTask-${index}`}>Earning per Task ($)</Label>
+                            <Input id={`earningPerTask-${index}`} type="number" value={level.earningPerTask} onChange={(e) => handleInputChange(index, 'earningPerTask', Number(e.target.value))} />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor={`referrals-${index}`}>Required Referrals</Label>

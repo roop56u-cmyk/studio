@@ -23,6 +23,7 @@ export const levels = [
     dailyTasks: 15,
     monthlyWithdrawals: 1,
     minWithdrawal: 150,
+    earningPerTask: 0.30,
   },
   {
     level: 2,
@@ -32,6 +33,7 @@ export const levels = [
     dailyTasks: 25,
     monthlyWithdrawals: 1,
     minWithdrawal: 500,
+    earningPerTask: 0.50,
   },
   {
     level: 3,
@@ -41,6 +43,7 @@ export const levels = [
     dailyTasks: 35,
     monthlyWithdrawals: 1,
     minWithdrawal: 1500,
+    earningPerTask: 1.10,
   },
   {
     level: 4,
@@ -50,6 +53,7 @@ export const levels = [
     dailyTasks: 45,
     monthlyWithdrawals: 1,
     minWithdrawal: 2500,
+    earningPerTask: 2.50,
   },
   {
     level: 5,
@@ -59,6 +63,7 @@ export const levels = [
     dailyTasks: 55,
     monthlyWithdrawals: 2,
     minWithdrawal: 3500,
+    earningPerTask: 5.00,
   },
 ];
 

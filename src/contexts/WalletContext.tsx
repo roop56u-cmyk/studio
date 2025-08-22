@@ -5,16 +5,9 @@
 import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from './AuthContext';
-import { GenerateTaskSuggestionOutput } from '@/ai/flows/generate-task-suggestions';
+import { GenerateTaskSuggestionOutput } from '@/app/actions';
+import { levels as defaultLevels } from '@/components/dashboard/level-tiers';
 
-const levels = [
-  { level: 0, minAmount: 0, rate: 0, referrals: null, dailyTasks: 0, monthlyWithdrawals: 0, minWithdrawal: 0 },
-  { level: 1, minAmount: 100, rate: 1.8, referrals: null, dailyTasks: 15, monthlyWithdrawals: 1, minWithdrawal: 150 },
-  { level: 2, minAmount: 500, rate: 2.8, referrals: 8, dailyTasks: 25, monthlyWithdrawals: 1, minWithdrawal: 500 },
-  { level: 3, minAmount: 2000, rate: 3.8, referrals: 16, dailyTasks: 35, monthlyWithdrawals: 1, minWithdrawal: 1500 },
-  { level: 4, minAmount: 6000, rate: 4.8, referrals: 36, dailyTasks: 45, monthlyWithdrawals: 1, minWithdrawal: 2500 },
-  { level: 5, minAmount: 20000, rate: 5.8, referrals: 55, dailyTasks: 55, monthlyWithdrawals: 2, minWithdrawal: 3500 },
-];
 
 export type CompletedTask = {
     id: string;
@@ -148,8 +141,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
 
   const committedBalance = taskRewardsBalance + interestEarningsBalance;
-  const currentLevelData = levels.slice().reverse().find(level => committedBalance >= level.minAmount) ?? levels[0];
-  const { level: currentLevel, rate: currentRate, dailyTasks: dailyTaskQuota, monthlyWithdrawals: monthlyWithdrawalLimit, minWithdrawal: minWithdrawalAmount } = currentLevelData;
+  const currentLevelData = defaultLevels.slice().reverse().find(level => committedBalance >= level.minAmount) ?? defaultLevels[0];
+  const { level: currentLevel, rate: currentRate, dailyTasks: dailyTaskQuota, monthlyWithdrawals: monthlyWithdrawalLimit, minWithdrawal: minWithdrawalAmount, earningPerTask } = currentLevelData;
 
 
   const setPersistentState = useCallback((key: string, value: any) => {
@@ -372,7 +365,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const claimAndRestartCounter = (type: CounterType) => {
-      const dailyRate = currentRate / 100;
+      const dailyRate = currentRate / 100 / 365;
       
       if (type === 'interest') {
           const earnings = interestEarningsBalance * dailyRate;
@@ -391,21 +384,19 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
           });
           return;
       }
-
-      const dailyRate = currentRate / 100;
-      const potentialDailyEarning = taskRewardsBalance * dailyRate;
       
-      const earningPerTask = dailyTaskQuota > 0 ? potentialDailyEarning / dailyTaskQuota : 0;
+      // Use the earningPerTask from the current level data
+      const earningPerTaskValue = earningPerTask || 0;
 
-      if (earningPerTask > 0) {
-        setTaskRewardsEarned(prev => prev + earningPerTask);
+      if (earningPerTaskValue > 0) {
+        setTaskRewardsEarned(prev => prev + earningPerTaskValue);
       }
       
       const newCompletedTask: CompletedTask = {
           id: `TASK-${Date.now()}`,
           title: task.taskTitle,
           description: task.taskDescription,
-          earnings: earningPerTask,
+          earnings: earningPerTaskValue,
           completedAt: new Date().toISOString(),
       };
       setCompletedTasks(prev => [newCompletedTask, ...prev]);
@@ -417,7 +408,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
       toast({
           title: "Task Completed!",
-          description: `You've earned ${earningPerTask.toFixed(4)} USDT.`,
+          description: `You've earned ${earningPerTaskValue.toFixed(4)} USDT.`,
       });
   };
 
