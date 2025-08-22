@@ -28,8 +28,6 @@ interface WalletContextType {
   mainBalance: number;
   taskRewardsBalance: number;
   interestEarningsBalance: number;
-  taskRewardsEarned: number;
-  interestEarned: number;
   committedBalance: number;
   currentLevel: number;
   currentRate: number;
@@ -125,8 +123,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [mainBalance, setMainBalance] = useState(() => getInitialState('mainBalance', 0));
   const [taskRewardsBalance, setTaskRewardsBalance] = useState(() => getInitialState('taskRewardsBalance', 0));
   const [interestEarningsBalance, setInterestEarningsBalance] = useState(() => getInitialState('interestEarningsBalance', 0));
-  const [taskRewardsEarned, setTaskRewardsEarned] = useState(() => getInitialState('taskRewardsEarned', 0));
-  const [interestEarned, setInterestEarned] = useState(() => getInitialState('interestEarned', 0));
   const [deposits, setDeposits] = useState(() => getInitialState('deposits', 0));
   const [withdrawals, setWithdrawals] = useState(() => getInitialState('withdrawals', 0));
   
@@ -207,8 +203,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       setMainBalance(getInitialState('mainBalance', 0));
       setTaskRewardsBalance(getInitialState('taskRewardsBalance', 0));
       setInterestEarningsBalance(getInitialState('interestEarningsBalance', 0));
-      setTaskRewardsEarned(getInitialState('taskRewardsEarned', 0));
-      setInterestEarned(getInitialState('interestEarned', 0));
       setDeposits(getInitialState('deposits', 0));
       setWithdrawals(getInitialState('withdrawals', 0));
       setInterestCounter(getInitialState('interestCounter', { isRunning: false, startTime: null }));
@@ -218,8 +212,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setMainBalance(0);
         setTaskRewardsBalance(0);
         setInterestEarningsBalance(0);
-        setTaskRewardsEarned(0);
-        setInterestEarned(0);
         setDeposits(0);
         setWithdrawals(0);
         setInterestCounter({ isRunning: false, startTime: null });
@@ -236,8 +228,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => setPersistentState('mainBalance', mainBalance), [mainBalance, setPersistentState]);
   useEffect(() => setPersistentState('taskRewardsBalance', taskRewardsBalance), [taskRewardsBalance, setPersistentState]);
   useEffect(() => setPersistentState('interestEarningsBalance', interestEarningsBalance), [interestEarningsBalance, setPersistentState]);
-  useEffect(() => setPersistentState('taskRewardsEarned', taskRewardsEarned), [taskRewardsEarned, setPersistentState]);
-  useEffect(() => setPersistentState('interestEarned', interestEarned), [interestEarned, setPersistentState]);
   useEffect(() => setPersistentState('deposits', deposits), [deposits, setPersistentState]);
   useEffect(() => setPersistentState('withdrawals', withdrawals), [withdrawals, setPersistentState]);
   useEffect(() => setPersistentState('interestCounter', interestCounter), [interestCounter, setPersistentState]);
@@ -378,8 +368,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       
       if (type === 'interest') {
           const earnings = interestEarningsBalance * dailyRate;
-          setInterestEarned(prev => prev + earnings);
-          setInterestEarningsBalance(prev => prev + earnings); // Add earnings to the balance
+          setInterestEarningsBalance(prev => prev + earnings);
           setInterestCounter({ isRunning: true, startTime: Date.now() });
           toast({ title: "Daily Interest Claimed!", description: `You earned ${earnings.toFixed(4)} USDT. A new cycle has started.`});
       }
@@ -395,12 +384,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
           return;
       }
       
-      // Use the earningPerTask from the current level data
       const earningPerTaskValue = earningPerTask || 0;
 
       if (earningPerTaskValue > 0) {
-        setTaskRewardsEarned(prev => prev + earningPerTaskValue);
-        setTaskRewardsBalance(prev => prev + earningPerTaskValue); // Add earnings to the balance
+        setTaskRewardsBalance(prev => prev + earningPerTaskValue);
       }
       
       const newCompletedTask: CompletedTask = {
@@ -441,8 +428,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         mainBalance,
         taskRewardsBalance,
         interestEarningsBalance,
-        taskRewardsEarned,
-        interestEarned,
         committedBalance,
         currentLevel,
         currentRate,

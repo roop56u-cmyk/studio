@@ -13,7 +13,6 @@ import { useWallet } from "@/contexts/WalletContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Lock } from "lucide-react";
-import { EarningsPanel } from "@/components/dashboard/earnings-panel";
 import { TaskDialog } from "@/components/dashboard/task-dialog";
 
 
@@ -22,8 +21,6 @@ export default function UserDashboardPage() {
     mainBalance, 
     taskRewardsBalance, 
     interestEarningsBalance, 
-    taskRewardsEarned,
-    interestEarned,
     committedBalance,
     isLoading,
     dailyTaskQuota,
@@ -90,32 +87,20 @@ export default function UserDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-                <WalletBalance 
-                    title="Task Rewards"
-                    balance={taskRewardsBalance.toFixed(2)}
-                    description="Balance from completed tasks."
-                    onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Task Rewards')}
-                    showMoveToOther={true}
-                />
-                <EarningsPanel 
-                    title="Total Earned"
-                    amount={taskRewardsEarned.toFixed(2)}
-                />
-            </div>
-             <div className="space-y-2">
-                <WalletBalance 
-                    title="Interest Earnings"
-                    balance={interestEarningsBalance.toFixed(2)}
-                    description="Balance from interest."
-                    onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Interest Earnings')}
-                    showMoveToOther={true}
-                />
-                 <EarningsPanel 
-                    title="Total Earned"
-                    amount={interestEarned.toFixed(2)}
-                />
-            </div>
+            <WalletBalance 
+                title="Task Rewards"
+                balance={taskRewardsBalance.toFixed(2)}
+                description="Balance from completed tasks."
+                onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Task Rewards')}
+                showMoveToOther={true}
+            />
+            <WalletBalance 
+                title="Interest Earnings"
+                balance={interestEarningsBalance.toFixed(2)}
+                description="Balance from interest."
+                onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Interest Earnings')}
+                showMoveToOther={true}
+            />
           </div>
           {(isTaskLocked && isInterestLocked) ? (
              <Card>
@@ -171,5 +156,3 @@ export default function UserDashboardPage() {
     </div>
   );
 }
-
-    
