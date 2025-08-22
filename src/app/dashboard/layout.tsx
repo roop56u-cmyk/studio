@@ -82,9 +82,10 @@ import { useTeamCommission } from "@/hooks/use-team-commission";
 import { TransactionHistoryPanel } from "@/components/dashboard/transaction-history-panel";
 import { TaskHistoryPanel } from "@/components/dashboard/task-history-panel";
 import { ReferralCard } from "@/components/dashboard/referral-card";
+import { InboxPanel } from "@/components/dashboard/inbox-panel";
 
 
-function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransactionHistoryClick, onTaskHistoryClick, onReferralClick }: { onRechargeClick: () => void, onWithdrawalClick: () => void, onTransactionHistoryClick: () => void, onTaskHistoryClick: () => void, onReferralClick: () => void }) {
+function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransactionHistoryClick, onTaskHistoryClick, onReferralClick, onInboxClick }: { onRechargeClick: () => void, onWithdrawalClick: () => void, onTransactionHistoryClick: () => void, onTaskHistoryClick: () => void, onReferralClick: () => void, onInboxClick: () => void }) {
   const pathname = usePathname();
   const { logout, currentUser } = useAuth();
   const { 
@@ -197,11 +198,9 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/inbox")} tooltip={{ children: "Inbox" }}>
-                        <Link href="/dashboard/inbox">
-                            <Mail />
-                            <span>Inbox</span>
-                        </Link>
+                    <SidebarMenuButton onClick={onInboxClick} tooltip={{ children: "Inbox" }}>
+                        <Mail />
+                        <span>Inbox</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
             </>
@@ -253,16 +252,10 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
                 </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith("/dashboard/inbox")}
-                    tooltip={{ children: "Inbox" }}
-                >
-                    <Link href="/dashboard/inbox">
-                    <Mail />
-                    <span>Inbox</span>
-                    </Link>
-                </SidebarMenuButton>
+                    <SidebarMenuButton onClick={onInboxClick} tooltip={{ children: "Inbox" }}>
+                        <Mail />
+                        <span>Inbox</span>
+                    </SidebarMenuButton>
                 </SidebarMenuItem>
                 
                 <SidebarMenuItem>
@@ -378,11 +371,14 @@ const AnimatedDashboardBackground = () => {
 
     React.useEffect(() => {
         setIsClient(true);
-        setTheme(localStorage.getItem('landing_theme') || '');
+        const savedTheme = localStorage.getItem('landing_theme') || '';
+         if (savedTheme === 'cosmic-voyage') {
+            setTheme(savedTheme);
+        }
     }, []);
 
     React.useEffect(() => {
-        if (!isClient) return;
+        if (!isClient || theme !== 'cosmic-voyage') return;
 
         const generatedStars = Array.from({ length: 50 }).map((_, i) => {
             const size = Math.random() * 2 + 1;
@@ -394,7 +390,7 @@ const AnimatedDashboardBackground = () => {
             return <StarParticle key={i} size={size} style={style} />;
         });
         setStars(generatedStars);
-    }, [isClient]);
+    }, [isClient, theme]);
     
     if (!isClient || theme !== 'cosmic-voyage') {
         return null;
@@ -429,6 +425,7 @@ export default function DashboardLayout({
     const [isHistoryOpen, setIsHistoryOpen] = React.useState(false);
     const [isTaskHistoryOpen, setIsTaskHistoryOpen] = React.useState(false);
     const [isReferralOpen, setIsReferralOpen] = React.useState(false);
+    const [isInboxOpen, setIsInboxOpen] = React.useState(false);
 
     useTeamCommission();
 
@@ -446,9 +443,10 @@ export default function DashboardLayout({
                 onTransactionHistoryClick={() => setIsHistoryOpen(true)}
                 onTaskHistoryClick={() => setIsTaskHistoryOpen(true)}
                 onReferralClick={() => setIsReferralOpen(true)}
+                onInboxClick={() => setIsInboxOpen(true)}
             />
           </Sidebar>
-          <div className="flex flex-1 flex-col relative">
+          <div className="flex flex-1 flex-col relative bg-transparent">
            <AnimatedDashboardBackground />
           <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
               <SidebarTrigger className="md:hidden" />
@@ -533,6 +531,19 @@ export default function DashboardLayout({
                 </SheetHeader>
                 <div className="mt-4">
                     <ReferralCard />
+                </div>
+            </SheetContent>
+        </Sheet>
+        <Sheet open={isInboxOpen} onOpenChange={setIsInboxOpen}>
+            <SheetContent className="w-full sm:max-w-2xl">
+                <SheetHeader>
+                    <SheetTitle>Inbox</SheetTitle>
+                    <SheetDescription>
+                        {currentUser?.isAdmin ? "Manage all user conversations." : "View messages and communicate with support."}
+                    </SheetDescription>
+                </SheetHeader>
+                <div className="mt-4">
+                    <InboxPanel />
                 </div>
             </SheetContent>
         </Sheet>

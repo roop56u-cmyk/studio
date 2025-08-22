@@ -19,7 +19,7 @@ import { Loader2, ArrowLeft } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
-export default function InboxPage() {
+export function InboxPanel() {
   const { 
     messages, 
     sendMessage, 
@@ -57,19 +57,13 @@ export default function InboxPage() {
   if (currentUser.isAdmin) {
     return (
         <div className="grid gap-8">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">Admin Inbox</h1>
-                <p className="text-muted-foreground">
-                Manage all user conversations.
-                </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-4 h-[70vh]">
+            <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-4 h-[calc(100vh-12rem)]">
                 <Card>
-                    <CardHeader>
-                        <CardTitle>Conversations</CardTitle>
+                    <CardHeader className="p-2">
+                        <CardTitle className="text-base">Conversations</CardTitle>
                     </CardHeader>
-                    <ScrollArea className="h-[calc(70vh-80px)]">
-                        <CardContent>
+                    <ScrollArea className="h-[calc(100vh-16rem)]">
+                        <CardContent className="p-2">
                              {conversations.map(convo => (
                                 <div 
                                     key={convo.email} 
@@ -93,10 +87,10 @@ export default function InboxPage() {
                                  <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setSelectedConversation(null)}>
                                     <ArrowLeft />
                                 </Button>
-                                <CardTitle>Conversation with {selectedConversation}</CardTitle>
+                                <CardTitle className="text-base">Chat with {selectedConversation}</CardTitle>
                             </div>
                          ) : (
-                             <CardTitle>Select a conversation</CardTitle>
+                             <CardTitle className="text-base">Select a conversation</CardTitle>
                          )}
                     </CardHeader>
                      {selectedConversation ? (
@@ -158,21 +152,8 @@ export default function InboxPage() {
 
   // User View
   return (
-    <div className="grid gap-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Inbox</h1>
-        <p className="text-muted-foreground">
-          View messages and communicate with support.
-        </p>
-      </div>
-      <Card className="flex flex-col h-[60vh]">
-        <CardHeader>
-          <CardTitle>Conversation with Support</CardTitle>
-          <CardDescription>
-            This is the beginning of your message history.
-          </CardDescription>
-        </CardHeader>
-        <ScrollArea className="flex-1 p-4 space-y-4">
+      <Card className="flex flex-col h-[calc(100vh-10rem)] border-0 shadow-none">
+        <ScrollArea className="flex-1 p-4 space-y-4 -mx-6">
             {currentMessages.map((msg) => {
                  const isCurrentUser = msg.sender === currentUser?.email;
                  const senderName = isCurrentUser ? "You" : msg.sender === "admin@stakinghub.com" ? "Support Team" : msg.sender;
@@ -201,7 +182,7 @@ export default function InboxPage() {
                 )
             })}
         </ScrollArea>
-        <div className="p-4 border-t">
+        <div className="p-4 border-t -mx-6">
             <div className="flex items-center gap-2">
                 <Input 
                     placeholder="Type your message..." 
@@ -216,6 +197,5 @@ export default function InboxPage() {
             </div>
         </div>
       </Card>
-    </div>
   );
 }
