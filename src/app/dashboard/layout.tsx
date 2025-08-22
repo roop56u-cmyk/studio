@@ -56,7 +56,8 @@ import {
   UserCog,
   Settings2,
   Activity,
-  Megaphone
+  Megaphone,
+  ListChecks
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -112,6 +113,14 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick }: { onRec
                         <Link href="/dashboard/admin/users">
                             <UserCog />
                             <span>User Management</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/admin/tasks")} tooltip={{ children: "Manage Tasks" }}>
+                        <Link href="/dashboard/admin/tasks">
+                            <ListChecks />
+                            <span>Manage Tasks</span>
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -358,5 +367,7 @@ export default function DashboardLayout({
       </SidebarProvider>
   );
 }
+
+    
 
     

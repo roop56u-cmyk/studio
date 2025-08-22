@@ -1,14 +1,11 @@
 
 "use server";
 
-import { taskLibrary } from "@/lib/tasks";
+import { taskLibrary as defaultTasks, Task } from "@/lib/tasks";
+import { generateNewTaskLibrary as generateNewTaskLibraryFlow } from "@/ai/flows/generate-task-library-flow";
 
 // This type should align with the structure in your task library
-export type GenerateTaskSuggestionOutput = {
-  taskTitle: string;
-  taskDescription: string;
-  options: string[];
-};
+export type GenerateTaskSuggestionOutput = Task;
 
 // This is a placeholder for what would be the submitted review data.
 // In a real application, you would define a schema for this.
@@ -33,6 +30,10 @@ export async function submitReview(input: ReviewSubmission): Promise<{success: b
 
 export async function generateTaskSuggestion(): Promise<GenerateTaskSuggestionOutput> {
     try {
+        // Use the localStorage version if it exists, otherwise fall back to the default.
+        // This is a client-side concept, so for server action, we will rely on default.
+        // A real app would use a database.
+        const taskLibrary = defaultTasks;
         const randomIndex = Math.floor(Math.random() * taskLibrary.length);
         const result = taskLibrary[randomIndex];
         return result;
@@ -41,3 +42,9 @@ export async function generateTaskSuggestion(): Promise<GenerateTaskSuggestionOu
         throw new Error("Failed to get task from library.");
     }
 }
+
+export async function generateNewTaskLibrary() {
+    return await generateNewTaskLibraryFlow();
+}
+
+    

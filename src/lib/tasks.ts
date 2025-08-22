@@ -120,7 +120,7 @@ export const taskLibrary: Task[] = [
     taskTitle: "Rate the effectiveness of a new brand of sunscreen",
     taskDescription: "Spend time outdoors using 'SunShield SPF 50' and assess its protection and feel on the skin.",
     options: [
-      "No sunburn and feels light on the skin.",
+      "No sunburn and feels light on the. skin.",
       "It worked, but felt greasy.",
       "Felt nice, but I still got a little burnt.",
       "Greasy, ineffective, and caused a breakout."
@@ -207,3 +207,5 @@ export const taskLibrary: Task[] = [
     ]
   }
 ];
+
+    
