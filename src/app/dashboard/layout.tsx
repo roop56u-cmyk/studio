@@ -373,8 +373,13 @@ const StarParticle = ({ size, style }: { size: number, style: React.CSSPropertie
 
 const AnimatedDashboardBackground = () => {
     const [stars, setStars] = React.useState<React.ReactNode[]>([]);
+    const [isClient, setIsClient] = React.useState(false);
+    const [theme, setTheme] = React.useState('');
 
     React.useEffect(() => {
+        setIsClient(true);
+        setTheme(localStorage.getItem('landing_theme') || '');
+
         const generatedStars = Array.from({ length: 50 }).map((_, i) => {
             const size = Math.random() * 2 + 1;
             const style: React.CSSProperties = {
@@ -386,10 +391,8 @@ const AnimatedDashboardBackground = () => {
         });
         setStars(generatedStars);
     }, []);
-
-    const theme = typeof window !== 'undefined' ? localStorage.getItem('landing_theme') : '';
-
-    if (theme !== 'cosmic-voyage') {
+    
+    if (!isClient || theme !== 'cosmic-voyage') {
         return null;
     }
 
@@ -456,7 +459,7 @@ export default function DashboardLayout({
                     <DropdownMenuTrigger asChild>
                     <Button variant="secondary" size="icon" className="rounded-full">
                         <Avatar>
-                        <AvatarImage src="https://placehold.co/40/673ab7/ffffff.png" alt="User Avatar" data-ai-hint="user avatar" />
+                        <AvatarImage src="https://placehold.co/40/673ab7/ffffff.png?text=A" alt="User Avatar" data-ai-hint="user avatar" />
                         <AvatarFallback>{currentUser?.email?.[0].toUpperCase() ?? 'U'}</AvatarFallback>
                         </Avatar>
                         <span className="sr-only">Toggle user menu</span>
@@ -532,5 +535,3 @@ export default function DashboardLayout({
       </SidebarProvider>
   );
 }
-
-    
