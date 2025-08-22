@@ -23,14 +23,11 @@ export function TransactionHistoryPanel() {
   const { userRequests } = useRequests();
   
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Transaction History</CardTitle>
-        <CardDescription>
-          A log of your recent recharges and withdrawals.
-        </CardDescription>
+    <Card className="shadow-none border-none">
+      <CardHeader className="px-1">
+        <CardTitle>Transactions</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-0">
         <Table>
           <TableHeader>
             <TableRow>

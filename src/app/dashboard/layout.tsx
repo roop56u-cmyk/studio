@@ -34,6 +34,13 @@ import {
   CollapsibleTrigger,
   CollapsibleContent
 } from "@/components/ui/sidebar";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription
+} from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Logo } from "@/components/logo";
 import {
@@ -60,7 +67,8 @@ import {
   ListChecks,
   Percent,
   Palette,
-  LayoutGrid
+  LayoutGrid,
+  History
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -70,9 +78,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { RechargeDialog } from "@/components/dashboard/recharge-dialog";
 import { WithdrawalDialog } from "@/components/dashboard/withdrawal-dialog";
 import { useTeamCommission } from "@/hooks/use-team-commission";
+import { TransactionHistoryPanel } from "@/components/dashboard/transaction-history-panel";
 
 
-function SidebarContentComponent({ onRechargeClick, onWithdrawalClick }: { onRechargeClick: () => void, onWithdrawalClick: () => void }) {
+function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransactionHistoryClick }: { onRechargeClick: () => void, onWithdrawalClick: () => void, onTransactionHistoryClick: () => void }) {
   const pathname = usePathname();
   const { logout, currentUser } = useAuth();
   const { 
@@ -313,6 +322,15 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick }: { onRec
                     <span>Withdrawal</span>
                 </SidebarMenuButton>
                 </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton
+                        onClick={onTransactionHistoryClick}
+                        tooltip={{ children: "Transaction History" }}
+                    >
+                        <History />
+                        <span>Transaction History</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
             </>
         )}
       </SidebarMenu>
@@ -330,6 +348,7 @@ export default function DashboardLayout({
     const [isClient, setIsClient] = React.useState(false);
     const [isRechargeOpen, setIsRechargeOpen] = React.useState(false);
     const [isWithdrawalOpen, setIsWithdrawalOpen] = React.useState(false);
+    const [isHistoryOpen, setIsHistoryOpen] = React.useState(false);
 
     useTeamCommission();
 
@@ -344,6 +363,7 @@ export default function DashboardLayout({
             <SidebarContentComponent 
                 onRechargeClick={() => setIsRechargeOpen(true)}
                 onWithdrawalClick={() => setIsWithdrawalOpen(true)}
+                onTransactionHistoryClick={() => setIsHistoryOpen(true)}
             />
           </Sidebar>
           <div className="flex flex-1 flex-col">
@@ -394,6 +414,19 @@ export default function DashboardLayout({
       </div>
        <RechargeDialog open={isRechargeOpen} onOpenChange={setIsRechargeOpen} />
        <WithdrawalDialog open={isWithdrawalOpen} onOpenChange={setIsWithdrawalOpen} />
+       <Sheet open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+            <SheetContent className="w-full sm:max-w-lg">
+                <SheetHeader>
+                    <SheetTitle>Transaction History</SheetTitle>
+                    <SheetDescription>
+                        A log of your recent recharges and withdrawals.
+                    </SheetDescription>
+                </SheetHeader>
+                <div className="mt-4">
+                    <TransactionHistoryPanel />
+                </div>
+            </SheetContent>
+        </Sheet>
       </SidebarProvider>
   );
 }

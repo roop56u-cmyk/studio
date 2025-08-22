@@ -7,7 +7,6 @@ import { ReferralCard } from "@/components/dashboard/referral-card";
 import { InterestCounterPanel } from "@/components/dashboard/interest-counter-panel";
 import { LevelTiers, Level, levels } from "@/components/dashboard/level-tiers";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
-import { TransactionHistoryPanel } from "@/components/dashboard/transaction-history-panel";
 import { TaskHistoryPanel } from "@/components/dashboard/task-history-panel";
 import { useWallet } from "@/contexts/WalletContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -181,7 +180,6 @@ export default function UserDashboardPage() {
         </div>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {isPanelEnabled("transactionHistory") && <TransactionHistoryPanel />}
         {isPanelEnabled("taskHistory") && <TaskHistoryPanel />}
       </div>
 
