@@ -77,6 +77,10 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
     }
   }, [tasksCompletedToday, dailyTaskQuota]);
 
+   useEffect(() => {
+    form.register("option");
+  }, [form]);
+
   const onSubmit = async (data: ReviewFormValues) => {
     if (!task) return;
     setIsLoading(true);
@@ -132,7 +136,7 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
         </div>
         <div className="space-y-4">
             <div>
-                <FormLabel>Your Task</FormLabel>
+                <Label>Your Task</Label>
                 {isGeneratingTask ? (
                     <Skeleton className="h-10 w-full mt-2" />
                 ) : (
@@ -142,7 +146,7 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
                 )}
             </div>
             <div>
-                <FormLabel>About the Task</FormLabel>
+                <Label>About the Task</Label>
                 {isGeneratingTask ? (
                     <Skeleton className="h-8 w-full mt-2" />
                 ) : (
@@ -167,43 +171,37 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
         )}
         />
         
-        <FormField
-          control={form.control}
-          name="option"
-          render={({ field }) => (
-            <FormItem className="space-y-3">
-              <FormLabel>Select an Option</FormLabel>
-              <FormControl>
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  value={field.value}
-                  className="flex flex-col space-y-1"
+        <FormItem className="space-y-3">
+          <FormLabel>Select an Option</FormLabel>
+          <RadioGroup
+            onValueChange={(value) => form.setValue("option", value)}
+            className="flex flex-col space-y-1"
+          >
+            {isGeneratingTask ? (
+              <div className="space-y-2 pt-2">
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-6 w-1/2" />
+                <Skeleton className="h-6 w-2/3" />
+                <Skeleton className="h-6 w-3/5" />
+              </div>
+            ) : (
+              task?.options?.map((option, index) => (
+                <FormItem
+                  key={index}
+                  className="flex items-center space-x-3 space-y-0"
                 >
-                  {isGeneratingTask ? (
-                     <div className="space-y-2 pt-2">
-                        <Skeleton className="h-6 w-3/4" />
-                        <Skeleton className="h-6 w-1/2" />
-                        <Skeleton className="h-6 w-2/3" />
-                        <Skeleton className="h-6 w-3/5" />
-                    </div>
-                  ) : (
-                    task?.options?.map((option, index) => (
-                      <FormItem key={index} className="flex items-center space-x-3 space-y-0">
-                          <FormControl>
-                            <RadioGroupItem value={option} id={`${field.name}-${index}`} />
-                          </FormControl>
-                          <Label htmlFor={`${field.name}-${index}`} className="font-normal">
-                              {option}
-                          </Label>
-                      </FormItem>
-                    ))
-                  )}
-                </RadioGroup>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                  <FormControl>
+                    <RadioGroupItem value={option} id={`option-${index}`} />
+                  </FormControl>
+                  <Label htmlFor={`option-${index}`} className="font-normal">
+                    {option}
+                  </Label>
+                </FormItem>
+              ))
+            )}
+          </RadioGroup>
+          <FormMessage>{form.formState.errors.option?.message}</FormMessage>
+        </FormItem>
 
         <div className="flex items-center justify-between">
         <Button type="submit" disabled={isLoading || isGeneratingTask || !task}>
