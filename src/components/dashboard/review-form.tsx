@@ -18,7 +18,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { StarRating } from "@/components/dashboard/star-rating";
 import { submitReview } from "@/app/actions";
 import { generateTaskSuggestion } from "@/app/actions";
-import type { GenerateTaskSuggestionOutput } from "@/ai/flows/generate-task-suggestions";
+import type { Task as GenerateTaskSuggestionOutput } from "@/lib/tasks";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "../ui/skeleton";
@@ -29,7 +29,7 @@ import { Label } from "@/components/ui/label";
 
 const reviewSchema = z.object({
   rating: z.number().min(1, "Please provide a rating.").max(5),
-  // Option is no longer required here as we handle it manually
+  // The 'option' field is handled manually now to prevent the flushSync error.
 });
 
 type ReviewFormValues = z.infer<typeof reviewSchema>;
@@ -45,7 +45,7 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
   const { toast } = useToast();
   const { completeTask, tasksCompletedToday, dailyTaskQuota } = useWallet();
 
-  // Manually manage radio group state to avoid flushSync error
+  // Manually manage radio group state to avoid the flushSync error.
   const [selectedOption, setSelectedOption] = useState<string | undefined>(undefined);
   const [optionError, setOptionError] = useState<string | null>(null);
 
@@ -59,8 +59,8 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
   const fetchTask = async () => {
     try {
       setIsGeneratingTask(true);
-      form.reset();
-      setSelectedOption(undefined);
+      form.reset({ rating: 0 }); // Reset react-hook-form state
+      setSelectedOption(undefined); // Reset manual state for radio buttons
       setOptionError(null);
       const result = await generateTaskSuggestion();
       setTask(result);
@@ -68,7 +68,7 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
       toast({
         variant: "destructive",
         title: "Error Generating Task",
-        description: "Could not fetch an AI-powered task suggestion. Please try again later.",
+        description: "Could not fetch a task from the library. Please try again later.",
       });
     } finally {
       setIsGeneratingTask(false);
@@ -79,7 +79,7 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
     if (tasksCompletedToday < dailyTaskQuota) {
         fetchTask();
     }
-  }, [tasksCompletedToday, dailyTaskQuota]);
+  }, []); // Run only once on mount or when dependencies change
 
   const onSubmit = async (data: ReviewFormValues) => {
     if (!task) return;
@@ -104,13 +104,12 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
         onTaskCompleted();
       }
       
-      setSelectedOption(undefined); // Reset manual state
-      setOptionError(null);
+      const newTasksCompleted = tasksCompletedToday + 1;
 
-      if (tasksCompletedToday + 1 < dailyTaskQuota) {
-          fetchTask();
+      if (newTasksCompleted < dailyTaskQuota) {
+          await fetchTask(); // Fetch the next task
       } else {
-          setTask(null);
+          setTask(null); // All tasks are done
       }
 
     } catch (error) {
@@ -123,7 +122,7 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
       setIsLoading(false);
     }
   };
-
+  
   const handleOptionChange = (value: string) => {
       setSelectedOption(value);
       if (optionError) {
@@ -175,25 +174,25 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
         </div>
         
         <FormField
-        control={form.control}
-        name="rating"
-        render={({ field }) => (
-            <FormItem>
-            <FormLabel>Your Rating</FormLabel>
-            <FormControl>
-                <StarRating rating={field.value} setRating={field.onChange} />
-            </FormControl>
-            <FormMessage />
-            </FormItem>
-        )}
+            control={form.control}
+            name="rating"
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Your Rating</FormLabel>
+                    <FormControl>
+                        <StarRating rating={field.value} setRating={field.onChange} />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+            )}
         />
         
-        <div className="space-y-3">
+        <div className="space-y-2">
           <Label>Select an Option</Label>
           <RadioGroup
             value={selectedOption}
             onValueChange={handleOptionChange}
-            className="flex flex-col space-y-1"
+            className="flex flex-col space-y-1 mt-2"
           >
             {isGeneratingTask ? (
               <div className="space-y-2 pt-2">
@@ -216,7 +215,7 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
               ))
             )}
           </RadioGroup>
-          {optionError && <p className="text-sm font-medium text-destructive">{optionError}</p>}
+          {optionError && <p className="text-sm font-medium text-destructive mt-2">{optionError}</p>}
         </div>
 
         <div className="flex items-center justify-between">
