@@ -46,8 +46,9 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
       currentLevel,
       isWithdrawalRestrictionEnabled,
       withdrawalRestrictionDays,
-      firstDepositDate, // We will use this to START the timer, but not to CHECK if restriction applies
+      firstDepositDate, 
       withdrawalRestrictedLevels,
+      withdrawalRestrictionMessage,
   } = useWallet();
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
   const [isRestrictionAlertOpen, setIsRestrictionAlertOpen] = useState(false);
@@ -85,15 +86,9 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
         return;
     }
 
-    // New logic as per your instructions:
-    // Check if restriction is enabled by admin.
-    // If so, check if user meets the conditions (balance > 0 OR level >= 1).
-    // The `firstDepositDate` is only used to START the countdown, not to decide IF the restriction applies.
     const userIsEligibleForRestriction = mainBalance > 0 || currentLevel >= 1;
 
     if (isWithdrawalRestrictionEnabled && userIsEligibleForRestriction) {
-        // If there's no deposit date, they can't be past the waiting period.
-        // Or if there is one, check if the time has passed.
         const restrictionEndTime = firstDepositDate ? new Date(firstDepositDate).getTime() + (withdrawalRestrictionDays * 24 * 60 * 60 * 1000) : Date.now() + 1; // A fake future time if no deposit
         
         if (Date.now() < restrictionEndTime) {
@@ -206,6 +201,12 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
 
      <AlertDialog open={isRestrictionAlertOpen} onOpenChange={setIsRestrictionAlertOpen}>
           <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Withdrawal Restricted</AlertDialogTitle>
+                <AlertDialogDescription>
+                    {withdrawalRestrictionMessage}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
               <WithdrawalTimer firstDepositDate={firstDepositDate} waitDays={withdrawalRestrictionDays} />
               <AlertDialogFooter>
                   <AlertDialogAction onClick={() => setIsRestrictionAlertOpen(false)}>OK</AlertDialogAction>
