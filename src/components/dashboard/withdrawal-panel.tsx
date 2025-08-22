@@ -62,6 +62,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
       isWithdrawalRestrictionEnabled,
       withdrawalRestrictionDays,
       withdrawalRestrictionMessage,
+      withdrawalRestrictedLevels,
   } = useWallet();
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
   const [isRestrictionAlertOpen, setIsRestrictionAlertOpen] = useState(false);
@@ -108,7 +109,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
     e.preventDefault();
     const isActiveUser = !!firstDepositDate;
     
-    if (isWithdrawalRestrictionEnabled && isActiveUser) {
+    if (isWithdrawalRestrictionEnabled && isActiveUser && withdrawalRestrictedLevels.includes(level)) {
         const firstDepositTime = new Date(firstDepositDate!).getTime();
         const restrictionEndTime = firstDepositTime + (withdrawalRestrictionDays * 24 * 60 * 60 * 1000);
         if (Date.now() < restrictionEndTime) {
@@ -143,7 +144,6 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
         return;
     }
     
-    // Deduct from balance immediately
     requestWithdrawal(numericAmount);
 
     onAddRequest({
@@ -279,5 +279,3 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
     </>
   );
 }
-
-    

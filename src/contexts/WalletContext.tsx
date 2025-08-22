@@ -69,6 +69,7 @@ interface WalletContextType {
   isWithdrawalRestrictionEnabled: boolean;
   withdrawalRestrictionDays: number;
   withdrawalRestrictionMessage: string;
+  withdrawalRestrictedLevels: number[];
 }
 
 export type CounterType = 'task' | 'interest';
@@ -90,6 +91,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [isWithdrawalRestrictionEnabled, setIsWithdrawalRestrictionEnabled] = useState(true);
   const [withdrawalRestrictionDays, setWithdrawalRestrictionDays] = useState(45);
   const [withdrawalRestrictionMessage, setWithdrawalRestrictionMessage] = useState("Please wait for 45 days to initiate withdrawal request.");
+  const [withdrawalRestrictedLevels, setWithdrawalRestrictedLevels] = useState<number[]>([1]);
 
   const getInitialState = (key: string, defaultValue: any) => {
     if (typeof window === 'undefined' || !currentUser) {
@@ -162,6 +164,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setIsWithdrawalRestrictionEnabled(getGlobalSetting('system_withdrawal_restriction_enabled', true, true));
     setWithdrawalRestrictionDays(parseInt(getGlobalSetting('system_withdrawal_restriction_days', '45'), 10));
     setWithdrawalRestrictionMessage(getGlobalSetting('system_withdrawal_restriction_message', "Please wait for 45 days to initiate withdrawal request."));
+    setWithdrawalRestrictedLevels(getGlobalSetting('system_withdrawal_restricted_levels', [1], true));
+
 
     if (currentUser) {
       const today = new Date().toISOString().split('T')[0];
@@ -302,7 +306,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const addRecharge = (rechargeAmount: number) => {
-      // This is now only for request creation, not balance update
   }
 
   const requestWithdrawal = (withdrawalAmount: number) => {
@@ -428,6 +431,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         isWithdrawalRestrictionEnabled,
         withdrawalRestrictionDays,
         withdrawalRestrictionMessage,
+        withdrawalRestrictedLevels,
       }}
     >
       {children}

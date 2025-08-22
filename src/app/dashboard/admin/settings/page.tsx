@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { levels } from "@/components/dashboard/level-tiers";
 
 export default function SystemSettingsPage() {
     const { toast } = useToast();
@@ -25,10 +27,10 @@ export default function SystemSettingsPage() {
     const [isWithdrawalRestriction, setIsWithdrawalRestriction] = useState(true);
     const [withdrawalDays, setWithdrawalDays] = useState("45");
     const [withdrawalRestrictionMessage, setWithdrawalRestrictionMessage] = useState("Please wait for 45 days to initiate withdrawal request.");
+    const [restrictedLevels, setRestrictedLevels] = useState<number[]>([1]); // Default to level 1
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
-        // Load settings from localStorage when the component mounts on the client
         const savedReferralBonus = localStorage.getItem('system_referral_bonus');
         if (savedReferralBonus) setReferralBonus(savedReferralBonus);
         
@@ -46,29 +48,37 @@ export default function SystemSettingsPage() {
         
         const savedWithdrawalMessage = localStorage.getItem('system_withdrawal_restriction_message');
         if (savedWithdrawalMessage) setWithdrawalRestrictionMessage(savedWithdrawalMessage);
+
+        const savedRestrictedLevels = localStorage.getItem('system_withdrawal_restricted_levels');
+        if (savedRestrictedLevels) setRestrictedLevels(JSON.parse(savedRestrictedLevels));
         
         setIsClient(true);
     }, []);
 
 
     const handleSaveChanges = () => {
-        // In a real app, these would be saved to a database.
-        // For now, we use localStorage to simulate a persistent backend.
         localStorage.setItem('system_recharge_address', rechargeAddress);
         localStorage.setItem('system_withdrawal_restriction_enabled', JSON.stringify(isWithdrawalRestriction));
         localStorage.setItem('system_withdrawal_restriction_days', withdrawalDays);
         localStorage.setItem('system_withdrawal_restriction_message', withdrawalRestrictionMessage);
         localStorage.setItem('system_referral_bonus', referralBonus);
         localStorage.setItem('system_min_deposit_for_bonus', minDepositForBonus);
+        localStorage.setItem('system_withdrawal_restricted_levels', JSON.stringify(restrictedLevels));
         
         toast({
             title: "Settings Saved",
             description: "Global system settings have been updated.",
         });
     };
+
+    const handleLevelRestrictionChange = (level: number, checked: boolean) => {
+        setRestrictedLevels(prev => 
+            checked ? [...prev, level] : prev.filter(l => l !== level)
+        );
+    };
     
     if (!isClient) {
-        return null; // or a loading skeleton
+        return null;
     }
 
   return (
@@ -120,7 +130,7 @@ export default function SystemSettingsPage() {
         <CardHeader>
           <CardTitle>Withdrawal Restrictions</CardTitle>
           <CardDescription>
-            Set rules for when users can make withdrawals. This applies to all users based on their first deposit date.
+            Set rules for when users can make withdrawals. This applies to users based on their first deposit date and level.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -141,6 +151,22 @@ export default function SystemSettingsPage() {
                     disabled={!isWithdrawalRestriction}
                     rows={3}
                 />
+            </div>
+             <div className="space-y-2">
+                <Label>Apply Restriction to Levels</Label>
+                 <div className="flex flex-wrap gap-4 pt-2">
+                    {levels.filter(l => l.level > 0).map(level => (
+                        <div key={level.level} className="flex items-center space-x-2">
+                            <Checkbox
+                                id={`level-${level.level}`}
+                                checked={restrictedLevels.includes(level.level)}
+                                onCheckedChange={(checked) => handleLevelRestrictionChange(level.level, !!checked)}
+                                disabled={!isWithdrawalRestriction}
+                            />
+                            <Label htmlFor={`level-${level.level}`} className="font-normal">Level {level.level}</Label>
+                        </div>
+                    ))}
+                </div>
             </div>
         </CardContent>
       </Card>
