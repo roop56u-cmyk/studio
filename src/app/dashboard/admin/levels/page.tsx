@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Trash2, PlusCircle } from "lucide-react";
+import { Trash2, PlusCircle, Calculator } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { levels as defaultLevels, Level } from "@/components/dashboard/level-tiers";
 
@@ -48,7 +48,7 @@ export default function ManageLevelsPage() {
             minAmount: 0,
             rate: 0,
             referrals: 0,
-            dailyTasks: 0,
+            dailyTasks: 1, // Avoid division by zero
             monthlyWithdrawals: 1,
             minWithdrawal: 0,
             earningPerTask: 0,
@@ -62,8 +62,28 @@ export default function ManageLevelsPage() {
         toast({ title: "Level Deleted", variant: "destructive" });
     };
 
+    const autoCalculateEarning = (index: number) => {
+        const level = levels[index];
+        if (level.dailyTasks > 0) {
+            const calculatedEarning = (level.minAmount * (level.rate / 100)) / level.dailyTasks;
+            handleInputChange(index, 'earningPerTask', parseFloat(calculatedEarning.toFixed(4)));
+            toast({
+                title: `Calculated Earning for Level ${level.level}`,
+                description: `Set to $${calculatedEarning.toFixed(4)} per task.`
+            })
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Calculation Error',
+                description: 'Daily tasks must be greater than zero to auto-calculate earnings.'
+            })
+        }
+    };
+
     const saveChanges = () => {
         // Here you would typically save the 'levels' state to your backend or localStorage
+        // For now, we're just showing a toast
+        console.log("Saving levels:", levels);
         toast({
             title: "Changes Saved!",
             description: "The level configuration has been updated.",
@@ -125,7 +145,12 @@ export default function ManageLevelsPage() {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor={`earningPerTask-${index}`}>Earning per Task ($)</Label>
-                            <Input id={`earningPerTask-${index}`} type="number" value={level.earningPerTask} onChange={(e) => handleInputChange(index, 'earningPerTask', Number(e.target.value))} />
+                             <div className="flex items-center gap-2">
+                                <Input id={`earningPerTask-${index}`} type="number" value={level.earningPerTask} onChange={(e) => handleInputChange(index, 'earningPerTask', Number(e.target.value))} />
+                                <Button variant="outline" size="icon" type="button" onClick={() => autoCalculateEarning(index)} title="Auto-calculate earning per task">
+                                    <Calculator className="h-4 w-4" />
+                                </Button>
+                            </div>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor={`referrals-${index}`}>Required Referrals</Label>
