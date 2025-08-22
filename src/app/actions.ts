@@ -43,8 +43,6 @@ export async function generateTaskSuggestion(): Promise<GenerateTaskSuggestionOu
     }
 }
 
-export async function generateNewTaskLibrary() {
-    return await generateNewTaskLibraryFlow();
+export async function generateNewTaskLibrary(count: number) {
+    return await generateNewTaskLibraryFlow({ count });
 }
-
-    

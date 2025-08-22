@@ -19,17 +19,23 @@ const TaskSchema = z.object({
 export type Task = z.infer<typeof TaskSchema>;
 
 const TaskLibrarySchema = z.object({
-  tasks: z.array(TaskSchema).length(20).describe("A list of exactly 20 unique review tasks."),
+  tasks: z.array(TaskSchema).describe("A list of unique review tasks based on the requested count."),
 });
 export type TaskLibrary = z.infer<typeof TaskLibrarySchema>;
+
+const GenerateTaskLibraryInputSchema = z.object({
+  count: z.number().min(1).max(100).default(20),
+});
+export type GenerateTaskLibraryInput = z.infer<typeof GenerateTaskLibraryInputSchema>;
 
 
 const prompt = ai.definePrompt({
   name: 'generateTaskLibraryPrompt',
+  input: {schema: GenerateTaskLibraryInputSchema},
   output: {schema: TaskLibrarySchema},
   prompt: `You are an expert at creating engaging micro-tasks for a user review platform. 
   
-  Your goal is to generate a diverse and interesting list of 20 unique tasks.
+  Your goal is to generate a diverse and interesting list of {{{count}}} unique tasks.
   
   The tasks should cover a wide range of topics, including:
   - Reviewing digital products (apps, websites, games)
@@ -43,12 +49,11 @@ const prompt = ai.definePrompt({
 export const generateNewTaskLibrary = ai.defineFlow(
   {
     name: 'generateNewTaskLibraryFlow',
+    inputSchema: GenerateTaskLibraryInputSchema,
     outputSchema: TaskLibrarySchema,
   },
-  async () => {
-    const {output} = await prompt();
+  async (input) => {
+    const {output} = await prompt(input);
     return output!;
   }
 );
-
-    
