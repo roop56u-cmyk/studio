@@ -23,7 +23,7 @@ export default function Home() {
   return (
     <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-background">
       <WelcomeAnimation />
-      <div className="absolute inset-0 bg-background/50 backdrop-blur-sm" />
+      <div className="absolute inset-0" />
       <div className="relative z-10 flex flex-col items-center justify-center text-center">
         <Logo className="mb-8 text-5xl md:text-7xl" />
         <h1 className="text-4xl font-bold tracking-tighter text-foreground sm:text-5xl md:text-6xl">
