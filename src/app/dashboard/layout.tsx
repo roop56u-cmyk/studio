@@ -69,7 +69,9 @@ import {
   LayoutGrid,
   History,
   ClipboardList,
-  UserPlus
+  UserPlus,
+  Flame,
+  CheckCheck,
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -138,6 +140,22 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
                         <Link href="/dashboard/admin/tasks">
                             <ListChecks />
                             <span>Manage Tasks</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/admin/quests")} tooltip={{ children: "Manage Quests" }}>
+                        <Link href="/dashboard/admin/quests">
+                            <CheckCheck />
+                            <span>Manage Quests</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/admin/boosters")} tooltip={{ children: "Manage Boosters" }}>
+                        <Link href="/dashboard/admin/boosters">
+                            <Flame />
+                            <span>Manage Boosters</span>
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -215,6 +233,18 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
                     <Link href="/dashboard/user">
                     <Home />
                     <span>Dashboard</span>
+                    </Link>
+                </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith("/dashboard/boosters")}
+                    tooltip={{ children: "Boosters" }}
+                >
+                    <Link href="/dashboard/boosters">
+                    <Flame />
+                    <span>Boosters</span>
                     </Link>
                 </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -446,7 +476,7 @@ export default function DashboardLayout({
                 onInboxClick={() => setIsInboxOpen(true)}
             />
           </Sidebar>
-          <div className="flex flex-1 flex-col relative bg-transparent">
+          <div className="flex flex-1 flex-col relative">
            <AnimatedDashboardBackground />
           <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
               <SidebarTrigger className="md:hidden" />

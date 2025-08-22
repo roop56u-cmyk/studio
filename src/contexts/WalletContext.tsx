@@ -23,6 +23,25 @@ export type WithdrawalAddress = {
     address: string;
 };
 
+export type BoosterType = 'TASK_EARNING' | 'TASK_QUOTA' | 'INTEREST_RATE' | 'REFERRAL_COMMISSION';
+
+export type Booster = {
+    id: string;
+    name: string;
+    description: string;
+    type: BoosterType;
+    value: number; // e.g., 20 for 20%, or 10 for +10 tasks
+    price: number;
+    duration: number; // in hours
+    enabled: boolean;
+};
+
+export type ActiveBooster = {
+    boosterId: string;
+    type: BoosterType;
+    value: number;
+    expiresAt: number; // timestamp
+};
 
 interface WalletContextType {
   mainBalance: number;
@@ -64,6 +83,9 @@ interface WalletContextType {
   withdrawalRestrictionDays: number;
   withdrawalRestrictionMessage: string;
   withdrawalRestrictedLevels: number[];
+  purchaseBooster: (booster: Booster) => boolean;
+  activeBoosters: ActiveBooster[];
+  getReferralCommissionBoost: () => number;
 }
 
 export type CounterType = 'task' | 'interest';
@@ -132,14 +154,19 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [lastTaskCompletionDate, setLastTaskCompletionDate] = useState(() => getInitialState('lastTaskCompletionDate', ''));
   const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>(() => getInitialState('completedTasks', []));
   const [withdrawalAddress, setWithdrawalAddressState] = useState<WithdrawalAddress | null>(() => getInitialState('withdrawalAddress', null));
-
   const [monthlyWithdrawalsCount, setMonthlyWithdrawalsCount] = useState(() => getInitialState('monthlyWithdrawalsCount', 0));
   const [lastWithdrawalMonth, setLastWithdrawalMonth] = useState(() => getInitialState('lastWithdrawalMonth', -1));
-
+  const [activeBoosters, setActiveBoosters] = useState<ActiveBooster[]>(() => getInitialState('activeBoosters', []));
+  
+  const taskQuotaBoost = activeBoosters.find(b => b.type === 'TASK_QUOTA')?.value || 0;
+  const interestRateBoost = activeBoosters.find(b => b.type === 'INTEREST_RATE')?.value || 0;
 
   const committedBalance = taskRewardsBalance + interestEarningsBalance;
   const currentLevelData = defaultLevels.slice().reverse().find(level => committedBalance >= level.minAmount) ?? defaultLevels[0];
-  const { level: currentLevel, rate: currentRate, dailyTasks: dailyTaskQuota, monthlyWithdrawals: monthlyWithdrawalLimit, minWithdrawal: minWithdrawalAmount, earningPerTask } = currentLevelData;
+  const { level: currentLevel, rate: baseRate, dailyTasks: baseDailyTaskQuota, monthlyWithdrawals: monthlyWithdrawalLimit, minWithdrawal: minWithdrawalAmount, earningPerTask } = currentLevelData;
+
+  const currentRate = baseRate + (baseRate * (interestRateBoost / 100));
+  const dailyTaskQuota = baseDailyTaskQuota + taskQuotaBoost;
 
 
   const setPersistentState = useCallback((key: string, value: any) => {
@@ -152,6 +179,15 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
      }
   }, [currentUser]);
 
+  // Effect to clean up expired boosters
+  useEffect(() => {
+    const now = Date.now();
+    const unexpiredBoosters = activeBoosters.filter(b => b.expiresAt > now);
+    if (unexpiredBoosters.length !== activeBoosters.length) {
+        setActiveBoosters(unexpiredBoosters);
+    }
+  }, []); // Runs once on mount
+
   useEffect(() => {
     setIsLoading(true);
     // Load global settings
@@ -160,25 +196,19 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setWithdrawalRestrictionMessage(getGlobalSetting('system_withdrawal_restriction_message', "Please wait for 45 days to initiate withdrawal request."));
     setWithdrawalRestrictedLevels(getGlobalSetting('system_withdrawal_restricted_levels', [1], true));
 
-
     if (currentUser) {
-        // --- Daily Task Reset Logic ---
         const now = new Date();
-        const IST_OFFSET = 5.5 * 60 * 60 * 1000; // 5.5 hours in milliseconds
+        const IST_OFFSET = 5.5 * 60 * 60 * 1000;
         const nowIST = new Date(now.getTime() + IST_OFFSET);
-        
         const resetHourIST = 9;
         const resetMinuteIST = 30;
-
         let lastReset = new Date(nowIST);
         lastReset.setUTCHours(resetHourIST, resetMinuteIST, 0, 0);
 
         if (nowIST < lastReset) {
             lastReset.setUTCDate(lastReset.getUTCDate() - 1);
         }
-
         const lastCompletionTime = getInitialState('lastCompletionTime', 0);
-        
         if (lastCompletionTime < lastReset.getTime()) {
              setTasksCompletedToday(0);
              setPersistentState('tasksCompletedToday', 0);
@@ -186,8 +216,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
              setTasksCompletedToday(getInitialState('tasksCompletedToday', 0));
         }
 
-
-      // Check and reset monthly withdrawal count
       const currentMonth = new Date().getMonth();
       const lastMonth = getInitialState('lastWithdrawalMonth', -1);
       if (currentMonth !== lastMonth) {
@@ -199,7 +227,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
          setMonthlyWithdrawalsCount(getInitialState('monthlyWithdrawalsCount', 0));
       }
 
-      
       setMainBalance(getInitialState('mainBalance', 0));
       setTaskRewardsBalance(getInitialState('taskRewardsBalance', 0));
       setInterestEarningsBalance(getInitialState('interestEarningsBalance', 0));
@@ -208,6 +235,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       setInterestCounter(getInitialState('interestCounter', { isRunning: false, startTime: null }));
       setCompletedTasks(getInitialState('completedTasks', []));
       setWithdrawalAddressState(getInitialState('withdrawalAddress', null));
+      setActiveBoosters(getInitialState('activeBoosters', []));
     } else {
         setMainBalance(0);
         setTaskRewardsBalance(0);
@@ -220,6 +248,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setWithdrawalAddressState(null);
         setMonthlyWithdrawalsCount(0);
         setLastWithdrawalMonth(-1);
+        setActiveBoosters([]);
     }
     setIsLoading(false);
   }, [currentUser, setPersistentState, getInitialState]);
@@ -236,24 +265,18 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => setPersistentState('withdrawalAddress', withdrawalAddress), [withdrawalAddress, setPersistentState]);
   useEffect(() => setPersistentState('monthlyWithdrawalsCount', monthlyWithdrawalsCount), [monthlyWithdrawalsCount, setPersistentState]);
   useEffect(() => setPersistentState('lastWithdrawalMonth', lastWithdrawalMonth), [lastWithdrawalMonth, setPersistentState]);
+  useEffect(() => setPersistentState('activeBoosters', activeBoosters), [activeBoosters, setPersistentState]);
 
 
  const handleMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', amountToMove: number, fromAccount?: 'Task Rewards' | 'Interest Earnings') => {
     const numericAmount = fromAccount ? amountToMove : parseFloat(amount);
-
     if (isNaN(numericAmount) || numericAmount <= 0) {
-      toast({
-        variant: 'destructive',
-        title: 'Invalid Amount',
-        description: 'Please enter a valid positive number to move.',
-      });
+      toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid positive number to move.' });
       return;
     }
-
-    if (fromAccount) { // Moving from sub-account
+    if (fromAccount) {
         let sourceBalance;
         let setSourceBalance;
-
         if (fromAccount === 'Task Rewards') {
             sourceBalance = taskRewardsBalance;
             setSourceBalance = setTaskRewardsBalance;
@@ -261,14 +284,11 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             sourceBalance = interestEarningsBalance;
             setSourceBalance = setInterestEarningsBalance;
         }
-
         if (numericAmount > sourceBalance) {
           toast({ variant: "destructive", title: "Insufficient Funds", description: `Cannot move more than available in ${fromAccount}.` });
           return;
         }
-
         setSourceBalance(prev => prev - numericAmount);
-
         if (destination === 'Main Wallet') {
             setMainBalance(prev => prev + numericAmount);
         } else if (destination === 'Interest Earnings') {
@@ -276,30 +296,19 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         } else if (destination === 'Task Rewards') {
             setTaskRewardsBalance(prev => prev + numericAmount);
         }
-
         toast({ title: "Funds Moved", description: `${numericAmount.toFixed(2)} USDT has been moved from ${fromAccount} to ${destination}.` });
-    } else { // Moving from main wallet to sub-account
+    } else {
         if (numericAmount > mainBalance) {
-            toast({
-                variant: "destructive",
-                title: "Insufficient Funds",
-                description: "You cannot move more than your main balance.",
-            });
+            toast({ variant: "destructive", title: "Insufficient Funds", description: "You cannot move more than your main balance." });
             return;
         }
-
         setMainBalance(prev => prev - numericAmount);
-
         if (destination === "Task Rewards") {
             setTaskRewardsBalance(prev => prev + numericAmount);
         } else if (destination === "Interest Earnings") {
             setInterestEarningsBalance(prev => prev + numericAmount);
         }
-
-        toast({
-          title: "Funds Moved",
-          description: `${numericAmount.toFixed(2)} USDT has been moved from Main Wallet to ${destination}.`,
-        });
+        toast({ title: "Funds Moved", description: `${numericAmount.toFixed(2)} USDT has been moved from Main Wallet to ${destination}.` });
         setAmount("");
     }
   };
@@ -314,46 +323,25 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         }
         return newDeposits;
     });
-     toast({
-      title: "Recharge Approved",
-      description: `Your balance has been updated by ${rechargeAmount.toFixed(2)} USDT.`,
-    });
+     toast({ title: "Recharge Approved", description: `Your balance has been updated by ${rechargeAmount.toFixed(2)} USDT.` });
   };
-
-  const addRecharge = (rechargeAmount: number) => {
-  }
-
+  const addRecharge = (rechargeAmount: number) => {}
   const addCommissionToMainBalance = useCallback((commissionAmount: number) => {
     setMainBalance(prev => prev + commissionAmount);
-    toast({
-      title: "Commission Received!",
-      description: `Your daily team commission of $${commissionAmount.toFixed(2)} has been added to your main wallet.`,
-    });
+    toast({ title: "Commission Received!", description: `Your daily team commission of $${commissionAmount.toFixed(2)} has been added to your main wallet.` });
   }, [toast]);
-
-  const requestWithdrawal = (withdrawalAmount: number) => {
-    setMainBalance(prev => prev - withdrawalAmount);
-  }
-
+  const requestWithdrawal = (withdrawalAmount: number) => { setMainBalance(prev => prev - withdrawalAmount); }
   const approveWithdrawal = () => {
     setWithdrawals(prev => prev + 1);
     setMonthlyWithdrawalsCount(prev => prev + 1);
     const currentMonth = new Date().getMonth();
     setLastWithdrawalMonth(currentMonth);
   }
-
   const refundWithdrawal = (withdrawalAmount: number) => {
     setMainBalance(prev => prev + withdrawalAmount);
-    toast({
-        variant: "default",
-        title: "Withdrawal Refunded",
-        description: `Your withdrawal request was declined. ${withdrawalAmount.toFixed(2)} USDT has been returned to your main balance.`,
-    });
+    toast({ variant: "default", title: "Withdrawal Refunded", description: `Your withdrawal request was declined. ${withdrawalAmount.toFixed(2)} USDT has been returned to your main balance.` });
   }
-  
-  const getWalletData = useCallback(() => {
-    return { balance: mainBalance, level: currentLevel, deposits, withdrawals };
-  }, [mainBalance, currentLevel, deposits, withdrawals]);
+  const getWalletData = useCallback(() => { return { balance: mainBalance, level: currentLevel, deposits, withdrawals }; }, [mainBalance, currentLevel, deposits, withdrawals]);
 
   const startCounter = (type: CounterType) => {
       const now = Date.now();
@@ -365,7 +353,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
   const claimAndRestartCounter = (type: CounterType) => {
       const dailyRate = currentRate / 100 / 365;
-      
       if (type === 'interest') {
           const earnings = interestEarningsBalance * dailyRate;
           setInterestEarningsBalance(prev => prev + earnings);
@@ -376,38 +363,26 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
   const completeTask = (task: GenerateTaskSuggestionOutput) => {
       if (tasksCompletedToday >= dailyTaskQuota) {
-          toast({
-              variant: "destructive",
-              title: "Daily Limit Reached",
-              description: "You have already completed all your tasks for today.",
-          });
+          toast({ variant: "destructive", title: "Daily Limit Reached", description: "You have already completed all your tasks for today." });
           return;
       }
       
-      const earningPerTaskValue = earningPerTask || 0;
+      const taskEarningBoost = activeBoosters.find(b => b.type === 'TASK_EARNING')?.value || 0;
+      const baseEarning = earningPerTask || 0;
+      const finalEarning = baseEarning + (baseEarning * (taskEarningBoost / 100));
 
-      if (earningPerTaskValue > 0) {
-        setTaskRewardsBalance(prev => prev + earningPerTaskValue);
+      if (finalEarning > 0) {
+        setTaskRewardsBalance(prev => prev + finalEarning);
       }
       
-      const newCompletedTask: CompletedTask = {
-          id: `TASK-${Date.now()}`,
-          title: task.taskTitle,
-          description: task.taskDescription,
-          earnings: earningPerTaskValue,
-          completedAt: new Date().toISOString(),
-      };
+      const newCompletedTask: CompletedTask = { id: `TASK-${Date.now()}`, title: task.taskTitle, description: task.taskDescription, earnings: finalEarning, completedAt: new Date().toISOString() };
       setCompletedTasks(prev => [newCompletedTask, ...prev]);
       
       const newTasksCompleted = tasksCompletedToday + 1;
       setTasksCompletedToday(newTasksCompleted);
       setPersistentState('lastCompletionTime', new Date().getTime());
 
-
-      toast({
-          title: "Task Completed!",
-          description: `You've earned ${earningPerTaskValue.toFixed(4)} USDT.`,
-      });
+      toast({ title: "Task Completed!", description: `You've earned ${finalEarning.toFixed(4)} USDT.` });
   };
 
   const setWithdrawalAddress = (address: Omit<WithdrawalAddress, 'id'>) => {
@@ -421,6 +396,30 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     toast({ title: "Address Removed", description: "Your withdrawal address has been removed." });
   };
 
+  const purchaseBooster = (booster: Booster): boolean => {
+    if (mainBalance < booster.price) {
+        toast({ variant: 'destructive', title: 'Insufficient Funds', description: 'You do not have enough funds in your main wallet to purchase this booster.'});
+        return false;
+    }
+
+    setMainBalance(prev => prev - booster.price);
+
+    const newActiveBooster: ActiveBooster = {
+        boosterId: booster.id,
+        type: booster.type,
+        value: booster.value,
+        expiresAt: Date.now() + booster.duration * 60 * 60 * 1000,
+    };
+
+    setActiveBoosters(prev => [...prev, newActiveBooster]);
+    toast({ title: 'Booster Purchased!', description: `The "${booster.name}" booster is now active!`});
+    return true;
+  };
+  
+  const getReferralCommissionBoost = () => {
+      const boost = activeBoosters.find(b => b.type === 'REFERRAL_COMMISSION');
+      return boost ? boost.value : 0;
+  }
 
   return (
     <WalletContext.Provider
@@ -459,6 +458,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         withdrawalRestrictionDays,
         withdrawalRestrictionMessage,
         withdrawalRestrictedLevels,
+        purchaseBooster,
+        activeBoosters,
+        getReferralCommissionBoost,
       }}
     >
       {children}

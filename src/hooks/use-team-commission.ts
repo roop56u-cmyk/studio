@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 // This hook is responsible for calculating and crediting team commission daily.
 export function useTeamCommission() {
   const { teamData, commissionRates, commissionEnabled } = useTeam();
-  const { addCommissionToMainBalance } = useWallet();
+  const { addCommissionToMainBalance, getReferralCommissionBoost } = useWallet();
   const { currentUser } = useAuth();
 
   useEffect(() => {
@@ -36,10 +36,14 @@ export function useTeamCommission() {
         if (commissionEnabled.level2) totalCommission += teamData.level2.commission * (commissionRates.level2 / 100);
         if (commissionEnabled.level3) totalCommission += teamData.level3.commission * (commissionRates.level3 / 100);
 
-        if (totalCommission > 0) {
-            addCommissionToMainBalance(totalCommission);
+        const commissionBoostPercent = getReferralCommissionBoost();
+        const boostAmount = totalCommission * (commissionBoostPercent / 100);
+        const finalCommission = totalCommission + boostAmount;
+
+        if (finalCommission > 0) {
+            addCommissionToMainBalance(finalCommission);
             localStorage.setItem(lastCreditKey, new Date().toISOString());
         }
     }
-  }, [teamData, commissionRates, commissionEnabled, addCommissionToMainBalance, currentUser]);
+  }, [teamData, commissionRates, commissionEnabled, addCommissionToMainBalance, currentUser, getReferralCommissionBoost]);
 }
