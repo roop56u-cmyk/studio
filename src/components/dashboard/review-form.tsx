@@ -166,41 +166,41 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
         />
         
         <FormField
-        control={form.control}
-        name="option"
-        render={({ field }) => (
+          control={form.control}
+          name="option"
+          render={({ field }) => (
             <FormItem className="space-y-3">
-            <FormLabel>Select an Option</FormLabel>
-            {isGeneratingTask ? (
-                <div className="space-y-2">
-                    <Skeleton className="h-6 w-3/4" />
-                    <Skeleton className="h-6 w-1/2" />
-                    <Skeleton className="h-6 w-2/3" />
-                    <Skeleton className="h-6 w-3/5" />
-                </div>
-            ) : (
-            <FormControl>
+              <FormLabel>Select an Option</FormLabel>
+              <FormControl>
                 <RadioGroup
-                onValueChange={field.onChange}
-                value={field.value}
-                className="flex flex-col space-y-1"
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  className="flex flex-col space-y-1"
                 >
-                {task?.options?.map((option, index) => (
-                    <FormItem key={index} className="flex items-center space-x-3 space-y-0">
-                    <FormControl>
-                        <RadioGroupItem value={option} />
-                    </FormControl>
-                    <FormLabel className="font-normal">
-                        {option}
-                    </FormLabel>
-                    </FormItem>
-                ))}
+                  {isGeneratingTask ? (
+                     <div className="space-y-2 pt-2">
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-6 w-1/2" />
+                        <Skeleton className="h-6 w-2/3" />
+                        <Skeleton className="h-6 w-3/5" />
+                    </div>
+                  ) : (
+                    task?.options?.map((option, index) => (
+                      <FormItem key={index} className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value={option} />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          {option}
+                        </FormLabel>
+                      </FormItem>
+                    ))
+                  )}
                 </RadioGroup>
-            </FormControl>
-            )}
-            <FormMessage />
+              </FormControl>
+              <FormMessage />
             </FormItem>
-        )}
+          )}
         />
 
         <div className="flex items-center justify-between">
