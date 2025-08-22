@@ -360,6 +360,56 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
   );
 }
 
+const Star = ({ size, style }: { size: number, style: React.CSSProperties }) => (
+    <div style={{
+        position: 'absolute',
+        width: `${size}px`,
+        height: `${size}px`,
+        background: 'white',
+        borderRadius: '50%',
+        boxShadow: '0 0 6px 2px white',
+        ...style
+    }} />
+);
+
+const AnimatedDashboardBackground = () => {
+    const [stars, setStars] = React.useState<React.ReactNode[]>([]);
+
+    React.useEffect(() => {
+        const generatedStars = Array.from({ length: 50 }).map((_, i) => {
+            const size = Math.random() * 2 + 1;
+            const style: React.CSSProperties = {
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                animation: `twinkle ${Math.random() * 5 + 2}s linear infinite`,
+            };
+            return <Star key={i} size={size} style={style} />;
+        });
+        setStars(generatedStars);
+    }, []);
+
+    const theme = typeof window !== 'undefined' ? localStorage.getItem('landing_theme') : '';
+
+    if (theme !== 'cosmic-voyage') {
+        return null;
+    }
+
+    return (
+        <>
+            <style>{`
+                @keyframes twinkle {
+                    0% { opacity: 0; }
+                    50% { opacity: 1; }
+                    100% { opacity: 0; }
+                }
+            `}</style>
+            <div className="dashboard-background">
+                {stars}
+            </div>
+        </>
+    );
+}
+
 
 export default function DashboardLayout({
   children,
@@ -392,8 +442,9 @@ export default function DashboardLayout({
                 onReferralClick={() => setIsReferralOpen(true)}
             />
           </Sidebar>
-          <div className="flex flex-1 flex-col">
-          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+          <div className="flex flex-1 flex-col relative">
+           <AnimatedDashboardBackground />
+          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
               <SidebarTrigger className="md:hidden" />
               <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
               <div className="ml-auto flex-1 sm:flex-initial">
