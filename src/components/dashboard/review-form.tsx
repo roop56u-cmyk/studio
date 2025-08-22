@@ -24,6 +24,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "../ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useWallet } from "@/contexts/WalletContext";
+import { Label } from "@/components/ui/label";
+
 
 const reviewSchema = z.object({
   rating: z.number().min(1, "Please provide a rating.").max(5),
