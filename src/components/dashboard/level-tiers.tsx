@@ -113,43 +113,35 @@ export function LevelTiers({ currentBalance, onStartTasks, isTaskLocked }: Level
                             )}
                         >
                             <div className="flex-grow">
-                                <CardHeader>
-                                    <CardTitle className="flex items-center justify-between">
-                                        <span className="flex items-center gap-2">
+                                <CardHeader className="p-3">
+                                    <CardTitle className="flex items-center justify-between text-base">
+                                        <span className="flex items-center gap-1.5">
                                             Level {level.level}
-                                            {isUnlocked ? <CheckCircle className="h-5 w-5 text-green-500" /> : <Lock className="h-5 w-5 text-muted-foreground" />}
+                                            {isUnlocked ? <CheckCircle className="h-4 w-4 text-green-500" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
                                         </span>
                                     </CardTitle>
-                                    {isCurrentLevel && <CardDescription className="text-primary font-semibold">Current Level</CardDescription>}
-                                    {!isCurrentLevel && <CardDescription>Unlock new earning potentials.</CardDescription>}
+                                    <CardDescription>
+                                         {isCurrentLevel ? <span className="text-primary font-semibold">Current Level</span> : "Unlock new potentials"}
+                                    </CardDescription>
                                 </CardHeader>
-                                <CardContent className="flex-grow space-y-3">
-                                    <div className="flex items-center">
-                                        <DollarSign className="h-5 w-5 mr-3 text-muted-foreground" />
-                                        <div className="text-sm">
-                                            <p className="font-semibold">${level.minAmount.toLocaleString()}</p>
-                                            <p className="text-muted-foreground text-xs">Min. Amount</p>
-                                        </div>
+                                <CardContent className="flex-grow space-y-2 p-3">
+                                    <div className="flex items-center text-xs">
+                                        <DollarSign className="h-4 w-4 mr-2 text-muted-foreground" />
+                                        <p>Min. <strong className="font-semibold">${level.minAmount.toLocaleString()}</strong></p>
                                     </div>
-                                    <div className="flex items-center">
-                                        <CheckSquare className="h-5 w-5 mr-3 text-muted-foreground" />
-                                        <div className="text-sm">
-                                            <p className="font-semibold">{level.dailyTasks} Tasks / Day</p>
-                                            <p className="text-muted-foreground text-xs">Daily Quota</p>
-                                        </div>
+                                    <div className="flex items-center text-xs">
+                                        <CheckSquare className="h-4 w-4 mr-2 text-muted-foreground" />
+                                        <p><strong className="font-semibold">{level.dailyTasks}</strong> Tasks / Day</p>
                                     </div>
-                                    <div className="flex items-center">
-                                        <Percent className="h-5 w-5 mr-3 text-muted-foreground" />
-                                        <div className="text-sm">
-                                            <p className="font-semibold">{level.rate}%</p>
-                                            <p className="text-muted-foreground text-xs">Daily Rate</p>
-                                        </div>
+                                    <div className="flex items-center text-xs">
+                                        <Percent className="h-4 w-4 mr-2 text-muted-foreground" />
+                                        <p><strong className="font-semibold">{level.rate}%</strong> Daily Rate</p>
                                     </div>
                                 </CardContent>
                             </div>
                              {isCurrentLevel && (
-                                <CardFooter>
-                                    <Button onClick={onStartTasks} disabled={isTaskLocked} className="w-full">
+                                <CardFooter className="p-3">
+                                    <Button onClick={onStartTasks} disabled={isTaskLocked} className="w-full" size="sm">
                                         <PlayCircle className="mr-2 h-4 w-4" />
                                         {isTaskLocked ? "Tasks Locked" : "Start Tasks"}
                                     </Button>
