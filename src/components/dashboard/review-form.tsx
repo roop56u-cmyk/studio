@@ -29,7 +29,7 @@ import { Label } from "@/components/ui/label";
 
 const reviewSchema = z.object({
   rating: z.number().min(1, "Please provide a rating.").max(5),
-  // The 'option' field is handled manually now to prevent the flushSync error.
+  // The 'option' field is handled manually to prevent the flushSync error.
 });
 
 type ReviewFormValues = z.infer<typeof reviewSchema>;
