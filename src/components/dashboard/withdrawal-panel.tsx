@@ -107,14 +107,14 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
 
   const handleWithdraw = (e: React.FormEvent) => {
     e.preventDefault();
-    const isActiveUser = !!firstDepositDate;
     
-    if (isWithdrawalRestrictionEnabled && isActiveUser && withdrawalRestrictedLevels.includes(level)) {
-        const firstDepositTime = new Date(firstDepositDate!).getTime();
+    // Check if the user is under an active restriction
+    if (firstDepositDate && isWithdrawalRestrictionEnabled && withdrawalRestrictedLevels.includes(level)) {
+        const firstDepositTime = new Date(firstDepositDate).getTime();
         const restrictionEndTime = firstDepositTime + (withdrawalRestrictionDays * 24 * 60 * 60 * 1000);
         if (Date.now() < restrictionEndTime) {
             setIsRestrictionAlertOpen(true);
-            return;
+            return; // Stop the withdrawal process
         }
     }
     
@@ -279,3 +279,4 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
     </>
   );
 }
+

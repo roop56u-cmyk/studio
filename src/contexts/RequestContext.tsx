@@ -118,7 +118,7 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
     
     const newRequest: Request = {
         ...getWalletData(), // Gets balance, level, deposits, withdrawals
-        id: `REQ-${String(requests.length + 1).padStart(3, '0')}`,
+        id: `REQ-${Date.now()}`,
         date: new Date().toISOString().split('T')[0],
         status: 'Pending',
         user: currentUser.email,
@@ -182,7 +182,7 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
         
         const firstDepositDateKey = `${userEmail}_firstDepositDate`;
         if (!localStorage.getItem(firstDepositDateKey)) {
-             localStorage.setItem(firstDepositDateKey, JSON.stringify(new Date().toISOString()));
+             localStorage.setItem(firstDepositDateKey, new Date().toISOString());
         }
 
         handleReferralBonus(userEmail, amount);
