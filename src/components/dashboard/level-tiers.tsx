@@ -16,6 +16,16 @@ import { Button } from "../ui/button";
 
 export const levels = [
   {
+    level: 0,
+    minAmount: 0,
+    rate: 0,
+    referrals: null,
+    dailyTasks: 0,
+    monthlyWithdrawals: 0,
+    minWithdrawal: 0,
+    earningPerTask: 0,
+  },
+  {
     level: 1,
     minAmount: 100,
     rate: 1.8,
@@ -90,7 +100,7 @@ export function LevelTiers({ currentBalance, onStartTasks, isTaskLocked }: Level
             className="w-full"
         >
             <CarouselContent>
-            {levels.map((level) => {
+            {levels.filter(l => l.level > 0).map((level) => {
                 const isUnlocked = currentBalance >= level.minAmount;
                 const isCurrentLevel = level.level === currentLevel;
                 return (
@@ -127,6 +137,13 @@ export function LevelTiers({ currentBalance, onStartTasks, isTaskLocked }: Level
                                         <div className="text-sm">
                                             <p className="font-semibold">{level.dailyTasks} Tasks / Day</p>
                                             <p className="text-muted-foreground text-xs">Daily Task Quota</p>
+                                        </div>
+                                    </div>
+                                     <div className="flex items-center">
+                                        <DollarSign className="h-5 w-5 mr-3 text-muted-foreground" />
+                                        <div className="text-sm">
+                                            <p className="font-semibold">${level.earningPerTask.toFixed(4)} / Task</p>
+                                            <p className="text-muted-foreground text-xs">Earning Per Task</p>
                                         </div>
                                     </div>
                                     {level.referrals !== null && (

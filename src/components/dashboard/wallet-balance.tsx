@@ -80,14 +80,14 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
     <Card>
       <CardHeader>
         <div className="flex flex-row items-center justify-between space-y-0 pb-1">
-          <CardTitle className="text-xs font-medium">
+          <CardTitle className="text-sm font-medium">
             {title}
           </CardTitle>
-          <Wallet2 className="h-3 w-3 text-muted-foreground" />
+          <Wallet2 className="h-4 w-4 text-muted-foreground" />
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="text-sm font-bold">{balance}</div>
+        <div className="text-2xl font-bold">${balance}</div>
         <p className="text-xs text-muted-foreground leading-tight">
           {description}
         </p>
@@ -133,5 +133,3 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
     </Card>
   );
 }
-
-    

@@ -1,14 +1,22 @@
 
 "use client";
 
-import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import type { User } from './AuthContext';
+import { levels as defaultLevels } from '@/components/dashboard/level-tiers';
+import { useWallet } from './WalletContext';
+
+type TeamMember = User & {
+    level: number;
+};
 
 type TeamLevelData = {
     count: number;
     commission: number;
-    members: User[];
+    members: TeamMember[];
+    totalDeposits: number;
+    activationsToday: number;
 };
 
 type TeamData = {
@@ -20,13 +28,11 @@ type TeamData = {
 interface TeamContextType {
   teamData: TeamData | null;
   commissionRates: { level1: number; level2: number; level3: number; };
+  commissionEnabled: { level1: boolean; level2: boolean; level3: boolean; };
   isLoading: boolean;
+  totalTeamBusiness: number;
+  totalActivationsToday: number;
 }
-
-// Mock commission rates, can be moved to admin settings later
-const MOCK_COMMISSION_RATES = { level1: 10, level2: 5, level3: 2 };
-// Mock earnings per user, in a real app this would come from a database
-const MOCK_USER_EARNINGS = 5.25;
 
 
 const TeamContext = createContext<TeamContextType | undefined>(undefined);
@@ -35,45 +41,116 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const { currentUser, users } = useAuth();
     const [teamData, setTeamData] = useState<TeamData | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    
+    // Default commission rates, will be overridden by localStorage
+    const [commissionRates, setCommissionRates] = useState({ level1: 10, level2: 5, level3: 2 });
+    const [commissionEnabled, setCommissionEnabled] = useState({ level1: true, level2: true, level3: true });
+
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const savedRates = localStorage.getItem('team_commission_rates');
+            if (savedRates) setCommissionRates(JSON.parse(savedRates));
+
+            const savedEnabled = localStorage.getItem('team_commission_enabled');
+            if (savedEnabled) setCommissionEnabled(JSON.parse(savedEnabled));
+        }
+    }, []);
+
+    const getLevelForUser = useCallback((userEmail: string): number => {
+        const taskBalanceKey = `${userEmail}_taskRewardsBalance`;
+        const interestBalanceKey = `${userEmail}_interestEarningsBalance`;
+        
+        if (typeof window === 'undefined') return 0;
+
+        const taskBalance = parseFloat(localStorage.getItem(taskBalanceKey) || '0');
+        const interestBalance = parseFloat(localStorage.getItem(interestBalanceKey) || '0');
+        const committedBalance = taskBalance + interestBalance;
+        
+        return defaultLevels.slice().reverse().find(l => committedBalance >= l.minAmount)?.level ?? 0;
+    }, []);
+    
+    const getDepositsForUser = useCallback((userEmail: string): number => {
+        if (typeof window === 'undefined') return 0;
+        const mainBalance = parseFloat(localStorage.getItem(`${userEmail}_mainBalance`) || '0');
+        const taskBalance = parseFloat(localStorage.getItem(`${userEmail}_taskRewardsBalance`) || '0');
+        const interestBalance = parseFloat(localStorage.getItem(`${userEmail}_interestEarningsBalance`) || '0');
+        return mainBalance + taskBalance + interestBalance;
+    }, []);
+
+    const getIsNewToday = useCallback((userEmail: string): boolean => {
+         if (typeof window === 'undefined') return false;
+         const firstDepositDateStr = localStorage.getItem(`${userEmail}_firstDepositDate`);
+         if (!firstDepositDateStr) return false;
+
+         const firstDepositDate = new Date(firstDepositDateStr);
+         const today = new Date();
+
+         return firstDepositDate.getFullYear() === today.getFullYear() &&
+                firstDepositDate.getMonth() === today.getMonth() &&
+                firstDepositDate.getDate() === today.getDate();
+    }, []);
+
+    const calculateTeamData = useCallback((user: User, allUsers: User[]): TeamData => {
+        const calculateLayer = (members: User[]): TeamLevelData => {
+            const enrichedMembers: TeamMember[] = members.map(m => ({ ...m, level: getLevelForUser(m.email) }));
+            const totalDeposits = enrichedMembers.reduce((sum, m) => sum + getDepositsForUser(m.email), 0);
+            const dailyTaskEarnings = enrichedMembers.reduce((sum, m) => {
+                 const levelData = defaultLevels.find(l => l.level === m.level);
+                 return sum + (levelData ? levelData.earningPerTask * levelData.dailyTasks : 0);
+            }, 0);
+
+            const activationsToday = members.filter(m => getIsNewToday(m.email)).length;
+            
+            return {
+                count: members.length,
+                commission: dailyTaskEarnings,
+                members: enrichedMembers,
+                totalDeposits,
+                activationsToday
+            };
+        };
+
+        const level1Members = allUsers.filter(u => u.referredBy === user.referralCode);
+        const level2Members = level1Members.flatMap(l1User => allUsers.filter(u => u.referredBy === l1User.referralCode));
+        const level3Members = level2Members.flatMap(l2User => allUsers.filter(u => u.referredBy === l2User.referralCode));
+        
+        const level1 = calculateLayer(level1Members);
+        const level2 = calculateLayer(level2Members);
+        const level3 = calculateLayer(level3Members);
+
+        return { level1, level2, level3 };
+
+    }, [getLevelForUser, getDepositsForUser, getIsNewToday]);
+
 
     useEffect(() => {
         if (currentUser && users.length > 1) {
             setIsLoading(true);
-
-            const calculateTeam = (currentUser: User, allUsers: User[]): TeamData => {
-                const level1: User[] = allUsers.filter(u => u.referredBy === currentUser.referralCode);
-                const level2: User[] = level1.flatMap(l1User => allUsers.filter(u => u.referredBy === l1User.referralCode));
-                const level3: User[] = level2.flatMap(l2User => allUsers.filter(u => u.referredBy === l2User.referralCode));
-
-                return {
-                    level1: {
-                        count: level1.length,
-                        commission: level1.length * MOCK_USER_EARNINGS * (MOCK_COMMISSION_RATES.level1 / 100),
-                        members: level1,
-                    },
-                    level2: {
-                        count: level2.length,
-                        commission: level2.length * MOCK_USER_EARNINGS * (MOCK_COMMISSION_RATES.level2 / 100),
-                        members: level2,
-                    },
-                    level3: {
-                        count: level3.length,
-                        commission: level3.length * MOCK_USER_EARNINGS * (MOCK_COMMISSION_RATES.level3 / 100),
-                        members: level3,
-                    },
-                };
-            };
-            
-            const data = calculateTeam(currentUser, users);
+            const data = calculateTeamData(currentUser, users);
             setTeamData(data);
             setIsLoading(false);
         }
-    }, [currentUser, users]);
+    }, [currentUser, users, calculateTeamData]);
 
+
+    const totalTeamBusiness = useMemo(() => {
+        if (!teamData) return 0;
+        return teamData.level1.totalDeposits + teamData.level2.totalDeposits + teamData.level3.totalDeposits;
+    }, [teamData]);
+
+    const totalActivationsToday = useMemo(() => {
+        if (!teamData) return 0;
+        return teamData.level1.activationsToday + teamData.level2.activationsToday + teamData.level3.activationsToday;
+    }, [teamData]);
+    
     const value = {
         teamData,
-        commissionRates: MOCK_COMMISSION_RATES,
-        isLoading
+        commissionRates,
+        commissionEnabled,
+        isLoading,
+        totalTeamBusiness,
+        totalActivationsToday
     };
 
     return (

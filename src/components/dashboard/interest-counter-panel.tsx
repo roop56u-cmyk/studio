@@ -64,7 +64,7 @@ export function InterestCounterPanel({
     return () => clearInterval(intervalId);
   }, [isRunning, startTime]);
 
-  const dailyRate = currentRate / 100 / 365;
+  const dailyRate = currentRate / 100; // This is now a daily rate
   const dailyEarningPotential = balance * dailyRate;
   
   const accruedInterest = (() => {
@@ -119,7 +119,7 @@ export function InterestCounterPanel({
           <CardTitle className="text-xs font-medium">{title}</CardTitle>
           <Percent className="h-3 w-3 text-muted-foreground" />
         </div>
-        <CardDescription className="text-xs">Current APY: {currentRate.toFixed(2)}%</CardDescription>
+        <CardDescription className="text-xs">Current Daily Rate: {currentRate.toFixed(2)}%</CardDescription>
       </CardHeader>
       <CardContent className="space-y-2 pt-0">
         <div className="text-center bg-muted p-1 rounded-md">

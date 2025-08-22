@@ -43,6 +43,7 @@ interface WalletContextType {
   setAmount: (amount: string) => void;
   handleMoveFunds: (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', amountToMove: number, fromAccount?: 'Task Rewards' | 'Interest Earnings') => void;
   addRecharge: (amount: number) => void;
+  addCommissionToMainBalance: (commissionAmount: number) => void;
   getWalletData: () => {
     balance: number;
     level: number;
@@ -332,6 +333,14 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const addRecharge = (rechargeAmount: number) => {
   }
 
+  const addCommissionToMainBalance = useCallback((commissionAmount: number) => {
+    setMainBalance(prev => prev + commissionAmount);
+    toast({
+      title: "Commission Received!",
+      description: `Your daily team commission of $${commissionAmount.toFixed(2)} has been added to your main wallet.`,
+    });
+  }, [toast]);
+
   const requestWithdrawal = (withdrawalAmount: number) => {
     setMainBalance(prev => prev - withdrawalAmount);
   }
@@ -370,6 +379,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       if (type === 'interest') {
           const earnings = interestEarningsBalance * dailyRate;
           setInterestEarned(prev => prev + earnings);
+          setInterestEarningsBalance(prev => prev + earnings); // Add earnings to the balance
           setInterestCounter({ isRunning: true, startTime: Date.now() });
           toast({ title: "Daily Interest Claimed!", description: `You earned ${earnings.toFixed(4)} USDT. A new cycle has started.`});
       }
@@ -390,6 +400,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
       if (earningPerTaskValue > 0) {
         setTaskRewardsEarned(prev => prev + earningPerTaskValue);
+        setTaskRewardsBalance(prev => prev + earningPerTaskValue); // Add earnings to the balance
       }
       
       const newCompletedTask: CompletedTask = {
@@ -445,6 +456,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setAmount,
         handleMoveFunds,
         addRecharge,
+        addCommissionToMainBalance,
         getWalletData,
         requestWithdrawal,
         approveRecharge,

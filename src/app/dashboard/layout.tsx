@@ -57,7 +57,8 @@ import {
   Settings2,
   Activity,
   Megaphone,
-  ListChecks
+  ListChecks,
+  Percent
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -66,6 +67,7 @@ import { useWallet } from "@/contexts/WalletContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { RechargeDialog } from "@/components/dashboard/recharge-dialog";
 import { WithdrawalDialog } from "@/components/dashboard/withdrawal-dialog";
+import { useTeamCommission } from "@/hooks/use-team-commission";
 
 
 function SidebarContentComponent({ onRechargeClick, onWithdrawalClick }: { onRechargeClick: () => void, onWithdrawalClick: () => void }) {
@@ -129,6 +131,14 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick }: { onRec
                         <Link href="/dashboard/admin/levels">
                             <SlidersHorizontal />
                             <span>Manage Levels</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/admin/team-commission")} tooltip={{ children: "Team Commission" }}>
+                        <Link href="/dashboard/admin/team-commission">
+                            <Percent />
+                            <span>Team Commission</span>
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -302,6 +312,8 @@ export default function DashboardLayout({
     const [isClient, setIsClient] = React.useState(false);
     const [isRechargeOpen, setIsRechargeOpen] = React.useState(false);
     const [isWithdrawalOpen, setIsWithdrawalOpen] = React.useState(false);
+
+    useTeamCommission();
 
     React.useEffect(() => {
         setIsClient(true);
