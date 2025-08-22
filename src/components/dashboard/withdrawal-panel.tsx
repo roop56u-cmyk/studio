@@ -66,6 +66,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
   } = useWallet();
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
   const [isRestrictionAlertOpen, setIsRestrictionAlertOpen] = useState(false);
+  const [isNoDepositAlertOpen, setIsNoDepositAlertOpen] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
 
   const { level } = getWalletData();
@@ -107,14 +108,21 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
 
   const handleWithdraw = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const restrictionIsEnabledForLevel = isWithdrawalRestrictionEnabled && withdrawalRestrictedLevels.includes(level);
     
-    // Check if the user is under an active restriction
-    if (firstDepositDate && isWithdrawalRestrictionEnabled && withdrawalRestrictedLevels.includes(level)) {
+    if (restrictionIsEnabledForLevel) {
+        if (!firstDepositDate) {
+            setIsNoDepositAlertOpen(true);
+            return; 
+        }
+
         const firstDepositTime = new Date(firstDepositDate).getTime();
         const restrictionEndTime = firstDepositTime + (withdrawalRestrictionDays * 24 * 60 * 60 * 1000);
+        
         if (Date.now() < restrictionEndTime) {
             setIsRestrictionAlertOpen(true);
-            return; // Stop the withdrawal process
+            return;
         }
     }
     
@@ -276,7 +284,21 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
               </AlertDialogFooter>
           </AlertDialogContent>
       </AlertDialog>
+      <AlertDialog open={isNoDepositAlertOpen} onOpenChange={setIsNoDepositAlertOpen}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>Withdrawal Restricted</AlertDialogTitle>
+                  <AlertDialogDescription>
+                      Withdrawals are currently restricted. Please make your first deposit to start the waiting period.
+                  </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogAction onClick={() => setIsNoDepositAlertOpen(false)}>OK</AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
+
 
