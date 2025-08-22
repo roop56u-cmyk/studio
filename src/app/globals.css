@@ -86,3 +86,24 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .speech-bubble {
+    position: relative;
+    border: 2px solid hsl(var(--border));
+  }
+  .speech-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    right: 20px;
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 12px solid hsl(var(--border));
+  }
+  .speech-bubble.is-current::after {
+     border-top-color: hsl(var(--primary));
+  }
+}
