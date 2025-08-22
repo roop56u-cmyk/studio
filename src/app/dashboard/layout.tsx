@@ -68,7 +68,8 @@ import {
   Percent,
   Palette,
   LayoutGrid,
-  History
+  History,
+  ClipboardList
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -79,9 +80,10 @@ import { RechargeDialog } from "@/components/dashboard/recharge-dialog";
 import { WithdrawalDialog } from "@/components/dashboard/withdrawal-dialog";
 import { useTeamCommission } from "@/hooks/use-team-commission";
 import { TransactionHistoryPanel } from "@/components/dashboard/transaction-history-panel";
+import { TaskHistoryPanel } from "@/components/dashboard/task-history-panel";
 
 
-function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransactionHistoryClick }: { onRechargeClick: () => void, onWithdrawalClick: () => void, onTransactionHistoryClick: () => void }) {
+function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransactionHistoryClick, onTaskHistoryClick }: { onRechargeClick: () => void, onWithdrawalClick: () => void, onTransactionHistoryClick: () => void, onTaskHistoryClick: () => void }) {
   const pathname = usePathname();
   const { logout, currentUser } = useAuth();
   const { 
@@ -331,6 +333,15 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
                         <span>Transaction History</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton
+                        onClick={onTaskHistoryClick}
+                        tooltip={{ children: "Task History" }}
+                    >
+                        <ClipboardList />
+                        <span>Task History</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
             </>
         )}
       </SidebarMenu>
@@ -349,6 +360,7 @@ export default function DashboardLayout({
     const [isRechargeOpen, setIsRechargeOpen] = React.useState(false);
     const [isWithdrawalOpen, setIsWithdrawalOpen] = React.useState(false);
     const [isHistoryOpen, setIsHistoryOpen] = React.useState(false);
+    const [isTaskHistoryOpen, setIsTaskHistoryOpen] = React.useState(false);
 
     useTeamCommission();
 
@@ -364,6 +376,7 @@ export default function DashboardLayout({
                 onRechargeClick={() => setIsRechargeOpen(true)}
                 onWithdrawalClick={() => setIsWithdrawalOpen(true)}
                 onTransactionHistoryClick={() => setIsHistoryOpen(true)}
+                onTaskHistoryClick={() => setIsTaskHistoryOpen(true)}
             />
           </Sidebar>
           <div className="flex flex-1 flex-col">
@@ -427,6 +440,19 @@ export default function DashboardLayout({
                 </div>
             </SheetContent>
         </Sheet>
+        <Sheet open={isTaskHistoryOpen} onOpenChange={setIsTaskHistoryOpen}>
+            <SheetContent className="w-full sm:max-w-lg">
+                <SheetHeader>
+                    <SheetTitle>Task History</SheetTitle>
+                    <SheetDescription>
+                        A log of your recently completed tasks.
+                    </SheetDescription>
+                </SheetHeader>
+                <div className="mt-4">
+                    <TaskHistoryPanel />
+                </div>
+            </SheetContent>
+        </Sheet>
       </SidebarProvider>
   );
 }
@@ -436,3 +462,4 @@ export default function DashboardLayout({
     
 
     
+

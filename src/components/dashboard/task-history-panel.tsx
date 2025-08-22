@@ -23,14 +23,11 @@ export function TaskHistoryPanel() {
   const { completedTasks } = useWallet();
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Task History</CardTitle>
-        <CardDescription>
-          A log of your recently completed tasks.
-        </CardDescription>
+    <Card className="shadow-none border-none">
+      <CardHeader className="px-1">
+        <CardTitle>Tasks</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-0">
         <Table>
           <TableHeader>
             <TableRow>
