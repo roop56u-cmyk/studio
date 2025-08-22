@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { levels } from "@/components/dashboard/level-tiers";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export default function SystemSettingsPage() {
     const { toast } = useToast();
@@ -28,6 +29,7 @@ export default function SystemSettingsPage() {
     const [withdrawalRestrictionDays, setWithdrawalRestrictionDays] = useState("45");
     const [withdrawalRestrictionMessage, setWithdrawalRestrictionMessage] = useState("Please wait for 45 days to initiate withdrawal request.");
     const [restrictedLevels, setRestrictedLevels] = useState<number[]>([1]); // Default to level 1
+    const [selectedTheme, setSelectedTheme] = useState("abstract-tech");
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
@@ -51,6 +53,9 @@ export default function SystemSettingsPage() {
 
         const savedRestrictedLevels = localStorage.getItem('system_withdrawal_restricted_levels');
         if (savedRestrictedLevels) setRestrictedLevels(JSON.parse(savedRestrictedLevels));
+
+        const savedTheme = localStorage.getItem('landing_theme');
+        if (savedTheme) setSelectedTheme(savedTheme);
         
         setIsClient(true);
     }, []);
@@ -64,6 +69,7 @@ export default function SystemSettingsPage() {
         localStorage.setItem('system_referral_bonus', referralBonus);
         localStorage.setItem('system_min_deposit_for_bonus', minDepositForBonus);
         localStorage.setItem('system_withdrawal_restricted_levels', JSON.stringify(restrictedLevels));
+        localStorage.setItem('landing_theme', selectedTheme);
         
         toast({
             title: "Settings Saved",
@@ -89,6 +95,38 @@ export default function SystemSettingsPage() {
           Manage global application settings and features.
         </p>
       </div>
+
+       <Card>
+        <CardHeader>
+          <CardTitle>Appearance Settings</CardTitle>
+          <CardDescription>
+            Customize the look and feel of the public-facing landing page.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>3D Welcome Animation Theme</Label>
+            <RadioGroup value={selectedTheme} onValueChange={setSelectedTheme}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="abstract-tech" id="abstract-tech" />
+                <Label htmlFor="abstract-tech" className="font-normal">Abstract Tech</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="cosmic-voyage" id="cosmic-voyage" />
+                <Label htmlFor="cosmic-voyage" className="font-normal">Cosmic Voyage</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="digital-matrix" id="digital-matrix" />
+                <Label htmlFor="digital-matrix" className="font-normal">Digital Matrix</Label>
+              </div>
+               <div className="flex items-center space-x-2">
+                <RadioGroupItem value="organic-growth" id="organic-growth" />
+                <Label htmlFor="organic-growth" className="font-normal">Organic Growth</Label>
+              </div>
+            </RadioGroup>
+          </div>
+        </CardContent>
+      </Card>
 
        <Card>
         <CardHeader>
