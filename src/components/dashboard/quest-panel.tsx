@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Check, CheckCircle, Gift } from "lucide-react";
 import type { Quest } from "@/app/dashboard/admin/quests/page";
-import { useWallet } from "../contexts/WalletContext";
+import { useWallet } from "@/contexts/WalletContext";
 import { ScrollArea } from "../ui/scroll-area";
 
 export function QuestPanel() {
