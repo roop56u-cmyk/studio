@@ -8,12 +8,12 @@ import { useAuth } from './AuthContext';
 import { GenerateTaskSuggestionOutput } from '@/ai/flows/generate-task-suggestions';
 
 const levels = [
-  { level: 0, minAmount: 0, rate: 0, referrals: null, dailyTasks: 0, monthlyWithdrawals: 0 },
-  { level: 1, minAmount: 100, rate: 1.8, referrals: null, dailyTasks: 15, monthlyWithdrawals: 1 },
-  { level: 2, minAmount: 500, rate: 2.8, referrals: 8, dailyTasks: 25, monthlyWithdrawals: 1 },
-  { level: 3, minAmount: 2000, rate: 3.8, referrals: 16, dailyTasks: 35, monthlyWithdrawals: 1 },
-  { level: 4, minAmount: 6000, rate: 4.8, referrals: 36, dailyTasks: 45, monthlyWithdrawals: 1 },
-  { level: 5, minAmount: 20000, rate: 5.8, referrals: 55, dailyTasks: 55, monthlyWithdrawals: 2 },
+  { level: 0, minAmount: 0, rate: 0, referrals: null, dailyTasks: 0, monthlyWithdrawals: 0, minWithdrawal: 0 },
+  { level: 1, minAmount: 100, rate: 1.8, referrals: null, dailyTasks: 15, monthlyWithdrawals: 1, minWithdrawal: 150 },
+  { level: 2, minAmount: 500, rate: 2.8, referrals: 8, dailyTasks: 25, monthlyWithdrawals: 1, minWithdrawal: 500 },
+  { level: 3, minAmount: 2000, rate: 3.8, referrals: 16, dailyTasks: 35, monthlyWithdrawals: 1, minWithdrawal: 1500 },
+  { level: 4, minAmount: 6000, rate: 4.8, referrals: 36, dailyTasks: 45, monthlyWithdrawals: 1, minWithdrawal: 2500 },
+  { level: 5, minAmount: 20000, rate: 5.8, referrals: 55, dailyTasks: 55, monthlyWithdrawals: 2, minWithdrawal: 3500 },
 ];
 
 export type CompletedTask = {
@@ -42,6 +42,7 @@ interface WalletContextType {
   currentRate: number;
   dailyTaskQuota: number;
   monthlyWithdrawalLimit: number;
+  minWithdrawalAmount: number;
   monthlyWithdrawalsCount: number;
   tasksCompletedToday: number;
   completedTasks: CompletedTask[];
@@ -72,7 +73,6 @@ interface WalletContextType {
   withdrawalRestrictionDays: number;
   withdrawalRestrictionMessage: string;
   withdrawalRestrictedLevels: number[];
-  getInitialState: (key: string, defaultValue: any) => any;
 }
 
 export type CounterType = 'task' | 'interest';
@@ -151,7 +151,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
   const committedBalance = taskRewardsBalance + interestEarningsBalance;
   const currentLevelData = levels.slice().reverse().find(level => committedBalance >= level.minAmount) ?? levels[0];
-  const { level: currentLevel, rate: currentRate, dailyTasks: dailyTaskQuota, monthlyWithdrawals: monthlyWithdrawalLimit } = currentLevelData;
+  const { level: currentLevel, rate: currentRate, dailyTasks: dailyTaskQuota, monthlyWithdrawals: monthlyWithdrawalLimit, minWithdrawal: minWithdrawalAmount } = currentLevelData;
 
 
   const setPersistentState = useCallback((key: string, value: any) => {
@@ -435,6 +435,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         currentRate,
         dailyTaskQuota,
         monthlyWithdrawalLimit,
+        minWithdrawalAmount,
         monthlyWithdrawalsCount,
         tasksCompletedToday,
         completedTasks,
@@ -460,7 +461,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         withdrawalRestrictionDays,
         withdrawalRestrictionMessage,
         withdrawalRestrictedLevels,
-        getInitialState,
       }}
     >
       {children}

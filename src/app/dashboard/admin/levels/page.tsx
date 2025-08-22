@@ -50,6 +50,7 @@ export default function ManageLevelsPage() {
             referrals: 0,
             dailyTasks: 0,
             monthlyWithdrawals: 1,
+            minWithdrawal: 0,
         }]);
          toast({ title: "New Level Added", description: "Don't forget to configure and save it." });
     };
@@ -108,7 +109,7 @@ export default function ManageLevelsPage() {
                             </div>
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor={`minAmount-${index}`}>Min Amount (USDT)</Label>
                             <Input id={`minAmount-${index}`} type="number" value={level.minAmount} onChange={(e) => handleInputChange(index, 'minAmount', Number(e.target.value))} />
@@ -128,6 +129,10 @@ export default function ManageLevelsPage() {
                         <div className="space-y-2">
                             <Label htmlFor={`monthlyWithdrawals-${index}`}>Monthly Withdrawals</Label>
                             <Input id={`monthlyWithdrawals-${index}`} type="number" value={level.monthlyWithdrawals} onChange={(e) => handleInputChange(index, 'monthlyWithdrawals', Number(e.target.value))} />
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor={`minWithdrawal-${index}`}>Min Withdrawal (USDT)</Label>
+                            <Input id={`minWithdrawal-${index}`} type="number" value={level.minWithdrawal} onChange={(e) => handleInputChange(index, 'minWithdrawal', Number(e.target.value))} />
                         </div>
                     </CardContent>
                 </Card>

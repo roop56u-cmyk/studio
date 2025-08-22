@@ -47,28 +47,19 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
       withdrawalAddress, 
       clearWithdrawalAddress,
       currentLevel,
+      minWithdrawalAmount,
       monthlyWithdrawalLimit,
       monthlyWithdrawalsCount,
       isWithdrawalRestrictionEnabled,
       withdrawalRestrictionDays,
       withdrawalRestrictionMessage,
-      getInitialState
   } = useWallet();
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
   const [isRestrictionAlertOpen, setIsRestrictionAlertOpen] = useState(false);
   const [isPendingAlertOpen, setIsPendingAlertOpen] = useState(false);
   const [isLimitAlertOpen, setIsLimitAlertOpen] = useState(false);
-
-  
+  const [isMinAmountAlertOpen, setIsMinAmountAlertOpen] = useState(false);
   const [restrictionStartDate, setRestrictionStartDate] = useState<string | null>(null);
-
-  useEffect(() => {
-    const storedStartDate = getInitialState('restrictionStartDate', null);
-    if(storedStartDate) {
-      setRestrictionStartDate(storedStartDate);
-    }
-  }, [getInitialState]);
-
 
   const numericAmount = parseFloat(amount) || 0;
 
@@ -89,14 +80,12 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
   const handleWithdraw = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check 0: Does the user already have a pending withdrawal?
     const hasPendingWithdrawal = userRequests.some(req => req.type === 'Withdrawal' && req.status === 'Pending');
     if (hasPendingWithdrawal) {
         setIsPendingAlertOpen(true);
         return;
     }
 
-    // Check 1: Has the user reached their monthly withdrawal limit?
     if (monthlyWithdrawalsCount >= monthlyWithdrawalLimit) {
         setIsLimitAlertOpen(true);
         return;
@@ -106,6 +95,12 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
         toast({ variant: "destructive", title: "Invalid Amount", description: "Please enter a valid amount to withdraw." });
         return;
     }
+
+    if (numericAmount < minWithdrawalAmount) {
+      setIsMinAmountAlertOpen(true);
+      return;
+    }
+
      if (!withdrawalAddress) {
         toast({ variant: "destructive", title: "No Address Set", description: "Please set a withdrawal address before withdrawing." });
         return;
@@ -118,16 +113,14 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
     const userIsEligibleForRestriction = mainBalance > 0 || currentLevel >= 1;
 
     if (isWithdrawalRestrictionEnabled && userIsEligibleForRestriction) {
-        let startDate = restrictionStartDate;
+        const key = `${currentUser?.email}_restrictionStartDate`;
+        let startDate = localStorage.getItem(key);
         if (!startDate) {
             startDate = new Date().toISOString();
-            const currentUserEmail = localStorage.getItem('currentUser');
-            if(currentUserEmail) {
-                localStorage.setItem(`${JSON.parse(currentUserEmail).email}_restrictionStartDate`, JSON.stringify(startDate));
-            }
-            setRestrictionStartDate(startDate);
+            localStorage.setItem(key, startDate);
         }
-        
+        setRestrictionStartDate(startDate);
+
         const restrictionEndTime = new Date(startDate).getTime() + (withdrawalRestrictionDays * 24 * 60 * 60 * 1000);
         
         if (Date.now() < restrictionEndTime) {
@@ -141,6 +134,8 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
     toast({ title: "Withdrawal Request Submitted", description: `Your request to withdraw ${numericAmount.toFixed(2)} USDT is pending approval.` });
     setAmount("");
   };
+
+  const currentUser = { email: localStorage.getItem('currentUser') ? JSON.parse(localStorage.getItem('currentUser')!).email : null };
 
 
   return (
@@ -212,6 +207,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 />
+                 <p className="text-xs text-muted-foreground">Minimum withdrawal: ${minWithdrawalAmount.toFixed(2)}</p>
             </div>
             <div className="rounded-md border p-4 space-y-2 text-sm">
                 <div className="flex justify-between">
@@ -246,10 +242,10 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
             <AlertDialogHeader>
                 <AlertDialogTitle>Withdrawal Restricted</AlertDialogTitle>
                 <AlertDialogDescription>
-                    {withdrawalRestrictionMessage}
+                   {withdrawalRestrictionMessage}
                 </AlertDialogDescription>
             </AlertDialogHeader>
-            {restrictionStartDate && (
+             {restrictionStartDate && (
                 <WithdrawalTimer 
                     waitDays={withdrawalRestrictionDays} 
                     startDate={restrictionStartDate}
@@ -285,6 +281,20 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogAction onClick={() => setIsLimitAlertOpen(false)}>OK</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isMinAmountAlertOpen} onOpenChange={setIsMinAmountAlertOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Minimum Withdrawal Amount</AlertDialogTitle>
+                <AlertDialogDescription>
+                    The minimum withdrawal amount for Level {currentLevel} is ${minWithdrawalAmount.toFixed(2)}. Please enter a higher amount.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogAction onClick={() => setIsMinAmountAlertOpen(false)}>OK</AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

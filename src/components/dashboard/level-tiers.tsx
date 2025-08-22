@@ -22,6 +22,7 @@ export const levels = [
     referrals: null,
     dailyTasks: 15,
     monthlyWithdrawals: 1,
+    minWithdrawal: 150,
   },
   {
     level: 2,
@@ -30,6 +31,7 @@ export const levels = [
     referrals: 8,
     dailyTasks: 25,
     monthlyWithdrawals: 1,
+    minWithdrawal: 500,
   },
   {
     level: 3,
@@ -38,6 +40,7 @@ export const levels = [
     referrals: 16,
     dailyTasks: 35,
     monthlyWithdrawals: 1,
+    minWithdrawal: 1500,
   },
   {
     level: 4,
@@ -46,6 +49,7 @@ export const levels = [
     referrals: 36,
     dailyTasks: 45,
     monthlyWithdrawals: 1,
+    minWithdrawal: 2500,
   },
   {
     level: 5,
@@ -54,6 +58,7 @@ export const levels = [
     referrals: 55,
     dailyTasks: 55,
     monthlyWithdrawals: 2,
+    minWithdrawal: 3500,
   },
 ];
 
