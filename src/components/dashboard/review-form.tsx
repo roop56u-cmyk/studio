@@ -187,12 +187,12 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
                   ) : (
                     task?.options?.map((option, index) => (
                       <FormItem key={index} className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value={option} />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          {option}
-                        </FormLabel>
+                          <FormControl>
+                            <RadioGroupItem value={option} id={`${field.name}-${index}`} />
+                          </FormControl>
+                          <Label htmlFor={`${field.name}-${index}`} className="font-normal">
+                              {option}
+                          </Label>
                       </FormItem>
                     ))
                   )}
