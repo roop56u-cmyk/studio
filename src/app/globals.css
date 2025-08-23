@@ -120,4 +120,12 @@ body {
   .speech-bubble.is-current::after {
      border-top-color: hsl(var(--primary));
   }
+
+  .review-option-chip {
+      @apply inline-block cursor-pointer select-none rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary/80 transition-colors hover:bg-primary/20;
+  }
+
+  .review-option-chip[data-state='checked'] {
+      @apply bg-primary text-primary-foreground;
+  }
 }

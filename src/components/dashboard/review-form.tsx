@@ -14,54 +14,50 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { StarRating } from "@/components/dashboard/star-rating";
 import { submitReview } from "@/app/actions";
 import { generateTaskSuggestion } from "@/app/actions";
 import type { Task as GenerateTaskSuggestionOutput } from "@/lib/tasks";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "../ui/skeleton";
-import { cn } from "@/lib/utils";
 import { useWallet } from "@/contexts/WalletContext";
-import { Label } from "@/components/ui/label";
-
+import { Textarea } from "../ui/textarea";
+import { cn } from "@/lib/utils";
 
 const reviewSchema = z.object({
   rating: z.number().min(1, "Please provide a rating.").max(5),
-  // The 'option' field is handled manually to prevent the flushSync error.
+  experience: z.string().min(10, "Please tell us a bit more about your experience."),
+  option: z.string({ required_error: "Please select one of the options." }),
 });
 
 type ReviewFormValues = z.infer<typeof reviewSchema>;
 
 interface ReviewFormProps {
     onTaskCompleted?: () => void;
+    onCancel?: () => void;
 }
 
-export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
+export function ReviewForm({ onTaskCompleted, onCancel }: ReviewFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingTask, setIsGeneratingTask] = useState(true);
   const [task, setTask] = useState<GenerateTaskSuggestionOutput | null>(null);
   const { toast } = useToast();
   const { completeTask, tasksCompletedToday, dailyTaskQuota } = useWallet();
 
-  // Manually manage radio group state to avoid the flushSync error.
-  const [selectedOption, setSelectedOption] = useState<string | undefined>(undefined);
-  const [optionError, setOptionError] = useState<string | null>(null);
-
   const form = useForm<ReviewFormValues>({
     resolver: zodResolver(reviewSchema),
     defaultValues: {
       rating: 0,
+      experience: "",
+      option: "",
     },
   });
 
   const fetchTask = async () => {
     try {
       setIsGeneratingTask(true);
-      form.reset({ rating: 0 }); // Reset react-hook-form state
-      setSelectedOption(undefined); // Reset manual state for radio buttons
-      setOptionError(null);
+      form.reset({ rating: 0, experience: "", option: "" });
       const result = await generateTaskSuggestion();
       setTask(result);
     } catch (error) {
@@ -79,23 +75,17 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
     if (tasksCompletedToday < dailyTaskQuota) {
         fetchTask();
     }
-  }, []); // Run only once on mount or when dependencies change
+  }, []);
 
   const onSubmit = async (data: ReviewFormValues) => {
     if (!task) return;
-
-    // Manual validation for the radio group
-    if (!selectedOption) {
-        setOptionError("You need to select a review option.");
-        return;
-    }
     
     setIsLoading(true);
     try {
       await submitReview({ 
         taskTitle: task.taskTitle,
         rating: data.rating,
-        option: selectedOption,
+        option: data.option,
        });
 
       completeTask(task);
@@ -110,6 +100,7 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
           await fetchTask(); // Fetch the next task
       } else {
           setTask(null); // All tasks are done
+          if (onCancel) onCancel(); // Close dialog if all tasks are done
       }
 
     } catch (error) {
@@ -122,63 +113,50 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
       setIsLoading(false);
     }
   };
-  
-  const handleOptionChange = (value: string) => {
-      setSelectedOption(value);
-      if (optionError) {
-          setOptionError(null);
-      }
-  }
 
   const allTasksCompleted = tasksCompletedToday >= dailyTaskQuota;
 
+  if (isGeneratingTask) {
+      return (
+        <div className="space-y-6">
+            <Skeleton className="h-6 w-1/2" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-6 w-1/2" />
+            <Skeleton className="h-24 w-full" />
+            <div className="flex gap-2 flex-wrap">
+                {[...Array(4)].map(i => <Skeleton key={i} className="h-8 w-24 rounded-full" />)}
+            </div>
+             <div className="flex justify-end gap-2">
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-24" />
+            </div>
+        </div>
+      )
+  }
+
   if (allTasksCompleted) {
       return (
-            <div className="text-center py-8">
-                <h3 className="text-lg font-semibold">All Tasks Completed!</h3>
-                <p className="text-muted-foreground text-sm mt-1">You have reached your daily limit. Please come back tomorrow for more tasks.</p>
-            </div>
+        <div className="text-center py-8">
+            <h3 className="text-lg font-semibold">All Tasks Completed!</h3>
+            <p className="text-muted-foreground text-sm mt-1">You have reached your daily limit. Please come back tomorrow for more tasks.</p>
+            <Button onClick={onCancel} className="mt-4">Close</Button>
+        </div>
       )
   }
 
   return (
     <Form {...form}>
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="flex justify-end">
-            <Button variant="ghost" size="icon" onClick={fetchTask} disabled={isGeneratingTask || allTasksCompleted}>
-                <RefreshCw className={cn("h-4 w-4", isGeneratingTask && "animate-spin")} />
-                <span className="sr-only">Get new task</span>
-            </Button>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div>
+          <h3 className="text-lg font-semibold">Write a review</h3>
         </div>
-        <div className="space-y-4">
-            <div>
-                <Label>Your Task</Label>
-                {isGeneratingTask ? (
-                    <Skeleton className="h-10 w-full mt-2" />
-                ) : (
-                    <div className="rounded-md border bg-muted px-3 py-2 text-sm font-semibold min-h-[40px] flex items-center mt-2">
-                        {task?.taskTitle || "..."}
-                    </div>
-                )}
-            </div>
-            <div>
-                <Label>About the Task</Label>
-                {isGeneratingTask ? (
-                    <Skeleton className="h-8 w-full mt-2" />
-                ) : (
-                    <p className="text-sm text-muted-foreground mt-2">
-                    {task?.taskDescription || "..."}
-                    </p>
-                )}
-            </div>
-        </div>
-        
+
         <FormField
             control={form.control}
             name="rating"
             render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Your Rating</FormLabel>
+                    <FormLabel>Rate your recent experience</FormLabel>
                     <FormControl>
                         <StarRating rating={field.value} setRating={field.onChange} />
                     </FormControl>
@@ -187,44 +165,61 @@ export function ReviewForm({ onTaskCompleted }: ReviewFormProps) {
             )}
         />
         
-        <div className="space-y-2">
-          <Label>Select an Option</Label>
-          <RadioGroup
-            value={selectedOption}
-            onValueChange={handleOptionChange}
-            className="flex flex-col space-y-1 mt-2"
-          >
-            {isGeneratingTask ? (
-              <div className="space-y-2 pt-2">
-                <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-6 w-1/2" />
-                <Skeleton className="h-6 w-2/3" />
-                <Skeleton className="h-6 w-3/5" />
-              </div>
-            ) : (
-              task?.options?.map((option, index) => (
-                <div
-                  key={index}
-                  className="flex items-center space-x-3 space-y-0"
-                >
-                  <RadioGroupItem value={option} id={`option-${index}`} />
-                  <Label htmlFor={`option-${index}`} className="font-normal">
-                    {option}
-                  </Label>
-                </div>
-              ))
+        <FormField
+            control={form.control}
+            name="experience"
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Tell us more about your experience</FormLabel>
+                    <FormControl>
+                        <Textarea 
+                            placeholder="What made your experience great? What is the company doing well? Remember to be honest, helpful, and constructive!"
+                            {...field}
+                        />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
             )}
-          </RadioGroup>
-          {optionError && <p className="text-sm font-medium text-destructive mt-2">{optionError}</p>}
-        </div>
+        />
 
-        <div className="flex items-center justify-between">
-        <Button type="submit" disabled={isLoading || isGeneratingTask || !task}>
-            {(isLoading || isGeneratingTask) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isLoading ? "Submitting..." : "Submit Review"}
-        </Button>
+        <FormField
+            control={form.control}
+            name="option"
+            render={({ field }) => (
+                <FormItem className="space-y-3">
+                    <FormControl>
+                         <div className="flex flex-wrap gap-2">
+                            {task?.options?.map((option, index) => (
+                                <button
+                                    key={index}
+                                    type="button"
+                                    onClick={() => field.onChange(option)}
+                                    className={cn(
+                                        "review-option-chip",
+                                        field.value === option && "review-option-chip-checked"
+                                    )}
+                                    data-state={field.value === option ? "checked" : "unchecked"}
+                                >
+                                    {option}
+                                </button>
+                            ))}
+                        </div>
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+            )}
+        />
+
+        <div className="flex items-center justify-end gap-2 pt-4">
+            <Button type="button" variant="ghost" onClick={onCancel} disabled={isLoading}>
+                CANCEL
+            </Button>
+            <Button type="submit" disabled={isLoading || isGeneratingTask || !task}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isLoading ? "Submitting..." : "SUBMIT"}
+            </Button>
         </div>
-    </form>
+      </form>
     </Form>
   );
 }
