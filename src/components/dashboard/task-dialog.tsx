@@ -12,8 +12,9 @@ import {
 import { ReviewForm } from "./review-form";
 import { useWallet } from "@/contexts/WalletContext";
 import { Utensils, X } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { format } from "date-fns";
+import type { Task } from "@/lib/tasks";
 
 interface TaskDialogProps {
   open: boolean;
@@ -21,11 +22,12 @@ interface TaskDialogProps {
 }
 
 export function TaskDialog({ open, onOpenChange }: TaskDialogProps) {
-    const { tasksCompletedToday, dailyTaskQuota, earningPerTask } = useWallet();
+    const { tasksCompletedToday, dailyTaskQuota, earningPerTask, committedBalance } = useWallet();
+    const [currentTask, setCurrentTask] = useState<Task | null>(null);
 
-    const orderNumber = useMemo(() => `N0${Math.floor(Math.random() * 900000000) + 100000000}`, []);
-    const orderTime = useMemo(() => format(new Date(), 'dd-MM-yyyy HH:mm:ss'), []);
-    const orderAmount = useMemo(() => parseFloat((Math.random() * (200 - 50) + 50).toFixed(2)), []);
+    const orderNumber = useMemo(() => `N0${Math.floor(Math.random() * 900000000) + 100000000}`, [currentTask]);
+    const orderTime = useMemo(() => format(new Date(), 'dd-MM-yyyy HH:mm:ss'), [currentTask]);
+    const orderAmount = committedBalance;
     const commission = earningPerTask;
     const totalReturns = orderAmount + commission;
 
@@ -44,11 +46,11 @@ export function TaskDialog({ open, onOpenChange }: TaskDialogProps) {
                     </button>
                 </DialogClose>
             </div>
-            <h2 className="text-2xl font-bold text-gray-800">Restaurants & Bars</h2>
-            <p className="text-sm text-gray-700">Compare the best companies in this category</p>
+            <h2 className="text-2xl font-bold text-gray-800">{currentTask?.taskTitle ?? "Loading Task..."}</h2>
+            <p className="text-sm text-gray-700">{currentTask?.taskDescription ?? "Please wait while we prepare your next task."}</p>
 
              <div className="mt-4 bg-yellow-600/20 rounded-lg p-4 text-white">
-                <h3 className="text-lg font-semibold text-gray-800">African & Pacific Cuisine</h3>
+                <h3 className="text-lg font-semibold text-gray-800">Task Details</h3>
                 <div className="flex justify-between text-xs mt-2 text-gray-700">
                     <p>Order number:</p>
                     <p>Order time:</p>
@@ -60,12 +62,12 @@ export function TaskDialog({ open, onOpenChange }: TaskDialogProps) {
                 <div className="border-t border-dashed border-gray-600/50 my-3"></div>
                 <div className="grid grid-cols-3 gap-2 text-center">
                     <div>
-                        <p className="text-xs text-gray-700">Order Amount</p>
+                        <p className="text-xs text-gray-700">Base Amount</p>
                         <p className="font-bold text-gray-800">${orderAmount.toFixed(2)}</p>
                     </div>
                      <div>
                         <p className="text-xs text-gray-700">Commission</p>
-                        <p className="font-bold text-gray-800">${commission.toFixed(2)}</p>
+                        <p className="font-bold text-gray-800">${commission.toFixed(4)}</p>
                     </div>
                      <div>
                         <p className="text-xs text-gray-700">Total Returns</p>
@@ -76,12 +78,16 @@ export function TaskDialog({ open, onOpenChange }: TaskDialogProps) {
         </div>
 
         <div className="p-6">
-            <ReviewForm onTaskCompleted={() => {
-                // Keep dialog open if there are more tasks
-                if (tasksCompletedToday + 1 >= dailyTaskQuota) {
-                    onOpenChange(false);
-                }
-            }} onCancel={() => onOpenChange(false)} />
+            <ReviewForm 
+                onTaskLoaded={setCurrentTask}
+                onTaskCompleted={() => {
+                    // Keep dialog open if there are more tasks
+                    if (tasksCompletedToday + 1 >= dailyTaskQuota) {
+                        onOpenChange(false);
+                    }
+                }} 
+                onCancel={() => onOpenChange(false)} 
+            />
         </div>
       </DialogContent>
     </Dialog>

@@ -17,7 +17,7 @@ import {
 import { StarRating } from "@/components/dashboard/star-rating";
 import { submitReview } from "@/app/actions";
 import { generateTaskSuggestion } from "@/app/actions";
-import type { Task as GenerateTaskSuggestionOutput } from "@/lib/tasks";
+import type { Task } from "@/lib/tasks";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "../ui/skeleton";
@@ -32,14 +32,15 @@ const reviewSchema = z.object({
 type ReviewFormValues = z.infer<typeof reviewSchema>;
 
 interface ReviewFormProps {
+    onTaskLoaded: (task: Task | null) => void;
     onTaskCompleted?: () => void;
     onCancel?: () => void;
 }
 
-export function ReviewForm({ onTaskCompleted, onCancel }: ReviewFormProps) {
+export function ReviewForm({ onTaskLoaded, onTaskCompleted, onCancel }: ReviewFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingTask, setIsGeneratingTask] = useState(true);
-  const [task, setTask] = useState<GenerateTaskSuggestionOutput | null>(null);
+  const [task, setTask] = useState<Task | null>(null);
   const { toast } = useToast();
   const { completeTask, tasksCompletedToday, dailyTaskQuota } = useWallet();
 
@@ -50,6 +51,10 @@ export function ReviewForm({ onTaskCompleted, onCancel }: ReviewFormProps) {
       option: "",
     },
   });
+  
+  useEffect(() => {
+    onTaskLoaded(task);
+  }, [task, onTaskLoaded]);
 
   const fetchTask = async () => {
     try {
@@ -63,6 +68,7 @@ export function ReviewForm({ onTaskCompleted, onCancel }: ReviewFormProps) {
         title: "Error Generating Task",
         description: "Could not fetch a task from the library. Please try again later.",
       });
+       onTaskLoaded(null);
     } finally {
       setIsGeneratingTask(false);
     }
@@ -71,6 +77,9 @@ export function ReviewForm({ onTaskCompleted, onCancel }: ReviewFormProps) {
   useEffect(() => {
     if (tasksCompletedToday < dailyTaskQuota) {
         fetchTask();
+    } else {
+        setIsGeneratingTask(false);
+        setTask(null);
     }
   }, []);
 
@@ -119,9 +128,8 @@ export function ReviewForm({ onTaskCompleted, onCancel }: ReviewFormProps) {
             <Skeleton className="h-6 w-1/2" />
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-6 w-1/2" />
-            <Skeleton className="h-24 w-full" />
             <div className="flex gap-2 flex-wrap">
-                {[...Array(4)].map(i => <Skeleton key={i} className="h-8 w-24 rounded-full" />)}
+                {[...Array(4)].map((i, idx) => <Skeleton key={idx} className="h-8 w-24 rounded-full" />)}
             </div>
              <div className="flex justify-end gap-2">
                 <Skeleton className="h-10 w-24" />
@@ -153,7 +161,7 @@ export function ReviewForm({ onTaskCompleted, onCancel }: ReviewFormProps) {
             name="rating"
             render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Rate your recent experience</FormLabel>
+                    <FormLabel>Rate your experience</FormLabel>
                     <FormControl>
                         <StarRating rating={field.value} setRating={field.onChange} />
                     </FormControl>
