@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 
 const reviewSchema = z.object({
   rating: z.number().min(1, "Please provide a rating.").max(5),
-  option: z.string({ required_error: "Please select one of the options." }),
+  option: z.string().min(1, { message: "Please select one of the options." }),
 });
 
 type ReviewFormValues = z.infer<typeof reviewSchema>;
