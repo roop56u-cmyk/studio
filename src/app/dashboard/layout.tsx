@@ -519,7 +519,7 @@ export default function DashboardLayout({
 
   return (
       <SidebarProvider>
-      <div className="flex min-h-screen">
+      <div className="relative flex min-h-screen">
           <Sidebar>
             <SidebarContentComponent 
                 onRechargeClick={() => setIsRechargeOpen(true)}
@@ -533,10 +533,10 @@ export default function DashboardLayout({
                 onAdminPanelClick={handleAdminPanelClick}
             />
           </Sidebar>
-          <div className="flex flex-1 flex-col relative">
+          <div className="flex flex-1 flex-col">
            <AnimatedDashboardBackground />
           <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-              <SidebarTrigger className="md:hidden" />
+              <SidebarTrigger />
               <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
               <div className="ml-auto flex-1 sm:flex-initial">
                   {/* Optional Search */}
