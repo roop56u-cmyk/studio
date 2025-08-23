@@ -61,7 +61,7 @@ export default function UserDashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-md mx-auto">
         <div className="flex flex-col gap-4">
             <div>
                 <Skeleton className="h-9 w-1/2" />
@@ -81,7 +81,7 @@ export default function UserDashboardPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-md mx-auto">
       <div className="flex flex-col gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Home</h1>

@@ -124,7 +124,7 @@ export function LevelTiers({ onStartTasks, isTaskLocked }: LevelTiersProps) {
   }, []);
 
   return (
-    <div className="w-full">
+    <div className="w-full max-w-md mx-auto">
          <h2 className="text-2xl font-bold tracking-tight mb-4">Investment Levels</h2>
         <Carousel
             opts={{
@@ -137,7 +137,7 @@ export function LevelTiers({ onStartTasks, isTaskLocked }: LevelTiersProps) {
             {displayLevels.map((level) => {
                 const { isUnlocked, isCurrentLevel } = levelUnlockProgress[level.level] || {};
                 return (
-                <CarouselItem key={level.level} className="basis-full md:basis-1/2 lg:basis-1/3 pl-2 pb-4">
+                <CarouselItem key={level.level} className="basis-full pl-2 pb-4">
                     <div className="h-full">
                         <Card 
                             className={cn(
