@@ -62,6 +62,7 @@ interface WalletContextType {
   minWithdrawalAmount: number;
   monthlyWithdrawalsCount: number;
   withdrawalFee: number;
+  earningPerTask: number;
   tasksCompletedToday: number;
   completedTasks: CompletedTask[];
   levelUnlockProgress: Record<number, LevelUnlockStatus>;
@@ -176,8 +177,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   
   const directReferralsCount = useMemo(() => {
     if (!currentUser) return 0;
-    return users.filter(u => u.referredBy === currentUser.referralCode).length;
-  }, [currentUser, users]);
+    const purchasedReferrals = getInitialState('purchased_referrals', 0);
+    const actualReferrals = users.filter(u => u.referredBy === currentUser.referralCode).length;
+    return actualReferrals + purchasedReferrals;
+  }, [currentUser, users, getInitialState]);
 
   const { currentLevel, levelUnlockProgress } = useMemo(() => {
     let finalLevel = 0;
@@ -200,7 +203,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         };
     });
 
-    if (progress[finalLevel]) {
+    if (finalLevel > 0 && progress[finalLevel]) {
         progress[finalLevel].isCurrentLevel = true;
     }
 
@@ -210,10 +213,16 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
 
   const currentLevelData = configuredLevels.find(level => level.level === currentLevel) ?? configuredLevels[0];
-  const { rate: baseRate, dailyTasks: baseDailyTaskQuota, monthlyWithdrawals: monthlyWithdrawalLimit, minWithdrawal: minWithdrawalAmount, earningPerTask, withdrawalFee } = currentLevelData;
+  const { rate: baseRate, dailyTasks: baseDailyTaskQuota, monthlyWithdrawals: monthlyWithdrawalLimit, minWithdrawal: minWithdrawalAmount, withdrawalFee } = currentLevelData;
 
   const currentRate = baseRate + (baseRate * (interestRateBoost / 100));
   const dailyTaskQuota = baseDailyTaskQuota + taskQuotaBoost;
+  
+  const earningPerTask = useMemo(() => {
+    if (dailyTaskQuota === 0) return 0;
+    const dailyEarningPotential = committedBalance * (currentRate / 100);
+    return dailyEarningPotential / dailyTaskQuota;
+  }, [committedBalance, currentRate, dailyTaskQuota]);
 
 
   const setPersistentState = useCallback((key: string, value: any) => {
@@ -494,6 +503,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         monthlyWithdrawalLimit,
         minWithdrawalAmount,
         withdrawalFee,
+        earningPerTask,
         monthlyWithdrawalsCount,
         tasksCompletedToday,
         completedTasks,

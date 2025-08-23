@@ -61,7 +61,7 @@ export default function ManageLevelsPage() {
             dailyTasks: 1,
             monthlyWithdrawals: 1,
             minWithdrawal: 0,
-            earningPerTask: 0,
+            earningPerTask: 0, // This is now calculated dynamically
             withdrawalFee: 0,
         }]);
          toast({ title: "New Level Added", description: "Don't forget to configure and save it." });
@@ -71,24 +71,6 @@ export default function ManageLevelsPage() {
         const newLevels = levels.filter((_, i) => i !== index);
         setLevels(newLevels);
         toast({ title: "Level Deleted", variant: "destructive" });
-    };
-
-    const autoCalculateEarning = (index: number) => {
-        const level = levels[index];
-        if (level.dailyTasks > 0) {
-            const calculatedEarning = (level.minAmount * (level.rate / 100)) / level.dailyTasks;
-            handleInputChange(index, 'earningPerTask', parseFloat(calculatedEarning.toFixed(4)));
-            toast({
-                title: `Calculated Earning for Level ${level.level}`,
-                description: `Set to $${calculatedEarning.toFixed(4)} per task.`
-            })
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Calculation Error',
-                description: 'Daily tasks must be greater than zero to auto-calculate earnings.'
-            })
-        }
     };
 
     const saveChanges = () => {
@@ -153,15 +135,6 @@ export default function ManageLevelsPage() {
                             <Input id={`dailyTasks-${index}`} type="number" value={level.dailyTasks} onChange={(e) => handleInputChange(index, 'dailyTasks', Number(e.target.value))} />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor={`earningPerTask-${index}`}>Earning per Task ($)</Label>
-                             <div className="flex items-center gap-2">
-                                <Input id={`earningPerTask-${index}`} type="number" value={level.earningPerTask} onChange={(e) => handleInputChange(index, 'earningPerTask', Number(e.target.value))} />
-                                <Button variant="outline" size="icon" type="button" onClick={() => autoCalculateEarning(index)} title="Auto-calculate earning per task">
-                                    <Calculator className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
-                        <div className="space-y-2">
                             <Label htmlFor={`referrals-${index}`}>Required Referrals</Label>
                             <Input id={`referrals-${index}`} type="number" value={level.referrals} onChange={(e) => handleInputChange(index, 'referrals', Number(e.target.value))} />
                         </div>
@@ -179,6 +152,15 @@ export default function ManageLevelsPage() {
                                 <Input id={`withdrawalFee-${index}`} type="number" value={level.withdrawalFee} onChange={(e) => handleInputChange(index, 'withdrawalFee', Number(e.target.value))} className="pr-8" />
                                 <Percent className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                             </div>
+                        </div>
+                         <div className="space-y-2 md:col-span-2 lg:col-span-3">
+                            <Label>Earning Per Task</Label>
+                            <p className="text-sm text-muted-foreground">
+                                This is now calculated automatically for each user based on their committed balance and the level's daily rate. For example, a user with a $1000 balance at this level would earn...
+                            </p>
+                             <p className="text-sm font-semibold text-primary">
+                                ${(level.dailyTasks > 0 ? (1000 * (level.rate / 100)) / level.dailyTasks : 0).toFixed(4)} per task.
+                             </p>
                         </div>
                     </CardContent>
                 </Card>
