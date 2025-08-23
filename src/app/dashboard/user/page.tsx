@@ -23,7 +23,7 @@ export const defaultPanelConfig: PanelConfig[] = [
     { id: "levelTiers", name: "Investment Levels", enabled: true },
     { id: "walletBalances", name: "Wallet Balances", enabled: true },
     { id: "interestCounter", name: "Interest Counter", enabled: true },
-    { id: "referralCard", name: "Referral Card", enabled: true },
+    { id: "referralCard", name: "Referral Card", enabled: false },
     { id: "transactionHistory", name: "Transaction History", enabled: true },
     { id: "taskHistory", name: "Task History", enabled: true },
     { id: "featureLock", name: "Feature Lock Notice", enabled: true },
@@ -96,7 +96,7 @@ export default function UserDashboardPage() {
           />
         </div>
       )}
-       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-1 grid gap-4">
             {isPanelEnabled("walletBalances") && (
                 <WalletBalance
