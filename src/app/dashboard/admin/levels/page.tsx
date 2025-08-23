@@ -62,6 +62,7 @@ export default function ManageLevelsPage() {
         const newLevelNumber = levels.length > 0 ? Math.max(...levels.map(l => l.level)) + 1 : 1;
         setLevels([...levels, {
             level: newLevelNumber,
+            name: `Level ${newLevelNumber}`,
             minAmount: 0,
             rate: 0,
             referrals: 0,
@@ -115,7 +116,7 @@ export default function ManageLevelsPage() {
                 <Card key={level.level}>
                     <CardHeader>
                         <CardTitle className="flex justify-between items-center">
-                            <span>Level {level.level}</span>
+                            <span>Level {level.level} - {level.name}</span>
                             <div className="flex items-center gap-4">
                                 <Switch 
                                     id={`enable-level-${level.level}`} 
@@ -129,6 +130,10 @@ export default function ManageLevelsPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor={`name-${index}`}>Level Name</Label>
+                            <Input id={`name-${index}`} type="text" value={level.name} onChange={(e) => handleInputChange(index, 'name', e.target.value)} />
+                        </div>
                         <div className="space-y-2">
                             <Label htmlFor={`minAmount-${index}`}>Min Amount (USDT)</Label>
                             <Input id={`minAmount-${index}`} type="number" value={level.minAmount} onChange={(e) => handleInputChange(index, 'minAmount', Number(e.target.value))} />
@@ -161,7 +166,7 @@ export default function ManageLevelsPage() {
                             </div>
                         </div>
                          {earningModel === 'dynamic' ? (
-                            <div className="space-y-2 md:col-span-2 lg:col-span-3">
+                            <div className="space-y-2 md:col-span-full">
                                 <Label>Earning Per Task (Dynamic)</Label>
                                 <p className="text-sm text-muted-foreground">
                                     Earning per task is calculated automatically based on user's committed balance and the level's daily rate. For example, a user with a $1000 balance at this level would earn...
@@ -191,3 +196,5 @@ export default function ManageLevelsPage() {
     </div>
   );
 }
+
+    

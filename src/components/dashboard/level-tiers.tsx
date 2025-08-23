@@ -1,7 +1,7 @@
 
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Carousel,
   CarouselContent,
@@ -17,6 +17,7 @@ import { useWallet } from "@/contexts/WalletContext";
 
 export type Level = {
     level: number;
+    name: string;
     minAmount: number;
     rate: number;
     referrals: number;
@@ -30,6 +31,7 @@ export type Level = {
 export const levels: Level[] = [
   {
     level: 0,
+    name: "Unranked",
     minAmount: 0,
     rate: 0,
     referrals: 0,
@@ -41,6 +43,7 @@ export const levels: Level[] = [
   },
   {
     level: 1,
+    name: "Bronze",
     minAmount: 100,
     rate: 1.8,
     referrals: 0,
@@ -52,6 +55,7 @@ export const levels: Level[] = [
   },
   {
     level: 2,
+    name: "Silver",
     minAmount: 500,
     rate: 2.8,
     referrals: 8,
@@ -63,6 +67,7 @@ export const levels: Level[] = [
   },
   {
     level: 3,
+    name: "Gold",
     minAmount: 2000,
     rate: 3.8,
     referrals: 16,
@@ -74,6 +79,7 @@ export const levels: Level[] = [
   },
   {
     level: 4,
+    name: "Platinum",
     minAmount: 6000,
     rate: 4.8,
     referrals: 36,
@@ -85,6 +91,7 @@ export const levels: Level[] = [
   },
   {
     level: 5,
+    name: "Diamond",
     minAmount: 20000,
     rate: 5.8,
     referrals: 55,
@@ -105,7 +112,15 @@ interface LevelTiersProps {
 export function LevelTiers({ onStartTasks, isTaskLocked }: LevelTiersProps) {
     
   const { currentLevel, levelUnlockProgress } = useWallet();
-  const displayLevels = levels.filter(l => l.level > 0);
+  const [displayLevels, setDisplayLevels] = useState<Level[]>(levels.filter(l => l.level > 0));
+
+  useEffect(() => {
+    const storedLevels = localStorage.getItem("platform_levels");
+    if (storedLevels) {
+        const parsedLevels = JSON.parse(storedLevels);
+        setDisplayLevels(parsedLevels);
+    }
+  }, []);
 
   return (
     <div className="w-full">
@@ -133,12 +148,12 @@ export function LevelTiers({ onStartTasks, isTaskLocked }: LevelTiersProps) {
                                 <CardHeader className="p-3">
                                     <CardTitle className="flex items-center justify-between text-base">
                                         <span className="flex items-center gap-1.5">
-                                            Level {level.level}
+                                            {level.name}
                                             {isUnlocked ? <CheckCircle className="h-4 w-4 text-green-500" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
                                         </span>
                                     </CardTitle>
                                     <CardDescription>
-                                         {isCurrentLevel ? <span className="text-primary font-semibold">Current Level</span> : "Unlock new potentials"}
+                                         {isCurrentLevel ? <span className="text-primary font-semibold">Current Level</span> : `Level ${level.level}`}
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="flex-grow space-y-2 p-3">
@@ -182,3 +197,5 @@ export function LevelTiers({ onStartTasks, isTaskLocked }: LevelTiersProps) {
     </div>
   );
 }
+
+    
