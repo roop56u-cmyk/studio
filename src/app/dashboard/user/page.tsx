@@ -98,37 +98,35 @@ export default function UserDashboardPage() {
           />
         </div>
       )}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {isPanelEnabled("walletBalances") && (
-            <div className="col-span-1 space-y-4">
-                <WalletBalance
-                    accentColor="bg-chart-1"
-                    title="Task Rewards"
-                    balance={taskRewardsBalance.toFixed(2)}
-                    description="Balance from completed tasks."
-                    onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Task Rewards')}
-                    showMoveToOther={true}
-                />
-                <WalletBalance
-                    accentColor="bg-chart-2"
-                    title="Interest Earnings"
-                    balance={interestEarningsBalance.toFixed(2)}
-                    description="Balance from interest."
-                    onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Interest Earnings')}
-                    showMoveToOther={true}
-                />
-            </div>
+            <>
+            <WalletBalance
+                accentColor="bg-chart-1"
+                title="Task Rewards"
+                balance={taskRewardsBalance.toFixed(2)}
+                description="Balance from completed tasks."
+                onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Task Rewards')}
+                showMoveToOther={true}
+            />
+            <WalletBalance
+                accentColor="bg-chart-2"
+                title="Interest Earnings"
+                balance={interestEarningsBalance.toFixed(2)}
+                description="Balance from interest."
+                onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Interest Earnings')}
+                showMoveToOther={true}
+            />
+            </>
         )}
         {isPanelEnabled("interestCounter") && (
-             <div className="col-span-1">
-                <InterestCounterPanel
-                    accentColor="bg-chart-3"
-                    title="Daily Interest"
-                    isLocked={isInterestLocked}
-                    balance={interestEarningsBalance}
-                    counterType="interest"
-                />
-            </div>
+             <InterestCounterPanel
+                accentColor="bg-chart-3"
+                title="Daily Interest"
+                isLocked={isInterestLocked}
+                balance={interestEarningsBalance}
+                counterType="interest"
+            />
         )}
       </div>
 
