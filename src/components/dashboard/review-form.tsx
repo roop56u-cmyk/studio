@@ -22,12 +22,10 @@ import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "../ui/skeleton";
 import { useWallet } from "@/contexts/WalletContext";
-import { Textarea } from "../ui/textarea";
 import { cn } from "@/lib/utils";
 
 const reviewSchema = z.object({
   rating: z.number().min(1, "Please provide a rating.").max(5),
-  experience: z.string().min(10, "Please tell us a bit more about your experience."),
   option: z.string({ required_error: "Please select one of the options." }),
 });
 
@@ -49,7 +47,6 @@ export function ReviewForm({ onTaskCompleted, onCancel }: ReviewFormProps) {
     resolver: zodResolver(reviewSchema),
     defaultValues: {
       rating: 0,
-      experience: "",
       option: "",
     },
   });
@@ -57,7 +54,7 @@ export function ReviewForm({ onTaskCompleted, onCancel }: ReviewFormProps) {
   const fetchTask = async () => {
     try {
       setIsGeneratingTask(true);
-      form.reset({ rating: 0, experience: "", option: "" });
+      form.reset({ rating: 0, option: "" });
       const result = await generateTaskSuggestion();
       setTask(result);
     } catch (error) {
@@ -159,23 +156,6 @@ export function ReviewForm({ onTaskCompleted, onCancel }: ReviewFormProps) {
                     <FormLabel>Rate your recent experience</FormLabel>
                     <FormControl>
                         <StarRating rating={field.value} setRating={field.onChange} />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-            )}
-        />
-        
-        <FormField
-            control={form.control}
-            name="experience"
-            render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Tell us more about your experience</FormLabel>
-                    <FormControl>
-                        <Textarea 
-                            placeholder="What made your experience great? What is the company doing well? Remember to be honest, helpful, and constructive!"
-                            {...field}
-                        />
                     </FormControl>
                     <FormMessage />
                 </FormItem>
