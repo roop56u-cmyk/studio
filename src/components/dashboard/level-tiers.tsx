@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -132,12 +133,12 @@ export function LevelTiers({ onStartTasks, isTaskLocked }: LevelTiersProps) {
             }}
             className="w-full"
         >
-            <CarouselContent>
+            <CarouselContent className="-ml-2">
             {displayLevels.map((level) => {
                 const { isUnlocked, isCurrentLevel } = levelUnlockProgress[level.level] || {};
                 return (
-                <CarouselItem key={level.level} className="basis-full md:basis-1/3 lg:basis-1/4 pb-4">
-                    <div className="p-1 h-full">
+                <CarouselItem key={level.level} className="basis-full md:basis-1/2 lg:basis-1/3 pl-2 pb-4">
+                    <div className="h-full">
                         <Card 
                             className={cn(
                                 "h-full flex flex-col speech-bubble", 
@@ -197,5 +198,3 @@ export function LevelTiers({ onStartTasks, isTaskLocked }: LevelTiersProps) {
     </div>
   );
 }
-
-    

@@ -96,71 +96,71 @@ export default function UserDashboardPage() {
           />
         </div>
       )}
-       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-1 grid gap-4">
-            {isPanelEnabled("walletBalances") && (
-                <WalletBalance
-                    accentColor="bg-chart-1"
-                    title="Task Rewards"
-                    balance={taskRewardsBalance.toFixed(2)}
-                    description="Balance from completed tasks."
-                    onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Task Rewards')}
-                    showMoveToOther={true}
-                />
-            )}
-             {isPanelEnabled("walletBalances") && (
-                <WalletBalance
-                    accentColor="bg-chart-2"
-                    title="Interest Earnings"
-                    balance={interestEarningsBalance.toFixed(2)}
-                    description="Balance from interest."
-                    onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Interest Earnings')}
-                    showMoveToOther={true}
-                />
-            )}
-            {isPanelEnabled("interestCounter") && (
-                <InterestCounterPanel
-                    accentColor="bg-chart-3"
-                    title="Daily Interest"
-                    isLocked={isInterestLocked}
-                    balance={interestEarningsBalance}
-                    counterType="interest"
-                />
-            )}
-            {isPanelEnabled("featureLock") && (
-            <>
-                {(isTaskLocked && isInterestLocked) ? (
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center"><Lock className="mr-2 h-5 w-5" /> Features Locked</CardTitle>
-                        <CardDescription>Commit funds and invite friends to unlock platform features.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm mb-2">
-                            To unlock Level 1, you must commit at least <strong>$100 to Task Rewards or Interest Earnings</strong>.
-                        </p>
-                        <p className="text-sm mb-4">
-                            Higher levels may also require inviting a certain number of friends. Check the level details above.
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                            Your main balance is ${mainBalance.toFixed(2)}. Use the sidebar wallet to move funds.
-                        </p>
-                    </CardContent>
-                </Card>
-                ) : allTasksCompleted ? (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>All Tasks Completed!</CardTitle>
-                        <CardDescription>You have reached your daily limit.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm">Please come back tomorrow for more tasks.</p>
-                    </CardContent>
-                </Card>
-                ) : null}
-            </>
-            )}
-        </div>
+       <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4">
+              {isPanelEnabled("walletBalances") && (
+                  <WalletBalance
+                      accentColor="bg-chart-1"
+                      title="Task Rewards"
+                      balance={taskRewardsBalance.toFixed(2)}
+                      description="Balance from completed tasks."
+                      onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Task Rewards')}
+                      showMoveToOther={true}
+                  />
+              )}
+              {isPanelEnabled("walletBalances") && (
+                  <WalletBalance
+                      accentColor="bg-chart-2"
+                      title="Interest Earnings"
+                      balance={interestEarningsBalance.toFixed(2)}
+                      description="Balance from interest."
+                      onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Interest Earnings')}
+                      showMoveToOther={true}
+                  />
+              )}
+              {isPanelEnabled("interestCounter") && (
+                  <InterestCounterPanel
+                      accentColor="bg-chart-3"
+                      title="Daily Interest"
+                      isLocked={isInterestLocked}
+                      balance={interestEarningsBalance}
+                      counterType="interest"
+                  />
+              )}
+               {isPanelEnabled("featureLock") && (
+                  <>
+                      {(isTaskLocked && isInterestLocked) ? (
+                      <Card>
+                          <CardHeader>
+                              <CardTitle className="flex items-center"><Lock className="mr-2 h-5 w-5" /> Features Locked</CardTitle>
+                              <CardDescription>Commit funds and invite friends to unlock platform features.</CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                              <p className="text-sm mb-2">
+                                  To unlock Level 1, you must commit at least <strong>$100 to Task Rewards or Interest Earnings</strong>.
+                              </p>
+                              <p className="text-sm mb-4">
+                                  Higher levels may also require inviting a certain number of friends. Check the level details above.
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                  Your main balance is ${mainBalance.toFixed(2)}. Use the sidebar wallet to move funds.
+                              </p>
+                          </CardContent>
+                      </Card>
+                      ) : allTasksCompleted ? (
+                      <Card>
+                          <CardHeader>
+                              <CardTitle>All Tasks Completed!</CardTitle>
+                              <CardDescription>You have reached your daily limit.</CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                              <p className="text-sm">Please come back tomorrow for more tasks.</p>
+                          </CardContent>
+                      </Card>
+                      ) : null}
+                  </>
+              )}
+          </div>
       </div>
       
       <TaskDialog
