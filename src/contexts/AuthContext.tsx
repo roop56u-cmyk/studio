@@ -11,6 +11,7 @@ export type User = {
     referralCode: string;
     referredBy: string | null; // Stores the referral code of the user who referred them
     status: 'active' | 'disabled';
+    overrideLevel?: number | null;
 };
 
 interface AuthContextType {

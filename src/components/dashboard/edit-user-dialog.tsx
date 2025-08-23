@@ -36,7 +36,7 @@ const editUserSchema = z.object({
   email: z.string().email("Invalid email address."),
   referralCode: z.string().min(1, "Referral code is required."),
   referredBy: z.string().optional(),
-  level: z.number().min(0).max(5),
+  overrideLevel: z.number().min(0).max(5),
   mainBalance: z.number().min(0, "Balance must be non-negative."),
   taskRewardsBalance: z.number().min(0, "Balance must be non-negative."),
   interestEarningsBalance: z.number().min(0, "Balance must be non-negative."),
@@ -73,7 +73,7 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
       email: "",
       referralCode: "",
       referredBy: "",
-      level: 0,
+      overrideLevel: 0,
       mainBalance: 0,
       taskRewardsBalance: 0,
       interestEarningsBalance: 0,
@@ -87,20 +87,26 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
       const taskRewardsBalance = getInitialState('taskRewardsBalance', 0, user.email);
       const interestEarningsBalance = getInitialState('interestEarningsBalance', 0, user.email);
       const committedBalance = taskRewardsBalance + interestEarningsBalance;
-      const currentLevel = levels.slice().reverse().find(l => committedBalance >= l.minAmount)?.level ?? 0;
+      
+      const directReferrals = users.filter(u => u.referredBy === user.referralCode).length;
+      const autoLevel = levels.slice().reverse().find(l => {
+          const balanceMet = committedBalance >= l.minAmount;
+          const referralsMet = directReferrals >= l.referrals;
+          return balanceMet && referralsMet;
+      })?.level ?? 0;
 
       form.reset({
         email: user.email,
         referralCode: user.referralCode,
         referredBy: user.referredBy ?? "",
-        level: currentLevel,
+        overrideLevel: user.overrideLevel ?? autoLevel,
         mainBalance: mainBalance,
         taskRewardsBalance: taskRewardsBalance,
         interestEarningsBalance: interestEarningsBalance,
         status: user.status ?? 'active',
       });
     }
-  }, [user, open, form]);
+  }, [user, open, form, users]);
 
   const onSubmit = (data: EditUserFormValues) => {
     if (!user) return;
@@ -114,6 +120,7 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
     updateUser(user.email, { 
         ...data,
         referredBy: data.referredBy || null,
+        overrideLevel: data.overrideLevel,
     });
     
     toast({
@@ -177,12 +184,12 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
             </div>
         
           <Controller
-            name="level"
+            name="overrideLevel"
             control={form.control}
             render={({ field }) => (
                 <div className="space-y-2">
-                    <Label>User Level</Label>
-                    <Select onValueChange={(value) => field.onChange(Number(value))} value={String(field.value)} disabled>
+                    <Label>User Level (Manual Override)</Label>
+                    <Select onValueChange={(value) => field.onChange(Number(value))} value={String(field.value)}>
                         <SelectTrigger>
                             <SelectValue placeholder="Select Level" />
                         </SelectTrigger>
@@ -190,7 +197,7 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
                             {levels.map(l => <SelectItem key={l.level} value={String(l.level)}>Level {l.level}</SelectItem>)}
                         </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground">Level is derived from committed funds and cannot be set directly.</p>
+                     <p className="text-xs text-muted-foreground">Allows you to manually set the user's level.</p>
                 </div>
             )}
           />

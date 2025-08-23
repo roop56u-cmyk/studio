@@ -184,6 +184,20 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   }, [currentUser, users, getInitialState]);
 
   const { currentLevel, levelUnlockProgress } = useMemo(() => {
+    // If admin has set an override, use that.
+    if (currentUser?.overrideLevel !== null && currentUser?.overrideLevel !== undefined) {
+        const progress: Record<number, LevelUnlockStatus> = {};
+        configuredLevels.filter(l => l.level > 0).forEach(level => {
+             progress[level.level] = {
+                isUnlocked: level.level <= currentUser.overrideLevel!,
+                isCurrentLevel: level.level === currentUser.overrideLevel!,
+                balanceMet: true, // N/A for override
+                referralsMet: true, // N/A for override
+            };
+        });
+        return { currentLevel: currentUser.overrideLevel, levelUnlockProgress: progress };
+    }
+
     let finalLevel = 0;
     const progress: Record<number, LevelUnlockStatus> = {};
 
@@ -210,7 +224,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
 
     return { currentLevel: finalLevel, levelUnlockProgress: progress };
-  }, [committedBalance, directReferralsCount, configuredLevels]);
+  }, [committedBalance, directReferralsCount, configuredLevels, currentUser]);
 
 
   const currentLevelData = configuredLevels.find(level => level.level === currentLevel) ?? configuredLevels[0];
