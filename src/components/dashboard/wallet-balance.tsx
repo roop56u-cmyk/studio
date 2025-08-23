@@ -91,14 +91,14 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="text-xl font-bold">${balance}</div>
+        <div className="text-2xl font-bold">${balance}</div>
         <p className="text-xs text-muted-foreground leading-tight">
           {description}
         </p>
       </CardContent>
        {(onMoveToMain || showMoveToOther) && (
         <CardFooter className="pt-2 flex-col items-start gap-2 mt-auto">
-          <div className="w-full flex items-center gap-1">
+          <div className="w-full flex flex-col items-start gap-1">
             <Input 
               type="number" 
               placeholder="Amount" 
@@ -111,7 +111,7 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
                 <Button 
                 variant="outline" 
                 size="sm" 
-                className="h-8 text-xs px-2"
+                className="h-8 text-xs"
                 onClick={handleMoveClick}
                 disabled={!canMove}
                 >
@@ -119,8 +119,7 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
                 To Main
                 </Button>
             )}
-          </div>
-           {showMoveToOther && (
+             {showMoveToOther && (
              <Button 
               variant="outline" 
               size="sm" 
@@ -132,10 +131,9 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
               Move to {title === "Task Rewards" ? "Interest" : "Tasks"}
             </Button>
            )}
+          </div>
         </CardFooter>
       )}
     </Card>
   );
 }
-
-

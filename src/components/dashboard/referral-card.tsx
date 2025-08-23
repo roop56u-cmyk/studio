@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -34,13 +35,13 @@ export function ReferralCard() {
 
   return (
     <Card>
-      <CardHeader className="p-2">
+      <CardHeader>
         <CardTitle className="text-sm">Invite Friends</CardTitle>
         <CardDescription className="text-xs">
           Share your referral code.
         </CardDescription>
       </CardHeader>
-      <CardContent className="p-2 pt-0">
+      <CardContent>
         <div className="flex items-center space-x-2">
           <Input value={code} readOnly className="font-mono text-center text-xs h-8" />
           <Button variant="outline" size="icon" onClick={handleCopy} disabled={code === "Generating..."} className="h-8 w-8">

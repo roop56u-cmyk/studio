@@ -70,10 +70,9 @@ export default function UserDashboardPage() {
              <div className="space-y-4">
                 <Skeleton className="h-48 w-full" />
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                 <Skeleton className="h-32 w-full" />
-                 <Skeleton className="h-32 w-full" />
-                 <Skeleton className="h-32 w-full" />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                 <Skeleton className="h-64 w-full" />
+                 <Skeleton className="h-64 w-full" />
             </div>
              <div>
                 <Skeleton className="h-64 w-full" />
@@ -98,36 +97,43 @@ export default function UserDashboardPage() {
           />
         </div>
       )}
-       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {isPanelEnabled("walletBalances") && (
-            <>
-            <WalletBalance
-                accentColor="bg-chart-1"
-                title="Task Rewards"
-                balance={taskRewardsBalance.toFixed(2)}
-                description="Balance from completed tasks."
-                onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Task Rewards')}
-                showMoveToOther={true}
-            />
-            <WalletBalance
-                accentColor="bg-chart-2"
-                title="Interest Earnings"
-                balance={interestEarningsBalance.toFixed(2)}
-                description="Balance from interest."
-                onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Interest Earnings')}
-                showMoveToOther={true}
-            />
-            </>
-        )}
-        {isPanelEnabled("interestCounter") && (
-             <InterestCounterPanel
-                accentColor="bg-chart-3"
-                title="Daily Interest"
-                isLocked={isInterestLocked}
-                balance={interestEarningsBalance}
-                counterType="interest"
-            />
-        )}
+       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid gap-4">
+            {isPanelEnabled("walletBalances") && (
+                <>
+                <WalletBalance
+                    accentColor="bg-chart-1"
+                    title="Task Rewards"
+                    balance={taskRewardsBalance.toFixed(2)}
+                    description="Balance from completed tasks."
+                    onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Task Rewards')}
+                    showMoveToOther={true}
+                />
+                <WalletBalance
+                    accentColor="bg-chart-2"
+                    title="Interest Earnings"
+                    balance={interestEarningsBalance.toFixed(2)}
+                    description="Balance from interest."
+                    onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Interest Earnings')}
+                    showMoveToOther={true}
+                />
+                </>
+            )}
+        </div>
+        <div className="grid gap-4">
+            {isPanelEnabled("interestCounter") && (
+                <InterestCounterPanel
+                    accentColor="bg-chart-3"
+                    title="Daily Interest"
+                    isLocked={isInterestLocked}
+                    balance={interestEarningsBalance}
+                    counterType="interest"
+                />
+            )}
+            {isPanelEnabled("referralCard") && (
+                <ReferralCard />
+            )}
+        </div>
       </div>
 
        {isPanelEnabled("featureLock") && (
@@ -171,5 +177,3 @@ export default function UserDashboardPage() {
     </div>
   );
 }
-
-
