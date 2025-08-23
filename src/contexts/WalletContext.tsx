@@ -119,6 +119,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [withdrawalRestrictionMessage, setWithdrawalRestrictionMessage] = useState("Please wait for 45 days to initiate withdrawal request.");
   const [withdrawalRestrictedLevels, setWithdrawalRestrictedLevels] = useState<number[]>([1]);
   const [configuredLevels, setConfiguredLevels] = useState<Level[]>(defaultLevels);
+  const [earningModel, setEarningModel] = useState("dynamic");
 
 
   const getInitialState = useCallback((key: string, defaultValue: any) => {
@@ -219,10 +220,14 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const dailyTaskQuota = baseDailyTaskQuota + taskQuotaBoost;
   
   const earningPerTask = useMemo(() => {
+    if (earningModel === 'fixed') {
+        return currentLevelData.earningPerTask;
+    }
+    // Dynamic calculation
     if (dailyTaskQuota === 0) return 0;
     const dailyEarningPotential = committedBalance * (currentRate / 100);
     return dailyEarningPotential / dailyTaskQuota;
-  }, [committedBalance, currentRate, dailyTaskQuota]);
+  }, [committedBalance, currentRate, dailyTaskQuota, earningModel, currentLevelData]);
 
 
   const setPersistentState = useCallback((key: string, value: any) => {
@@ -252,6 +257,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setWithdrawalRestrictionMessage(getGlobalSetting('system_withdrawal_restriction_message', "Please wait for 45 days to initiate withdrawal request."));
     setWithdrawalRestrictedLevels(getGlobalSetting('system_withdrawal_restricted_levels', [1], true));
     setConfiguredLevels(getGlobalSetting('platform_levels', defaultLevels, true));
+    setEarningModel(getGlobalSetting('system_earning_model', 'dynamic'));
 
 
     if (currentUser) {

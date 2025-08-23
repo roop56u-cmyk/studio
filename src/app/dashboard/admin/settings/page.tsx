@@ -19,30 +19,39 @@ import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { levels } from "@/components/dashboard/level-tiers";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 
 export default function SystemSettingsPage() {
     const { toast } = useToast();
+    // Referral
     const [referralBonus, setReferralBonus] = useState("5");
     const [minDepositForBonus, setMinDepositForBonus] = useState("100");
+    // Recharge
     const [rechargeAddress, setRechargeAddress] = useState("0x4D26340f3B52DCf82dd537cBF3c7e4C1D9b53BDc");
+    // Withdrawal
     const [isWithdrawalRestriction, setIsWithdrawalRestriction] = useState(true);
     const [withdrawalRestrictionDays, setWithdrawalRestrictionDays] = useState("45");
     const [withdrawalRestrictionMessage, setWithdrawalRestrictionMessage] = useState("Please wait for 45 days to initiate withdrawal request.");
     const [restrictedLevels, setRestrictedLevels] = useState<number[]>([1]); // Default to level 1
+    // Earning Model
+    const [earningModel, setEarningModel] = useState("dynamic"); // 'dynamic' or 'fixed'
     
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
+        // Referral
         const savedReferralBonus = localStorage.getItem('system_referral_bonus');
         if (savedReferralBonus) setReferralBonus(savedReferralBonus);
         
         const savedMinDeposit = localStorage.getItem('system_min_deposit_for_bonus');
         if (savedMinDeposit) setMinDepositForBonus(savedMinDeposit);
         
+        // Recharge
         const savedRechargeAddress = localStorage.getItem('system_recharge_address');
         if (savedRechargeAddress) setRechargeAddress(savedRechargeAddress);
 
+        // Withdrawal
         const savedWithdrawalRestriction = localStorage.getItem('system_withdrawal_restriction_enabled');
         if (savedWithdrawalRestriction) setIsWithdrawalRestriction(JSON.parse(savedWithdrawalRestriction));
 
@@ -55,23 +64,35 @@ export default function SystemSettingsPage() {
         const savedRestrictedLevels = localStorage.getItem('system_withdrawal_restricted_levels');
         if (savedRestrictedLevels) setRestrictedLevels(JSON.parse(savedRestrictedLevels));
         
+        // Earning Model
+        const savedEarningModel = localStorage.getItem('system_earning_model');
+        if (savedEarningModel) setEarningModel(savedEarningModel);
+        
         setIsClient(true);
     }, []);
 
 
     const handleSaveChanges = () => {
+        // Referral
+        localStorage.setItem('system_referral_bonus', referralBonus);
+        localStorage.setItem('system_min_deposit_for_bonus', minDepositForBonus);
+        // Recharge
         localStorage.setItem('system_recharge_address', rechargeAddress);
+        // Withdrawal
         localStorage.setItem('system_withdrawal_restriction_enabled', JSON.stringify(isWithdrawalRestriction));
         localStorage.setItem('system_withdrawal_restriction_days', withdrawalRestrictionDays);
         localStorage.setItem('system_withdrawal_restriction_message', withdrawalRestrictionMessage);
-        localStorage.setItem('system_referral_bonus', referralBonus);
-        localStorage.setItem('system_min_deposit_for_bonus', minDepositForBonus);
         localStorage.setItem('system_withdrawal_restricted_levels', JSON.stringify(restrictedLevels));
+        // Earning Model
+        localStorage.setItem('system_earning_model', earningModel);
         
         toast({
             title: "Settings Saved",
             description: "Global system settings have been updated.",
         });
+        
+        // Reload to ensure all components get the new settings
+        window.location.reload();
     };
 
     const handleLevelRestrictionChange = (level: number, checked: boolean) => {
@@ -92,6 +113,29 @@ export default function SystemSettingsPage() {
           Manage global application settings and features.
         </p>
       </div>
+       <Card>
+        <CardHeader>
+          <CardTitle>Earning Model</CardTitle>
+          <CardDescription>
+            Choose how task earnings are calculated for users.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+            <RadioGroup value={earningModel} onValueChange={setEarningModel} className="space-y-2">
+                <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="dynamic" id="dynamic-earning" />
+                    <Label htmlFor="dynamic-earning" className="font-normal">Dynamic Earning (Daily Percentage)</Label>
+                </div>
+                 <p className="text-xs text-muted-foreground pl-6">Income is based on a % of the user's balance. (e.g., 2% of $500 balance / 20 tasks = $0.50 per task)</p>
+
+                <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="fixed" id="fixed-earning" />
+                    <Label htmlFor="fixed-earning" className="font-normal">Fixed Earning (Per Task)</Label>
+                </div>
+                 <p className="text-xs text-muted-foreground pl-6">Income is a fixed amount per task, set for each level in "Manage Levels".</p>
+            </RadioGroup>
+        </CardContent>
+      </Card>
       
        <Card>
         <CardHeader>

@@ -22,6 +22,7 @@ export default function ManageLevelsPage() {
     const { toast } = useToast();
     const [levels, setLevels] = useState<Level[]>(defaultLevels.filter(l => l.level > 0));
     const [isClient, setIsClient] = React.useState(false);
+    const [earningModel, setEarningModel] = useState("dynamic");
 
     useEffect(() => {
         setIsClient(true);
@@ -35,6 +36,12 @@ export default function ManageLevelsPage() {
             });
             setLevels(mergedLevels);
         }
+        
+        const storedEarningModel = localStorage.getItem("system_earning_model");
+        if (storedEarningModel) {
+            setEarningModel(storedEarningModel);
+        }
+
     }, []);
 
     const handleInputChange = (index: number, field: keyof Level, value: string | number) => {
@@ -61,7 +68,7 @@ export default function ManageLevelsPage() {
             dailyTasks: 1,
             monthlyWithdrawals: 1,
             minWithdrawal: 0,
-            earningPerTask: 0, // This is now calculated dynamically
+            earningPerTask: 0,
             withdrawalFee: 0,
         }]);
          toast({ title: "New Level Added", description: "Don't forget to configure and save it." });
@@ -153,15 +160,22 @@ export default function ManageLevelsPage() {
                                 <Percent className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                             </div>
                         </div>
-                         <div className="space-y-2 md:col-span-2 lg:col-span-3">
-                            <Label>Earning Per Task</Label>
-                            <p className="text-sm text-muted-foreground">
-                                This is now calculated automatically for each user based on their committed balance and the level's daily rate. For example, a user with a $1000 balance at this level would earn...
-                            </p>
-                             <p className="text-sm font-semibold text-primary">
-                                ${(level.dailyTasks > 0 ? (1000 * (level.rate / 100)) / level.dailyTasks : 0).toFixed(4)} per task.
-                             </p>
-                        </div>
+                         {earningModel === 'dynamic' ? (
+                            <div className="space-y-2 md:col-span-2 lg:col-span-3">
+                                <Label>Earning Per Task (Dynamic)</Label>
+                                <p className="text-sm text-muted-foreground">
+                                    Earning per task is calculated automatically based on user's committed balance and the level's daily rate. For example, a user with a $1000 balance at this level would earn...
+                                </p>
+                                <p className="text-sm font-semibold text-primary">
+                                    ${(level.dailyTasks > 0 ? (1000 * (level.rate / 100)) / level.dailyTasks : 0).toFixed(4)} per task.
+                                </p>
+                            </div>
+                         ) : (
+                            <div className="space-y-2">
+                                <Label htmlFor={`earningPerTask-${index}`}>Earning Per Task (Fixed)</Label>
+                                <Input id={`earningPerTask-${index}`} type="number" value={level.earningPerTask} onChange={(e) => handleInputChange(index, 'earningPerTask', Number(e.target.value))} />
+                            </div>
+                         )}
                     </CardContent>
                 </Card>
             ))}
