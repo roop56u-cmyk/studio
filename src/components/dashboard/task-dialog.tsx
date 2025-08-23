@@ -35,6 +35,10 @@ export function TaskDialog({ open, onOpenChange }: TaskDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md p-0 gap-0">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Task Review</DialogTitle>
+          <DialogDescription>Submit a review for the current task.</DialogDescription>
+        </DialogHeader>
          <div className="bg-yellow-300/80 p-6 rounded-t-lg">
             <div className="flex justify-between items-center mb-4">
                 <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center">
