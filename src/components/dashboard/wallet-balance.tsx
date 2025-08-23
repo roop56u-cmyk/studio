@@ -137,3 +137,4 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
     </Card>
   );
 }
+
