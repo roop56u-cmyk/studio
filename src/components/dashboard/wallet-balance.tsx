@@ -91,7 +91,7 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="text-2xl font-bold">${balance}</div>
+        <div className="text-xl font-bold">${balance}</div>
         <p className="text-xs text-muted-foreground leading-tight">
           {description}
         </p>
@@ -137,4 +137,5 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
     </Card>
   );
 }
+
 
