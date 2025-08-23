@@ -127,42 +127,41 @@ export default function UserDashboardPage() {
                     counterType="interest"
                 />
             )}
+             {isPanelEnabled("featureLock") && (
+            <>
+                {(isTaskLocked && isInterestLocked) ? (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center"><Lock className="mr-2 h-5 w-5" /> Features Locked</CardTitle>
+                        <CardDescription>Commit funds and invite friends to unlock platform features.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm mb-2">
+                            To unlock Level 1, you must commit at least <strong>$100 to Task Rewards or Interest Earnings</strong>.
+                        </p>
+                        <p className="text-sm mb-4">
+                            Higher levels may also require inviting a certain number of friends. Check the level details above.
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                            Your main balance is ${mainBalance.toFixed(2)}. Use the sidebar wallet to move funds.
+                        </p>
+                    </CardContent>
+                </Card>
+                ) : allTasksCompleted ? (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>All Tasks Completed!</CardTitle>
+                        <CardDescription>You have reached your daily limit.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm">Please come back tomorrow for more tasks.</p>
+                    </CardContent>
+                </Card>
+                ) : null}
+            </>
+            )}
         </div>
       </div>
-
-       {isPanelEnabled("featureLock") && (
-        <>
-            {(isTaskLocked && isInterestLocked) ? (
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center"><Lock className="mr-2 h-5 w-5" /> Features Locked</CardTitle>
-                    <CardDescription>Commit funds and invite friends to unlock platform features.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm mb-2">
-                        To unlock Level 1, you must commit at least <strong>$100 to Task Rewards or Interest Earnings</strong>.
-                    </p>
-                    <p className="text-sm mb-4">
-                        Higher levels may also require inviting a certain number of friends. Check the level details above.
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                        Your main balance is ${mainBalance.toFixed(2)}. Use the sidebar wallet to move funds.
-                    </p>
-                </CardContent>
-            </Card>
-            ) : allTasksCompleted ? (
-            <Card>
-                <CardHeader>
-                    <CardTitle>All Tasks Completed!</CardTitle>
-                    <CardDescription>You have reached your daily limit.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm">Please come back tomorrow for more tasks.</p>
-                </CardContent>
-            </Card>
-            ) : null}
-        </>
-        )}
       
       <TaskDialog
         open={isTaskDialogOpen}
