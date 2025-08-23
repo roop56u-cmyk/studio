@@ -432,9 +432,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const claimAndRestartCounter = (type: CounterType) => {
-      const dailyRate = currentRate / 100 / 365;
+      const dailyRate = currentRate / 100;
       if (type === 'interest') {
-          const earnings = interestEarningsBalance * dailyRate;
+          const earnings = committedBalance * dailyRate;
           setInterestEarningsBalance(prev => prev + earnings);
           setInterestCounter({ isRunning: true, startTime: Date.now() });
           toast({ title: "Daily Interest Claimed!", description: `You earned ${earnings.toFixed(4)} USDT. A new cycle has started.`});
