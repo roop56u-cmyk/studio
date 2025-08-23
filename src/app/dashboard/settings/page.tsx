@@ -30,13 +30,16 @@ import { Eye, EyeOff } from "lucide-react";
 
 export default function SettingsPage() {
   const { toast } = useToast();
-  const { logout } = useAuth();
+  const { currentUser, logout, deleteUser } = useAuth();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const [deletePassword, setDeletePassword] = useState("");
+  const [showDeletePassword, setShowDeletePassword] = useState(false);
 
 
   const handleChangePassword = (e: React.FormEvent) => {
@@ -68,7 +71,20 @@ export default function SettingsPage() {
   };
 
   const handleDeleteAccount = () => {
-    // In a real app, you would call an API to delete the user's account
+    if (!currentUser) return;
+    
+    // In a real app, this would be an API call to verify the password on the backend.
+    if (deletePassword !== currentUser.password) {
+        toast({
+            variant: "destructive",
+            title: "Incorrect Password",
+            description: "The password you entered is incorrect. Account deletion cancelled.",
+        });
+        setDeletePassword("");
+        return;
+    }
+    
+    deleteUser(currentUser.email, true); // Pass true to indicate a self-delete by user
     toast({
       title: "Account Deletion Initiated",
       description: "Your account is scheduled for deletion. You will be logged out.",
@@ -181,12 +197,31 @@ export default function SettingsPage() {
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                 <AlertDialogDescription>
                   This action cannot be undone. This will permanently delete your
-                  account and remove your data from our servers.
+                  account and remove your data from our servers. To confirm, please enter your current password.
                 </AlertDialogDescription>
               </AlertDialogHeader>
+               <div className="space-y-2 relative">
+                <Label htmlFor="delete-password">Current Password</Label>
+                <Input
+                    id="delete-password"
+                    type={showDeletePassword ? "text" : "password"}
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    required
+                />
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-7 h-7 w-7"
+                    onClick={() => setShowDeletePassword(!showDeletePassword)}
+                    >
+                    {showDeletePassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+               </div>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive hover:bg-destructive/90">
+                <AlertDialogCancel onClick={() => setDeletePassword('')}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive hover:bg-destructive/90" disabled={!deletePassword}>
                   Delete Account
                 </AlertDialogAction>
               </AlertDialogFooter>

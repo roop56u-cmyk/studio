@@ -21,7 +21,7 @@ interface AuthContextType {
   signup: (email: string, password: string, referralCode: string) => { success: boolean, message: string };
   logout: () => void;
   updateUser: (email: string, updatedData: Partial<User> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; }) => void;
-  deleteUser: (email: string) => void;
+  deleteUser: (email: string, isSelfDelete?: boolean) => void;
 }
 
 const initialAdminUser: User = {
@@ -91,14 +91,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         try {
             if (currentUser) {
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                const userWithPassword = users.find(u => u.email === currentUser.email);
+                const userToStore = { ...currentUser, password: userWithPassword?.password };
+                localStorage.setItem('currentUser', JSON.stringify(userToStore));
             } else {
                 localStorage.removeItem('currentUser');
             }
         } catch (error) {
             console.error("Failed to save currentUser to localStorage", error);
         }
-    }, [currentUser]);
+    }, [currentUser, users]);
 
     const login = (email: string, password: string) => {
         const user = users.find(u => u.email === email);
@@ -189,11 +191,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
-    const deleteUser = (email: string) => {
+    const deleteUser = (email: string, isSelfDelete: boolean = false) => {
         // Prevent deleting the main admin account
         if (email === initialAdminUser.email) {
             return;
         }
+        // If it's a self-delete, the password has already been verified in the component.
         setUsers(prevUsers => prevUsers.filter(user => user.email !== email));
     };
 

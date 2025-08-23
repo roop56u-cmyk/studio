@@ -51,6 +51,13 @@ export default function LoginPage() {
     }
   };
 
+  const handleForgotPassword = () => {
+    toast({
+        title: "Forgot Password",
+        description: "In a real application, this would trigger a password reset email flow."
+    })
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="mx-auto w-full max-w-sm">
@@ -77,6 +84,9 @@ export default function LoginPage() {
             <div className="grid gap-2">
               <div className="flex items-center">
                 <Label htmlFor="password">Password</Label>
+                 <Button type="button" variant="link" className="ml-auto h-auto p-0 text-xs" onClick={handleForgotPassword}>
+                    Forgot password?
+                </Button>
               </div>
               <div className="relative">
                 <Input
