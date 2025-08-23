@@ -515,12 +515,12 @@ export default function DashboardLayout({
         }
     }
     
-    const sheetOpen = currentUser?.isAdmin ? !!activeAdminPanel : false;
+    const sheetOpen = !!activeAdminPanel;
 
   return (
       <SidebarProvider>
       <div className="relative flex min-h-screen">
-          <Sidebar>
+          <Sidebar collapsible="offcanvas">
             <SidebarContentComponent 
                 onRechargeClick={() => setIsRechargeOpen(true)}
                 onWithdrawalClick={() => setIsWithdrawalOpen(true)}
@@ -575,7 +575,7 @@ export default function DashboardLayout({
               )}
               </div>
           </header>
-          <main className="flex-1 p-4 md:p-6 lg:p-8">
+          <main className="flex-1 p-2 md:p-4 lg:p-6">
               {children}
           </main>
           </div>

@@ -178,7 +178,7 @@ const Sidebar = React.forwardRef<
     },
     ref
   ) => {
-    const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+    const { isMobile, state, openMobile, setOpenMobile, setOpen } = useSidebar()
 
     if (collapsible === "none") {
       return (
@@ -194,14 +194,17 @@ const Sidebar = React.forwardRef<
         </div>
       )
     }
+    
+    const handleOpenChange = isMobile ? setOpenMobile : setOpen;
+    const sheetOpen = isMobile ? openMobile : state === 'expanded';
 
     // Always use the Sheet component for both mobile and desktop
     return (
-        <Sheet open={isMobile ? openMobile : state === 'expanded'} onOpenChange={isMobile ? setOpenMobile : (open) => setOpenMobile(open)}>
+        <Sheet open={sheetOpen} onOpenChange={handleOpenChange}>
             <SheetContent
             data-sidebar="sidebar"
             data-mobile={isMobile.toString()}
-            className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+            className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground"
             style={
               {
                 "--sidebar-width": isMobile ? SIDEBAR_WIDTH_MOBILE : SIDEBAR_WIDTH,
@@ -332,7 +335,7 @@ const SidebarFooter = React.forwardRef<
     <div
       ref={ref}
       data-sidebar="footer"
-      className={cn("flex flex-col gap-2 p-2 mt-auto", className)}
+      className={cn("flex flex-col gap-2 mt-auto", className)}
       {...props}
     />
   )
