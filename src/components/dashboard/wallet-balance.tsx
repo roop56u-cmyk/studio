@@ -82,7 +82,7 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
   return (
     <Card className="relative overflow-hidden flex flex-col">
       <div className={cn("absolute top-0 left-0 h-1 w-full", accentColor)} />
-      <CardHeader>
+      <CardHeader className="p-3">
         <div className="flex flex-row items-center justify-between space-y-0 pb-1">
           <CardTitle className="text-sm font-medium">
             {title}
@@ -90,19 +90,19 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
           <Wallet2 className="h-4 w-4 text-muted-foreground" />
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
-        <div className="text-xl font-bold">${balance}</div>
+      <CardContent className="pt-0 p-3">
+        <div className="text-lg font-bold">${balance}</div>
         <p className="text-xs text-muted-foreground leading-tight">
           {description}
         </p>
       </CardContent>
        {(onMoveToMain || showMoveToOther) && (
-        <CardFooter className="pt-2 flex-col items-start gap-2 mt-auto">
+        <CardFooter className="pt-2 flex-col items-start gap-1 mt-auto p-3">
           <div className="w-full flex flex-col items-start gap-1">
             <Input 
               type="number" 
               placeholder="Amount" 
-              className="h-8 text-xs"
+              className="h-7 text-xs"
               value={moveAmount}
               onChange={(e) => setMoveAmount(e.target.value)}
               disabled={!canMove}
@@ -112,7 +112,7 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
                 <Button 
                 variant="outline" 
                 size="sm" 
-                className="h-8 text-xs flex-1"
+                className="h-7 text-xs flex-1 px-2"
                 onClick={handleMoveClick}
                 disabled={!canMove}
                 >
@@ -124,7 +124,7 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
              <Button 
               variant="outline" 
               size="sm" 
-              className="h-8 text-xs flex-1"
+              className="h-7 text-xs flex-1 px-2"
               onClick={handleMoveToOther}
               disabled={!canMove}
             >

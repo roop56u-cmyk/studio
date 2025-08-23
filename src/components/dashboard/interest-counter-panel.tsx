@@ -101,14 +101,14 @@ export function InterestCounterPanel({
     return (
         <Card className="h-full relative overflow-hidden flex flex-col justify-between">
              <div className={cn("absolute top-0 left-0 h-1 w-full", accentColor)} />
-            <CardHeader>
+            <CardHeader className="p-3">
                 <div className="flex flex-row items-center justify-between space-y-0 pb-1">
                     <CardTitle className="text-xs font-medium">{title}</CardTitle>
                     <Lock className="h-3 w-3 text-muted-foreground" />
                 </div>
             </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center text-center pt-0">
-                <div className="text-xl font-bold">-.--%</div>
+            <CardContent className="flex flex-col items-center justify-center text-center pt-0 p-3">
+                <div className="text-lg font-bold">-.--%</div>
                 <p className="text-xs text-muted-foreground pt-1">
                     Unlock by committing at least $100.
                 </p>
@@ -120,20 +120,20 @@ export function InterestCounterPanel({
   return (
     <Card className="relative overflow-hidden flex flex-col">
       <div className={cn("absolute top-0 left-0 h-1 w-full", accentColor)} />
-      <CardHeader>
+      <CardHeader className="p-3">
         <div className="flex flex-row items-center justify-between space-y-0 pb-1">
           <CardTitle className="text-sm font-medium">{title}</CardTitle>
           <Percent className="h-4 w-4 text-muted-foreground" />
         </div>
         <CardDescription className="text-xs">Current Daily Rate: {currentRate.toFixed(2)}%</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3 pt-0 flex-grow">
-        <div className="text-center bg-muted p-2 rounded-md">
+      <CardContent className="space-y-2 pt-0 flex-grow p-3">
+        <div className="text-center bg-muted p-1 rounded-md">
             <div className="flex items-center justify-center gap-1.5 text-muted-foreground text-xs">
                 <Timer className="h-3 w-3" />
                 <span>Time Remaining</span>
             </div>
-            <div className="text-lg font-bold font-mono tracking-tight">
+            <div className="text-base font-bold font-mono tracking-tight">
                 {isRunning ? formatTime(timeLeft) : "24:00:00"}
             </div>
         </div>
@@ -147,7 +147,7 @@ export function InterestCounterPanel({
         
         <div className="flex justify-center">
             {!isRunning ? (
-            <Button size="sm" onClick={handleStart} className="h-8 text-xs w-full">
+            <Button size="sm" onClick={handleStart} className="h-7 text-xs w-full">
                 <Zap className="mr-1 h-4 w-4" /> Start Earning
             </Button>
             ) : (
@@ -155,7 +155,7 @@ export function InterestCounterPanel({
                 size="sm"
                 onClick={handleClaim}
                 disabled={timeLeft === null || timeLeft > 0}
-                className="h-8 text-xs w-full"
+                className="h-7 text-xs w-full"
             >
                 {timeLeft !== null && timeLeft > 0 ? "Claiming..." : "Claim & Restart"}
             </Button>
