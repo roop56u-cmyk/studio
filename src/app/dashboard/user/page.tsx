@@ -97,10 +97,9 @@ export default function UserDashboardPage() {
           />
         </div>
       )}
-       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="grid gap-4">
+       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+         <div className="grid gap-4">
             {isPanelEnabled("walletBalances") && (
-                <>
                 <WalletBalance
                     accentColor="bg-chart-1"
                     title="Task Rewards"
@@ -109,6 +108,10 @@ export default function UserDashboardPage() {
                     onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Task Rewards')}
                     showMoveToOther={true}
                 />
+            )}
+            </div>
+            <div className="grid gap-4">
+            {isPanelEnabled("walletBalances") && (
                 <WalletBalance
                     accentColor="bg-chart-2"
                     title="Interest Earnings"
@@ -117,10 +120,9 @@ export default function UserDashboardPage() {
                     onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Interest Earnings')}
                     showMoveToOther={true}
                 />
-                </>
             )}
-        </div>
-        <div className="grid gap-4">
+            </div>
+        <div className="lg:col-span-2 grid gap-4">
             {isPanelEnabled("interestCounter") && (
                 <InterestCounterPanel
                     accentColor="bg-chart-3"
@@ -177,3 +179,4 @@ export default function UserDashboardPage() {
     </div>
   );
 }
+
