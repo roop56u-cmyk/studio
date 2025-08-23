@@ -35,11 +35,11 @@ export default function UserDashboardPage() {
     mainBalance, 
     taskRewardsBalance, 
     interestEarningsBalance, 
-    committedBalance,
     isLoading,
     dailyTaskQuota,
     tasksCompletedToday,
-    handleMoveFunds
+    handleMoveFunds,
+    currentLevel
   } = useWallet();
   const [panelConfig, setPanelConfig] = React.useState<PanelConfig[]>(defaultPanelConfig);
 
@@ -52,7 +52,7 @@ export default function UserDashboardPage() {
 
   const [isTaskDialogOpen, setIsTaskDialogOpen] = React.useState(false);
 
-  const isTaskLocked = taskRewardsBalance < 100;
+  const isTaskLocked = currentLevel === 0;
   const isInterestLocked = interestEarningsBalance < 100;
   
   const allTasksCompleted = tasksCompletedToday >= dailyTaskQuota;
@@ -104,7 +104,6 @@ export default function UserDashboardPage() {
       {isPanelEnabled("levelTiers") && (
        <div className="space-y-4">
           <LevelTiers 
-            currentBalance={committedBalance} 
             onStartTasks={() => setIsTaskDialogOpen(true)}
             isTaskLocked={finalIsTaskLocked}
           />
@@ -138,14 +137,14 @@ export default function UserDashboardPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center"><Lock className="mr-2 h-5 w-5" /> Features Locked</CardTitle>
-                        <CardDescription>Commit funds to unlock platform features.</CardDescription>
+                        <CardDescription>Commit funds and invite friends to unlock platform features.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <p className="text-sm mb-2">
-                            Move a minimum of <strong>$100 to Task Rewards</strong> to unlock the review tasks.
+                            To unlock Level 1, you must commit at least <strong>$100 to Task Rewards or Interest Earnings</strong>.
                         </p>
                         <p className="text-sm mb-4">
-                            Move a minimum of <strong>$100 to Interest Earnings</strong> to unlock the interest rate counter.
+                            Higher levels may also require inviting a certain number of friends. Check the level details above.
                         </p>
                         <p className="text-xs text-muted-foreground">
                             Your main balance is ${mainBalance.toFixed(2)}. Use the sidebar wallet to move funds.

@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -14,17 +14,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Trash2, PlusCircle, Calculator } from "lucide-react";
+import { Trash2, PlusCircle, Calculator, Percent } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { levels as defaultLevels, Level } from "@/components/dashboard/level-tiers";
 
 export default function ManageLevelsPage() {
     const { toast } = useToast();
-    const [levels, setLevels] = useState<Level[]>(defaultLevels.filter(l => l.level > 0)); // Exclude level 0
+    const [levels, setLevels] = useState<Level[]>(defaultLevels.filter(l => l.level > 0));
     const [isClient, setIsClient] = React.useState(false);
 
-    React.useEffect(() => {
+    useEffect(() => {
         setIsClient(true);
+        const storedLevels = localStorage.getItem("platform_levels");
+        if (storedLevels) {
+            // Merge with defaults to ensure all properties are present
+            const parsedLevels = JSON.parse(storedLevels);
+            const mergedLevels = defaultLevels.filter(l => l.level > 0).map(defaultLevel => {
+                const storedLevel = parsedLevels.find((p: Level) => p.level === defaultLevel.level);
+                return storedLevel ? { ...defaultLevel, ...storedLevel } : defaultLevel;
+            });
+            setLevels(mergedLevels);
+        }
     }, []);
 
     const handleInputChange = (index: number, field: keyof Level, value: string | number) => {
@@ -48,10 +58,11 @@ export default function ManageLevelsPage() {
             minAmount: 0,
             rate: 0,
             referrals: 0,
-            dailyTasks: 1, // Avoid division by zero
+            dailyTasks: 1,
             monthlyWithdrawals: 1,
             minWithdrawal: 0,
             earningPerTask: 0,
+            withdrawalFee: 0,
         }]);
          toast({ title: "New Level Added", description: "Don't forget to configure and save it." });
     };
@@ -81,9 +92,7 @@ export default function ManageLevelsPage() {
     };
 
     const saveChanges = () => {
-        // Here you would typically save the 'levels' state to your backend or localStorage
-        // For now, we're just showing a toast
-        console.log("Saving levels:", levels);
+        localStorage.setItem("platform_levels", JSON.stringify(levels));
         toast({
             title: "Changes Saved!",
             description: "The level configuration has been updated.",
@@ -121,7 +130,7 @@ export default function ManageLevelsPage() {
                             <div className="flex items-center gap-4">
                                 <Switch 
                                     id={`enable-level-${level.level}`} 
-                                    defaultChecked={true} // In a real app, this would be based on level data
+                                    defaultChecked={true}
                                     onCheckedChange={(checked) => handleToggleChange(index, checked)}
                                 />
                                 <Button variant="ghost" size="icon" onClick={() => deleteLevel(index)}>
@@ -154,7 +163,7 @@ export default function ManageLevelsPage() {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor={`referrals-${index}`}>Required Referrals</Label>
-                            <Input id={`referrals-${index}`} type="number" value={level.referrals ?? ''} onChange={(e) => handleInputChange(index, 'referrals', Number(e.target.value))} />
+                            <Input id={`referrals-${index}`} type="number" value={level.referrals} onChange={(e) => handleInputChange(index, 'referrals', Number(e.target.value))} />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor={`monthlyWithdrawals-${index}`}>Monthly Withdrawals</Label>
@@ -163,6 +172,13 @@ export default function ManageLevelsPage() {
                          <div className="space-y-2">
                             <Label htmlFor={`minWithdrawal-${index}`}>Min Withdrawal (USDT)</Label>
                             <Input id={`minWithdrawal-${index}`} type="number" value={level.minWithdrawal} onChange={(e) => handleInputChange(index, 'minWithdrawal', Number(e.target.value))} />
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor={`withdrawalFee-${index}`}>Withdrawal Fee (%)</Label>
+                            <div className="relative">
+                                <Input id={`withdrawalFee-${index}`} type="number" value={level.withdrawalFee} onChange={(e) => handleInputChange(index, 'withdrawalFee', Number(e.target.value))} className="pr-8" />
+                                <Percent className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            </div>
                         </div>
                     </CardContent>
                 </Card>

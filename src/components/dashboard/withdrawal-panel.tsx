@@ -53,6 +53,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
       isWithdrawalRestrictionEnabled,
       withdrawalRestrictionDays,
       withdrawalRestrictionMessage,
+      withdrawalFee
   } = useWallet();
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
   const [isRestrictionAlertOpen, setIsRestrictionAlertOpen] = useState(false);
@@ -64,11 +65,8 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
   const numericAmount = parseFloat(amount) || 0;
 
   const adminFee = useMemo(() => {
-    if (currentLevel === 1) return numericAmount * 0.05; // 5%
-    if (currentLevel === 2) return numericAmount * 0.03; // 3%
-    if (currentLevel >= 3) return numericAmount * 0.01; // 1%
-    return 0; // No fee for level 0
-  }, [numericAmount, currentLevel]);
+    return numericAmount * (withdrawalFee / 100);
+  }, [numericAmount, withdrawalFee]);
 
   const netWithdrawal = numericAmount - adminFee;
 
@@ -211,7 +209,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
             </div>
             <div className="rounded-md border p-4 space-y-2 text-sm">
                 <div className="flex justify-between">
-                    <span className="text-muted-foreground">Admin Fee ({currentLevel === 1 ? '5%' : currentLevel === 2 ? '3%' : currentLevel >= 3 ? '1%' : '0%'}):</span>
+                    <span className="text-muted-foreground">Admin Fee ({withdrawalFee.toFixed(2)}%):</span>
                     <span className="font-medium">${adminFee.toFixed(2)}</span>
                 </div>
                  <div className="flex justify-between font-semibold">

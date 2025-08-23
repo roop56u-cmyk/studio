@@ -10,30 +10,45 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Users, DollarSign, CheckSquare, CheckCircle, Lock, PlayCircle, Repeat, Landmark, Percent } from "lucide-react";
+import { Users, DollarSign, CheckSquare, CheckCircle, Lock, PlayCircle, Repeat, Landmark, Percent, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
+import { useWallet } from "@/contexts/WalletContext";
 
-export const levels = [
+export type Level = {
+    level: number;
+    minAmount: number;
+    rate: number;
+    referrals: number;
+    dailyTasks: number;
+    monthlyWithdrawals: number;
+    minWithdrawal: number;
+    earningPerTask: number;
+    withdrawalFee: number;
+};
+
+export const levels: Level[] = [
   {
     level: 0,
     minAmount: 0,
     rate: 0,
-    referrals: null,
+    referrals: 0,
     dailyTasks: 0,
     monthlyWithdrawals: 0,
     minWithdrawal: 0,
     earningPerTask: 0,
+    withdrawalFee: 0,
   },
   {
     level: 1,
     minAmount: 100,
     rate: 1.8,
-    referrals: null,
+    referrals: 0,
     dailyTasks: 15,
     monthlyWithdrawals: 1,
     minWithdrawal: 150,
     earningPerTask: 0.30,
+    withdrawalFee: 5,
   },
   {
     level: 2,
@@ -44,6 +59,7 @@ export const levels = [
     monthlyWithdrawals: 1,
     minWithdrawal: 500,
     earningPerTask: 0.50,
+    withdrawalFee: 3,
   },
   {
     level: 3,
@@ -54,6 +70,7 @@ export const levels = [
     monthlyWithdrawals: 1,
     minWithdrawal: 1500,
     earningPerTask: 1.10,
+    withdrawalFee: 1,
   },
   {
     level: 4,
@@ -64,6 +81,7 @@ export const levels = [
     monthlyWithdrawals: 1,
     minWithdrawal: 2500,
     earningPerTask: 2.50,
+    withdrawalFee: 1,
   },
   {
     level: 5,
@@ -74,20 +92,20 @@ export const levels = [
     monthlyWithdrawals: 2,
     minWithdrawal: 3500,
     earningPerTask: 5.00,
+    withdrawalFee: 1,
   },
 ];
 
-export type Level = typeof levels[0];
 
 interface LevelTiersProps {
-    currentBalance: number;
     onStartTasks: () => void;
     isTaskLocked: boolean;
 }
 
-export function LevelTiers({ currentBalance, onStartTasks, isTaskLocked }: LevelTiersProps) {
+export function LevelTiers({ onStartTasks, isTaskLocked }: LevelTiersProps) {
     
-  const currentLevel = levels.slice().reverse().find(level => currentBalance >= level.minAmount)?.level ?? 0;
+  const { currentLevel, levelUnlockProgress } = useWallet();
+  const displayLevels = levels.filter(l => l.level > 0);
 
   return (
     <div className="w-full">
@@ -100,9 +118,8 @@ export function LevelTiers({ currentBalance, onStartTasks, isTaskLocked }: Level
             className="w-full"
         >
             <CarouselContent>
-            {levels.filter(l => l.level > 0).map((level) => {
-                const isUnlocked = currentBalance >= level.minAmount;
-                const isCurrentLevel = level.level === currentLevel;
+            {displayLevels.map((level) => {
+                const { isUnlocked, isCurrentLevel } = levelUnlockProgress[level.level] || {};
                 return (
                 <CarouselItem key={level.level} className="basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 xl:basis-1/6 pb-4">
                     <div className="p-1 h-full">
@@ -129,6 +146,12 @@ export function LevelTiers({ currentBalance, onStartTasks, isTaskLocked }: Level
                                         <DollarSign className="h-4 w-4 mr-2 text-muted-foreground" />
                                         <p>Min. <strong className="font-semibold">${level.minAmount.toLocaleString()}</strong></p>
                                     </div>
+                                    {level.referrals > 0 && (
+                                    <div className="flex items-center text-xs">
+                                        <UserPlus className="h-4 w-4 mr-2 text-muted-foreground" />
+                                        <p>Min. <strong className="font-semibold">{level.referrals}</strong> Referrals</p>
+                                    </div>
+                                    )}
                                     <div className="flex items-center text-xs">
                                         <CheckSquare className="h-4 w-4 mr-2 text-muted-foreground" />
                                         <p><strong className="font-semibold">{level.dailyTasks}</strong> Tasks / Day</p>

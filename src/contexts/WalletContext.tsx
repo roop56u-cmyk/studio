@@ -2,11 +2,11 @@
 
 "use client";
 
-import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect, useMemo } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from './AuthContext';
 import { GenerateTaskSuggestionOutput } from '@/app/actions';
-import { levels as defaultLevels } from '@/components/dashboard/level-tiers';
+import { levels as defaultLevels, Level } from '@/components/dashboard/level-tiers';
 
 
 export type CompletedTask = {
@@ -43,6 +43,13 @@ export type ActiveBooster = {
     expiresAt: number; // timestamp
 };
 
+type LevelUnlockStatus = {
+    isUnlocked: boolean;
+    isCurrentLevel: boolean;
+    balanceMet: boolean;
+    referralsMet: boolean;
+};
+
 interface WalletContextType {
   mainBalance: number;
   taskRewardsBalance: number;
@@ -54,8 +61,10 @@ interface WalletContextType {
   monthlyWithdrawalLimit: number;
   minWithdrawalAmount: number;
   monthlyWithdrawalsCount: number;
+  withdrawalFee: number;
   tasksCompletedToday: number;
   completedTasks: CompletedTask[];
+  levelUnlockProgress: Record<number, LevelUnlockStatus>;
   amount: string;
   setAmount: (amount: string) => void;
   handleMoveFunds: (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', amountToMove: number, fromAccount?: 'Task Rewards' | 'Interest Earnings') => void;
@@ -99,7 +108,7 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
-  const { currentUser, updateUser } = useAuth();
+  const { currentUser, users } = useAuth();
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -108,6 +117,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [withdrawalRestrictionDays, setWithdrawalRestrictionDays] = useState(45);
   const [withdrawalRestrictionMessage, setWithdrawalRestrictionMessage] = useState("Please wait for 45 days to initiate withdrawal request.");
   const [withdrawalRestrictedLevels, setWithdrawalRestrictedLevels] = useState<number[]>([1]);
+  const [configuredLevels, setConfiguredLevels] = useState<Level[]>(defaultLevels);
+
 
   const getInitialState = useCallback((key: string, defaultValue: any) => {
     if (typeof window === 'undefined' || !currentUser) {
@@ -162,8 +173,44 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const interestRateBoost = activeBoosters.find(b => b.type === 'INTEREST_RATE')?.value || 0;
 
   const committedBalance = taskRewardsBalance + interestEarningsBalance;
-  const currentLevelData = defaultLevels.slice().reverse().find(level => committedBalance >= level.minAmount) ?? defaultLevels[0];
-  const { level: currentLevel, rate: baseRate, dailyTasks: baseDailyTaskQuota, monthlyWithdrawals: monthlyWithdrawalLimit, minWithdrawal: minWithdrawalAmount, earningPerTask } = currentLevelData;
+  
+  const directReferralsCount = useMemo(() => {
+    if (!currentUser) return 0;
+    return users.filter(u => u.referredBy === currentUser.referralCode).length;
+  }, [currentUser, users]);
+
+  const { currentLevel, levelUnlockProgress } = useMemo(() => {
+    let finalLevel = 0;
+    const progress: Record<number, LevelUnlockStatus> = {};
+
+    configuredLevels.filter(l => l.level > 0).sort((a,b) => a.level - b.level).forEach(level => {
+        const balanceMet = committedBalance >= level.minAmount;
+        const referralsMet = directReferralsCount >= level.referrals;
+        const isUnlocked = balanceMet && referralsMet;
+
+        if (isUnlocked) {
+            finalLevel = level.level;
+        }
+
+        progress[level.level] = {
+            isUnlocked,
+            isCurrentLevel: false, // will be set later
+            balanceMet,
+            referralsMet,
+        };
+    });
+
+    if (progress[finalLevel]) {
+        progress[finalLevel].isCurrentLevel = true;
+    }
+
+
+    return { currentLevel: finalLevel, levelUnlockProgress: progress };
+  }, [committedBalance, directReferralsCount, configuredLevels]);
+
+
+  const currentLevelData = configuredLevels.find(level => level.level === currentLevel) ?? configuredLevels[0];
+  const { rate: baseRate, dailyTasks: baseDailyTaskQuota, monthlyWithdrawals: monthlyWithdrawalLimit, minWithdrawal: minWithdrawalAmount, earningPerTask, withdrawalFee } = currentLevelData;
 
   const currentRate = baseRate + (baseRate * (interestRateBoost / 100));
   const dailyTaskQuota = baseDailyTaskQuota + taskQuotaBoost;
@@ -195,6 +242,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setWithdrawalRestrictionDays(parseInt(getGlobalSetting('system_withdrawal_restriction_days', '45'), 10));
     setWithdrawalRestrictionMessage(getGlobalSetting('system_withdrawal_restriction_message', "Please wait for 45 days to initiate withdrawal request."));
     setWithdrawalRestrictedLevels(getGlobalSetting('system_withdrawal_restricted_levels', [1], true));
+    setConfiguredLevels(getGlobalSetting('platform_levels', defaultLevels, true));
+
 
     if (currentUser) {
         const now = new Date();
@@ -444,9 +493,11 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         dailyTaskQuota,
         monthlyWithdrawalLimit,
         minWithdrawalAmount,
+        withdrawalFee,
         monthlyWithdrawalsCount,
         tasksCompletedToday,
         completedTasks,
+        levelUnlockProgress,
         amount,
         setAmount,
         handleMoveFunds,
