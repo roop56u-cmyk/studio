@@ -15,6 +15,7 @@ import { Utensils, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import type { Task } from "@/lib/tasks";
+import { Progress } from "@/components/ui/progress";
 
 interface TaskDialogProps {
   open: boolean;
@@ -30,12 +31,13 @@ export function TaskDialog({ open, onOpenChange }: TaskDialogProps) {
     const orderAmount = taskRewardsBalance;
     const commission = earningPerTask;
     const totalReturns = orderAmount + commission;
+    const progressValue = dailyTaskQuota > 0 ? (tasksCompletedToday / dailyTaskQuota) * 100 : 0;
 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md p-0 gap-0">
-        <DialogHeader className="sr-only">
+         <DialogHeader className="sr-only">
           <DialogTitle>Task Review</DialogTitle>
           <DialogDescription>Submit a review for the current task.</DialogDescription>
         </DialogHeader>
@@ -82,6 +84,14 @@ export function TaskDialog({ open, onOpenChange }: TaskDialogProps) {
         </div>
 
         <div className="p-6">
+            <div className="mb-6">
+                <div className="flex justify-between items-center mb-2">
+                    <h4 className="text-sm font-semibold">Task Progress</h4>
+                    <span className="text-sm text-muted-foreground font-medium">{tasksCompletedToday} / {dailyTaskQuota}</span>
+                </div>
+                <Progress value={progressValue} className="h-2" />
+            </div>
+
             <ReviewForm 
                 onTaskLoaded={setCurrentTask}
                 onTaskCompleted={() => {
