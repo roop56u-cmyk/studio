@@ -3,7 +3,6 @@
 "use client";
 
 import React from "react";
-import { ReferralCard } from "@/components/dashboard/referral-card";
 import { InterestCounterPanel } from "@/components/dashboard/interest-counter-panel";
 import { LevelTiers, Level, levels } from "@/components/dashboard/level-tiers";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
@@ -97,8 +96,8 @@ export default function UserDashboardPage() {
           />
         </div>
       )}
-       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-         <div className="grid gap-4">
+       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-1 grid gap-4">
             {isPanelEnabled("walletBalances") && (
                 <WalletBalance
                     accentColor="bg-chart-1"
@@ -109,9 +108,7 @@ export default function UserDashboardPage() {
                     showMoveToOther={true}
                 />
             )}
-            </div>
-            <div className="grid gap-4">
-            {isPanelEnabled("walletBalances") && (
+             {isPanelEnabled("walletBalances") && (
                 <WalletBalance
                     accentColor="bg-chart-2"
                     title="Interest Earnings"
@@ -121,7 +118,7 @@ export default function UserDashboardPage() {
                     showMoveToOther={true}
                 />
             )}
-            </div>
+        </div>
         <div className="lg:col-span-2 grid gap-4">
             {isPanelEnabled("interestCounter") && (
                 <InterestCounterPanel
@@ -131,9 +128,6 @@ export default function UserDashboardPage() {
                     balance={interestEarningsBalance}
                     counterType="interest"
                 />
-            )}
-            {isPanelEnabled("referralCard") && (
-                <ReferralCard />
             )}
         </div>
       </div>
@@ -179,4 +173,3 @@ export default function UserDashboardPage() {
     </div>
   );
 }
-
