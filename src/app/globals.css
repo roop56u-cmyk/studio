@@ -33,7 +33,7 @@ body {
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --sidebar-background: hsl(var(--background));
+    --sidebar-background: hsl(var(--card));
     --sidebar-foreground: hsl(var(--card-foreground));
     --sidebar-primary: hsl(var(--primary));
     --sidebar-primary-foreground: hsl(var(--primary-foreground));
@@ -67,7 +67,7 @@ body {
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-    --sidebar-background: hsl(var(--background));
+    --sidebar-background: hsl(var(--card));
     --sidebar-foreground: hsl(var(--card-foreground));
     --sidebar-primary: hsl(var(--primary));
     --sidebar-primary-foreground: hsl(var(--primary-foreground));
@@ -98,14 +98,6 @@ body {
     height: 100%;
     z-index: -1;
     overflow: hidden;
-  }
-
-  .theme-digital-matrix {
-    --sidebar-background: hsl(0 0% 100%);
-    --sidebar-foreground: hsl(0 0% 0%);
-    --sidebar-accent: hsl(120 100% 90%);
-    --sidebar-accent-foreground: hsl(0 0% 0%);
-    --sidebar-border: hsl(120 10% 85%);
   }
 }
 
