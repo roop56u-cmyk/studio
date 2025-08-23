@@ -80,7 +80,7 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
   };
 
   return (
-    <Card className="relative overflow-hidden">
+    <Card className="relative overflow-hidden flex flex-col">
       <div className={cn("absolute top-0 left-0 h-1 w-full", accentColor)} />
       <CardHeader>
         <div className="flex flex-row items-center justify-between space-y-0 pb-1">
@@ -97,8 +97,8 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
         </p>
       </CardContent>
        {(onMoveToMain || showMoveToOther) && (
-        <CardFooter className="pt-0 flex-col items-start gap-2">
-          <div className="w-full flex items-center gap-2">
+        <CardFooter className="pt-2 flex-col items-start gap-2 mt-auto">
+          <div className="w-full flex items-center gap-1">
             <Input 
               type="number" 
               placeholder="Amount" 
@@ -111,11 +111,11 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
                 <Button 
                 variant="outline" 
                 size="sm" 
-                className="h-8"
+                className="h-8 text-xs px-2"
                 onClick={handleMoveClick}
                 disabled={!canMove}
                 >
-                <ArrowLeftRight className="mr-2 h-3 w-3" />
+                <ArrowLeftRight className="mr-1 h-3 w-3" />
                 To Main
                 </Button>
             )}
@@ -124,12 +124,12 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
              <Button 
               variant="outline" 
               size="sm" 
-              className="h-8 w-full"
+              className="h-8 w-full text-xs"
               onClick={handleMoveToOther}
               disabled={!canMove}
             >
-              <ArrowRight className="mr-2 h-3 w-3" />
-              Move to {title === "Task Rewards" ? "Interest Earnings" : "Task Rewards"}
+              <ArrowRight className="mr-1 h-3 w-3" />
+              Move to {title === "Task Rewards" ? "Interest" : "Tasks"}
             </Button>
            )}
         </CardFooter>
