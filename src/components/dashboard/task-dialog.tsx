@@ -22,12 +22,12 @@ interface TaskDialogProps {
 }
 
 export function TaskDialog({ open, onOpenChange }: TaskDialogProps) {
-    const { tasksCompletedToday, dailyTaskQuota, earningPerTask, committedBalance } = useWallet();
+    const { tasksCompletedToday, dailyTaskQuota, earningPerTask, taskRewardsBalance } = useWallet();
     const [currentTask, setCurrentTask] = useState<Task | null>(null);
 
     const orderNumber = useMemo(() => `N0${Math.floor(Math.random() * 900000000) + 100000000}`, [currentTask]);
     const orderTime = useMemo(() => format(new Date(), 'dd-MM-yyyy HH:mm:ss'), [currentTask]);
-    const orderAmount = committedBalance;
+    const orderAmount = taskRewardsBalance;
     const commission = earningPerTask;
     const totalReturns = orderAmount + commission;
 
