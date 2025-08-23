@@ -28,7 +28,10 @@ export default function RootLayout({
     const savedTheme = localStorage.getItem('landing_theme');
     if (savedTheme === 'cosmic-voyage') {
       setTheme('theme-cosmic-voyage');
-    } else {
+    } else if (savedTheme === 'digital-matrix') {
+      setTheme('theme-digital-matrix');
+    }
+     else {
       setTheme('');
     }
 

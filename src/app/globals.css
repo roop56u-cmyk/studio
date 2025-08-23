@@ -99,6 +99,14 @@ body {
     z-index: -1;
     overflow: hidden;
   }
+
+  .theme-digital-matrix {
+    --sidebar-background: hsl(0 0% 100%);
+    --sidebar-foreground: hsl(0 0% 0%);
+    --sidebar-accent: hsl(120 100% 90%);
+    --sidebar-accent-foreground: hsl(0 0% 0%);
+    --sidebar-border: hsl(120 10% 85%);
+  }
 }
 
 @layer components {
