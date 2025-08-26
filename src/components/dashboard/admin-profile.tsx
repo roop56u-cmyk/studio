@@ -55,8 +55,22 @@ export function AdminProfile() {
 
     const getSavedWithdrawalAddress = useCallback((userEmail: string) => {
         if (!isClient) return null;
-        const storedAddress = localStorage.getItem(`${userEmail}_withdrawalAddress`);
-        return storedAddress ? JSON.parse(storedAddress).address : null;
+        // This key should match the one in WalletContext to fetch the correct addresses
+        const storedAddresses = localStorage.getItem(`${userEmail}_withdrawalAddresses`);
+        if (!storedAddresses) return null;
+        
+        try {
+            const addresses = JSON.parse(storedAddresses);
+            // Assuming the first enabled address is the primary one for display, or just the first if none are enabled.
+            // A more complex logic could be needed if multiple addresses are to be displayed.
+            if (Array.isArray(addresses) && addresses.length > 0) {
+                 return addresses.map(a => a.address).join(", ");
+            }
+        } catch(e) {
+            return null;
+        }
+
+        return null;
     }, [isClient]);
 
     const filteredRequests = useMemo(() => {
@@ -167,7 +181,7 @@ export function AdminProfile() {
                     </div>
 
                     {/* Actions */}
-                     {request.status === 'Pending' ? (
+                     {request.status === 'Pending' || request.status === 'On Hold' ? (
                         <div className="grid grid-cols-3 gap-2">
                            <Button onClick={() => handleAction(request.id, 'Approved')} className="bg-green-500 hover:bg-green-600 text-white">Approve</Button>
                            <Button onClick={() => handleAction(request.id, 'Declined')} className="bg-red-500 hover:bg-red-600 text-white">Decline</Button>
