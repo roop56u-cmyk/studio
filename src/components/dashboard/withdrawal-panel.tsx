@@ -110,7 +110,6 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
   const [isRestrictionAlertOpen, setIsRestrictionAlertOpen] = useState(false);
   const [isPendingAlertOpen, setIsPendingAlertOpen] = useState(false);
   const [isLimitAlertOpen, setIsLimitAlertOpen] = useState(false);
-  const [isMinAmountAlertOpen, setIsMinAmountAlertOpen] = useState(false);
   const [isMaxAmountAlertOpen, setIsMaxAmountAlertOpen] = useState(false);
   const [restrictionStartDate, setRestrictionStartDate] = useState<string | null>(null);
 
@@ -187,11 +186,6 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
 
     if (numericAmount > maxWithdrawalAmount && maxWithdrawalAmount > 0) {
       setIsMaxAmountAlertOpen(true);
-      return;
-    }
-
-    if (numericAmount < minWithdrawalAmount) {
-      setIsMinAmountAlertOpen(true);
       return;
     }
 
@@ -293,7 +287,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 />
-                 <p className="text-xs text-muted-foreground">Min: ${minWithdrawalAmount.toFixed(2)} | Max: ${maxWithdrawalAmount.toFixed(2)}</p>
+                 <p className="text-xs text-muted-foreground">Max: ${maxWithdrawalAmount.toFixed(2)}</p>
             </div>
             <div className="rounded-md border p-4 space-y-2 text-sm">
                 <div className="flex justify-between">
@@ -370,23 +364,6 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogAction onClick={() => setIsLimitAlertOpen(false)}>OK</AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={isMinAmountAlertOpen} onOpenChange={setIsMinAmountAlertOpen}>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>{messages.withdrawal?.minAmountTitle}</AlertDialogTitle>
-                <AlertDialogDescription>
-                    {messages.withdrawal?.minAmountDescription
-                        ?.replace('[Y]', currentLevel)
-                        ?.replace('[Amount]', minWithdrawalAmount.toFixed(2))
-                    }
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogAction onClick={() => setIsMinAmountAlertOpen(false)}>OK</AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
