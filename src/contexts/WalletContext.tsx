@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from './AuthContext';
 import { GenerateTaskSuggestionOutput } from '@/app/actions';
 import { levels as defaultLevels, Level } from '@/components/dashboard/level-tiers';
+import { platformMessages } from '@/lib/platform-messages';
 
 
 export type CompletedTask = {
@@ -94,8 +95,6 @@ interface WalletContextType {
   deleteWithdrawalAddress: (id: string) => void;
   isWithdrawalRestrictionEnabled: boolean;
   withdrawalRestrictionDays: number;
-  withdrawalRestrictionMessage: string;
-  withdrawalRestrictedLevels: number[];
   purchaseBooster: (booster: Booster) => boolean;
   activeBoosters: ActiveBooster[];
   getReferralCommissionBoost: () => number;
@@ -131,8 +130,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   // Global system settings
   const [isWithdrawalRestrictionEnabled, setIsWithdrawalRestrictionEnabled] = useState(true);
   const [withdrawalRestrictionDays, setWithdrawalRestrictionDays] = useState(45);
-  const [withdrawalRestrictionMessage, setWithdrawalRestrictionMessage] = useState("Please wait for 45 days to initiate withdrawal request.");
-  const [withdrawalRestrictedLevels, setWithdrawalRestrictedLevels] = useState<number[]>([1]);
   const [configuredLevels, setConfiguredLevels] = useState<Level[]>(defaultLevels);
   const [earningModel, setEarningModel] = useState("dynamic");
   const [multipleAddressesEnabled, setMultipleAddressesEnabled] = useState(true);
@@ -201,15 +198,14 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   }, [currentUser, users, getInitialState]);
 
   const { currentLevel, levelUnlockProgress } = useMemo(() => {
-    // If admin has set an override, use that.
     if (currentUser?.overrideLevel !== null && currentUser?.overrideLevel !== undefined) {
         const progress: Record<number, LevelUnlockStatus> = {};
         configuredLevels.filter(l => l.level > 0).forEach(level => {
              progress[level.level] = {
                 isUnlocked: level.level <= currentUser.overrideLevel!,
                 isCurrentLevel: level.level === currentUser.overrideLevel!,
-                balanceMet: true, // N/A for override
-                referralsMet: true, // N/A for override
+                balanceMet: true, 
+                referralsMet: true,
             };
         });
         return { currentLevel: currentUser.overrideLevel, levelUnlockProgress: progress };
@@ -229,7 +225,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
         progress[level.level] = {
             isUnlocked,
-            isCurrentLevel: false, // will be set later
+            isCurrentLevel: false, 
             balanceMet,
             referralsMet,
         };
@@ -254,7 +250,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     if (earningModel === 'fixed') {
         return currentLevelData.earningPerTask;
     }
-    // Dynamic calculation
     if (dailyTaskQuota === 0) return 0;
     const dailyEarningPotential = committedBalance * (currentRate / 100);
     return dailyEarningPotential / dailyTaskQuota;
@@ -271,22 +266,18 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
      }
   }, [currentUser]);
 
-  // Effect to clean up expired boosters
   useEffect(() => {
     const now = Date.now();
     const unexpiredBoosters = activeBoosters.filter(b => b.expiresAt > now);
     if (unexpiredBoosters.length !== activeBoosters.length) {
         setActiveBoosters(unexpiredBoosters);
     }
-  }, []); // Runs once on mount
+  }, []); 
 
   useEffect(() => {
     setIsLoading(true);
-    // Load global settings
     setIsWithdrawalRestrictionEnabled(getGlobalSetting('system_withdrawal_restriction_enabled', true, true));
     setWithdrawalRestrictionDays(parseInt(getGlobalSetting('system_withdrawal_restriction_days', '45'), 10));
-    setWithdrawalRestrictionMessage(getGlobalSetting('system_withdrawal_restriction_message', "Please wait for 45 days to initiate withdrawal request."));
-    setWithdrawalRestrictedLevels(getGlobalSetting('system_withdrawal_restricted_levels', [1], true));
     setConfiguredLevels(getGlobalSetting('platform_levels', defaultLevels, true));
     setEarningModel(getGlobalSetting('system_earning_model', 'dynamic'));
     setMultipleAddressesEnabled(getGlobalSetting('system_multiple_addresses_enabled', true, true));
@@ -388,7 +379,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     
-    // Check for fund movement locks
     if ((fromAccount === 'Interest Earnings' || destination === 'Interest Earnings') && isFundMovementLocked('interest')) {
         toast({ variant: 'destructive', title: 'Action Locked', description: 'Cannot move funds to or from Interest Earnings while the timer is running. Please claim your earnings first.' });
         return;
@@ -488,7 +478,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const depositCount = parseInt(localStorage.getItem(depositsKey) || '0');
     localStorage.setItem(depositsKey, (depositCount + 1).toString());
     
-    if (depositCount === 0) { // It's the first deposit
+    if (depositCount === 0) { 
         localStorage.setItem(`${userEmail}_firstDepositDate`, new Date().toISOString());
     }
 
@@ -547,7 +537,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     addTransaction(userEmail, {
         type: 'Withdrawal',
         description: 'Withdrawal approved by admin',
-        amount: 0, // The amount was already deducted on request
+        amount: 0,
         date: new Date().toISOString()
     });
 
@@ -591,7 +581,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         return interestCounter.isRunning;
       }
       if (type === 'task') {
-        // Lock if tasks have been started but not all are completed
         return tasksCompletedToday > 0 && tasksCompletedToday < dailyTaskQuota;
       }
       return false;
@@ -609,7 +598,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             amount: earnings,
             date: new Date().toISOString()
           });
-          setInterestCounter({ isRunning: false, startTime: null }); // Stop the counter, force manual restart
+          setInterestCounter({ isRunning: false, startTime: null }); 
           toast({ title: "Daily Interest Claimed!", description: `You earned ${earnings.toFixed(4)} USDT. You can now move funds and restart the timer when ready.`});
       }
   };
@@ -638,19 +627,16 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       toast({ title: "Task Completed!", description: `You've earned ${finalEarning.toFixed(4)} USDT.` });
   };
 
-  const addWithdrawalAddress = (address: Omit<WithdrawalAddress, 'id' | 'enabled'> & { enabled?: boolean }) => {
+  const addWithdrawalAddress = (address: Omit<WithdrawalAddress, 'id'>) => {
     const newAddress: WithdrawalAddress = {
       id: `ADDR-${Date.now()}`,
-      name: address.name,
-      address: address.address,
-      type: address.type,
-      enabled: address.enabled ?? true,
+      ...address
     };
 
     if (multipleAddressesEnabled) {
       setWithdrawalAddresses(prev => [...prev, newAddress]);
     } else {
-      setWithdrawalAddresses([newAddress]); // Replace existing with the new one
+      setWithdrawalAddresses([newAddress]);
     }
   };
   
@@ -747,8 +733,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         deleteWithdrawalAddress,
         isWithdrawalRestrictionEnabled,
         withdrawalRestrictionDays,
-        withdrawalRestrictionMessage,
-        withdrawalRestrictedLevels,
         purchaseBooster,
         activeBoosters,
         getReferralCommissionBoost,
@@ -770,4 +754,3 @@ export const useWallet = () => {
   }
   return context;
 };
-

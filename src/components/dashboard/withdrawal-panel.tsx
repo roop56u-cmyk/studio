@@ -34,6 +34,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { WithdrawalAddress } from "@/contexts/WalletContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { levels as defaultLevels } from "./level-tiers";
+import { platformMessages } from "@/lib/platform-messages";
 
 interface WithdrawalPanelProps {
     onAddRequest: (request: Partial<Omit<Request, 'id' | 'date' | 'user' | 'status'>>) => void;
@@ -63,6 +64,26 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
   const [amount, setAmount] = useState("");
   const { userRequests } = useRequests();
   const { currentUser } = useAuth();
+  const [messages, setMessages] = useState<any>({});
+
+  useEffect(() => {
+    const storedMessages = getGlobalSetting("platform_custom_messages", {}, true);
+    const defaults: any = {};
+    Object.entries(platformMessages).forEach(([catKey, category]) => {
+      defaults[catKey] = {};
+      Object.entries(category.messages).forEach(([msgKey, msgItem]) => {
+        defaults[catKey][msgKey] = msgItem.defaultValue;
+      });
+    });
+
+    // Deep merge defaults with stored messages
+    const mergedMessages = {
+      withdrawal: { ...defaults.withdrawal, ...(storedMessages.withdrawal || {}) },
+      recharge: { ...defaults.recharge, ...(storedMessages.recharge || {}) }
+    };
+    setMessages(mergedMessages);
+
+  }, []);
 
   const { 
       mainBalance, 
@@ -75,8 +96,6 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
       monthlyWithdrawalsCount,
       isWithdrawalRestrictionEnabled,
       withdrawalRestrictionDays,
-      withdrawalRestrictionMessage,
-      isFundMovementLocked,
       multipleAddressesEnabled,
       addWithdrawalAddress,
   } = useWallet();
@@ -300,7 +319,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
             <AlertDialogHeader>
                 <AlertDialogTitle>Withdrawal Restricted</AlertDialogTitle>
                 <AlertDialogDescription>
-                   {withdrawalRestrictionMessage}
+                   {messages.withdrawal?.restrictionPopup}
                 </AlertDialogDescription>
             </AlertDialogHeader>
              {restrictionStartDate && (
@@ -318,9 +337,9 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
       <AlertDialog open={isPendingAlertOpen} onOpenChange={setIsPendingAlertOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Pending Request</AlertDialogTitle>
+                <AlertDialogTitle>{messages.withdrawal?.pendingRequestTitle}</AlertDialogTitle>
                 <AlertDialogDescription>
-                    You already have a withdrawal request pending. Please wait for it to be processed before submitting a new one.
+                    {messages.withdrawal?.pendingRequestDescription}
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -332,9 +351,12 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
       <AlertDialog open={isLimitAlertOpen} onOpenChange={setIsLimitAlertOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Monthly Limit Reached</AlertDialogTitle>
+                <AlertDialogTitle>{messages.withdrawal?.limitReachedTitle}</AlertDialogTitle>
                 <AlertDialogDescription>
-                    You have reached your monthly withdrawal limit of {monthlyWithdrawalLimit} for Level {currentLevel}. Please try again next month.
+                    {messages.withdrawal?.limitReachedDescription
+                        ?.replace('[X]', monthlyWithdrawalLimit)
+                        .replace('[Y]', currentLevel)
+                    }
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -346,9 +368,12 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
       <AlertDialog open={isMinAmountAlertOpen} onOpenChange={setIsMinAmountAlertOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Minimum Withdrawal Amount</AlertDialogTitle>
+                <AlertDialogTitle>{messages.withdrawal?.minAmountTitle}</AlertDialogTitle>
                 <AlertDialogDescription>
-                    The minimum withdrawal amount for Level {currentLevel} is ${minWithdrawalAmount.toFixed(2)}. Please enter a higher amount.
+                    {messages.withdrawal?.minAmountDescription
+                        ?.replace('[Y]', currentLevel)
+                        ?.replace('[Amount]', minWithdrawalAmount.toFixed(2))
+                    }
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

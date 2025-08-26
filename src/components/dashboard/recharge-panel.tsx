@@ -28,10 +28,30 @@ import { useWallet } from "@/contexts/WalletContext";
 import type { Request } from "@/contexts/RequestContext";
 import type { RechargeAddress } from "@/app/dashboard/admin/recharge-addresses/page";
 import { ScrollArea } from "../ui/scroll-area";
+import { platformMessages } from "@/lib/platform-messages";
 
 interface RechargePanelProps {
     onAddRequest: (request: Partial<Omit<Request, 'id' | 'date' | 'user' | 'status'>>) => void;
 }
+
+const getGlobalSetting = (key: string, defaultValue: any, isJson: boolean = false) => {
+    if (typeof window === 'undefined') {
+    return defaultValue;
+    }
+    try {
+    const storedValue = localStorage.getItem(key);
+    if (storedValue) {
+        if (isJson) {
+            return JSON.parse(storedValue);
+        }
+        return storedValue;
+    }
+    } catch (error) {
+    console.error(`Failed to parse global setting ${key} from localStorage`, error);
+    }
+    return defaultValue;
+};
+
 
 export function RechargePanel({ onAddRequest }: RechargePanelProps) {
   const { toast } = useToast();
@@ -40,6 +60,8 @@ export function RechargePanel({ onAddRequest }: RechargePanelProps) {
   const { withdrawalAddresses } = useWallet();
   const [rechargeAddresses, setRechargeAddresses] = useState<RechargeAddress[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<RechargeAddress | null>(null);
+  const [messages, setMessages] = useState<any>({});
+
 
   const [isAddressAlertOpen, setIsAddressAlertOpen] = useState(false);
   const [isConfirmAlertOpen, setIsConfirmAlertOpen] = useState(false);
@@ -50,6 +72,22 @@ export function RechargePanel({ onAddRequest }: RechargePanelProps) {
         const enabledAddresses = JSON.parse(savedAddresses).filter((a: RechargeAddress) => a.enabled);
         setRechargeAddresses(enabledAddresses);
     }
+
+    const storedMessages = getGlobalSetting("platform_custom_messages", {}, true);
+    const defaults: any = {};
+    Object.entries(platformMessages).forEach(([catKey, category]) => {
+      defaults[catKey] = {};
+      Object.entries(category.messages).forEach(([msgKey, msgItem]) => {
+        defaults[catKey][msgKey] = msgItem.defaultValue;
+      });
+    });
+
+    const mergedMessages = {
+      withdrawal: { ...defaults.withdrawal, ...(storedMessages.withdrawal || {}) },
+      recharge: { ...defaults.recharge, ...(storedMessages.recharge || {}) }
+    };
+    setMessages(mergedMessages);
+
   }, []);
 
   const handleCopy = (address: string) => {
@@ -67,8 +105,6 @@ export function RechargePanel({ onAddRequest }: RechargePanelProps) {
      onAddRequest({
         type: 'Recharge',
         amount: numericAmount,
-        // The address here is the user's source address for the transaction, which they manage themselves.
-        // It's not directly related to the system recharge address they sent funds to.
         address: null, 
     });
 
@@ -100,13 +136,11 @@ export function RechargePanel({ onAddRequest }: RechargePanelProps) {
         return;
     }
     
-    // Check if user has at least one withdrawal address set up.
     if (withdrawalAddresses.length === 0) {
         setIsAddressAlertOpen(true);
         return;
     }
 
-    // Show final confirmation dialog.
     setIsConfirmAlertOpen(true);
   };
 
@@ -166,13 +200,12 @@ export function RechargePanel({ onAddRequest }: RechargePanelProps) {
         </CardContent>
       </Card>
 
-      {/* Alert for missing withdrawal address */}
       <AlertDialog open={isAddressAlertOpen} onOpenChange={setIsAddressAlertOpen}>
           <AlertDialogContent>
               <AlertDialogHeader>
-                  <AlertDialogTitle>Withdrawal Address Required</AlertDialogTitle>
+                  <AlertDialogTitle>{messages.recharge?.addressRequiredTitle}</AlertDialogTitle>
                   <AlertDialogDescription>
-                      For security, you must set up at least one withdrawal address before you can make a recharge request. Please go to the Withdrawal panel to add an address.
+                      {messages.recharge?.addressRequiredDescription}
                   </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -181,13 +214,12 @@ export function RechargePanel({ onAddRequest }: RechargePanelProps) {
           </AlertDialogContent>
       </AlertDialog>
 
-      {/* Alert for confirming the deposit source */}
       <AlertDialog open={isConfirmAlertOpen} onOpenChange={setIsConfirmAlertOpen}>
           <AlertDialogContent>
               <AlertDialogHeader>
-                  <AlertDialogTitle>Confirm Deposit</AlertDialogTitle>
+                  <AlertDialogTitle>{messages.recharge?.confirmDepositTitle}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Please ensure you have already sent {amount ? `$${amount}` : 'your funds'} to the selected address. Submitting a request without sending funds may result in account restrictions.
+                    {messages.recharge?.confirmDepositDescription?.replace('[Amount]', amount ? `$${amount}` : 'your funds')}
                   </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -199,5 +231,3 @@ export function RechargePanel({ onAddRequest }: RechargePanelProps) {
     </>
   );
 }
-
-    

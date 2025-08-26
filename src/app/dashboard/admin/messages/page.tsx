@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -13,25 +13,52 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { defaultMessages } from "@/lib/custom-messages";
+import { platformMessages } from "@/lib/platform-messages";
+import type { MessageCategory } from "@/lib/platform-messages";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 export default function ManageMessagesPage() {
     const { toast } = useToast();
-    const [messages, setMessages] = useState<string>(defaultMessages);
+    const [messages, setMessages] = useState<{[key:string]: {[key:string]: string}}>({});
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
         setIsClient(true);
         const storedMessages = localStorage.getItem("platform_custom_messages");
         if (storedMessages) {
-            setMessages(storedMessages);
+            setMessages(JSON.parse(storedMessages));
         } else {
-            setMessages(defaultMessages);
+            // Initialize with default values if nothing is stored
+            const defaults: {[key:string]: {[key:string]: string}} = {};
+            Object.entries(platformMessages).forEach(([catKey, category]) => {
+                defaults[catKey] = {};
+                Object.entries(category.messages).forEach(([msgKey, msgItem]) => {
+                    defaults[catKey][msgKey] = msgItem.defaultValue;
+                });
+            });
+            setMessages(defaults);
         }
     }, []);
 
+    const handleMessageChange = (categoryKey: string, messageKey: string, value: string) => {
+        setMessages(prev => ({
+            ...prev,
+            [categoryKey]: {
+                ...prev[categoryKey],
+                [messageKey]: value
+            }
+        }));
+    };
+
     const saveChanges = () => {
-        localStorage.setItem("platform_custom_messages", messages);
+        localStorage.setItem("platform_custom_messages", JSON.stringify(messages));
         toast({
             title: "Messages Saved!",
             description: "The custom platform messages have been updated.",
@@ -39,8 +66,15 @@ export default function ManageMessagesPage() {
     };
     
     const restoreDefaults = () => {
-        setMessages(defaultMessages);
-         localStorage.setItem("platform_custom_messages", defaultMessages);
+        const defaults: {[key:string]: {[key:string]: string}} = {};
+        Object.entries(platformMessages).forEach(([catKey, category]) => {
+            defaults[catKey] = {};
+            Object.entries(category.messages).forEach(([msgKey, msgItem]) => {
+                defaults[catKey][msgKey] = msgItem.defaultValue;
+            });
+        });
+        setMessages(defaults);
+        localStorage.setItem("platform_custom_messages", JSON.stringify(defaults));
         toast({
             title: "Messages Restored!",
             description: "All messages have been restored to their default values.",
@@ -65,24 +99,44 @@ export default function ManageMessagesPage() {
         <div>
             <h1 className="text-3xl font-bold tracking-tight">Manage Messages</h1>
             <p className="text-muted-foreground">
-            Edit platform-wide custom messages and text. Note: This is a simple text editor. Be careful with your changes.
+            Edit platform-wide custom messages and text used in alerts and dialogs.
             </p>
         </div>
 
         <Card>
-             <CardHeader>
+            <CardHeader>
                 <CardTitle>Platform Message Editor</CardTitle>
                 <CardDescription>
-                    The content below is used for various alerts, popups, and static text across the site. The file uses Markdown for formatting (e.g., `# Title`, `**bold**`).
+                    Modify the text content for various alerts and notifications across the site.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-               <Textarea 
-                value={messages}
-                onChange={(e) => setMessages(e.target.value)}
-                rows={25}
-                className="font-mono text-xs"
-               />
+                <Accordion type="multiple" className="w-full space-y-4">
+                    {Object.entries(platformMessages).map(([catKey, category]) => (
+                        <AccordionItem value={catKey} key={catKey} className="border rounded-md p-4">
+                            <AccordionTrigger>
+                                <div className="text-left">
+                                    <h3 className="font-semibold">{category.title}</h3>
+                                    <p className="text-sm text-muted-foreground font-normal">{category.description}</p>
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="pt-4 space-y-4">
+                                {Object.entries(category.messages).map(([msgKey, msgItem]) => (
+                                    <div key={msgKey} className="space-y-2">
+                                        <Label htmlFor={`${catKey}-${msgKey}`}>{msgItem.label}</Label>
+                                        <p className="text-xs text-muted-foreground">{msgItem.description}</p>
+                                        <Textarea 
+                                            id={`${catKey}-${msgKey}`}
+                                            value={messages[catKey]?.[msgKey] ?? msgItem.defaultValue}
+                                            onChange={(e) => handleMessageChange(catKey, msgKey, e.target.value)}
+                                            rows={2}
+                                        />
+                                    </div>
+                                ))}
+                            </AccordionContent>
+                        </AccordionItem>
+                    ))}
+                </Accordion>
             </CardContent>
             <CardFooter className="flex justify-between">
                  <Button onClick={saveChanges}>Save All Changes</Button>
