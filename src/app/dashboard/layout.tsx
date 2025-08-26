@@ -91,6 +91,7 @@ import { ReferralCard } from "@/components/dashboard/referral-card";
 import { InboxPanel } from "@/components/dashboard/inbox-panel";
 import { BoosterStorePanel } from "@/components/dashboard/booster-store-panel";
 import { QuestPanel } from "@/components/dashboard/quest-panel";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Admin Panel Imports
 import UserManagementPage from "./admin/users/page";
@@ -620,9 +621,9 @@ export default function DashboardLayout({
                         A log of your recent recharges and withdrawals.
                     </SheetDescription>
                 </SheetHeader>
-                <div className="mt-4">
+                <ScrollArea className="h-[calc(100vh-8rem)] mt-4">
                     <TransactionHistoryPanel />
-                </div>
+                </ScrollArea>
                  <SheetClose />
             </SheetContent>
         </Sheet>
@@ -634,9 +635,9 @@ export default function DashboardLayout({
                         A log of your recently completed tasks.
                     </SheetDescription>
                 </SheetHeader>
-                <div className="mt-4">
+                <ScrollArea className="h-[calc(100vh-8rem)] mt-4">
                     <TaskHistoryPanel />
-                </div>
+                </ScrollArea>
                  <SheetClose />
             </SheetContent>
         </Sheet>
