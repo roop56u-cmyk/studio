@@ -287,12 +287,23 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setActiveBoosters(unexpiredBoosters);
       }
     };
-    // Check immediately on load
+    
     checkBoosters();
-    // Then check every minute
     const intervalId = setInterval(checkBoosters, 60000); 
     return () => clearInterval(intervalId);
   }, [activeBoosters]);
+
+  // This effect ensures that when an admin edits a user, the user's context (if they are the current user)
+  // gets the updated referral count from localStorage.
+  useEffect(() => {
+    if (currentUser) {
+      const updatedPurchasedReferrals = getInitialState('purchased_referrals', 0);
+      if (updatedPurchasedReferrals !== purchasedReferralsCount) {
+        setPurchasedReferralsCount(updatedPurchasedReferrals);
+      }
+    }
+  }, [users, currentUser, getInitialState, purchasedReferralsCount]);
+
 
   useEffect(() => {
     setIsLoading(true);
@@ -398,18 +409,22 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
  }, [currentUser]);
 
  const handleSignUpBonus = useCallback((userEmail: string) => {
-    // This function is now called when a user's status becomes active.
-    const bonusIsEnabled = JSON.parse(localStorage.getItem('system_referral_bonus_enabled') || 'true');
+    const bonusIsEnabled = getGlobalSetting('system_referral_bonus_enabled', true, true);
     if (!bonusIsEnabled) return;
 
-    // Check if bonus was already given
     const bonusGivenKey = `${userEmail}_signup_bonus_given`;
     if (localStorage.getItem(bonusGivenKey)) return;
 
-    const signUpBonus = parseInt(localStorage.getItem('system_referral_bonus') || '8');
-    setMainBalance(prev => prev + signUpBonus);
+    const signUpBonus = parseInt(getGlobalSetting('system_referral_bonus', '8'), 10);
+    
+    const mainBalanceKey = `${userEmail}_mainBalance`;
+    const currentBalance = parseFloat(localStorage.getItem(mainBalanceKey) || '0');
+    localStorage.setItem(mainBalanceKey, (currentBalance + signUpBonus).toString());
 
-    // Add transaction for the new user
+    if(currentUser?.email === userEmail) {
+        setMainBalance(prev => prev + signUpBonus);
+    }
+
     addTransaction(userEmail, {
         type: 'Sign-up Bonus',
         description: 'Bonus for activating your account',
@@ -419,12 +434,14 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     
     localStorage.setItem(bonusGivenKey, 'true');
 
-    toast({
-      title: "Sign-up Bonus Received!",
-      description: `You've received a $${signUpBonus} bonus for activating your account!`,
-    });
+    if(currentUser?.email === userEmail) {
+        toast({
+            title: "Sign-up Bonus Received!",
+            description: `You've received a $${signUpBonus} bonus for activating your account!`,
+        });
+    }
 
-  }, [addTransaction, toast]);
+  }, [addTransaction, toast, currentUser]);
 
  const handleMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', amountToMove: number, fromAccount?: 'Task Rewards' | 'Interest Earnings') => {
     if(!currentUser) return;
@@ -459,7 +476,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
         
-        // Check if the move will drop the user below the minimum for their current level
         const newCommittedBalance = committedBalance - numericAmount;
         const minAmountForCurrentLevel = currentLevelData.minAmount;
         
