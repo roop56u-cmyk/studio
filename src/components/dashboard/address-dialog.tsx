@@ -65,8 +65,8 @@ export function AddressDialog({ open, onOpenChange, address, userEmail }: Addres
       updateWithdrawalAddress(address.id, data);
       toast({ title: "Address Updated", description: "The withdrawal address has been updated." });
     } else {
-      // Adding new address
-      addWithdrawalAddress(data);
+      // Adding new address - ensure enabled is true
+      addWithdrawalAddress({ ...data, enabled: true });
       toast({ title: "Address Added", description: "The new withdrawal address has been saved." });
     }
     
@@ -112,5 +112,3 @@ export function AddressDialog({ open, onOpenChange, address, userEmail }: Addres
     </Dialog>
   );
 }
-
-    
