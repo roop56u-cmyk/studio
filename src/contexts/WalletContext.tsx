@@ -638,8 +638,14 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       toast({ title: "Task Completed!", description: `You've earned ${finalEarning.toFixed(4)} USDT.` });
   };
 
-  const addWithdrawalAddress = (address: Omit<WithdrawalAddress, 'id' | 'enabled'> & {enabled?: boolean}) => {
-    const newAddress: WithdrawalAddress = { ...address, id: `ADDR-${Date.now()}`, enabled: address.enabled ?? true };
+  const addWithdrawalAddress = (address: Omit<WithdrawalAddress, 'id'>) => {
+    const newAddress: WithdrawalAddress = { 
+        id: `ADDR-${Date.now()}`,
+        name: address.name,
+        address: address.address,
+        type: address.type,
+        enabled: address.enabled ?? true,
+    };
     
     if (multipleAddressesEnabled) {
         setWithdrawalAddresses(prev => [...prev, newAddress]);
