@@ -414,6 +414,21 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
           toast({ variant: "destructive", title: "Insufficient Funds", description: `Cannot move more than available in ${fromAccount}.` });
           return;
         }
+        
+        // Check if the move will drop the user below the minimum for their current level
+        const newCommittedBalance = committedBalance - numericAmount;
+        const minAmountForCurrentLevel = currentLevelData.minAmount;
+        
+        if (newCommittedBalance < minAmountForCurrentLevel && currentLevel > 0) {
+            toast({
+                variant: "destructive",
+                title: "Warning: Earning Level Affected",
+                description: `Moving these funds will drop your committed balance below the $${minAmountForCurrentLevel} required for Level ${currentLevel}. Your earnings will be affected.`,
+                duration: 6000
+            });
+        }
+
+
         setSourceBalance(prev => prev - numericAmount);
 
         addTransaction(currentUser.email, {
