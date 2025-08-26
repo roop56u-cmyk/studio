@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
@@ -131,6 +132,14 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
     };
 
     setRequests(prev => [newRequest, ...prev]);
+
+    // Log pending request to user's transaction history
+     addTransaction(currentUser.email, {
+        type: newRequest.type,
+        description: `${newRequest.type} request submitted`,
+        amount: newRequest.type === 'Recharge' ? newRequest.amount : -newRequest.amount,
+        date: newRequest.date,
+    });
   };
 
   const handleReferralBonus = (userEmail: string, amount: number) => {
@@ -188,15 +197,30 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
         const currentBalance = parseFloat(localStorage.getItem(userMainBalanceKey) || '0');
         localStorage.setItem(userMainBalanceKey, (currentBalance + amount).toString());
         addTransaction(userEmail, {
-          id: `TXN-${Date.now()}`,
           type: 'Team Reward',
-          description: `Team reward bonus claimed`,
+          description: `Team reward bonus approved`,
           amount: amount,
           date: new Date().toISOString(),
         });
       }
-    } else if (status === 'Declined' && type === 'Withdrawal') {
-       refundWithdrawal(userEmail, amount);
+    } else if (status === 'Declined') {
+       if (type === 'Withdrawal') {
+         refundWithdrawal(userEmail, amount);
+       } else if (type === 'Recharge') {
+          addTransaction(userEmail, {
+            type: 'Recharge',
+            description: `Recharge request declined`,
+            amount: 0,
+            date: new Date().toISOString()
+          });
+       } else if (type === 'Team Reward') {
+          addTransaction(userEmail, {
+            type: 'Team Reward',
+            description: `Team reward request declined`,
+            amount: 0,
+            date: new Date().toISOString()
+          });
+       }
     }
   };
 
@@ -230,3 +254,4 @@ export type Transaction = {
     amount: number,
     date: string,
 }
+
