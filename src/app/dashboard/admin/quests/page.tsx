@@ -34,12 +34,21 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { levels } from "@/components/dashboard/level-tiers";
 
 export type Quest = {
   id: string;
   title: string;
   description: string;
   reward: number;
+  level: number; // 0 for All Levels
 };
 
 const QuestForm = ({
@@ -54,6 +63,7 @@ const QuestForm = ({
   const [title, setTitle] = useState(quest?.title || "");
   const [description, setDescription] = useState(quest?.description || "");
   const [reward, setReward] = useState(quest?.reward || 0);
+  const [level, setLevel] = useState(quest?.level ?? 0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,6 +76,7 @@ const QuestForm = ({
       title,
       description,
       reward,
+      level,
     });
   };
 
@@ -79,9 +90,25 @@ const QuestForm = ({
         <Label htmlFor="description">Description</Label>
         <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} required />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="reward">Reward (USDT)</Label>
-        <Input id="reward" type="number" value={reward} onChange={(e) => setReward(Number(e.target.value))} required />
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+            <Label htmlFor="reward">Reward (USDT)</Label>
+            <Input id="reward" type="number" value={reward} onChange={(e) => setReward(Number(e.target.value))} required />
+        </div>
+        <div className="space-y-2">
+            <Label htmlFor="level">Target Level</Label>
+            <Select value={String(level)} onValueChange={(v) => setLevel(Number(v))}>
+                <SelectTrigger id="level">
+                    <SelectValue placeholder="Select a level" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="0">All Levels</SelectItem>
+                    {levels.filter(l => l.level > 0).map(l => (
+                        <SelectItem key={l.level} value={String(l.level)}>Level {l.level}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </div>
       </div>
       
       <DialogFooter>
@@ -182,7 +209,10 @@ export default function ManageQuestsPage() {
                         <div className="flex-1">
                         <h3 className="font-semibold">{quest.title}</h3>
                         <p className="text-sm text-muted-foreground mt-1">{quest.description}</p>
-                        <p className="text-sm font-bold text-primary mt-2">Reward: ${quest.reward.toFixed(2)}</p>
+                        <div className="flex items-center gap-4 mt-2">
+                            <p className="text-sm font-bold text-primary">Reward: ${quest.reward.toFixed(2)}</p>
+                            <p className="text-sm text-muted-foreground"><strong className="text-foreground">Level:</strong> {quest.level === 0 ? "All" : `Level ${quest.level}`}</p>
+                        </div>
                         </div>
                         <div className="flex items-center gap-2">
                             <Button variant="ghost" size="icon" onClick={() => handleEdit(index)}>

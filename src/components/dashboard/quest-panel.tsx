@@ -19,7 +19,7 @@ import { ScrollArea } from "../ui/scroll-area";
 
 export function QuestPanel() {
     const { toast } = useToast();
-    const { addRecharge } = useWallet();
+    const { addRecharge, currentLevel } = useWallet();
     const [quests, setQuests] = useState<Quest[]>([]);
     const [completedQuests, setCompletedQuests] = useState<string[]>([]);
     
@@ -59,12 +59,14 @@ export function QuestPanel() {
     const isQuestCompleted = (questId: string) => {
         return completedQuests.includes(questId);
     }
+    
+    const availableQuests = quests.filter(q => q.level === 0 || q.level === currentLevel);
 
   return (
     <ScrollArea className="h-[calc(100vh-8rem)]">
         <div className="grid gap-4 pr-6">
-            {quests.length > 0 ? (
-            quests.map((quest) => (
+            {availableQuests.length > 0 ? (
+            availableQuests.map((quest) => (
                 <Card key={quest.id} className="flex flex-col">
                     <CardHeader>
                         <div className="flex justify-between items-start">
@@ -93,7 +95,7 @@ export function QuestPanel() {
                 </Card>
             ))
             ) : (
-            <p className="text-muted-foreground col-span-full text-center py-12">No daily quests are available at the moment. Please check back later.</p>
+            <p className="text-muted-foreground col-span-full text-center py-12">No daily quests are available for your level at the moment. Please check back later.</p>
             )}
         </div>
     </ScrollArea>
