@@ -142,54 +142,12 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const handleSignUpBonus = (userEmail: string, amount: number) => {
-    // This function is called when a user's recharge is approved.
-    const userDepositsKey = `${userEmail}_deposits`;
-    const depositCount = parseInt(localStorage.getItem(userDepositsKey) || '0');
-    
-    // The bonus is only for the *first* deposit. `approveRecharge` increments the count,
-    // so we check if the count is exactly 1.
-    if (depositCount !== 1) return;
-
-    const bonusIsEnabled = JSON.parse(localStorage.getItem('system_referral_bonus_enabled') || 'true');
-    if (!bonusIsEnabled) return;
-
-    const minDepositForBonus = parseInt(localStorage.getItem('system_min_deposit_for_bonus') || '100');
-    if (amount < minDepositForBonus) return;
-
-    const signUpBonus = parseInt(localStorage.getItem('system_referral_bonus') || '8');
-    const userMainBalanceKey = `${userEmail}_mainBalance`;
-    const userCurrentBalance = parseFloat(localStorage.getItem(userMainBalanceKey) || '0');
-    localStorage.setItem(userMainBalanceKey, (userCurrentBalance + signUpBonus).toString());
-
-    // Add transaction for the new user
-     const transaction: Transaction = {
-        id: `TXN-${Date.now()}`,
-        type: 'Sign-up Bonus',
-        description: `Bonus for your first qualifying deposit`,
-        amount: signUpBonus,
-        date: new Date().toISOString(),
-    };
-    const userTransactionsKey = `${userEmail}_transactionHistory`;
-    const currentTransactions = JSON.parse(localStorage.getItem(userTransactionsKey) || '[]');
-    localStorage.setItem(userTransactionsKey, JSON.stringify([...currentTransactions, transaction]));
-
-
-    if (currentUser?.email === userEmail) {
-      toast({
-        title: "Sign-up Bonus Received!",
-        description: `You've received a $${signUpBonus} bonus for making your first qualifying deposit!`,
-      });
-    }
-  }
-
   const updateRequestStatus = (id: string, status: 'Approved' | 'Declined' | 'On Hold', userEmail: string, type: Request['type'], amount: number) => {
     setRequests(prev => prev.map(req => req.id === id ? { ...req, status } : req));
     
     if (status === 'Approved') {
       if (type === 'Recharge') {
         approveRecharge(userEmail, amount);
-        handleSignUpBonus(userEmail, amount);
       } else if (type === 'Withdrawal') {
         approveWithdrawal(userEmail);
       } else if (type === 'Team Reward') {

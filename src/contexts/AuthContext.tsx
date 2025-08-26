@@ -11,7 +11,7 @@ export type User = {
     isAdmin: boolean;
     referralCode: string;
     referredBy: string | null; // Stores the referral code of the user who referred them
-    status: 'active' | 'disabled';
+    status: 'active' | 'disabled' | 'inactive';
     overrideLevel?: number | null;
 };
 
@@ -23,7 +23,7 @@ interface AuthContextType {
   logout: () => void;
   updateUser: (email: string, updatedData: Partial<Omit<User, 'status'>> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; purchasedReferrals?: number; }) => void;
   deleteUser: (email: string, isSelfDelete?: boolean) => void;
-  updateUserStatus: (email: string, status: 'active' | 'disabled') => void;
+  updateUserStatus: (email: string, status: User['status']) => void;
   checkAndDeactivateUser: (email: string) => void;
 }
 
@@ -171,7 +171,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             isAdmin: false,
             referralCode: "TRH-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
             referredBy: referralCode,
-            status: 'active',
+            status: 'inactive',
         };
         setUsers(prev => [...prev, newUser]);
         
@@ -238,8 +238,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUsers(prevUsers => prevUsers.filter(user => user.email !== email));
     };
 
-    const updateUserStatus = (email: string, status: 'active' | 'disabled') => {
+    const updateUserStatus = (email: string, status: User['status']) => {
         setUsers(prev => prev.map(u => u.email === email ? { ...u, status } : u));
+         if (currentUser?.email === email) {
+            setCurrentUser(prev => prev ? { ...prev, status } : null);
+        }
     }
     
     const checkAndDeactivateUser = (email: string) => {
