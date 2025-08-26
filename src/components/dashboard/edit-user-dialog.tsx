@@ -81,6 +81,8 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
     },
   });
 
+  const status = form.watch('status');
+
   useEffect(() => {
     if (user && open) {
       const mainBalance = getInitialState('mainBalance', 0, user.email);
@@ -209,24 +211,18 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
                 </Button>
            </div>
            
-          <Controller
-            name="status"
-            control={form.control}
-            render={({ field }) => (
-              <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-                <div className="space-y-0.5">
-                  <Label>User Status</Label>
-                  <DialogDescription>
-                    {field.value === 'active' ? 'User can log in.' : 'User is disabled and cannot log in.'}
-                  </DialogDescription>
-                </div>
-                <Switch
-                  checked={field.value === 'active'}
-                  onCheckedChange={(checked) => field.onChange(checked ? 'active' : 'disabled')}
-                />
-              </div>
-            )}
-          />
+           <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+            <div className="space-y-0.5">
+              <Label>User Status</Label>
+              <DialogDescription>
+                {status === 'active' ? 'User can log in.' : 'User is disabled and cannot log in.'}
+              </DialogDescription>
+            </div>
+            <Switch
+              checked={status === 'active'}
+              onCheckedChange={(checked) => form.setValue('status', checked ? 'active' : 'disabled')}
+            />
+          </div>
 
 
           <DialogFooter>
