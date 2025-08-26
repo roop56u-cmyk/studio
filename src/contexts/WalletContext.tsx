@@ -280,12 +280,19 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   }, [currentUser]);
 
   useEffect(() => {
-    const now = Date.now();
-    const unexpiredBoosters = activeBoosters.filter(b => b.expiresAt > now);
-    if (unexpiredBoosters.length !== activeBoosters.length) {
+    const checkBoosters = () => {
+      const now = Date.now();
+      const unexpiredBoosters = activeBoosters.filter(b => b.expiresAt > now);
+      if (unexpiredBoosters.length !== activeBoosters.length) {
         setActiveBoosters(unexpiredBoosters);
-    }
-  }, []); 
+      }
+    };
+    // Check immediately on load
+    checkBoosters();
+    // Then check every minute
+    const intervalId = setInterval(checkBoosters, 60000); 
+    return () => clearInterval(intervalId);
+  }, [activeBoosters]);
 
   useEffect(() => {
     setIsLoading(true);
@@ -688,6 +695,17 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         toast({ variant: 'destructive', title: 'Insufficient Funds', description: 'You do not have enough funds in your main wallet to purchase this booster.'});
         return false;
     }
+    
+    if (activeBoosters.some(b => b.boosterId === booster.id)) {
+        toast({ variant: 'destructive', title: 'Booster Already Active', description: 'You already have this booster active.'});
+        return false;
+    }
+
+    if (booster.type !== 'PURCHASE_REFERRAL' && purchasedBoosterIds.includes(booster.id)) {
+        toast({ variant: 'destructive', title: 'Booster Already Purchased', description: 'You have already purchased this booster. Wait for it to expire.'});
+        return false;
+    }
+
 
     setMainBalance(prev => prev - booster.price);
     
@@ -715,6 +733,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             expiresAt: Date.now() + booster.duration * 60 * 60 * 1000,
         };
         setActiveBoosters(prev => [...prev, newActiveBooster]);
+        setPurchasedBoosterIds(prev => [...prev, booster.id]); // Also track timed boosters as purchased
         addTransaction(currentUser.email, {
             type: 'Booster Purchase',
             description: `Purchased ${booster.name} booster`,
