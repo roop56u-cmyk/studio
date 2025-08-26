@@ -198,8 +198,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const directReferralsCount = useMemo(() => {
     if (!currentUser) return 0;
     const actualReferrals = users.filter(u => u.referredBy === currentUser.referralCode).length;
-    return actualReferrals + purchasedReferralsCount;
-  }, [currentUser, users, purchasedReferralsCount]);
+    const purchasedReferrals = getInitialState('purchased_referrals', 0);
+    return actualReferrals + purchasedReferrals;
+  }, [currentUser, users, getInitialState]);
 
   const { currentLevel, levelUnlockProgress } = useMemo(() => {
     if (currentUser?.overrideLevel !== null && currentUser?.overrideLevel !== undefined) {
@@ -250,7 +251,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
 
     return { currentLevel: finalLevel, levelUnlockProgress: progress };
-  }, [committedBalance, directReferralsCount, configuredLevels, currentUser, users]);
+  }, [committedBalance, directReferralsCount, configuredLevels, currentUser]);
 
 
   const currentLevelData = configuredLevels.find(level => level.level === currentLevel) ?? configuredLevels[0];
@@ -699,13 +700,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         return false;
     }
     
-    if (activeBoosters.some(b => b.boosterId === booster.id)) {
-        toast({ variant: 'destructive', title: 'Booster Already Active', description: 'You already have this booster active.'});
-        return false;
-    }
-
-    if (booster.type !== 'PURCHASE_REFERRAL' && purchasedBoosterIds.includes(booster.id)) {
-        toast({ variant: 'destructive', title: 'Booster Already Purchased', description: 'You have already purchased this booster. Wait for it to expire.'});
+    if (purchasedBoosterIds.includes(booster.id)) {
+        toast({ variant: 'destructive', title: 'Booster Already Purchased', description: 'You have already purchased this booster. Wait for it to expire if it is temporary.'});
         return false;
     }
 
@@ -714,9 +710,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     
     if (booster.type === 'PURCHASE_REFERRAL') {
         const referralCount = booster.value;
-        setPurchasedReferralsCount(prev => prev + referralCount);
+        const newReferralCount = purchasedReferralsCount + referralCount;
+        setPurchasedReferralsCount(newReferralCount);
+        setPersistentState('purchased_referrals', newReferralCount);
         
-        // Track that this specific booster has been purchased
         setPurchasedBoosterIds(prev => [...prev, booster.id]);
 
         addTransaction(currentUser.email, {
@@ -734,7 +731,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             expiresAt: Date.now() + booster.duration * 60 * 60 * 1000,
         };
         setActiveBoosters(prev => [...prev, newActiveBooster]);
-        setPurchasedBoosterIds(prev => [...prev, booster.id]); // Also track timed boosters as purchased
+        setPurchasedBoosterIds(prev => [...prev, booster.id]);
         addTransaction(currentUser.email, {
             type: 'Booster Purchase',
             description: `Purchased ${booster.name} booster`,
