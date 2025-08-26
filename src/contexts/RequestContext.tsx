@@ -73,7 +73,7 @@ const mockRequests: Request[] = [
 const RequestContext = createContext<RequestContextType | undefined>(undefined);
 
 export const RequestProvider = ({ children }: { children: ReactNode }) => {
-  const { currentUser, users } = useAuth();
+  const { currentUser } = useAuth();
   const { getWalletData, approveRecharge, refundWithdrawal, approveWithdrawal, addTransaction } = useWallet();
   const { toast } = useToast();
 
@@ -142,9 +142,8 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const handleReferralBonus = (userEmail: string, amount: number) => {
+  const handleSignUpBonus = (userEmail: string, amount: number) => {
     // This function is called when a user's recharge is approved.
-    // 'userEmail' is the user who made the deposit.
     const userDepositsKey = `${userEmail}_deposits`;
     const depositCount = parseInt(localStorage.getItem(userDepositsKey) || '0');
     
@@ -152,37 +151,34 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
     // so we check if the count is exactly 1.
     if (depositCount !== 1) return;
 
+    const bonusIsEnabled = JSON.parse(localStorage.getItem('system_referral_bonus_enabled') || 'true');
+    if (!bonusIsEnabled) return;
+
     const minDepositForBonus = parseInt(localStorage.getItem('system_min_deposit_for_bonus') || '100');
     if (amount < minDepositForBonus) return;
 
-    const referredUser = users.find(u => u.email === userEmail);
-    if (!referredUser || !referredUser.referredBy) return;
+    const signUpBonus = parseInt(localStorage.getItem('system_referral_bonus') || '8');
+    const userMainBalanceKey = `${userEmail}_mainBalance`;
+    const userCurrentBalance = parseFloat(localStorage.getItem(userMainBalanceKey) || '0');
+    localStorage.setItem(userMainBalanceKey, (userCurrentBalance + signUpBonus).toString());
 
-    const referrer = users.find(u => u.referralCode === referredUser.referredBy);
-    if (!referrer) return;
-
-    const referralBonus = parseInt(localStorage.getItem('system_referral_bonus') || '8');
-    const referrerMainBalanceKey = `${referrer.email}_mainBalance`;
-    const referrerCurrentBalance = parseFloat(localStorage.getItem(referrerMainBalanceKey) || '0');
-    localStorage.setItem(referrerMainBalanceKey, (referrerCurrentBalance + referralBonus).toString());
-
-    // Add transaction for the referrer
+    // Add transaction for the new user
      const transaction: Transaction = {
         id: `TXN-${Date.now()}`,
         type: 'Sign-up Bonus',
-        description: `Bonus for referring ${userEmail}`,
-        amount: referralBonus,
+        description: `Bonus for your first qualifying deposit`,
+        amount: signUpBonus,
         date: new Date().toISOString(),
     };
-    const referrerTransactionsKey = `${referrer.email}_transactionHistory`;
-    const currentTransactions = JSON.parse(localStorage.getItem(referrerTransactionsKey) || '[]');
-    localStorage.setItem(referrerTransactionsKey, JSON.stringify([...currentTransactions, transaction]));
+    const userTransactionsKey = `${userEmail}_transactionHistory`;
+    const currentTransactions = JSON.parse(localStorage.getItem(userTransactionsKey) || '[]');
+    localStorage.setItem(userTransactionsKey, JSON.stringify([...currentTransactions, transaction]));
 
 
-    if (currentUser?.email === referrer.email) {
+    if (currentUser?.email === userEmail) {
       toast({
-        title: "Referral Bonus!",
-        description: `You've received a $${referralBonus} bonus because your referral ${userEmail} made their first qualifying deposit!`,
+        title: "Sign-up Bonus Received!",
+        description: `You've received a $${signUpBonus} bonus for making your first qualifying deposit!`,
       });
     }
   }
@@ -193,7 +189,7 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
     if (status === 'Approved') {
       if (type === 'Recharge') {
         approveRecharge(userEmail, amount);
-        handleReferralBonus(userEmail, amount);
+        handleSignUpBonus(userEmail, amount);
       } else if (type === 'Withdrawal') {
         approveWithdrawal(userEmail);
       } else if (type === 'Team Reward') {
@@ -258,5 +254,3 @@ export type Transaction = {
     amount: number,
     date: string,
 }
-
-

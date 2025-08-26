@@ -144,7 +144,7 @@ export default function SystemSettingsPage() {
         <CardHeader>
           <CardTitle>Sign-up Bonus Program</CardTitle>
           <CardDescription>
-            Configure the bonus for a user's first qualifying deposit. The bonus is paid to their referrer.
+            Configure the bonus for a new user's first qualifying deposit.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -153,7 +153,7 @@ export default function SystemSettingsPage() {
             <Label htmlFor="referral-bonus-toggle">Enable Sign-up Bonus</Label>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="referral-bonus">Referral Bonus ($)</Label>
+            <Label htmlFor="referral-bonus">Sign-up Bonus ($)</Label>
             <Input id="referral-bonus" type="number" value={referralBonus} onChange={e => setReferralBonus(e.target.value)} disabled={!referralBonusEnabled} />
           </div>
           <div className="space-y-2">
@@ -230,5 +230,3 @@ export default function SystemSettingsPage() {
     </div>
   );
 }
-
-    
