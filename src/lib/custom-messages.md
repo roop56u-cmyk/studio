@@ -1,0 +1,98 @@
+# Custom Platform Messages
+
+This file catalogs the various custom messages, notifications, and text that are displayed to users throughout the platform. Many of these can be configured from the admin dashboard.
+
+---
+
+## 1. Landing Page Content
+
+These messages are displayed on the public home page and are editable from **Admin -> Website & UI**.
+
+- **Welcome Screen Title**: The main headline on the landing page.
+  - *Default*: "Welcome to TaskReview Hub"
+- **Welcome Screen Subtitle**: The descriptive text below the main headline.
+  - *Default*: "Your central place to rate, review, and analyze tasks and services. Get started by creating an account or signing in."
+
+---
+
+## 2. Admin-Managed Content
+
+These messages are created and managed entirely within your admin dashboard.
+
+### Notices (**Admin -> Manage Notices**)
+- **Notice Title**: e.g., "Scheduled Maintenance"
+- **Notice Content**: The full details of the announcement.
+
+### Quests (**Admin -> Manage Quests**)
+- **Quest Title**: e.g., "Invite a Friend"
+- **Quest Description**: e.g., "Invite a new user who successfully registers."
+
+### Boosters (**Admin -> Manage Boosters**)
+- **Booster Name**: e.g., "Task Earning Boost"
+- **Booster Description**: e.g., "Increase your task earnings by 15% for 24 hours."
+
+### Team Rewards (**Admin -> Team Rewards**)
+- **Reward Title**: e.g., "Weekly Top Team Bonus"
+- **Reward Description / Message**: e.g., "Congratulations to your team for achieving the weekly deposit goal!"
+
+---
+
+## 3. System Settings Messages
+
+These messages are configured from **Admin -> System Settings**.
+
+- **Withdrawal Restriction Popup Message**: Shown to users who try to withdraw before their waiting period is over.
+  - *Default*: "Please wait for 45 days to initiate withdrawal request."
+
+---
+
+## 4. Toast Notifications (Popups)
+
+These are short popup messages that appear after a user performs an action.
+
+### Authentication
+- **Login Successful**: "Welcome back!"
+- **Login Failed**: [Specific error like "Incorrect password." or "Account disabled."]
+- **Account Created**: "Welcome! You are now being redirected to your dashboard."
+- **Sign-up Failed**: [Specific error like "Invalid invitation code." or "Email already exists."]
+- **Password Changed**: "Your password has been successfully updated."
+- **Password Mismatch**: "Passwords do not match. Please re-enter your new password and confirmation."
+- **Account Deletion Initiated**: "Your account is scheduled for deletion. You will be logged out."
+
+### Wallet & Finance
+- **Funds Moved**: "[Amount] USDT has been moved from [Source] to [Destination]."
+- **Insufficient Funds**: "You cannot move more than the available balance."
+- **Invalid Amount**: "Please enter a valid positive amount."
+- **Daily Interest Started**: "Your 24-hour earning cycle has begun."
+- **Daily Interest Claimed**: "You earned [Amount] USDT. You can now move funds and restart the timer when ready."
+- **Recharge Request Submitted**: "Your request to recharge [Amount] USDT is pending approval."
+- **Withdrawal Request Submitted**: "Your request to withdraw [Amount] USDT is pending approval."
+- **Withdrawal Address Required**: "For security, you must set up at least one withdrawal address before you can make a recharge request."
+- **Pending Withdrawal Exists**: "You already have a withdrawal request pending. Please wait for it to be processed."
+- **Monthly Withdrawal Limit Reached**: "You have reached your monthly withdrawal limit of [X] for Level [Y]."
+- **Minimum Withdrawal Amount Not Met**: "The minimum withdrawal amount for Level [Y] is $[Amount]."
+
+### Tasks, Quests & Boosters
+- **Task Completed**: "You've earned [Amount] USDT."
+- **Daily Task Limit Reached**: "You have already completed all your tasks for today."
+- **Quest Reward Claimed**: "You have received $[Amount] in your main wallet."
+- **Booster Purchased**: "The '[Booster Name]' booster is now active!"
+- **Referrals Purchased**: "You have successfully purchased [X] referrals."
+
+### Admin Actions
+- **Settings Saved**: "Global system settings have been updated."
+- **Request Approved/Declined/On Hold**: "Request ID [ID] has been marked as [Status]."
+- **User Updated**: "Details for [User Email] have been successfully updated."
+- **User Deleted**: "User [User Email] has been successfully deleted."
+- **New Level Added**: "New Level Added. Don't forget to configure and save it."
+
+---
+
+## 5. Dialog & Alert Messages
+
+These messages appear in confirmation dialogs and alerts.
+
+- **Delete Account Confirmation**: "This action cannot be undone. This will permanently delete your account and remove your data from our servers. To confirm, please enter your current password."
+- **Delete Item Confirmation** (e.g., Task, Quest, Notice): "Are you sure you want to delete this? This cannot be undone."
+- **Refresh with AI Confirmation**: "This will replace the entire current task library with new tasks generated by AI. This action cannot be undone."
+- **Confirm Deposit**: "Please ensure you have already sent your funds to the selected address. Submitting a request without sending funds may result in account restrictions."
