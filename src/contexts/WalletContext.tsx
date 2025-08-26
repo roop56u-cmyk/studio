@@ -80,9 +80,9 @@ interface WalletContextType {
     withdrawals: number;
   };
   requestWithdrawal: (amount: number) => void;
-  approveRecharge: (amount: number) => void;
-  refundWithdrawal: (amount: number) => void;
-  approveWithdrawal: () => void;
+  approveRecharge: (userEmail: string, amount: number) => void;
+  refundWithdrawal: (userEmail: string, amount: number) => void;
+  approveWithdrawal: (userEmail: string) => void;
   isLoading: boolean;
   interestCounter: CounterState;
   startCounter: (type: 'task' | 'interest') => void;
@@ -100,7 +100,18 @@ interface WalletContextType {
   activeBoosters: ActiveBooster[];
   getReferralCommissionBoost: () => number;
   isFundMovementLocked: (type: 'task' | 'interest') => boolean;
+  addTransaction: (userEmail: string, transaction: Omit<Transaction, 'id'>) => void;
+  transactionHistory: Transaction[];
+  multipleAddressesEnabled: boolean;
 }
+
+export type Transaction = {
+    id: string;
+    type: string;
+    description: string;
+    amount: number;
+    date: string;
+};
 
 export type CounterType = 'task' | 'interest';
 
@@ -124,6 +135,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [withdrawalRestrictedLevels, setWithdrawalRestrictedLevels] = useState<number[]>([1]);
   const [configuredLevels, setConfiguredLevels] = useState<Level[]>(defaultLevels);
   const [earningModel, setEarningModel] = useState("dynamic");
+  const [multipleAddressesEnabled, setMultipleAddressesEnabled] = useState(true);
 
 
   const getInitialState = useCallback((key: string, defaultValue: any) => {
@@ -164,6 +176,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [interestEarningsBalance, setInterestEarningsBalance] = useState(() => getInitialState('interestEarningsBalance', 0));
   const [deposits, setDeposits] = useState(() => getInitialState('deposits', 0));
   const [withdrawals, setWithdrawals] = useState(() => getInitialState('withdrawals', 0));
+  const [transactionHistory, setTransactionHistory] = useState<Transaction[]>(() => getInitialState('transactionHistory', []));
   
   const [interestCounter, setInterestCounter] = useState<CounterState>(() => getInitialState('interestCounter', { isRunning: false, startTime: null }));
 
@@ -276,6 +289,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setWithdrawalRestrictedLevels(getGlobalSetting('system_withdrawal_restricted_levels', [1], true));
     setConfiguredLevels(getGlobalSetting('platform_levels', defaultLevels, true));
     setEarningModel(getGlobalSetting('system_earning_model', 'dynamic'));
+    setMultipleAddressesEnabled(getGlobalSetting('system_multiple_addresses_enabled', true, true));
 
 
     if (currentUser) {
@@ -314,6 +328,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       setInterestEarningsBalance(getInitialState('interestEarningsBalance', 0));
       setDeposits(getInitialState('deposits', 0));
       setWithdrawals(getInitialState('withdrawals', 0));
+      setTransactionHistory(getInitialState('transactionHistory', []));
       setInterestCounter(getInitialState('interestCounter', { isRunning: false, startTime: null }));
       setCompletedTasks(getInitialState('completedTasks', []));
       setWithdrawalAddresses(getInitialState('withdrawalAddresses', []));
@@ -324,6 +339,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setInterestEarningsBalance(0);
         setDeposits(0);
         setWithdrawals(0);
+        setTransactionHistory([]);
         setInterestCounter({ isRunning: false, startTime: null });
         setTasksCompletedToday(0);
         setCompletedTasks([]);
@@ -341,6 +357,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => setPersistentState('interestEarningsBalance', interestEarningsBalance), [interestEarningsBalance, setPersistentState]);
   useEffect(() => setPersistentState('deposits', deposits), [deposits, setPersistentState]);
   useEffect(() => setPersistentState('withdrawals', withdrawals), [withdrawals, setPersistentState]);
+  useEffect(() => setPersistentState('transactionHistory', transactionHistory), [transactionHistory, setPersistentState]);
   useEffect(() => setPersistentState('interestCounter', interestCounter), [interestCounter, setPersistentState]);
   useEffect(() => setPersistentState('tasksCompletedToday', tasksCompletedToday), [tasksCompletedToday, setPersistentState]);
   useEffect(() => setPersistentState('completedTasks', completedTasks), [completedTasks, setPersistentState]);
@@ -349,8 +366,22 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => setPersistentState('lastWithdrawalMonth', lastWithdrawalMonth), [lastWithdrawalMonth, setPersistentState]);
   useEffect(() => setPersistentState('activeBoosters', activeBoosters), [activeBoosters, setPersistentState]);
 
+ const addTransaction = useCallback((userEmail: string, transaction: Omit<Transaction, 'id'>) => {
+    const newTransaction: Transaction = {
+        ...transaction,
+        id: `TXN-${Date.now()}-${Math.random()}`,
+    };
+     const key = `${userEmail}_transactionHistory`;
+     const currentHistory = JSON.parse(localStorage.getItem(key) || '[]');
+     localStorage.setItem(key, JSON.stringify([newTransaction, ...currentHistory]));
+
+     if (currentUser?.email === userEmail) {
+        setTransactionHistory(prev => [newTransaction, ...prev]);
+     }
+ }, [currentUser]);
 
  const handleMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', amountToMove: number, fromAccount?: 'Task Rewards' | 'Interest Earnings') => {
+    if(!currentUser) return;
     const numericAmount = fromAccount ? amountToMove : parseFloat(amount);
     if (isNaN(numericAmount) || numericAmount <= 0) {
       toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid positive number to move.' });
@@ -383,12 +414,38 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
         setSourceBalance(prev => prev - numericAmount);
+
+        addTransaction(currentUser.email, {
+            type: 'Fund Movement (Out)',
+            description: `Moved from ${fromAccount}`,
+            amount: -numericAmount,
+            date: new Date().toISOString()
+        });
+
         if (destination === 'Main Wallet') {
             setMainBalance(prev => prev + numericAmount);
+             addTransaction(currentUser.email, {
+                type: 'Fund Movement (In)',
+                description: `Moved to Main Wallet`,
+                amount: numericAmount,
+                date: new Date().toISOString()
+            });
         } else if (destination === 'Interest Earnings') {
             setInterestEarningsBalance(prev => prev + numericAmount);
+             addTransaction(currentUser.email, {
+                type: 'Fund Movement (In)',
+                description: `Moved to Interest Earnings`,
+                amount: numericAmount,
+                date: new Date().toISOString()
+            });
         } else if (destination === 'Task Rewards') {
             setTaskRewardsBalance(prev => prev + numericAmount);
+             addTransaction(currentUser.email, {
+                type: 'Fund Movement (In)',
+                description: `Moved to Task Rewards`,
+                amount: numericAmount,
+                date: new Date().toISOString()
+            });
         }
         toast({ title: "Funds Moved", description: `${numericAmount.toFixed(2)} USDT has been moved from ${fromAccount} to ${destination}.` });
     } else {
@@ -397,45 +454,127 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             return;
         }
         setMainBalance(prev => prev - numericAmount);
+        addTransaction(currentUser.email, {
+            type: 'Fund Movement (Out)',
+            description: `Moved from Main Wallet`,
+            amount: -numericAmount,
+            date: new Date().toISOString()
+        });
+
         if (destination === "Task Rewards") {
             setTaskRewardsBalance(prev => prev + numericAmount);
         } else if (destination === "Interest Earnings") {
             setInterestEarningsBalance(prev => prev + numericAmount);
         }
+        
+        addTransaction(currentUser.email, {
+            type: 'Fund Movement (In)',
+            description: `Moved to ${destination}`,
+            amount: numericAmount,
+            date: new Date().toISOString()
+        });
+
         toast({ title: "Funds Moved", description: `${numericAmount.toFixed(2)} USDT has been moved from Main Wallet to ${destination}.` });
         setAmount("");
     }
   };
 
-  const approveRecharge = (rechargeAmount: number) => {
-    setMainBalance(prev => prev + rechargeAmount);
-    setDeposits(prev => {
-        const newDeposits = prev + 1;
-        const firstDepositDateKey = `${currentUser?.email}_firstDepositDate`;
-        if (newDeposits === 1 && !localStorage.getItem(firstDepositDateKey)) {
-             localStorage.setItem(firstDepositDateKey, new Date().toISOString());
-        }
-        return newDeposits;
+  const approveRecharge = (userEmail: string, rechargeAmount: number) => {
+    const key = `${userEmail}_mainBalance`;
+    const currentBalance = parseFloat(localStorage.getItem(key) || '0');
+    localStorage.setItem(key, (currentBalance + rechargeAmount).toString());
+
+    const depositsKey = `${userEmail}_deposits`;
+    const depositCount = parseInt(localStorage.getItem(depositsKey) || '0');
+    localStorage.setItem(depositsKey, (depositCount + 1).toString());
+    
+    if (depositCount === 0) { // It's the first deposit
+        localStorage.setItem(`${userEmail}_firstDepositDate`, new Date().toISOString());
+    }
+
+    addTransaction(userEmail, {
+        type: 'Recharge',
+        description: 'Recharge approved by admin',
+        amount: rechargeAmount,
+        date: new Date().toISOString()
     });
-     toast({ title: "Recharge Approved", description: `Your balance has been updated by ${rechargeAmount.toFixed(2)} USDT.` });
+
+    if(currentUser?.email === userEmail) {
+        setMainBalance(prev => prev + rechargeAmount);
+        setDeposits(prev => prev + 1);
+        toast({ title: "Recharge Approved", description: `Your balance has been updated by ${rechargeAmount.toFixed(2)} USDT.` });
+    }
   };
+
   const addRecharge = (rechargeAmount: number) => {
     setMainBalance(prev => prev + rechargeAmount);
   };
+
   const addCommissionToMainBalance = useCallback((commissionAmount: number) => {
+    if (!currentUser) return;
     setMainBalance(prev => prev + commissionAmount);
+    addTransaction(currentUser.email, {
+        type: 'Team Commission',
+        description: 'Daily commission from team earnings',
+        amount: commissionAmount,
+        date: new Date().toISOString()
+    });
     toast({ title: "Commission Received!", description: `Your daily team commission of $${commissionAmount.toFixed(2)} has been added to your main wallet.` });
-  }, [toast]);
-  const requestWithdrawal = (withdrawalAmount: number) => { setMainBalance(prev => prev - withdrawalAmount); }
-  const approveWithdrawal = () => {
-    setWithdrawals(prev => prev + 1);
-    setMonthlyWithdrawalsCount(prev => prev + 1);
-    const currentMonth = new Date().getMonth();
-    setLastWithdrawalMonth(currentMonth);
+  }, [toast, addTransaction, currentUser]);
+
+  const requestWithdrawal = (withdrawalAmount: number) => { 
+    setMainBalance(prev => prev - withdrawalAmount); 
+    addTransaction(currentUser!.email, {
+        type: 'Withdrawal',
+        description: 'Withdrawal request submitted',
+        amount: -withdrawalAmount,
+        date: new Date().toISOString()
+    });
   }
-  const refundWithdrawal = (withdrawalAmount: number) => {
-    setMainBalance(prev => prev + withdrawalAmount);
-    toast({ variant: "default", title: "Withdrawal Refunded", description: `Your withdrawal request was declined. ${withdrawalAmount.toFixed(2)} USDT has been returned to your main balance.` });
+
+  const approveWithdrawal = (userEmail: string) => {
+    const withdrawalsKey = `${userEmail}_withdrawals`;
+    const withdrawalCount = parseInt(localStorage.getItem(withdrawalsKey) || '0');
+    localStorage.setItem(withdrawalsKey, (withdrawalCount + 1).toString());
+
+    const monthlyCountKey = `${userEmail}_monthlyWithdrawalsCount`;
+    const monthlyCount = parseInt(localStorage.getItem(monthlyCountKey) || '0');
+    localStorage.setItem(monthlyCountKey, (monthlyCount + 1).toString());
+
+    const lastMonthKey = `${userEmail}_lastWithdrawalMonth`;
+    localStorage.setItem(lastMonthKey, new Date().getMonth().toString());
+
+    addTransaction(userEmail, {
+        type: 'Withdrawal',
+        description: 'Withdrawal approved by admin',
+        amount: 0, // The amount was already deducted on request
+        date: new Date().toISOString()
+    });
+
+    if(currentUser?.email === userEmail) {
+      setWithdrawals(prev => prev + 1);
+      setMonthlyWithdrawalsCount(prev => prev + 1);
+      const currentMonth = new Date().getMonth();
+      setLastWithdrawalMonth(currentMonth);
+    }
+  }
+
+  const refundWithdrawal = (userEmail: string, withdrawalAmount: number) => {
+    const key = `${userEmail}_mainBalance`;
+    const currentBalance = parseFloat(localStorage.getItem(key) || '0');
+    localStorage.setItem(key, (currentBalance + withdrawalAmount).toString());
+
+     addTransaction(userEmail, {
+        type: 'Withdrawal',
+        description: 'Withdrawal declined, funds refunded',
+        amount: withdrawalAmount,
+        date: new Date().toISOString()
+    });
+
+    if(currentUser?.email === userEmail) {
+        setMainBalance(prev => prev + withdrawalAmount);
+        toast({ variant: "default", title: "Withdrawal Refunded", description: `Your withdrawal request was declined. ${withdrawalAmount.toFixed(2)} USDT has been returned to your main balance.` });
+    }
   }
   const getWalletData = useCallback(() => { return { balance: mainBalance, level: currentLevel, deposits, withdrawals }; }, [mainBalance, currentLevel, deposits, withdrawals]);
 
@@ -459,10 +598,17 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const claimAndRestartCounter = (type: CounterType) => {
+      if(!currentUser) return;
       const dailyRate = currentRate / 100;
       if (type === 'interest') {
           const earnings = committedBalance * dailyRate;
           setInterestEarningsBalance(prev => prev + earnings);
+          addTransaction(currentUser.email, {
+            type: 'Interest Claim',
+            description: `Claimed daily interest`,
+            amount: earnings,
+            date: new Date().toISOString()
+          });
           setInterestCounter({ isRunning: false, startTime: null }); // Stop the counter, force manual restart
           toast({ title: "Daily Interest Claimed!", description: `You earned ${earnings.toFixed(4)} USDT. You can now move funds and restart the timer when ready.`});
       }
@@ -492,9 +638,15 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       toast({ title: "Task Completed!", description: `You've earned ${finalEarning.toFixed(4)} USDT.` });
   };
 
-  const addWithdrawalAddress = (address: Omit<WithdrawalAddress, 'id'>) => {
-    const newAddress: WithdrawalAddress = { ...address, id: `ADDR-${Date.now()}` };
-    setWithdrawalAddresses(prev => [...prev, newAddress]);
+  const addWithdrawalAddress = (address: Omit<WithdrawalAddress, 'id' | 'enabled'> & {enabled?: boolean}) => {
+    const newAddress: WithdrawalAddress = { ...address, id: `ADDR-${Date.now()}`, enabled: address.enabled ?? true };
+    
+    if (multipleAddressesEnabled) {
+        setWithdrawalAddresses(prev => [...prev, newAddress]);
+    } else {
+        setWithdrawalAddresses([newAddress]); // Replace existing with the new one
+    }
+    
     toast({ title: "Address Saved", description: `Withdrawal address "${address.name}" has been set.` });
   };
   
@@ -520,6 +672,12 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         const referralsKey = `${currentUser.email}_purchased_referrals`;
         const currentReferrals = getInitialState('purchased_referrals', 0);
         setPersistentState('purchased_referrals', currentReferrals + referralCount);
+        addTransaction(currentUser.email, {
+            type: 'Booster Purchase',
+            description: `Purchased ${referralCount} referrals`,
+            amount: -booster.price,
+            date: new Date().toISOString()
+        });
         toast({ title: 'Referrals Purchased!', description: `You have successfully purchased ${referralCount} referrals.`});
     } else {
         const newActiveBooster: ActiveBooster = {
@@ -529,6 +687,12 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             expiresAt: Date.now() + booster.duration * 60 * 60 * 1000,
         };
         setActiveBoosters(prev => [...prev, newActiveBooster]);
+        addTransaction(currentUser.email, {
+            type: 'Booster Purchase',
+            description: `Purchased ${booster.name} booster`,
+            amount: -booster.price,
+            date: new Date().toISOString()
+        });
         toast({ title: 'Booster Purchased!', description: `The "${booster.name}" booster is now active!`});
     }
     
@@ -584,7 +748,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         purchaseBooster,
         activeBoosters,
         getReferralCommissionBoost,
-        isFundMovementLocked
+        isFundMovementLocked,
+        addTransaction,
+        transactionHistory,
+        multipleAddressesEnabled
       }}
     >
       {children}

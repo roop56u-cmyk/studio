@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -56,8 +57,9 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
       isWithdrawalRestrictionEnabled,
       withdrawalRestrictionDays,
       withdrawalRestrictionMessage,
-      withdrawalFee,
       isFundMovementLocked,
+      multipleAddressesEnabled,
+      addWithdrawalAddress,
   } = useWallet();
   
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
@@ -72,9 +74,14 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
 
   const numericAmount = parseFloat(amount) || 0;
 
+  const withdrawalFeeRate = useMemo(() => {
+     const levelData = configuredLevels.find(l => l.level === currentLevel);
+     return levelData ? levelData.withdrawalFee : 0;
+  }, [currentLevel]);
+  
   const adminFee = useMemo(() => {
-    return numericAmount * (withdrawalFee / 100);
-  }, [numericAmount, withdrawalFee]);
+    return numericAmount * (withdrawalFeeRate / 100);
+  }, [numericAmount, withdrawalFeeRate]);
 
   const netWithdrawal = numericAmount - adminFee;
 
@@ -87,6 +94,14 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
   }, [withdrawalAddresses, selectedAddressId]);
   
   const handleAddNewAddress = () => {
+    if (!multipleAddressesEnabled && withdrawalAddresses.length > 0) {
+        toast({
+            title: "Multiple Addresses Disabled",
+            description: "The admin has disabled adding more than one withdrawal address.",
+            variant: "destructive"
+        });
+        return;
+    }
     setEditingAddress(null);
     setIsAddressDialogOpen(true);
   };
@@ -157,6 +172,29 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
     onAddRequest({ amount: numericAmount, address: selectedAddress.address, type: 'Withdrawal' });
     toast({ title: "Withdrawal Request Submitted", description: `Your request to withdraw ${numericAmount.toFixed(2)} USDT is pending approval.` });
     setAmount("");
+  };
+
+  const { configuredLevels } = useMemo(() => {
+    const levels = getGlobalSetting('platform_levels', defaultLevels, true);
+    return { configuredLevels: levels };
+  }, []);
+
+  const getGlobalSetting = (key: string, defaultValue: any, isJson: boolean = false) => {
+     if (typeof window === 'undefined') {
+      return defaultValue;
+    }
+    try {
+      const storedValue = localStorage.getItem(key);
+      if (storedValue) {
+        if (isJson) {
+            return JSON.parse(storedValue);
+        }
+        return storedValue;
+      }
+    } catch (error) {
+      console.error(`Failed to parse global setting ${key} from localStorage`, error);
+    }
+    return defaultValue;
   };
 
 
@@ -231,7 +269,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
             </div>
             <div className="rounded-md border p-4 space-y-2 text-sm">
                 <div className="flex justify-between">
-                    <span className="text-muted-foreground">Admin Fee ({withdrawalFee.toFixed(2)}%):</span>
+                    <span className="text-muted-foreground">Admin Fee ({withdrawalFeeRate.toFixed(2)}%):</span>
                     <span className="font-medium">${adminFee.toFixed(2)}</span>
                 </div>
                  <div className="flex justify-between font-semibold">
