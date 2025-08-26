@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
+  CardFooter
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Timer, Zap, Lock, Percent } from "lucide-react";
@@ -39,6 +40,7 @@ export function InterestCounterPanel({
     startCounter,
     claimAndRestartCounter,
     interestCounter,
+    isLoading,
   } = useWallet();
   
   const counter = interestCounter; // Only using interest counter now
@@ -116,6 +118,8 @@ export function InterestCounterPanel({
         </Card>
     )
   }
+  
+  const isClaimable = timeLeft !== null && timeLeft <= 0;
 
   return (
     <Card className="relative overflow-hidden flex flex-col">
@@ -144,24 +148,25 @@ export function InterestCounterPanel({
                 {accruedInterest.toFixed(6)} USDT
             </p>
         </div>
-        
-        <div className="flex justify-center">
-            {!isRunning ? (
-            <Button size="sm" onClick={handleStart} className="h-7 text-xs w-full">
+      </CardContent>
+       <CardFooter className="p-3">
+          {!isRunning ? (
+            <Button size="sm" onClick={handleStart} className="h-7 text-xs w-full" disabled={isLoading}>
                 <Zap className="mr-1 h-4 w-4" /> Start Earning
             </Button>
             ) : (
             <Button
                 size="sm"
                 onClick={handleClaim}
-                disabled={timeLeft === null || timeLeft > 0}
+                disabled={!isClaimable || isLoading}
                 className="h-7 text-xs w-full"
             >
-                {timeLeft !== null && timeLeft > 0 ? "Claiming..." : "Claim & Restart"}
+                {isClaimable ? "Claim & Finish" : "Earning..."}
             </Button>
             )}
-        </div>
-      </CardContent>
+       </CardFooter>
     </Card>
   );
 }
+
+    

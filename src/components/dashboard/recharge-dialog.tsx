@@ -11,8 +11,6 @@ import {
 } from "@/components/ui/dialog";
 import { RechargePanel } from "@/components/dashboard/recharge-panel";
 import { useRequests } from "@/contexts/RequestContext";
-import { AddressDialog } from "./address-dialog";
-
 
 interface RechargeDialogProps {
   open: boolean;
@@ -21,7 +19,6 @@ interface RechargeDialogProps {
 
 export function RechargeDialog({ open, onOpenChange }: RechargeDialogProps) {
   const { addRequest } = useRequests();
-  const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
 
   return (
     <>
@@ -30,23 +27,16 @@ export function RechargeDialog({ open, onOpenChange }: RechargeDialogProps) {
           <DialogHeader>
             <DialogTitle>Recharge Wallet</DialogTitle>
             <DialogDescription>
-              Add USDT (BEP20) to your account by submitting a recharge request.
+              Add funds to your account by submitting a recharge request.
             </DialogDescription>
           </DialogHeader>
           <RechargePanel 
             onAddRequest={addRequest} 
-            onManageAddresses={() => {
-              onOpenChange(false); // Close recharge dialog
-              setIsAddressDialogOpen(true); // Open manage address dialog
-            }}
           />
         </DialogContent>
       </Dialog>
-      <AddressDialog 
-        open={isAddressDialogOpen} 
-        onOpenChange={setIsAddressDialogOpen} 
-        address={null} 
-      />
     </>
   );
 }
+
+    

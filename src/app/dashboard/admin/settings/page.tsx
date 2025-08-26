@@ -28,8 +28,6 @@ export default function SystemSettingsPage() {
     const [referralBonusEnabled, setReferralBonusEnabled] = useState(true);
     const [referralBonus, setReferralBonus] = useState("8");
     const [minDepositForBonus, setMinDepositForBonus] = useState("100");
-    // Recharge
-    const [rechargeAddress, setRechargeAddress] = useState("0x4D26340f3B52DCf82dd537cBF3c7e4C1D9b53BDc");
     // Withdrawal
     const [isWithdrawalRestriction, setIsWithdrawalRestriction] = useState(true);
     const [withdrawalRestrictionDays, setWithdrawalRestrictionDays] = useState("45");
@@ -49,10 +47,6 @@ export default function SystemSettingsPage() {
         const savedMinDeposit = localStorage.getItem('system_min_deposit_for_bonus');
         if (savedMinDeposit) setMinDepositForBonus(savedMinDeposit);
         
-        // Recharge
-        const savedRechargeAddress = localStorage.getItem('system_recharge_address');
-        if (savedRechargeAddress) setRechargeAddress(savedRechargeAddress);
-
         // Withdrawal
         const savedWithdrawalRestriction = localStorage.getItem('system_withdrawal_restriction_enabled');
         if (savedWithdrawalRestriction) setIsWithdrawalRestriction(JSON.parse(savedWithdrawalRestriction));
@@ -79,8 +73,7 @@ export default function SystemSettingsPage() {
         localStorage.setItem('system_referral_bonus_enabled', JSON.stringify(referralBonusEnabled));
         localStorage.setItem('system_referral_bonus', referralBonus);
         localStorage.setItem('system_min_deposit_for_bonus', minDepositForBonus);
-        // Recharge
-        localStorage.setItem('system_recharge_address', rechargeAddress);
+        
         // Withdrawal
         localStorage.setItem('system_withdrawal_restriction_enabled', JSON.stringify(isWithdrawalRestriction));
         localStorage.setItem('system_withdrawal_restriction_days', withdrawalRestrictionDays);
@@ -139,23 +132,6 @@ export default function SystemSettingsPage() {
             </RadioGroup>
         </CardContent>
       </Card>
-      
-       <Card>
-        <CardHeader>
-          <CardTitle>Recharge Settings</CardTitle>
-          <CardDescription>
-            Set the official address where users will send their deposits. This is a legacy setting, prefer using the "Recharge Addresses" page.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="recharge-address">Official USDT BEP20 Recharge Address</Label>
-            <Input id="recharge-address" type="text" value={rechargeAddress} onChange={e => setRechargeAddress(e.target.value)} />
-             <p className="text-xs text-muted-foreground">This address will be displayed to all users on the recharge page.</p>
-          </div>
-        </CardContent>
-      </Card>
-
 
       <Card>
         <CardHeader>
@@ -208,7 +184,7 @@ export default function SystemSettingsPage() {
                 <Textarea 
                     id="withdrawal-message" 
                     value={withdrawalRestrictionMessage} 
-                    onChange={e => setWithdrawalRestrictionMessage(e.target.value)}
+                    onChange={(e) => setWithdrawalRestrictionMessage(e.target.value)}
                     disabled={!isWithdrawalRestriction}
                     rows={3}
                 />
@@ -239,3 +215,5 @@ export default function SystemSettingsPage() {
     </div>
   );
 }
+
+    

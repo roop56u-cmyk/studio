@@ -26,41 +26,40 @@ import { Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useWallet } from "@/contexts/WalletContext";
 import type { Request } from "@/contexts/RequestContext";
+import type { RechargeAddress } from "@/app/dashboard/admin/recharge-addresses/page";
+import { ScrollArea } from "../ui/scroll-area";
 
 interface RechargePanelProps {
     onAddRequest: (request: Partial<Omit<Request, 'id' | 'date' | 'user' | 'status'>>) => void;
-    onManageAddresses: () => void;
 }
 
-export function RechargePanel({ onAddRequest, onManageAddresses }: RechargePanelProps) {
+export function RechargePanel({ onAddRequest }: RechargePanelProps) {
   const { toast } = useToast();
-  const [copied, setCopied] = useState(false);
+  const [copiedAddress, setCopiedAddress] = useState("");
   const [amount, setAmount] = useState("");
-  const { withdrawalAddress } = useWallet();
-  const [rechargeAddress, setRechargeAddress] = useState("Loading...");
+  const { withdrawalAddresses } = useWallet();
+  const [rechargeAddresses, setRechargeAddresses] = useState<RechargeAddress[]>([]);
+  const [selectedAddress, setSelectedAddress] = useState<RechargeAddress | null>(null);
 
   const [isAddressAlertOpen, setIsAddressAlertOpen] = useState(false);
   const [isConfirmAlertOpen, setIsConfirmAlertOpen] = useState(false);
-
+  
   useEffect(() => {
-    // In a real app, this would be fetched. We use localStorage for this demo.
-    const savedAddress = localStorage.getItem('system_recharge_address');
-    if (savedAddress) {
-        setRechargeAddress(savedAddress);
-    } else {
-        setRechargeAddress("0x4D26340f3B52DCf82dd537cBF3c7e4C1D9b53BDc"); // Default
+    const savedAddresses = localStorage.getItem('system_recharge_addresses');
+    if (savedAddresses) {
+        const enabledAddresses = JSON.parse(savedAddresses).filter((a: RechargeAddress) => a.enabled);
+        setRechargeAddresses(enabledAddresses);
     }
   }, []);
 
-  const handleCopy = () => {
-    if (rechargeAddress === "Loading...") return;
-    navigator.clipboard.writeText(rechargeAddress);
-    setCopied(true);
+  const handleCopy = (address: string) => {
+    navigator.clipboard.writeText(address);
+    setCopiedAddress(address);
     toast({
       title: "Address Copied!",
-      description: "The USDT BEP20 address has been copied to your clipboard.",
+      description: "The address has been copied to your clipboard.",
     });
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopiedAddress(""), 2000);
   };
 
   const proceedWithSubmit = () => {
@@ -68,7 +67,9 @@ export function RechargePanel({ onAddRequest, onManageAddresses }: RechargePanel
      onAddRequest({
         type: 'Recharge',
         amount: numericAmount,
-        address: withdrawalAddress?.address ?? null,
+        // The address here is the user's source address for the transaction, which they manage themselves.
+        // It's not directly related to the system recharge address they sent funds to.
+        address: null, 
     });
 
     toast({
@@ -89,17 +90,25 @@ export function RechargePanel({ onAddRequest, onManageAddresses }: RechargePanel
         });
         return;
     }
+
+    if (!selectedAddress) {
+       toast({
+            variant: "destructive",
+            title: "No Address Selected",
+            description: "Please select a recharge address to send funds to.",
+        });
+        return;
+    }
     
-    // Check 1: User must have a withdrawal address
-    if (!withdrawalAddress) {
+    // Check if user has at least one withdrawal address set up.
+    if (withdrawalAddresses.length === 0) {
         setIsAddressAlertOpen(true);
         return;
     }
 
-    // Check 2: Show confirmation dialog
+    // Show final confirmation dialog.
     setIsConfirmAlertOpen(true);
   };
-
 
   return (
     <>
@@ -107,34 +116,42 @@ export function RechargePanel({ onAddRequest, onManageAddresses }: RechargePanel
         <CardHeader>
           <CardTitle>Recharge Funds</CardTitle>
           <CardDescription>
-            Submit a request to add funds to your main balance.
+            Select an address, send funds, then submit your request.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmitRequest} className="space-y-6">
-              <div className="space-y-4">
-                  <Label htmlFor="recharge-address">Official USDT BEP20 Recharge Address</Label>
-                  <div className="flex items-center space-x-2">
-                  <Input
-                      id="recharge-address"
-                      value={rechargeAddress}
-                      readOnly
-                      className="font-mono text-center text-sm"
-                  />
-                  <Button variant="outline" size="icon" type="button" onClick={handleCopy}>
-                      {copied ? (
-                      <Check className="h-4 w-4 text-green-500" />
-                      ) : (
-                      <Copy className="h-4 w-4" />
-                      )}
-                  </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                  First send funds to the address above, then submit a request below with the amount you sent.
-                  </p>
+              <div className="space-y-2">
+                  <Label>1. Choose an Official Address</Label>
+                   <ScrollArea className="h-48 rounded-md border p-2">
+                        <div className="space-y-2">
+                        {rechargeAddresses.length > 0 ? rechargeAddresses.map(addr => (
+                             <div 
+                                key={addr.id} 
+                                onClick={() => setSelectedAddress(addr)}
+                                className={`p-3 border rounded-lg cursor-pointer ${selectedAddress?.id === addr.id ? 'ring-2 ring-primary border-primary' : ''}`}
+                             >
+                                <div className="flex justify-between items-center">
+                                    <div className="flex-1 overflow-hidden">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-semibold">{addr.name}</span>
+                                            <span className="text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">{addr.type}</span>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground font-mono mt-1 break-all">{addr.address}</p>
+                                    </div>
+                                    <Button variant="outline" size="icon" type="button" onClick={(e) => { e.stopPropagation(); handleCopy(addr.address); }}>
+                                        {copiedAddress === addr.address ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                                    </Button>
+                                </div>
+                             </div>
+                        )) : (
+                            <p className="text-sm text-muted-foreground text-center py-8">No recharge addresses are available. Please contact support.</p>
+                        )}
+                        </div>
+                   </ScrollArea>
               </div>
               <div className="space-y-2">
-                  <Label htmlFor="amount">Recharge Amount (USDT)</Label>
+                  <Label htmlFor="amount">2. Enter Recharge Amount (USDT)</Label>
                   <Input 
                       id="amount" 
                       type="number" 
@@ -144,7 +161,7 @@ export function RechargePanel({ onAddRequest, onManageAddresses }: RechargePanel
                       onChange={(e) => setAmount(e.target.value)}
                   />
               </div>
-              <Button type="submit" className="w-full">Submit Recharge Request</Button>
+              <Button type="submit" className="w-full">3. Submit Recharge Request</Button>
           </form>
         </CardContent>
       </Card>
@@ -155,12 +172,11 @@ export function RechargePanel({ onAddRequest, onManageAddresses }: RechargePanel
               <AlertDialogHeader>
                   <AlertDialogTitle>Withdrawal Address Required</AlertDialogTitle>
                   <AlertDialogDescription>
-                      Please update your USDT BEP20 withdrawal address first before making a recharge request.
+                      For security, you must set up at least one withdrawal address before you can make a recharge request. Please go to the Withdrawal panel to add an address.
                   </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={onManageAddresses}>Update Address</AlertDialogAction>
+                  <AlertDialogAction onClick={() => setIsAddressAlertOpen(false)}>OK</AlertDialogAction>
               </AlertDialogFooter>
           </AlertDialogContent>
       </AlertDialog>
@@ -169,17 +185,19 @@ export function RechargePanel({ onAddRequest, onManageAddresses }: RechargePanel
       <AlertDialog open={isConfirmAlertOpen} onOpenChange={setIsConfirmAlertOpen}>
           <AlertDialogContent>
               <AlertDialogHeader>
-                  <AlertDialogTitle>Confirm Deposit Source</AlertDialogTitle>
+                  <AlertDialogTitle>Confirm Deposit</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Please make sure you updated same wallet withdrawal address from which you deposit or send usdt on above recharge address different address cause permanent loss of funds.
+                    Please ensure you have already sent {amount ? `$${amount}` : 'your funds'} to the selected address. Submitting a request without sending funds may result in account restrictions.
                   </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={proceedWithSubmit}>Confirm</AlertDialogAction>
+                  <AlertDialogAction onClick={proceedWithSubmit}>Confirm & Submit</AlertDialogAction>
               </AlertDialogFooter>
           </AlertDialogContent>
       </AlertDialog>
     </>
   );
 }
+
+    
