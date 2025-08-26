@@ -245,7 +245,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
 
     return { currentLevel: finalLevel, levelUnlockProgress: progress };
-  }, [committedBalance, directReferralsCount, configuredLevels, currentUser]);
+  }, [committedBalance, directReferralsCount, configuredLevels, currentUser, users]);
 
 
   const currentLevelData = configuredLevels.find(level => level.level === currentLevel) ?? configuredLevels[0];
@@ -789,5 +789,3 @@ export const useWallet = () => {
   }
   return context;
 };
-
-    
