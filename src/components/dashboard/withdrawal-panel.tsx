@@ -58,7 +58,6 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
       withdrawalRestrictionMessage,
       withdrawalFee,
       isFundMovementLocked,
-      claimAndRestartCounter,
   } = useWallet();
   
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
@@ -83,6 +82,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
       if (withdrawalAddresses.length > 0 && !selectedAddressId) {
           const enabledAddress = withdrawalAddresses.find(a => a.enabled);
           if(enabledAddress) setSelectedAddressId(enabledAddress.id);
+          else if (withdrawalAddresses.length > 0) setSelectedAddressId(withdrawalAddresses[0].id);
       }
   }, [withdrawalAddresses, selectedAddressId]);
   
@@ -182,9 +182,9 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
                         <SelectValue placeholder="Select an address" />
                       </SelectTrigger>
                       <SelectContent>
-                        {withdrawalAddresses.filter(addr => addr.enabled).map(addr => (
-                          <SelectItem key={addr.id} value={addr.id}>
-                            {addr.name} ({addr.type}) - {addr.address.slice(0,6)}...{addr.address.slice(-4)}
+                        {withdrawalAddresses.map(addr => (
+                          <SelectItem key={addr.id} value={addr.id} disabled={!addr.enabled}>
+                            {addr.name} ({addr.type}) - {addr.address.slice(0,6)}...{addr.address.slice(-4)} {!addr.enabled && '(Disabled)'}
                           </SelectItem>
                         ))}
                       </SelectContent>
