@@ -20,7 +20,7 @@ interface AuthContextType {
   login: (email: string, password: string) => { success: boolean, message: string, isAdmin?: boolean };
   signup: (email: string, password: string, referralCode: string) => { success: boolean, message: string };
   logout: () => void;
-  updateUser: (email: string, updatedData: Partial<User> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; }) => void;
+  updateUser: (email: string, updatedData: Partial<Omit<User, 'status'>> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; }) => void;
   deleteUser: (email: string, isSelfDelete?: boolean) => void;
 }
 
@@ -149,7 +149,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         router.push('/login');
     };
 
-    const updateUser = (email: string, updatedData: Partial<User> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; }) => {
+    const updateUser = (email: string, updatedData: Partial<Omit<User, 'status'>> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; }) => {
         const { mainBalance, taskRewardsBalance, interestEarningsBalance, ...userData } = updatedData;
         
         const originalUser = users.find(u => u.email === email);

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -28,9 +28,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { levels } from "./level-tiers";
-import { Switch } from "../ui/switch";
-import { useWallet } from "@/contexts/WalletContext";
 import { AddressDialog } from "./address-dialog";
+import { Badge } from "../ui/badge";
 
 const editUserSchema = z.object({
   email: z.string().email("Invalid email address."),
@@ -40,7 +39,6 @@ const editUserSchema = z.object({
   mainBalance: z.number().min(0, "Balance must be non-negative."),
   taskRewardsBalance: z.number().min(0, "Balance must be non-negative."),
   interestEarningsBalance: z.number().min(0, "Balance must be non-negative."),
-  status: z.enum(['active', 'disabled']),
 });
 
 type EditUserFormValues = z.infer<typeof editUserSchema>;
@@ -77,11 +75,13 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
       mainBalance: 0,
       taskRewardsBalance: 0,
       interestEarningsBalance: 0,
-      status: 'active',
     },
   });
 
-  const status = form.watch('status');
+  const referredUsers = useMemo(() => {
+      if (!user) return [];
+      return users.filter(u => u.referredBy === user.referralCode);
+  }, [user, users]);
 
   useEffect(() => {
     if (user && open) {
@@ -105,7 +105,6 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
         mainBalance: mainBalance,
         taskRewardsBalance: taskRewardsBalance,
         interestEarningsBalance: interestEarningsBalance,
-        status: user.status ?? 'active',
       });
     }
   }, [user, open, form, users]);
@@ -211,17 +210,20 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
                 </Button>
            </div>
            
-           <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-            <div className="space-y-0.5">
-              <Label>User Status</Label>
-              <DialogDescription>
-                {status === 'active' ? 'User can log in.' : 'User is disabled and cannot log in.'}
-              </DialogDescription>
+          <div className="space-y-2">
+            <Label>Referred Users ({referredUsers.length})</Label>
+            <div className="border rounded-md p-2 space-y-1 max-h-32 overflow-y-auto">
+                {referredUsers.length > 0 ? (
+                    referredUsers.map(refUser => (
+                        <div key={refUser.email} className="text-sm text-muted-foreground flex justify-between items-center">
+                           <span>{refUser.email}</span>
+                           <Badge variant="secondary">Lvl {getInitialState('level', 0, refUser.email)}</Badge>
+                        </div>
+                    ))
+                ) : (
+                    <p className="text-xs text-center text-muted-foreground py-2">This user has not referred anyone yet.</p>
+                )}
             </div>
-            <Switch
-              checked={status === 'active'}
-              onCheckedChange={(checked) => form.setValue('status', checked ? 'active' : 'disabled')}
-            />
           </div>
 
 
