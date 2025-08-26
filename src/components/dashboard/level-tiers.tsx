@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -26,6 +25,7 @@ export type Level = {
     dailyTasks: number;
     monthlyWithdrawals: number;
     minWithdrawal: number;
+    maxWithdrawal: number;
     earningPerTask: number;
     withdrawalFee: number;
 };
@@ -40,6 +40,7 @@ export const levels: Level[] = [
     dailyTasks: 0,
     monthlyWithdrawals: 0,
     minWithdrawal: 0,
+    maxWithdrawal: 0,
     earningPerTask: 0,
     withdrawalFee: 0,
   },
@@ -52,6 +53,7 @@ export const levels: Level[] = [
     dailyTasks: 15,
     monthlyWithdrawals: 1,
     minWithdrawal: 150,
+    maxWithdrawal: 150,
     earningPerTask: 0.30,
     withdrawalFee: 5,
   },
@@ -64,6 +66,7 @@ export const levels: Level[] = [
     dailyTasks: 25,
     monthlyWithdrawals: 1,
     minWithdrawal: 500,
+    maxWithdrawal: 500,
     earningPerTask: 0.50,
     withdrawalFee: 3,
   },
@@ -76,6 +79,7 @@ export const levels: Level[] = [
     dailyTasks: 35,
     monthlyWithdrawals: 1,
     minWithdrawal: 1500,
+    maxWithdrawal: 1500,
     earningPerTask: 1.10,
     withdrawalFee: 1,
   },
@@ -88,6 +92,7 @@ export const levels: Level[] = [
     dailyTasks: 45,
     monthlyWithdrawals: 1,
     minWithdrawal: 2500,
+    maxWithdrawal: 2500,
     earningPerTask: 2.50,
     withdrawalFee: 1,
   },
@@ -100,6 +105,7 @@ export const levels: Level[] = [
     dailyTasks: 55,
     monthlyWithdrawals: 2,
     minWithdrawal: 3500,
+    maxWithdrawal: 3500,
     earningPerTask: 5.00,
     withdrawalFee: 1,
   },

@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect, useMemo } from 'react';
@@ -65,6 +64,7 @@ interface WalletContextType {
   dailyTaskQuota: number;
   monthlyWithdrawalLimit: number;
   minWithdrawalAmount: number;
+  maxWithdrawalAmount: number;
   monthlyWithdrawalsCount: number;
   withdrawalFee: number;
   earningPerTask: number;
@@ -249,7 +249,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
 
   const currentLevelData = configuredLevels.find(level => level.level === currentLevel) ?? configuredLevels[0];
-  const { rate: baseRate, dailyTasks: baseDailyTaskQuota, monthlyWithdrawals: monthlyWithdrawalLimit, minWithdrawal: minWithdrawalAmount, withdrawalFee } = currentLevelData;
+  const { rate: baseRate, dailyTasks: baseDailyTaskQuota, monthlyWithdrawals: monthlyWithdrawalLimit, minWithdrawal: minWithdrawalAmount, maxWithdrawal: maxWithdrawalAmount, withdrawalFee } = currentLevelData;
 
   const currentRate = baseRate + (baseRate * (interestRateBoost / 100));
   const dailyTaskQuota = baseDailyTaskQuota + taskQuotaBoost;
@@ -419,11 +419,11 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         const newCommittedBalance = committedBalance - numericAmount;
         const minAmountForCurrentLevel = currentLevelData.minAmount;
         
-        if (newCommittedBalance < minAmountForCurrentLevel && currentLevel > 0) {
+        if (currentLevel > 0 && newCommittedBalance < minAmountForCurrentLevel) {
             toast({
                 variant: "destructive",
                 title: "Warning: Earning Level Affected",
-                description: `Moving these funds will drop your committed balance below the $${minAmountForCurrentLevel} required for Level ${currentLevel}. Your earnings will be affected.`,
+                description: `Moving these funds will drop your committed balance below the $${minAmountForCurrentLevel.toLocaleString()} required for Level ${currentLevel}. Your earnings will be affected.`,
                 duration: 6000
             });
         }
@@ -737,6 +737,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         dailyTaskQuota,
         monthlyWithdrawalLimit,
         minWithdrawalAmount,
+        maxWithdrawalAmount,
         withdrawalFee,
         earningPerTask,
         monthlyWithdrawalsCount,

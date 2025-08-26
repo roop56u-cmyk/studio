@@ -92,6 +92,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
       deleteWithdrawalAddress,
       currentLevel,
       minWithdrawalAmount,
+      maxWithdrawalAmount,
       monthlyWithdrawalLimit,
       monthlyWithdrawalsCount,
       isWithdrawalRestrictionEnabled,
@@ -108,6 +109,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
   const [isPendingAlertOpen, setIsPendingAlertOpen] = useState(false);
   const [isLimitAlertOpen, setIsLimitAlertOpen] = useState(false);
   const [isMinAmountAlertOpen, setIsMinAmountAlertOpen] = useState(false);
+  const [isMaxAmountAlertOpen, setIsMaxAmountAlertOpen] = useState(false);
   const [restrictionStartDate, setRestrictionStartDate] = useState<string | null>(null);
 
   const numericAmount = parseFloat(amount) || 0;
@@ -179,6 +181,11 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
     if (isNaN(numericAmount) || numericAmount <= 0) {
         toast({ variant: "destructive", title: "Invalid Amount", description: "Please enter a valid amount to withdraw." });
         return;
+    }
+
+    if (numericAmount > maxWithdrawalAmount && maxWithdrawalAmount > 0) {
+      setIsMaxAmountAlertOpen(true);
+      return;
     }
 
     if (numericAmount < minWithdrawalAmount) {
@@ -284,7 +291,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 />
-                 <p className="text-xs text-muted-foreground">Minimum withdrawal: ${minWithdrawalAmount.toFixed(2)}</p>
+                 <p className="text-xs text-muted-foreground">Min: ${minWithdrawalAmount.toFixed(2)} | Max: ${maxWithdrawalAmount.toFixed(2)}</p>
             </div>
             <div className="rounded-md border p-4 space-y-2 text-sm">
                 <div className="flex justify-between">
@@ -378,6 +385,20 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogAction onClick={() => setIsMinAmountAlertOpen(false)}>OK</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isMaxAmountAlertOpen} onOpenChange={setIsMaxAmountAlertOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Maximum Withdrawal Limit</AlertDialogTitle>
+                <AlertDialogDescription>
+                    The maximum withdrawal for Level {currentLevel} is ${maxWithdrawalAmount.toFixed(2)}. Please enter a lower amount.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogAction onClick={() => setIsMaxAmountAlertOpen(false)}>OK</AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

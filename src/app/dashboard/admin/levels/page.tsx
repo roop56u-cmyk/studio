@@ -69,6 +69,7 @@ export default function ManageLevelsPage() {
             dailyTasks: 1,
             monthlyWithdrawals: 1,
             minWithdrawal: 0,
+            maxWithdrawal: 150,
             earningPerTask: 0,
             withdrawalFee: 0,
         }]);
@@ -158,6 +159,10 @@ export default function ManageLevelsPage() {
                             <Label htmlFor={`minWithdrawal-${index}`}>Min Withdrawal (USDT)</Label>
                             <Input id={`minWithdrawal-${index}`} type="number" value={level.minWithdrawal} onChange={(e) => handleInputChange(index, 'minWithdrawal', Number(e.target.value))} />
                         </div>
+                        <div className="space-y-2">
+                            <Label htmlFor={`maxWithdrawal-${index}`}>Max Withdrawal (USDT)</Label>
+                            <Input id={`maxWithdrawal-${index}`} type="number" value={level.maxWithdrawal} onChange={(e) => handleInputChange(index, 'maxWithdrawal', Number(e.target.value))} />
+                        </div>
                          <div className="space-y-2">
                             <Label htmlFor={`withdrawalFee-${index}`}>Withdrawal Fee (%)</Label>
                             <div className="relative">
@@ -196,5 +201,3 @@ export default function ManageLevelsPage() {
     </div>
   );
 }
-
-    
