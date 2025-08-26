@@ -25,7 +25,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 export default function SystemSettingsPage() {
     const { toast } = useToast();
     // Referral
-    const [referralBonus, setReferralBonus] = useState("5");
+    const [referralBonusEnabled, setReferralBonusEnabled] = useState(true);
+    const [referralBonus, setReferralBonus] = useState("8");
     const [minDepositForBonus, setMinDepositForBonus] = useState("100");
     // Recharge
     const [rechargeAddress, setRechargeAddress] = useState("0x4D26340f3B52DCf82dd537cBF3c7e4C1D9b53BDc");
@@ -41,9 +42,10 @@ export default function SystemSettingsPage() {
 
     useEffect(() => {
         // Referral
+        const savedBonusEnabled = localStorage.getItem('system_referral_bonus_enabled');
+        if (savedBonusEnabled) setReferralBonusEnabled(JSON.parse(savedBonusEnabled));
         const savedReferralBonus = localStorage.getItem('system_referral_bonus');
         if (savedReferralBonus) setReferralBonus(savedReferralBonus);
-        
         const savedMinDeposit = localStorage.getItem('system_min_deposit_for_bonus');
         if (savedMinDeposit) setMinDepositForBonus(savedMinDeposit);
         
@@ -74,6 +76,7 @@ export default function SystemSettingsPage() {
 
     const handleSaveChanges = () => {
         // Referral
+        localStorage.setItem('system_referral_bonus_enabled', JSON.stringify(referralBonusEnabled));
         localStorage.setItem('system_referral_bonus', referralBonus);
         localStorage.setItem('system_min_deposit_for_bonus', minDepositForBonus);
         // Recharge
@@ -141,7 +144,7 @@ export default function SystemSettingsPage() {
         <CardHeader>
           <CardTitle>Recharge Settings</CardTitle>
           <CardDescription>
-            Set the official address where users will send their deposits.
+            Set the official address where users will send their deposits. This is a legacy setting, prefer using the "Recharge Addresses" page.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -156,19 +159,23 @@ export default function SystemSettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Referral Program</CardTitle>
+          <CardTitle>Sign-up Bonus Program</CardTitle>
           <CardDescription>
-            Configure the bonuses for user referrals.
+            Configure the bonus for a user's first qualifying deposit. The bonus is paid to their referrer.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <Switch id="referral-bonus-toggle" checked={referralBonusEnabled} onCheckedChange={setReferralBonusEnabled} />
+            <Label htmlFor="referral-bonus-toggle">Enable Sign-up Bonus</Label>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="referral-bonus">Referral Bonus ($)</Label>
-            <Input id="referral-bonus" type="number" value={referralBonus} onChange={e => setReferralBonus(e.target.value)} />
+            <Input id="referral-bonus" type="number" value={referralBonus} onChange={e => setReferralBonus(e.target.value)} disabled={!referralBonusEnabled} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="min-deposit">Min First Deposit for Bonus ($)</Label>
-            <Input id="min-deposit" type="number" value={minDepositForBonus} onChange={e => setMinDepositForBonus(e.target.value)} />
+            <Input id="min-deposit" type="number" value={minDepositForBonus} onChange={e => setMinDepositForBonus(e.target.value)} disabled={!referralBonusEnabled} />
           </div>
         </CardContent>
       </Card>

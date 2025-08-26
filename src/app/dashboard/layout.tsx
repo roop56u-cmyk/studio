@@ -73,6 +73,8 @@ import {
   UserPlus,
   Flame,
   CheckCheck,
+  Award,
+  Network
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -101,9 +103,11 @@ import ManageUserPanelsPage from "./admin/user-panels/page";
 import WebsiteUIPage from "./admin/website-ui/page";
 import SystemSettingsPage from "./admin/settings/page";
 import ActivityLogPage from "./admin/activity-log/page";
+import ManageRechargeAddressesPage from "./admin/recharge-addresses/page";
+import ManageTeamRewardsPage from "./admin/team-rewards/page";
 
 
-type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox';
+type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards';
 
 
 const adminPanelComponents: Record<PanelType, React.ComponentType> = {
@@ -119,6 +123,8 @@ const adminPanelComponents: Record<PanelType, React.ComponentType> = {
     systemSettings: SystemSettingsPage,
     activityLog: ActivityLogPage,
     inbox: InboxPanel,
+    rechargeAddresses: ManageRechargeAddressesPage,
+    teamRewards: ManageTeamRewardsPage,
 };
 
 const adminPanelTitles: Record<PanelType, { title: string; description: string }> = {
@@ -134,6 +140,8 @@ const adminPanelTitles: Record<PanelType, { title: string; description: string }
     systemSettings: { title: "System Settings", description: "Configure global application settings." },
     activityLog: { title: "Activity Log", description: "Review administrative actions." },
     inbox: { title: "Inbox", description: "View and respond to user messages." },
+    rechargeAddresses: { title: "Recharge Addresses", description: "Manage official deposit addresses." },
+    teamRewards: { title: "Team Rewards", description: "Create and manage team deposit bonuses." },
 };
 
 function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransactionHistoryClick, onTaskHistoryClick, onReferralClick, onInboxClick, onBoosterStoreClick, onQuestPanelClick, onAdminPanelClick }: { onRechargeClick: () => void, onWithdrawalClick: () => void, onTransactionHistoryClick: () => void, onTaskHistoryClick: () => void, onReferralClick: () => void, onInboxClick: () => void, onBoosterStoreClick: () => void, onQuestPanelClick: () => void, onAdminPanelClick: (panel: PanelType) => void }) {
@@ -213,10 +221,22 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
                         <span>Team Commission</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('teamRewards')} tooltip={{ children: "Team Rewards" }}>
+                        <Award />
+                        <span>Team Rewards</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
                  <SidebarMenuItem>
                     <SidebarMenuButton onClick={() => onAdminPanelClick('noticeManagement')} tooltip={{ children: "Manage Notices" }}>
                         <Megaphone />
                         <span>Manage Notices</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('rechargeAddresses')} tooltip={{ children: "Recharge Addresses" }}>
+                        <Network />
+                        <span>Recharge Addresses</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
