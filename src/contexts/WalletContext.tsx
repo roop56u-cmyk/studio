@@ -51,6 +51,8 @@ type LevelUnlockStatus = {
     isCurrentLevel: boolean;
     balanceMet: boolean;
     referralsMet: boolean;
+    referralProgress?: number;
+    currentReferrals?: number;
 };
 
 interface WalletContextType {
@@ -97,6 +99,7 @@ interface WalletContextType {
   withdrawalRestrictionDays: number;
   purchaseBooster: (booster: Booster) => boolean;
   activeBoosters: ActiveBooster[];
+  purchasedBoosterIds: string[];
   getReferralCommissionBoost: () => number;
   isFundMovementLocked: (type: 'task' | 'interest') => boolean;
   addTransaction: (userEmail: string, transaction: Omit<Transaction, 'id'>) => void;
@@ -184,6 +187,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [monthlyWithdrawalsCount, setMonthlyWithdrawalsCount] = useState(() => getInitialState('monthlyWithdrawalsCount', 0));
   const [lastWithdrawalMonth, setLastWithdrawalMonth] = useState(() => getInitialState('lastWithdrawalMonth', -1));
   const [activeBoosters, setActiveBoosters] = useState<ActiveBooster[]>(() => getInitialState('activeBoosters', []));
+  const [purchasedBoosterIds, setPurchasedBoosterIds] = useState<string[]>(() => getInitialState('purchasedBoosterIds', []));
   
   const taskQuotaBoost = activeBoosters.find(b => b.type === 'TASK_QUOTA')?.value || 0;
   const interestRateBoost = activeBoosters.find(b => b.type === 'INTEREST_RATE')?.value || 0;
@@ -218,6 +222,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         const balanceMet = committedBalance >= level.minAmount;
         const referralsMet = directReferralsCount >= level.referrals;
         const isUnlocked = balanceMet && referralsMet;
+        
+        const referralProgress = level.referrals > 0 ? (directReferralsCount / level.referrals) * 100 : 100;
 
         if (isUnlocked) {
             finalLevel = level.level;
@@ -228,6 +234,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             isCurrentLevel: false, 
             balanceMet,
             referralsMet,
+            referralProgress: Math.min(referralProgress, 100),
+            currentReferrals: directReferralsCount
         };
     });
 
@@ -324,6 +332,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       setCompletedTasks(getInitialState('completedTasks', []));
       setWithdrawalAddresses(getInitialState('withdrawalAddresses', []));
       setActiveBoosters(getInitialState('activeBoosters', []));
+      setPurchasedBoosterIds(getInitialState('purchasedBoosterIds', []));
     } else {
         setMainBalance(0);
         setTaskRewardsBalance(0);
@@ -338,6 +347,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setMonthlyWithdrawalsCount(0);
         setLastWithdrawalMonth(-1);
         setActiveBoosters([]);
+        setPurchasedBoosterIds([]);
     }
     setIsLoading(false);
   }, [currentUser, setPersistentState, getInitialState]);
@@ -356,6 +366,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => setPersistentState('monthlyWithdrawalsCount', monthlyWithdrawalsCount), [monthlyWithdrawalsCount, setPersistentState]);
   useEffect(() => setPersistentState('lastWithdrawalMonth', lastWithdrawalMonth), [lastWithdrawalMonth, setPersistentState]);
   useEffect(() => setPersistentState('activeBoosters', activeBoosters), [activeBoosters, setPersistentState]);
+  useEffect(() => setPersistentState('purchasedBoosterIds', purchasedBoosterIds), [purchasedBoosterIds, setPersistentState]);
 
  const addTransaction = useCallback((userEmail: string, transaction: Omit<Transaction, 'id'>) => {
     const newTransaction: Transaction = {
@@ -633,7 +644,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       name: addressData.name,
       address: addressData.address,
       type: addressData.type,
-      enabled: addressData.enabled,
+      enabled: true,
     };
 
     if (multipleAddressesEnabled) {
@@ -665,13 +676,17 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         const referralsKey = `${currentUser.email}_purchased_referrals`;
         const currentReferrals = getInitialState('purchased_referrals', 0);
         setPersistentState('purchased_referrals', currentReferrals + referralCount);
+        
+        // Track that this specific booster has been purchased
+        setPurchasedBoosterIds(prev => [...prev, booster.id]);
+
         addTransaction(currentUser.email, {
             type: 'Booster Purchase',
             description: `Purchased ${referralCount} referrals`,
             amount: -booster.price,
             date: new Date().toISOString()
         });
-        toast({ title: 'Referrals Purchased!', description: `You have successfully purchased ${referralCount} referrals.`});
+        toast({ title: 'Referrals Purchased!', description: `You have successfully purchased ${referralCount} referrals. Your level may be automatically updated.`});
     } else {
         const newActiveBooster: ActiveBooster = {
             boosterId: booster.id,
@@ -738,6 +753,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         withdrawalRestrictionDays,
         purchaseBooster,
         activeBoosters,
+        purchasedBoosterIds,
         getReferralCommissionBoost,
         isFundMovementLocked,
         addTransaction,

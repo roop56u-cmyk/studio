@@ -52,7 +52,7 @@ const boosterValueFormatter = (type: Booster['type'], value: number) => {
 
 export function BoosterStorePanel() {
     const { toast } = useToast();
-    const { purchaseBooster, mainBalance, activeBoosters } = useWallet();
+    const { purchaseBooster, mainBalance, activeBoosters, purchasedBoosterIds } = useWallet();
     const [boosters, setBoosters] = useState<Booster[]>([]);
     
     useEffect(() => {
@@ -66,12 +66,31 @@ export function BoosterStorePanel() {
         if (type === 'PURCHASE_REFERRAL') return false; // This is a one-time purchase, not an active boost
         return activeBoosters.some(b => b.type === type);
     }
+    
+    const isBoosterPurchased = (boosterId: string) => {
+        return purchasedBoosterIds.includes(boosterId);
+    }
+    
+    const getButtonState = (booster: Booster): { text: string; disabled: boolean } => {
+        if (booster.type === 'PURCHASE_REFERRAL') {
+            if (isBoosterPurchased(booster.id)) {
+                return { text: "Purchased", disabled: true };
+            }
+        } else {
+            if (isBoosterActive(booster.type)) {
+                return { text: "Already Active", disabled: true };
+            }
+        }
+        return { text: "Purchase", disabled: false };
+    };
 
   return (
     <ScrollArea className="h-[calc(100vh-8rem)]">
         <div className="grid gap-4 pr-6">
             {boosters.length > 0 ? (
-            boosters.map((booster) => (
+            boosters.map((booster) => {
+                const buttonState = getButtonState(booster);
+                return (
                 <Card key={booster.id} className="flex flex-col">
                     <CardHeader>
                         <div className="flex justify-between items-start">
@@ -87,15 +106,15 @@ export function BoosterStorePanel() {
                     </CardHeader>
                     <CardContent className="flex-grow">
                         <p className="text-sm text-muted-foreground">
-                             <span className="font-semibold">Duration:</span> {booster.type === 'PURCHASE_REFERRAL' ? 'Instant' : `${booster.duration} hours`}
+                             <span className="font-semibold">Duration:</span> {booster.type === 'PURCHASE_REFERRAL' ? 'Permanent' : `${booster.duration} hours`}
                         </p>
                     </CardContent>
                     <CardFooter className="flex justify-between items-center">
                         <div className="text-lg font-bold text-primary">${booster.price.toFixed(2)}</div>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button disabled={isBoosterActive(booster.type)}>
-                                    {isBoosterActive(booster.type) ? "Already Active" : "Purchase"}
+                                <Button disabled={buttonState.disabled}>
+                                    {buttonState.text}
                                 </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
@@ -124,7 +143,8 @@ export function BoosterStorePanel() {
                         </AlertDialog>
                     </CardFooter>
                 </Card>
-            ))
+                )
+            })
             ) : (
             <p className="text-muted-foreground col-span-full text-center py-12">No boosters are available at the moment. Please check back later.</p>
             )}

@@ -15,6 +15,7 @@ import { Users, DollarSign, CheckSquare, CheckCircle, Lock, PlayCircle, Repeat, 
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { useWallet } from "@/contexts/WalletContext";
+import { Progress } from "@/components/ui/progress";
 
 export type Level = {
     level: number;
@@ -135,7 +136,7 @@ export function LevelTiers({ onStartTasks, isTaskLocked }: LevelTiersProps) {
         >
             <CarouselContent className="-ml-2">
             {displayLevels.map((level) => {
-                const { isUnlocked, isCurrentLevel } = levelUnlockProgress[level.level] || {};
+                const { isUnlocked, isCurrentLevel, referralProgress = 0, currentReferrals = 0 } = levelUnlockProgress[level.level] || {};
                 return (
                 <CarouselItem key={level.level} className="basis-full pl-2 pb-4">
                     <div className="h-full">
@@ -162,12 +163,20 @@ export function LevelTiers({ onStartTasks, isTaskLocked }: LevelTiersProps) {
                                         <DollarSign className="h-4 w-4 mr-2 text-muted-foreground" />
                                         <p>Min. <strong className="font-semibold">${level.minAmount.toLocaleString()}</strong></p>
                                     </div>
-                                    {level.referrals > 0 && (
-                                    <div className="flex items-center text-xs">
-                                        <UserPlus className="h-4 w-4 mr-2 text-muted-foreground" />
-                                        <p>Min. <strong className="font-semibold">{level.referrals}</strong> Referrals</p>
+                                    
+                                     <div className="space-y-2">
+                                        <div className="flex items-center text-xs">
+                                            <UserPlus className="h-4 w-4 mr-2 text-muted-foreground" />
+                                            <p>Min. <strong className="font-semibold">{level.referrals}</strong> Referrals</p>
+                                        </div>
+                                        {level.referrals > 0 && (
+                                            <>
+                                            <Progress value={referralProgress} className="h-1.5"/>
+                                            <p className="text-xs text-muted-foreground text-right">{currentReferrals} / {level.referrals}</p>
+                                            </>
+                                        )}
                                     </div>
-                                    )}
+                                    
                                     <div className="flex items-center text-xs">
                                         <CheckSquare className="h-4 w-4 mr-2 text-muted-foreground" />
                                         <p><strong className="font-semibold">{level.dailyTasks}</strong> Tasks / Day</p>
