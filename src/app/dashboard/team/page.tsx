@@ -1,15 +1,16 @@
 
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter
 } from "@/components/ui/card";
-import { Users, DollarSign, UserPlus, Briefcase, Activity } from "lucide-react";
+import { Users, DollarSign, UserPlus, Briefcase, Activity, Award } from "lucide-react";
 import { useTeam } from "@/contexts/TeamContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -19,9 +20,75 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { TeamReward } from "../admin/team-rewards/page";
+import { useToast } from "@/hooks/use-toast";
+import { useRequests } from "@/contexts/RequestContext";
+
+const TeamRewardCard = ({ reward, totalTeamBusiness }: { reward: TeamReward, totalTeamBusiness: number }) => {
+    const { toast } = useToast();
+    const { addRequest } = useRequests();
+    const [isClaimed, setIsClaimed] = useState(false);
+
+    useEffect(() => {
+        const claimedStatus = localStorage.getItem(`team_reward_claimed_${reward.id}`);
+        if (claimedStatus === 'true') {
+            setIsClaimed(true);
+        }
+    }, [reward.id]);
+
+    const progress = Math.min((totalTeamBusiness / reward.requiredAmount) * 100, 100);
+    const canClaim = progress >= 100 && !isClaimed;
+
+    const handleClaim = () => {
+        addRequest({
+            type: 'Team Reward',
+            amount: reward.rewardAmount,
+            address: reward.title, // Use title to identify the reward in admin panel
+        });
+        localStorage.setItem(`team_reward_claimed_${reward.id}`, 'true');
+        setIsClaimed(true);
+        toast({
+            title: "Reward Claim Submitted!",
+            description: `Your claim for "${reward.title}" is pending admin approval.`
+        });
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <div className="flex items-center gap-2">
+                    <Award className="h-5 w-5 text-primary"/>
+                    <CardTitle className="text-base">{reward.title}</CardTitle>
+                </div>
+                <CardDescription>{reward.description}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                 <div className="space-y-2">
+                    <div className="flex justify-between items-center text-xs text-muted-foreground">
+                        <span>Progress</span>
+                        <span>${totalTeamBusiness.toLocaleString()} / ${reward.requiredAmount.toLocaleString()}</span>
+                    </div>
+                    <Progress value={progress} />
+                </div>
+                <div className="grid grid-cols-2 text-xs">
+                    <p><strong className="text-foreground">Reward:</strong> ${reward.rewardAmount.toLocaleString()}</p>
+                    <p><strong className="text-foreground">Level:</strong> {reward.level === 0 ? 'All' : `${reward.level}+`}</p>
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Button className="w-full" disabled={!canClaim} onClick={handleClaim}>
+                    {isClaimed ? "Claimed" : canClaim ? "Claim Reward" : "In Progress"}
+                </Button>
+            </CardFooter>
+        </Card>
+    )
+}
+
 
 export default function TeamPage() {
-  const { teamData, commissionRates, commissionEnabled, isLoading, totalTeamBusiness, totalActivationsToday } = useTeam();
+  const { teamData, commissionRates, commissionEnabled, isLoading, totalTeamBusiness, totalActivationsToday, teamRewards } = useTeam();
 
   const totalCommission = useMemo(() => {
       if (!teamData) return 0;
@@ -157,6 +224,17 @@ export default function TeamPage() {
             </Card>
         ))}
       </div>
+
+       {teamRewards.length > 0 && (
+         <div>
+            <h2 className="text-2xl font-bold tracking-tight mb-4">Team Business Rewards</h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {teamRewards.map(reward => (
+                    <TeamRewardCard key={reward.id} reward={reward} totalTeamBusiness={totalTeamBusiness} />
+                ))}
+            </div>
+         </div>
+       )}
     </div>
   );
 }

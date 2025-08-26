@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 export type Request = {
     id: string;
     user: string;
-    type: 'Recharge' | 'Withdrawal';
+    type: 'Recharge' | 'Withdrawal' | 'Team Reward';
     amount: number;
     address: string | null;
     level: number;
@@ -23,7 +23,7 @@ export type Request = {
 interface RequestContextType {
   requests: Request[];
   addRequest: (request: Partial<Omit<Request, 'id' | 'date' | 'status' | 'user'>>) => void;
-  updateRequestStatus: (id: string, status: 'Approved' | 'Declined' | 'On Hold', userEmail: string, type: 'Recharge' | 'Withdrawal', amount: number) => void;
+  updateRequestStatus: (id: string, status: 'Approved' | 'Declined' | 'On Hold', userEmail: string, type: Request['type'], amount: number) => void;
   userRequests: Request[];
 }
 
@@ -73,7 +73,7 @@ const RequestContext = createContext<RequestContextType | undefined>(undefined);
 
 export const RequestProvider = ({ children }: { children: ReactNode }) => {
   const { currentUser, users } = useAuth();
-  const { getWalletData, approveRecharge, refundWithdrawal, approveWithdrawal } = useWallet();
+  const { getWalletData, approveRecharge, refundWithdrawal, approveWithdrawal, addTransaction } = useWallet();
   const { toast } = useToast();
 
   const [requests, setRequests] = useState<Request[]>(() => {
@@ -122,7 +122,7 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
     const newRequest: Request = {
         ...getWalletData(), // Gets balance, level, deposits, withdrawals
         id: `REQ-${Date.now()}`,
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toISOString(),
         status: 'Pending',
         user: currentUser.email,
         type: requestData.type!,
@@ -148,10 +148,23 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
     const referrer = users.find(u => u.referralCode === referredUser.referredBy);
     if (!referrer) return;
 
-    const referralBonus = parseInt(localStorage.getItem('system_referral_bonus') || '5');
+    const referralBonus = parseInt(localStorage.getItem('system_referral_bonus') || '8');
     const referrerMainBalanceKey = `${referrer.email}_mainBalance`;
     const referrerCurrentBalance = parseFloat(localStorage.getItem(referrerMainBalanceKey) || '0');
     localStorage.setItem(referrerMainBalanceKey, (referrerCurrentBalance + referralBonus).toString());
+
+    // Add transaction for the referrer
+     const transaction: Transaction = {
+        id: `TXN-${Date.now()}`,
+        type: 'Sign-up Bonus',
+        description: `Bonus for referring ${userEmail}`,
+        amount: referralBonus,
+        date: new Date().toISOString(),
+    };
+    const referrerTransactionsKey = `${referrer.email}_transactionHistory`;
+    const currentTransactions = JSON.parse(localStorage.getItem(referrerTransactionsKey) || '[]');
+    localStorage.setItem(referrerTransactionsKey, JSON.stringify([...currentTransactions, transaction]));
+
 
     if (currentUser?.email === referrer.email) {
       toast({
@@ -161,55 +174,29 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  const updateRequestStatus = (id: string, status: 'Approved' | 'Declined' | 'On Hold', userEmail: string, type: 'Recharge' | 'Withdrawal', amount: number) => {
+  const updateRequestStatus = (id: string, status: 'Approved' | 'Declined' | 'On Hold', userEmail: string, type: Request['type'], amount: number) => {
     setRequests(prev => prev.map(req => req.id === id ? { ...req, status } : req));
     
     if (status === 'Approved') {
       if (type === 'Recharge') {
+        approveRecharge(userEmail, amount);
+        handleReferralBonus(userEmail, amount);
+      } else if (type === 'Withdrawal') {
+        approveWithdrawal(userEmail);
+      } else if (type === 'Team Reward') {
         const userMainBalanceKey = `${userEmail}_mainBalance`;
         const currentBalance = parseFloat(localStorage.getItem(userMainBalanceKey) || '0');
         localStorage.setItem(userMainBalanceKey, (currentBalance + amount).toString());
-
-        const userDepositsKey = `${userEmail}_deposits`;
-        const currentDeposits = parseInt(localStorage.getItem(userDepositsKey) || '0');
-        localStorage.setItem(userDepositsKey, (currentDeposits + 1).toString());
-        
-        const firstDepositDateKey = `${userEmail}_firstDepositDate`;
-        if (!localStorage.getItem(firstDepositDateKey)) {
-             localStorage.setItem(firstDepositDateKey, new Date().toISOString());
-        }
-
-        handleReferralBonus(userEmail, amount);
-        
-        if (currentUser?.email === userEmail) {
-            approveRecharge(amount);
-        }
-
-      } else { // Withdrawal
-        const userWithdrawalsKey = `${userEmail}_withdrawals`;
-        const currentWithdrawals = parseInt(localStorage.getItem(userWithdrawalsKey) || '0');
-        localStorage.setItem(userWithdrawalsKey, (currentWithdrawals + 1).toString());
-        
-        const monthlyWithdrawalsCountKey = `${userEmail}_monthlyWithdrawalsCount`;
-        const currentMonthlyCount = parseInt(localStorage.getItem(monthlyWithdrawalsCountKey) || '0');
-        localStorage.setItem(monthlyWithdrawalsCountKey, (currentMonthlyCount + 1).toString());
-        
-        const lastWithdrawalMonthKey = `${userEmail}_lastWithdrawalMonth`;
-        localStorage.setItem(lastWithdrawalMonthKey, new Date().getMonth().toString());
-
-
-         if (currentUser?.email === userEmail) {
-            approveWithdrawal();
-        }
+        addTransaction(userEmail, {
+          id: `TXN-${Date.now()}`,
+          type: 'Team Reward',
+          description: `Team reward bonus claimed`,
+          amount: amount,
+          date: new Date().toISOString(),
+        });
       }
     } else if (status === 'Declined' && type === 'Withdrawal') {
-       const userMainBalanceKey = `${userEmail}_mainBalance`;
-       const currentBalance = parseFloat(localStorage.getItem(userMainBalanceKey) || '0');
-       localStorage.setItem(userMainBalanceKey, (currentBalance + amount).toString());
-
-       if (currentUser?.email === userEmail) {
-        refundWithdrawal(amount);
-      }
+       refundWithdrawal(userEmail, amount);
     }
   };
 
@@ -235,3 +222,11 @@ export const useRequests = () => {
   }
   return context;
 };
+
+export type Transaction = {
+    id: string,
+    type: string,
+    description: string,
+    amount: number,
+    date: string,
+}

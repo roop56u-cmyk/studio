@@ -6,6 +6,7 @@ import { useAuth } from './AuthContext';
 import type { User } from './AuthContext';
 import { levels as defaultLevels } from '@/components/dashboard/level-tiers';
 import { useWallet } from './WalletContext';
+import { TeamReward } from '@/app/dashboard/admin/team-rewards/page';
 
 type TeamMember = User & {
     level: number;
@@ -27,6 +28,7 @@ type TeamData = {
 
 interface TeamContextType {
   teamData: TeamData | null;
+  teamRewards: TeamReward[];
   commissionRates: { level1: number; level2: number; level3: number; };
   commissionEnabled: { level1: boolean; level2: boolean; level3: boolean; };
   isLoading: boolean;
@@ -40,9 +42,9 @@ const TeamContext = createContext<TeamContextType | undefined>(undefined);
 export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const { currentUser, users } = useAuth();
     const [teamData, setTeamData] = useState<TeamData | null>(null);
+    const [teamRewards, setTeamRewards] = useState<TeamReward[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     
-    // Default commission rates, will be overridden by localStorage
     const [commissionRates, setCommissionRates] = useState({ level1: 10, level2: 5, level3: 2 });
     const [commissionEnabled, setCommissionEnabled] = useState({ level1: true, level2: true, level3: true });
 
@@ -54,6 +56,9 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
             const savedEnabled = localStorage.getItem('team_commission_enabled');
             if (savedEnabled) setCommissionEnabled(JSON.parse(savedEnabled));
+
+            const savedRewards = localStorage.getItem('platform_team_rewards');
+            if (savedRewards) setTeamRewards(JSON.parse(savedRewards));
         }
     }, []);
 
@@ -156,6 +161,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     
     const value = {
         teamData,
+        teamRewards,
         commissionRates,
         commissionEnabled,
         isLoading,

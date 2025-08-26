@@ -17,18 +17,21 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { useRequests } from "@/contexts/RequestContext";
+import { useWallet } from "@/contexts/WalletContext";
 import { Button } from "../ui/button";
 import { CardFooter } from "../ui/card";
+import { format } from "date-fns";
 
 const ITEMS_PER_PAGE = 10;
 
 export function TransactionHistoryPanel() {
-  const { userRequests } = useRequests();
+  const { transactionHistory } = useWallet();
   const [currentPage, setCurrentPage] = useState(1);
+  
+  const sortedHistory = [...transactionHistory].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  const totalPages = Math.ceil(userRequests.length / ITEMS_PER_PAGE);
-  const paginatedRequests = userRequests.slice(
+  const totalPages = Math.ceil(sortedHistory.length / ITEMS_PER_PAGE);
+  const paginatedHistory = sortedHistory.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -40,6 +43,23 @@ export function TransactionHistoryPanel() {
   const handlePrevPage = () => {
     setCurrentPage((prev) => Math.max(prev - 1, 1));
   };
+  
+  const getBadgeVariant = (type: string) => {
+      switch (type) {
+          case 'Withdrawal':
+          case 'Fund Movement (Out)':
+              return 'destructive';
+          case 'Recharge':
+          case 'Team Commission':
+          case 'Sign-up Bonus':
+          case 'Team Reward':
+          case 'Interest Claim':
+          case 'Fund Movement (In)':
+              return 'default';
+          default:
+              return 'secondary';
+      }
+  }
 
   return (
     <Card className="shadow-none border-none">
@@ -50,42 +70,29 @@ export function TransactionHistoryPanel() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Request ID</TableHead>
+              <TableHead>Description</TableHead>
               <TableHead>Type</TableHead>
-              <TableHead>Amount</TableHead>
+              <TableHead className="text-right">Amount (USDT)</TableHead>
               <TableHead>Date</TableHead>
-              <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedRequests.length > 0 ? (
-                paginatedRequests.map((request) => (
-                <TableRow key={request.id}>
-                    <TableCell className="font-medium">{request.id}</TableCell>
+            {paginatedHistory.length > 0 ? (
+                paginatedHistory.map((tx) => (
+                <TableRow key={tx.id}>
+                    <TableCell className="font-medium">{tx.description}</TableCell>
                     <TableCell>
-                        <Badge variant={request.type === 'Withdrawal' ? 'destructive' : 'secondary'}>{request.type}</Badge>
+                        <Badge variant={getBadgeVariant(tx.type)}>{tx.type}</Badge>
                     </TableCell>
-                    <TableCell>${request.amount.toFixed(2)}</TableCell>
-                    <TableCell>{request.date}</TableCell>
-                    <TableCell>
-                    <Badge
-                        variant={
-                        request.status === "Pending"
-                            ? "secondary"
-                            : request.status === "Approved"
-                            ? "default"
-                            : "destructive"
-                        }
-                        className={request.status === 'Approved' ? 'bg-green-500/20 text-green-700 border-green-500/20' : ''}
-                    >
-                        {request.status}
-                    </Badge>
+                    <TableCell className={`text-right font-mono ${tx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {tx.amount > 0 ? '+' : ''}${tx.amount.toFixed(2)}
                     </TableCell>
+                    <TableCell>{format(new Date(tx.date), "PPpp")}</TableCell>
                 </TableRow>
                 ))
             ) : (
                 <TableRow>
-                    <TableCell colSpan={5} className="text-center">
+                    <TableCell colSpan={4} className="text-center">
                         You have no transaction history yet.
                     </TableCell>
                 </TableRow>

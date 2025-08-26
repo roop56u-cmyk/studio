@@ -47,7 +47,7 @@ export type TeamReward = {
   id: string;
   title: string;
   description: string;
-  level: number;
+  level: number; // 0 will mean 'All Levels'
   requiredAmount: number;
   durationDays: number;
   rewardAmount: number;
@@ -64,14 +64,14 @@ const TeamRewardForm = ({
 }) => {
   const [title, setTitle] = useState(reward?.title || "");
   const [description, setDescription] = useState(reward?.description || "");
-  const [level, setLevel] = useState(reward?.level || 1);
+  const [level, setLevel] = useState(reward?.level ?? 0);
   const [requiredAmount, setRequiredAmount] = useState(reward?.requiredAmount || 1000);
   const [durationDays, setDurationDays] = useState(reward?.durationDays || 7);
   const [rewardAmount, setRewardAmount] = useState(reward?.rewardAmount || 50);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !description || level <= 0 || requiredAmount <= 0 || durationDays <= 0 || rewardAmount <= 0) {
+    if (!title || !description || level < 0 || requiredAmount <= 0 || durationDays <= 0 || rewardAmount <= 0) {
       alert("Please fill all fields with valid positive values.");
       return;
     }
@@ -104,6 +104,7 @@ const TeamRewardForm = ({
                     <SelectValue placeholder="Select a level" />
                 </SelectTrigger>
                 <SelectContent>
+                    <SelectItem value="0">All Levels</SelectItem>
                     {levels.filter(l => l.level > 0).map(l => (
                         <SelectItem key={l.level} value={String(l.level)}>Level {l.level} - {l.name}</SelectItem>
                     ))}
@@ -228,7 +229,7 @@ export default function ManageTeamRewardsPage() {
                           </div>
                           <p className="text-sm text-muted-foreground mt-1">{reward.description}</p>
                           <div className="text-xs text-muted-foreground grid grid-cols-2 md:flex md:flex-wrap gap-x-4 gap-y-1 mt-2">
-                              <span><strong className="text-foreground">Level:</strong> {reward.level}+</span>
+                              <span><strong className="text-foreground">Level:</strong> {reward.level === 0 ? 'All' : `${reward.level}+`}</span>
                               <span><strong className="text-foreground">Deposits:</strong> ${reward.requiredAmount.toLocaleString()}</span>
                               <span><strong className="text-foreground">Duration:</strong> {reward.durationDays} days</span>
                               <span><strong className="text-foreground">Reward:</strong> ${reward.rewardAmount.toLocaleString()}</span>

@@ -33,6 +33,8 @@ export default function SystemSettingsPage() {
     const [withdrawalRestrictionDays, setWithdrawalRestrictionDays] = useState("45");
     const [withdrawalRestrictionMessage, setWithdrawalRestrictionMessage] = useState("Please wait for 45 days to initiate withdrawal request.");
     const [restrictedLevels, setRestrictedLevels] = useState<number[]>([1]); // Default to level 1
+    const [multipleAddressesEnabled, setMultipleAddressesEnabled] = useState(true);
+
     // Earning Model
     const [earningModel, setEarningModel] = useState("dynamic"); // 'dynamic' or 'fixed'
     
@@ -59,6 +61,9 @@ export default function SystemSettingsPage() {
 
         const savedRestrictedLevels = localStorage.getItem('system_withdrawal_restricted_levels');
         if (savedRestrictedLevels) setRestrictedLevels(JSON.parse(savedRestrictedLevels));
+
+        const savedMultipleAddresses = localStorage.getItem('system_multiple_addresses_enabled');
+        if (savedMultipleAddresses) setMultipleAddressesEnabled(JSON.parse(savedMultipleAddresses));
         
         // Earning Model
         const savedEarningModel = localStorage.getItem('system_earning_model');
@@ -79,6 +84,8 @@ export default function SystemSettingsPage() {
         localStorage.setItem('system_withdrawal_restriction_days', withdrawalRestrictionDays);
         localStorage.setItem('system_withdrawal_restriction_message', withdrawalRestrictionMessage);
         localStorage.setItem('system_withdrawal_restricted_levels', JSON.stringify(restrictedLevels));
+        localStorage.setItem('system_multiple_addresses_enabled', JSON.stringify(multipleAddressesEnabled));
+
         // Earning Model
         localStorage.setItem('system_earning_model', earningModel);
         
@@ -158,15 +165,24 @@ export default function SystemSettingsPage() {
       
       <Card>
         <CardHeader>
-          <CardTitle>Withdrawal Restrictions</CardTitle>
+          <CardTitle>Withdrawal Settings</CardTitle>
           <CardDescription>
-            Set rules for when users can make withdrawals.
+            Set rules for when and how users can make withdrawals.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
             <div className="flex items-center space-x-2">
-                <Switch id="withdrawal-restriction-toggle" checked={isWithdrawalRestriction} onCheckedChange={setIsWithdrawalRestriction} />
-                <Label htmlFor="withdrawal-restriction-toggle">Enable Withdrawal Restriction</Label>
+                <Switch id="multiple-addresses-toggle" checked={multipleAddressesEnabled} onCheckedChange={setMultipleAddressesEnabled} />
+                <Label htmlFor="multiple-addresses-toggle">Allow Multiple Withdrawal Addresses</Label>
+            </div>
+             <p className="text-xs text-muted-foreground -mt-4">If disabled, users can only save one withdrawal address.</p>
+
+            <div className="border-t pt-6">
+                <div className="flex items-center space-x-2">
+                    <Switch id="withdrawal-restriction-toggle" checked={isWithdrawalRestriction} onCheckedChange={setIsWithdrawalRestriction} />
+                    <Label htmlFor="withdrawal-restriction-toggle">Enable Withdrawal Time Restriction</Label>
+                </div>
+                 <p className="text-xs text-muted-foreground mb-4">Set a waiting period after a user's first deposit.</p>
             </div>
              <div className="space-y-2">
                 <Label htmlFor="withdrawal-days">Restriction Period (Days)</Label>
@@ -177,7 +193,6 @@ export default function SystemSettingsPage() {
                     onChange={e => setWithdrawalRestrictionDays(e.target.value)}
                     disabled={!isWithdrawalRestriction}
                 />
-                 <p className="text-xs text-muted-foreground">The number of days a user must wait after their first deposit.</p>
             </div>
              <div className="space-y-2">
                 <Label htmlFor="withdrawal-message">Restriction Popup Message</Label>
