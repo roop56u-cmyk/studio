@@ -39,6 +39,7 @@ const editUserSchema = z.object({
   mainBalance: z.number().min(0, "Balance must be non-negative."),
   taskRewardsBalance: z.number().min(0, "Balance must be non-negative."),
   interestEarningsBalance: z.number().min(0, "Balance must be non-negative."),
+  purchasedReferrals: z.number().min(0, "Referrals must be non-negative."),
 });
 
 type EditUserFormValues = z.infer<typeof editUserSchema>;
@@ -75,6 +76,7 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
       mainBalance: 0,
       taskRewardsBalance: 0,
       interestEarningsBalance: 0,
+      purchasedReferrals: 0,
     },
   });
 
@@ -88,6 +90,7 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
       const mainBalance = getInitialState('mainBalance', 0, user.email);
       const taskRewardsBalance = getInitialState('taskRewardsBalance', 0, user.email);
       const interestEarningsBalance = getInitialState('interestEarningsBalance', 0, user.email);
+      const purchasedReferrals = getInitialState('purchased_referrals', 0, user.email);
       const committedBalance = taskRewardsBalance + interestEarningsBalance;
       
       const directReferrals = users.filter(u => u.referredBy === user.referralCode).length;
@@ -105,6 +108,7 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
         mainBalance: mainBalance,
         taskRewardsBalance: taskRewardsBalance,
         interestEarningsBalance: interestEarningsBalance,
+        purchasedReferrals: purchasedReferrals,
       });
     }
   }, [user, open, form, users]);
@@ -187,10 +191,16 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
                 <Input id="taskRewardsBalance" type="number" {...form.register("taskRewardsBalance", { valueAsNumber: true })} />
               </div>
           </div>
-          <div className="space-y-2">
-                <Label htmlFor="interestEarningsBalance">Interest Earnings Bal</Label>
-                <Input id="interestEarningsBalance" type="number" {...form.register("interestEarningsBalance", { valueAsNumber: true })} />
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+                    <Label htmlFor="interestEarningsBalance">Interest Earnings Bal</Label>
+                    <Input id="interestEarningsBalance" type="number" {...form.register("interestEarningsBalance", { valueAsNumber: true })} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="purchasedReferrals">Bonus Referrals</Label>
+                    <Input id="purchasedReferrals" type="number" {...form.register("purchasedReferrals", { valueAsNumber: true })} />
+                </div>
+          </div>
         
           <Controller
             name="overrideLevel"
@@ -255,5 +265,3 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
     </>
   );
 }
-
-    

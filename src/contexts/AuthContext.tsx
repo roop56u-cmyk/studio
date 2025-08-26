@@ -21,7 +21,7 @@ interface AuthContextType {
   login: (email: string, password: string) => { success: boolean, message: string, isAdmin?: boolean };
   signup: (email: string, password: string, referralCode: string) => { success: boolean, message: string };
   logout: () => void;
-  updateUser: (email: string, updatedData: Partial<Omit<User, 'status'>> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; }) => void;
+  updateUser: (email: string, updatedData: Partial<Omit<User, 'status'>> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; purchasedReferrals?: number; }) => void;
   deleteUser: (email: string, isSelfDelete?: boolean) => void;
   updateUserStatus: (email: string, status: 'active' | 'disabled') => void;
   checkAndDeactivateUser: (email: string) => void;
@@ -185,8 +185,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         router.push('/login');
     };
 
-    const updateUser = (email: string, updatedData: Partial<Omit<User, 'status'>> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; }) => {
-        const { mainBalance, taskRewardsBalance, interestEarningsBalance, ...userData } = updatedData;
+    const updateUser = (email: string, updatedData: Partial<Omit<User, 'status'>> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; purchasedReferrals?: number }) => {
+        const { mainBalance, taskRewardsBalance, interestEarningsBalance, purchasedReferrals, ...userData } = updatedData;
         
         const originalUser = users.find(u => u.email === email);
         if (!originalUser) return;
@@ -198,7 +198,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 'taskRewardsEarned', 'interestEarned', 'deposits', 'withdrawals',
                 'interestCounter', 'tasksCompletedToday', 'lastTaskCompletionDate',
                 'completedTasks', 'withdrawalAddress', 'monthlyWithdrawalsCount',
-                'lastWithdrawalMonth', 'lastTeamCommissionCredit', 'firstDepositDate'
+                'lastWithdrawalMonth', 'lastTeamCommissionCredit', 'firstDepositDate', 'purchased_referrals'
             ];
             keysToMigrate.forEach(key => {
                 const oldKey = `${email}_${key}`;
@@ -216,6 +216,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (mainBalance !== undefined) localStorage.setItem(`${targetEmail}_mainBalance`, JSON.stringify(mainBalance));
         if (taskRewardsBalance !== undefined) localStorage.setItem(`${targetEmail}_taskRewardsBalance`, JSON.stringify(taskRewardsBalance));
         if (interestEarningsBalance !== undefined) localStorage.setItem(`${targetEmail}_interestEarningsBalance`, JSON.stringify(interestEarningsBalance));
+        if (purchasedReferrals !== undefined) localStorage.setItem(`${targetEmail}_purchased_referrals`, JSON.stringify(purchasedReferrals));
+
 
         setUsers(prevUsers => prevUsers.map(user => 
             user.email === email ? { ...user, ...userData } : user
