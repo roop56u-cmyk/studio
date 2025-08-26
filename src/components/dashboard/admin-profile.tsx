@@ -122,6 +122,12 @@ export function AdminProfile() {
                             <Calendar className="h-4 w-4 text-muted-foreground"/>
                             <span>{new Date(request.date).toLocaleDateString()}</span>
                         </div>
+                        {request.type === 'Withdrawal' && request.address && (
+                             <div className="flex items-center gap-2 text-foreground">
+                                <Wallet className="h-4 w-4 text-muted-foreground"/>
+                                <span className="font-mono text-xs">{request.address}</span>
+                            </div>
+                        )}
                     </div>
                     
                     {/* Stats Grid */}
