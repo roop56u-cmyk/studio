@@ -217,21 +217,30 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
     let finalLevel = 0;
     const progress: Record<number, LevelUnlockStatus> = {};
+    
+    // Iterate from highest to lowest to find the best qualifying level
+    configuredLevels.slice().reverse().forEach(level => {
+        if (level.level === 0) return;
 
-    configuredLevels.filter(l => l.level > 0).sort((a,b) => a.level - b.level).forEach(level => {
         const balanceMet = committedBalance >= level.minAmount;
         const referralsMet = directReferralsCount >= level.referrals;
         const isUnlocked = balanceMet && referralsMet;
-        
-        const referralProgress = level.referrals > 0 ? (directReferralsCount / level.referrals) * 100 : 100;
 
-        if (isUnlocked) {
+        if (isUnlocked && finalLevel === 0) {
             finalLevel = level.level;
         }
+    });
 
-        progress[level.level] = {
+    // Now, build the progress object for UI display
+    configuredLevels.filter(l => l.level > 0).forEach(level => {
+        const balanceMet = committedBalance >= level.minAmount;
+        const referralsMet = directReferralsCount >= level.referrals;
+        const isUnlocked = balanceMet && referralsMet;
+        const referralProgress = level.referrals > 0 ? (directReferralsCount / level.referrals) * 100 : 100;
+
+         progress[level.level] = {
             isUnlocked,
-            isCurrentLevel: false, 
+            isCurrentLevel: level.level === finalLevel, 
             balanceMet,
             referralsMet,
             referralProgress: Math.min(referralProgress, 100),
@@ -239,13 +248,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         };
     });
 
-    if (finalLevel > 0 && progress[finalLevel]) {
-        progress[finalLevel].isCurrentLevel = true;
-    }
-
 
     return { currentLevel: finalLevel, levelUnlockProgress: progress };
-  }, [committedBalance, directReferralsCount, configuredLevels, currentUser]);
+  }, [committedBalance, directReferralsCount, configuredLevels, currentUser, users]);
 
 
   const currentLevelData = configuredLevels.find(level => level.level === currentLevel) ?? configuredLevels[0];
