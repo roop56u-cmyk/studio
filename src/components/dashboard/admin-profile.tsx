@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -53,6 +53,12 @@ export function AdminProfile() {
         });
     };
 
+    const getSavedWithdrawalAddress = useCallback((userEmail: string) => {
+        if (!isClient) return null;
+        const storedAddress = localStorage.getItem(`${userEmail}_withdrawalAddress`);
+        return storedAddress ? JSON.parse(storedAddress).address : null;
+    }, [isClient]);
+
     const filteredRequests = useMemo(() => {
         if (activeTab === 'All') return requests;
         return requests.filter(req => req.status === activeTab);
@@ -87,7 +93,9 @@ export function AdminProfile() {
             
           <div className="space-y-4">
              {filteredRequests.length > 0 ? (
-                filteredRequests.map((request) => (
+                filteredRequests.map((request) => {
+                  const userWithdrawalAddress = getSavedWithdrawalAddress(request.user);
+                  return (
                   <div key={request.id} className="border rounded-lg p-4 space-y-4 bg-card">
                     {/* Header */}
                     <div>
@@ -122,10 +130,10 @@ export function AdminProfile() {
                             <Calendar className="h-4 w-4 text-muted-foreground"/>
                             <span>{new Date(request.date).toLocaleDateString()}</span>
                         </div>
-                        {request.address && (
+                        {userWithdrawalAddress && (
                              <div className="flex items-center gap-2 text-foreground">
                                 <Wallet className="h-4 w-4 text-muted-foreground"/>
-                                <span className="font-mono text-xs">{request.address}</span>
+                                <span className="font-mono text-xs">{userWithdrawalAddress}</span>
                             </div>
                         )}
                     </div>
@@ -182,7 +190,8 @@ export function AdminProfile() {
                          </div>
                     )}
                   </div>
-                ))
+                )
+                })
             ) : (
                  <div className="col-span-full text-center py-12">
                     <p className="text-muted-foreground">No requests found for this status.</p>
