@@ -656,9 +656,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const addWithdrawalAddress = (addressData: Omit<WithdrawalAddress, 'id'>) => {
     const newAddress: WithdrawalAddress = {
       id: `ADDR-${Date.now()}`,
-      name: addressData.name,
-      address: addressData.address,
-      type: addressData.type,
+      ...addressData,
       enabled: true,
     };
 

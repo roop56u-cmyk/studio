@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "../ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 
 const boosterIcons: { [key in Booster['type']]: React.ReactNode } = {
     TASK_EARNING: <Star className="h-6 w-6 text-yellow-500" />,
@@ -52,7 +53,15 @@ const boosterValueFormatter = (type: Booster['type'], value: number) => {
 
 export function BoosterStorePanel() {
     const { toast } = useToast();
-    const { purchaseBooster, mainBalance, activeBoosters, purchasedBoosterIds } = useWallet();
+    const { 
+        purchaseBooster, 
+        mainBalance, 
+        activeBoosters, 
+        purchasedBoosterIds,
+        isFundMovementLocked,
+        tasksCompletedToday,
+        interestCounter
+    } = useWallet();
     const [boosters, setBoosters] = useState<Booster[]>([]);
     
     useEffect(() => {
@@ -62,8 +71,8 @@ export function BoosterStorePanel() {
         }
     }, []);
 
-    const isBoosterActive = (type: Booster['type']) => {
-        if (type === 'PURCHASE_REFERRAL') return false; // This is a one-time purchase, not an active boost
+    const isBoosterTypeActive = (type: Booster['type']) => {
+        if (type === 'PURCHASE_REFERRAL') return false; 
         return activeBoosters.some(b => b.type === type);
     }
     
@@ -71,17 +80,22 @@ export function BoosterStorePanel() {
         return purchasedBoosterIds.includes(boosterId);
     }
     
-    const getButtonState = (booster: Booster): { text: string; disabled: boolean } => {
+    const isPurchaseLocked = interestCounter.isRunning || (tasksCompletedToday > 0);
+    
+    const getButtonState = (booster: Booster): { text: string; disabled: boolean, tooltip: string | null } => {
+        if (isPurchaseLocked && booster.type !== 'PURCHASE_REFERRAL') {
+             return { text: "Purchase", disabled: true, tooltip: "Complete daily activities before purchasing." };
+        }
         if (booster.type === 'PURCHASE_REFERRAL') {
             if (isBoosterPurchased(booster.id)) {
-                return { text: "Purchased", disabled: true };
+                return { text: "Purchased", disabled: true, tooltip: "You have already purchased this item." };
             }
         } else {
-            if (isBoosterActive(booster.type)) {
-                return { text: "Already Active", disabled: true };
+            if (isBoosterTypeActive(booster.type)) {
+                return { text: "Already Active", disabled: true, tooltip: "A booster of this type is already active." };
             }
         }
-        return { text: "Purchase", disabled: false };
+        return { text: "Purchase", disabled: false, tooltip: null };
     };
 
   return (
@@ -90,6 +104,12 @@ export function BoosterStorePanel() {
             {boosters.length > 0 ? (
             boosters.map((booster) => {
                 const buttonState = getButtonState(booster);
+                const purchaseButton = (
+                     <Button disabled={buttonState.disabled}>
+                        {buttonState.text}
+                    </Button>
+                );
+
                 return (
                 <Card key={booster.id} className="flex flex-col">
                     <CardHeader>
@@ -113,9 +133,19 @@ export function BoosterStorePanel() {
                         <div className="text-lg font-bold text-primary">${booster.price.toFixed(2)}</div>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button disabled={buttonState.disabled}>
-                                    {buttonState.text}
-                                </Button>
+                                 {buttonState.tooltip ? (
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                 <span tabIndex={0}>{purchaseButton}</span>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>{buttonState.tooltip}</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                ) : purchaseButton }
+
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>
