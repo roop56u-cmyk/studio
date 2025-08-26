@@ -7,10 +7,12 @@ import { Button } from '@/components/ui/button';
 import { WelcomeAnimation } from '@/components/landing/welcome-animation';
 import { Logo } from '@/components/logo';
 import { useState, useEffect } from 'react';
+import type { CustomButton } from './dashboard/admin/website-ui/page';
 
 export default function Home() {
   const [title, setTitle] = useState("Welcome to TaskReview Hub");
   const [subtitle, setSubtitle] = useState("Your central place to rate, review, and analyze tasks and services. Get started by creating an account or signing in.");
+  const [customButtons, setCustomButtons] = useState<CustomButton[]>([]);
 
   useEffect(() => {
     const savedTitle = localStorage.getItem('website_title');
@@ -18,6 +20,9 @@ export default function Home() {
     
     const savedSubtitle = localStorage.getItem('website_subtitle');
     if (savedSubtitle) setSubtitle(savedSubtitle);
+
+    const savedButtons = localStorage.getItem('website_custom_buttons');
+    if(savedButtons) setCustomButtons(JSON.parse(savedButtons));
   }, []);
 
   return (
@@ -39,6 +44,11 @@ export default function Home() {
           <Button asChild size="lg" variant="secondary">
             <Link href="/login">Sign In</Link>
           </Button>
+           {customButtons.filter(b => b.enabled).map(button => (
+            <Button asChild size="lg" variant="outline" key={button.id}>
+              <Link href={button.url} target="_blank" rel="noopener noreferrer">{button.text}</Link>
+            </Button>
+          ))}
         </div>
       </div>
     </div>

@@ -17,6 +17,17 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { PlusCircle, Edit, Trash2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+  DialogTrigger
+} from "@/components/ui/dialog";
 
 // Helper to convert hex to HSL string
 const hexToHslString = (hex: string): string => {
@@ -52,6 +63,56 @@ const hexToHslString = (hex: string): string => {
   return `${h} ${s}% ${l}%`;
 };
 
+export type CustomButton = {
+  id: string;
+  text: string;
+  url: string;
+  enabled: boolean;
+};
+
+const ButtonForm = ({
+  button,
+  onSave,
+  onClose,
+}: {
+  button: Partial<CustomButton> | null;
+  onSave: (button: Omit<CustomButton, 'id'>) => void;
+  onClose: () => void;
+}) => {
+  const [text, setText] = useState(button?.text || 'Download App');
+  const [url, setUrl] = useState(button?.url || '');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!text || !url) {
+      alert("Please fill all fields.");
+      return;
+    }
+    onSave({
+      text,
+      url,
+      enabled: button?.enabled ?? true,
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="button-text">Button Text</Label>
+        <Input id="button-text" value={text} onChange={(e) => setText(e.target.value)} required />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="button-url">Button URL</Label>
+        <Input id="button-url" type="url" placeholder="https://example.com/download" value={url} onChange={(e) => setUrl(e.target.value)} required />
+      </div>
+      <DialogFooter>
+        <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+        <Button type="submit">Save Button</Button>
+      </DialogFooter>
+    </form>
+  );
+};
+
 export default function WebsiteUIPage() {
     const { toast } = useToast();
     const [selectedTheme, setSelectedTheme] = useState("abstract-tech");
@@ -66,6 +127,11 @@ export default function WebsiteUIPage() {
     const [primaryColor, setPrimaryColor] = useState("#673ab7");
     const [accentColor, setAccentColor] = useState("#009688");
     const [backgroundColor, setBackgroundColor] = useState("#f5f5f5");
+
+    // Custom Buttons
+    const [customButtons, setCustomButtons] = useState<CustomButton[]>([]);
+    const [isButtonFormOpen, setIsButtonFormOpen] = useState(false);
+    const [editingButton, setEditingButton] = useState<CustomButton | null>(null);
 
     const [isClient, setIsClient] = useState(false);
 
@@ -102,6 +168,10 @@ export default function WebsiteUIPage() {
         if (savedAccentColor) setAccentColor(savedAccentColor);
         const savedBackgroundColor = localStorage.getItem('theme_background_color');
         if (savedBackgroundColor) setBackgroundColor(savedBackgroundColor);
+
+        // Custom buttons
+        const savedButtons = localStorage.getItem('website_custom_buttons');
+        if (savedButtons) setCustomButtons(JSON.parse(savedButtons));
         
         setIsClient(true);
     }, []);
@@ -126,6 +196,9 @@ export default function WebsiteUIPage() {
         localStorage.setItem('theme_accent_color', accentColor);
         localStorage.setItem('theme_background_color', backgroundColor);
         
+        // Custom Buttons
+        localStorage.setItem('website_custom_buttons', JSON.stringify(customButtons));
+
         applyColors();
         
         // Force a page reload to apply changes to components that don't re-render automatically
@@ -137,6 +210,37 @@ export default function WebsiteUIPage() {
             description: "Website UI settings have been updated.",
         });
     };
+
+    const handleSaveButton = (buttonData: Omit<CustomButton, 'id'>) => {
+      if (editingButton) {
+        setCustomButtons(prev => prev.map(b => b.id === editingButton.id ? { ...b, ...buttonData } : b));
+        toast({ title: "Button Updated" });
+      } else {
+        setCustomButtons(prev => [...prev, { ...buttonData, id: `BTN-${Date.now()}` }]);
+        toast({ title: "Button Added" });
+      }
+      closeButtonForm();
+    };
+
+    const handleEditButton = (button: CustomButton) => {
+        setEditingButton(button);
+        setIsButtonFormOpen(true);
+    }
+    
+    const handleDeleteButton = (id: string) => {
+        setCustomButtons(prev => prev.filter(b => b.id !== id));
+        toast({ title: "Button Deleted", variant: 'destructive' });
+    }
+
+    const handleToggleButton = (id: string, enabled: boolean) => {
+        setCustomButtons(prev => prev.map(b => b.id === id ? { ...b, enabled } : b));
+        toast({ title: `Button ${enabled ? "Enabled" : "Disabled"}` });
+    }
+
+    const closeButtonForm = () => {
+        setEditingButton(null);
+        setIsButtonFormOpen(false);
+    }
     
     if (!isClient) {
         return null;
@@ -177,6 +281,43 @@ export default function WebsiteUIPage() {
                 <Label htmlFor="website-subtitle">Welcome Screen Subtitle</Label>
                 <Textarea id="website-subtitle" value={websiteSubtitle} onChange={(e) => setWebsiteSubtitle(e.target.value)} rows={3}/>
             </div>
+        </CardContent>
+      </Card>
+       <Card>
+        <CardHeader>
+          <CardTitle>Start Screen Buttons</CardTitle>
+          <CardDescription>
+            Add, edit, or remove custom call-to-action buttons on the welcome screen.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {customButtons.map(button => (
+            <div key={button.id} className="border p-3 rounded-lg flex justify-between items-center gap-4">
+              <div className="flex-1 overflow-hidden">
+                <p className="font-semibold truncate">{button.text}</p>
+                <p className="text-xs text-muted-foreground truncate">{button.url}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch checked={button.enabled} onCheckedChange={(checked) => handleToggleButton(button.id, checked)} />
+                <Button variant="ghost" size="icon" onClick={() => handleEditButton(button)}><Edit className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" onClick={() => handleDeleteButton(button.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+              </div>
+            </div>
+          ))}
+           <Dialog open={isButtonFormOpen} onOpenChange={setIsButtonFormOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="outline" className="w-full mt-4" onClick={() => setEditingButton(null)}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add New Button
+                    </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{editingButton ? 'Edit Button' : 'Add New Button'}</DialogTitle>
+                    </DialogHeader>
+                    <ButtonForm button={editingButton} onSave={handleSaveButton} onClose={closeButtonForm} />
+                </DialogContent>
+            </Dialog>
         </CardContent>
       </Card>
       
