@@ -188,6 +188,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [lastWithdrawalMonth, setLastWithdrawalMonth] = useState(() => getInitialState('lastWithdrawalMonth', -1));
   const [activeBoosters, setActiveBoosters] = useState<ActiveBooster[]>(() => getInitialState('activeBoosters', []));
   const [purchasedBoosterIds, setPurchasedBoosterIds] = useState<string[]>(() => getInitialState('purchasedBoosterIds', []));
+  const [purchasedReferralsCount, setPurchasedReferralsCount] = useState<number>(() => getInitialState('purchased_referrals', 0));
   
   const taskQuotaBoost = activeBoosters.find(b => b.type === 'TASK_QUOTA')?.value || 0;
   const interestRateBoost = activeBoosters.find(b => b.type === 'INTEREST_RATE')?.value || 0;
@@ -196,10 +197,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   
   const directReferralsCount = useMemo(() => {
     if (!currentUser) return 0;
-    const purchasedReferrals = getInitialState('purchased_referrals', 0);
     const actualReferrals = users.filter(u => u.referredBy === currentUser.referralCode).length;
-    return actualReferrals + purchasedReferrals;
-  }, [currentUser, users, getInitialState]);
+    return actualReferrals + purchasedReferralsCount;
+  }, [currentUser, users, purchasedReferralsCount]);
 
   const { currentLevel, levelUnlockProgress } = useMemo(() => {
     if (currentUser?.overrideLevel !== null && currentUser?.overrideLevel !== undefined) {
@@ -345,6 +345,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       setWithdrawalAddresses(getInitialState('withdrawalAddresses', []));
       setActiveBoosters(getInitialState('activeBoosters', []));
       setPurchasedBoosterIds(getInitialState('purchasedBoosterIds', []));
+      setPurchasedReferralsCount(getInitialState('purchased_referrals', 0));
     } else {
         setMainBalance(0);
         setTaskRewardsBalance(0);
@@ -360,6 +361,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setLastWithdrawalMonth(-1);
         setActiveBoosters([]);
         setPurchasedBoosterIds([]);
+        setPurchasedReferralsCount(0);
     }
     setIsLoading(false);
   }, [currentUser, setPersistentState, getInitialState]);
@@ -379,6 +381,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => setPersistentState('lastWithdrawalMonth', lastWithdrawalMonth), [lastWithdrawalMonth, setPersistentState]);
   useEffect(() => setPersistentState('activeBoosters', activeBoosters), [activeBoosters, setPersistentState]);
   useEffect(() => setPersistentState('purchasedBoosterIds', purchasedBoosterIds), [purchasedBoosterIds, setPersistentState]);
+  useEffect(() => setPersistentState('purchased_referrals', purchasedReferralsCount), [purchasedReferralsCount, setPersistentState]);
 
  const addTransaction = useCallback((userEmail: string, transaction: Omit<Transaction, 'id'>) => {
     const newTransaction: Transaction = {
@@ -711,9 +714,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     
     if (booster.type === 'PURCHASE_REFERRAL') {
         const referralCount = booster.value;
-        const referralsKey = `${currentUser.email}_purchased_referrals`;
-        const currentReferrals = getInitialState('purchased_referrals', 0);
-        setPersistentState('purchased_referrals', currentReferrals + referralCount);
+        setPurchasedReferralsCount(prev => prev + referralCount);
         
         // Track that this specific booster has been purchased
         setPurchasedBoosterIds(prev => [...prev, booster.id]);
