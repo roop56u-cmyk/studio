@@ -21,6 +21,8 @@ export type WithdrawalAddress = {
     id: string;
     name: string;
     address: string;
+    type: string;
+    enabled: boolean;
 };
 
 export type BoosterType = 'TASK_EARNING' | 'TASK_QUOTA' | 'INTEREST_RATE' | 'REFERRAL_COMMISSION' | 'PURCHASE_REFERRAL';
@@ -86,9 +88,10 @@ interface WalletContextType {
   startCounter: (type: 'task' | 'interest') => void;
   claimAndRestartCounter: (type: 'task' | 'interest') => void;
   completeTask: (task: GenerateTaskSuggestionOutput) => void;
-  withdrawalAddress: WithdrawalAddress | null;
-  setWithdrawalAddress: (address: Omit<WithdrawalAddress, 'id'>) => void;
-  clearWithdrawalAddress: () => void;
+  withdrawalAddresses: WithdrawalAddress[];
+  addWithdrawalAddress: (address: Omit<WithdrawalAddress, 'id'>) => void;
+  updateWithdrawalAddress: (id: string, data: Partial<Omit<WithdrawalAddress, 'id'>>) => void;
+  deleteWithdrawalAddress: (id: string) => void;
   isWithdrawalRestrictionEnabled: boolean;
   withdrawalRestrictionDays: number;
   withdrawalRestrictionMessage: string;
@@ -96,6 +99,7 @@ interface WalletContextType {
   purchaseBooster: (booster: Booster) => boolean;
   activeBoosters: ActiveBooster[];
   getReferralCommissionBoost: () => number;
+  isFundMovementLocked: (type: 'task' | 'interest') => boolean;
 }
 
 export type CounterType = 'task' | 'interest';
@@ -166,7 +170,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [tasksCompletedToday, setTasksCompletedToday] = useState(() => getInitialState('tasksCompletedToday', 0));
   const [lastTaskCompletionDate, setLastTaskCompletionDate] = useState(() => getInitialState('lastTaskCompletionDate', ''));
   const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>(() => getInitialState('completedTasks', []));
-  const [withdrawalAddress, setWithdrawalAddressState] = useState<WithdrawalAddress | null>(() => getInitialState('withdrawalAddress', null));
+  const [withdrawalAddresses, setWithdrawalAddresses] = useState<WithdrawalAddress[]>(() => getInitialState('withdrawalAddresses', []));
   const [monthlyWithdrawalsCount, setMonthlyWithdrawalsCount] = useState(() => getInitialState('monthlyWithdrawalsCount', 0));
   const [lastWithdrawalMonth, setLastWithdrawalMonth] = useState(() => getInitialState('lastWithdrawalMonth', -1));
   const [activeBoosters, setActiveBoosters] = useState<ActiveBooster[]>(() => getInitialState('activeBoosters', []));
@@ -312,7 +316,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       setWithdrawals(getInitialState('withdrawals', 0));
       setInterestCounter(getInitialState('interestCounter', { isRunning: false, startTime: null }));
       setCompletedTasks(getInitialState('completedTasks', []));
-      setWithdrawalAddressState(getInitialState('withdrawalAddress', null));
+      setWithdrawalAddresses(getInitialState('withdrawalAddresses', []));
       setActiveBoosters(getInitialState('activeBoosters', []));
     } else {
         setMainBalance(0);
@@ -323,7 +327,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setInterestCounter({ isRunning: false, startTime: null });
         setTasksCompletedToday(0);
         setCompletedTasks([]);
-        setWithdrawalAddressState(null);
+        setWithdrawalAddresses([]);
         setMonthlyWithdrawalsCount(0);
         setLastWithdrawalMonth(-1);
         setActiveBoosters([]);
@@ -340,7 +344,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => setPersistentState('interestCounter', interestCounter), [interestCounter, setPersistentState]);
   useEffect(() => setPersistentState('tasksCompletedToday', tasksCompletedToday), [tasksCompletedToday, setPersistentState]);
   useEffect(() => setPersistentState('completedTasks', completedTasks), [completedTasks, setPersistentState]);
-  useEffect(() => setPersistentState('withdrawalAddress', withdrawalAddress), [withdrawalAddress, setPersistentState]);
+  useEffect(() => setPersistentState('withdrawalAddresses', withdrawalAddresses), [withdrawalAddresses, setPersistentState]);
   useEffect(() => setPersistentState('monthlyWithdrawalsCount', monthlyWithdrawalsCount), [monthlyWithdrawalsCount, setPersistentState]);
   useEffect(() => setPersistentState('lastWithdrawalMonth', lastWithdrawalMonth), [lastWithdrawalMonth, setPersistentState]);
   useEffect(() => setPersistentState('activeBoosters', activeBoosters), [activeBoosters, setPersistentState]);
@@ -352,6 +356,18 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid positive number to move.' });
       return;
     }
+    
+    // Check for fund movement locks
+    if ((fromAccount === 'Interest Earnings' || destination === 'Interest Earnings') && isFundMovementLocked('interest')) {
+        toast({ variant: 'destructive', title: 'Action Locked', description: 'Cannot move funds to or from Interest Earnings while the timer is running. Please claim your earnings first.' });
+        return;
+    }
+     if ((fromAccount === 'Task Rewards' || destination === 'Task Rewards') && isFundMovementLocked('task')) {
+        toast({ variant: 'destructive', title: 'Action Locked', description: 'Cannot move funds to or from Task Rewards while you have incomplete tasks for the day.' });
+        return;
+    }
+
+
     if (fromAccount) {
         let sourceBalance;
         let setSourceBalance;
@@ -430,14 +446,25 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
            toast({ title: "Daily Interest Started", description: "Your 24-hour earning cycle has begun." });
       }
   };
+  
+  const isFundMovementLocked = (type: 'task' | 'interest') => {
+      if (type === 'interest') {
+        return interestCounter.isRunning;
+      }
+      if (type === 'task') {
+        // Lock if tasks have been started but not all are completed
+        return tasksCompletedToday > 0 && tasksCompletedToday < dailyTaskQuota;
+      }
+      return false;
+  }
 
   const claimAndRestartCounter = (type: CounterType) => {
       const dailyRate = currentRate / 100;
       if (type === 'interest') {
           const earnings = committedBalance * dailyRate;
           setInterestEarningsBalance(prev => prev + earnings);
-          setInterestCounter({ isRunning: true, startTime: Date.now() });
-          toast({ title: "Daily Interest Claimed!", description: `You earned ${earnings.toFixed(4)} USDT. A new cycle has started.`});
+          setInterestCounter({ isRunning: false, startTime: null }); // Stop the counter, force manual restart
+          toast({ title: "Daily Interest Claimed!", description: `You earned ${earnings.toFixed(4)} USDT. You can now move funds and restart the timer when ready.`});
       }
   };
 
@@ -465,15 +492,18 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       toast({ title: "Task Completed!", description: `You've earned ${finalEarning.toFixed(4)} USDT.` });
   };
 
-  const setWithdrawalAddress = (address: Omit<WithdrawalAddress, 'id'>) => {
-    const newAddress = { ...address, id: `ADDR-${Date.now()}` };
-    setWithdrawalAddressState(newAddress);
+  const addWithdrawalAddress = (address: Omit<WithdrawalAddress, 'id'>) => {
+    const newAddress: WithdrawalAddress = { ...address, id: `ADDR-${Date.now()}` };
+    setWithdrawalAddresses(prev => [...prev, newAddress]);
     toast({ title: "Address Saved", description: `Withdrawal address "${address.name}" has been set.` });
   };
+  
+  const updateWithdrawalAddress = (id: string, data: Partial<Omit<WithdrawalAddress, 'id'>>) => {
+    setWithdrawalAddresses(prev => prev.map(addr => addr.id === id ? { ...addr, ...data } : addr));
+  };
 
-  const clearWithdrawalAddress = () => {
-    setWithdrawalAddressState(null);
-    toast({ title: "Address Removed", description: "Your withdrawal address has been removed." });
+  const deleteWithdrawalAddress = (id: string) => {
+    setWithdrawalAddresses(prev => prev.filter(addr => addr.id !== id));
   };
 
   const purchaseBooster = (booster: Booster): boolean => {
@@ -543,9 +573,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         startCounter,
         claimAndRestartCounter,
         completeTask,
-        withdrawalAddress,
-        setWithdrawalAddress,
-        clearWithdrawalAddress,
+        withdrawalAddresses,
+        addWithdrawalAddress,
+        updateWithdrawalAddress,
+        deleteWithdrawalAddress,
         isWithdrawalRestrictionEnabled,
         withdrawalRestrictionDays,
         withdrawalRestrictionMessage,
@@ -553,6 +584,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         purchaseBooster,
         activeBoosters,
         getReferralCommissionBoost,
+        isFundMovementLocked
       }}
     >
       {children}

@@ -32,6 +32,7 @@ import { PlusCircle, Edit, Trash2 } from "lucide-react";
 import { WithdrawalTimer } from "./withdrawal-timer";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { WithdrawalAddress } from "@/contexts/WalletContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface WithdrawalPanelProps {
     onAddRequest: (request: Partial<Omit<Request, 'id' | 'date' | 'user' | 'status'>>) => void;
@@ -41,11 +42,12 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
   const { toast } = useToast();
   const [amount, setAmount] = useState("");
   const { userRequests } = useRequests();
+  const { currentUser } = useAuth();
 
   const { 
       mainBalance, 
       requestWithdrawal, 
-      withdrawalAddresses,
+      withdrawalAddresses = [],
       deleteWithdrawalAddress,
       currentLevel,
       minWithdrawalAmount,
@@ -54,7 +56,9 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
       isWithdrawalRestrictionEnabled,
       withdrawalRestrictionDays,
       withdrawalRestrictionMessage,
-      withdrawalFee
+      withdrawalFee,
+      isFundMovementLocked,
+      claimAndRestartCounter,
   } = useWallet();
   
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
@@ -75,6 +79,12 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
 
   const netWithdrawal = numericAmount - adminFee;
 
+  useEffect(() => {
+      if (withdrawalAddresses.length > 0 && !selectedAddressId) {
+          const enabledAddress = withdrawalAddresses.find(a => a.enabled);
+          if(enabledAddress) setSelectedAddressId(enabledAddress.id);
+      }
+  }, [withdrawalAddresses, selectedAddressId]);
   
   const handleAddNewAddress = () => {
     setEditingAddress(null);
@@ -126,8 +136,8 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
 
     const userIsEligibleForRestriction = mainBalance > 0 || currentLevel >= 1;
 
-    if (isWithdrawalRestrictionEnabled && userIsEligibleForRestriction) {
-        const key = `${currentUser?.email}_restrictionStartDate`;
+    if (isWithdrawalRestrictionEnabled && userIsEligibleForRestriction && currentUser) {
+        const key = `${currentUser.email}_firstDepositDate`;
         let startDate = localStorage.getItem(key);
         if (!startDate) {
             startDate = new Date().toISOString();
@@ -148,8 +158,6 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
     toast({ title: "Withdrawal Request Submitted", description: `Your request to withdraw ${numericAmount.toFixed(2)} USDT is pending approval.` });
     setAmount("");
   };
-
-  const currentUser = { email: localStorage.getItem('currentUser') ? JSON.parse(localStorage.getItem('currentUser')!).email : null };
 
 
   return (
@@ -174,7 +182,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
                         <SelectValue placeholder="Select an address" />
                       </SelectTrigger>
                       <SelectContent>
-                        {withdrawalAddresses.map(addr => (
+                        {withdrawalAddresses.filter(addr => addr.enabled).map(addr => (
                           <SelectItem key={addr.id} value={addr.id}>
                             {addr.name} ({addr.type}) - {addr.address.slice(0,6)}...{addr.address.slice(-4)}
                           </SelectItem>
@@ -313,5 +321,3 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
     </>
   );
 }
-
-    
