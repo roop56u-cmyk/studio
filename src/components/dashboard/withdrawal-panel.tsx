@@ -27,17 +27,36 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { PlusCircle, Edit, Trash2 } from "lucide-react";
 import { WithdrawalTimer } from "./withdrawal-timer";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { WithdrawalAddress } from "@/contexts/WalletContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { levels as defaultLevels } from "./level-tiers";
 
 interface WithdrawalPanelProps {
     onAddRequest: (request: Partial<Omit<Request, 'id' | 'date' | 'user' | 'status'>>) => void;
 }
+
+const getGlobalSetting = (key: string, defaultValue: any, isJson: boolean = false) => {
+    if (typeof window === 'undefined') {
+    return defaultValue;
+    }
+    try {
+    const storedValue = localStorage.getItem(key);
+    if (storedValue) {
+        if (isJson) {
+            return JSON.parse(storedValue);
+        }
+        return storedValue;
+    }
+    } catch (error) {
+    console.error(`Failed to parse global setting ${key} from localStorage`, error);
+    }
+    return defaultValue;
+};
+
 
 export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
   const { toast } = useToast();
@@ -74,10 +93,14 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
 
   const numericAmount = parseFloat(amount) || 0;
 
+  const configuredLevels = useMemo(() => {
+    return getGlobalSetting('platform_levels', defaultLevels, true);
+  }, []);
+
   const withdrawalFeeRate = useMemo(() => {
      const levelData = configuredLevels.find(l => l.level === currentLevel);
      return levelData ? levelData.withdrawalFee : 0;
-  }, [currentLevel]);
+  }, [currentLevel, configuredLevels]);
   
   const adminFee = useMemo(() => {
     return numericAmount * (withdrawalFeeRate / 100);
@@ -172,29 +195,6 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
     onAddRequest({ amount: numericAmount, address: selectedAddress.address, type: 'Withdrawal' });
     toast({ title: "Withdrawal Request Submitted", description: `Your request to withdraw ${numericAmount.toFixed(2)} USDT is pending approval.` });
     setAmount("");
-  };
-
-  const { configuredLevels } = useMemo(() => {
-    const levels = getGlobalSetting('platform_levels', defaultLevels, true);
-    return { configuredLevels: levels };
-  }, []);
-
-  const getGlobalSetting = (key: string, defaultValue: any, isJson: boolean = false) => {
-     if (typeof window === 'undefined') {
-      return defaultValue;
-    }
-    try {
-      const storedValue = localStorage.getItem(key);
-      if (storedValue) {
-        if (isJson) {
-            return JSON.parse(storedValue);
-        }
-        return storedValue;
-      }
-    } catch (error) {
-      console.error(`Failed to parse global setting ${key} from localStorage`, error);
-    }
-    return defaultValue;
   };
 
 
