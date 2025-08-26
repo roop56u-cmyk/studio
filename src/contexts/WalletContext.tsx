@@ -126,7 +126,7 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
-  const { currentUser, users } = useAuth();
+  const { currentUser, users, checkAndDeactivateUser } = useAuth();
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -567,6 +567,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         date: new Date().toISOString()
     });
 
+    checkAndDeactivateUser(userEmail);
+
     if(currentUser?.email === userEmail) {
       setWithdrawals(prev => prev + 1);
       setMonthlyWithdrawalsCount(prev => prev + 1);
@@ -787,3 +789,5 @@ export const useWallet = () => {
   }
   return context;
 };
+
+    

@@ -22,6 +22,8 @@ interface AuthContextType {
   logout: () => void;
   updateUser: (email: string, updatedData: Partial<Omit<User, 'status'>> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; }) => void;
   deleteUser: (email: string, isSelfDelete?: boolean) => void;
+  updateUserStatus: (email: string, status: 'active' | 'disabled') => void;
+  checkAndDeactivateUser: (email: string) => void;
 }
 
 const initialAdminUser: User = {
@@ -200,9 +202,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUsers(prevUsers => prevUsers.filter(user => user.email !== email));
     };
 
+    const updateUserStatus = (email: string, status: 'active' | 'disabled') => {
+        setUsers(prev => prev.map(u => u.email === email ? { ...u, status } : u));
+    }
+    
+    const checkAndDeactivateUser = (email: string) => {
+        const mainBalance = parseFloat(localStorage.getItem(`${email}_mainBalance`) || '0');
+        const taskBalance = parseFloat(localStorage.getItem(`${email}_taskRewardsBalance`) || '0');
+        const interestBalance = parseFloat(localStorage.getItem(`${email}_interestEarningsBalance`) || '0');
+        const totalBalance = mainBalance + taskBalance + interestBalance;
+
+        if (totalBalance <= 0) {
+            updateUserStatus(email, 'disabled');
+        }
+    }
+
 
     return (
-        <AuthContext.Provider value={{ currentUser, users, login, signup, logout, updateUser, deleteUser }}>
+        <AuthContext.Provider value={{ currentUser, users, login, signup, logout, updateUser, deleteUser, updateUserStatus, checkAndDeactivateUser }}>
             {children}
         </AuthContext.Provider>
     );
@@ -215,3 +232,5 @@ export const useAuth = () => {
     }
     return context;
 };
+
+    

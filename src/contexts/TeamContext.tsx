@@ -58,9 +58,17 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             if (savedEnabled) setCommissionEnabled(JSON.parse(savedEnabled));
 
             const savedRewards = localStorage.getItem('platform_team_rewards');
-            if (savedRewards) setTeamRewards(JSON.parse(savedRewards));
+            if (savedRewards) {
+              const parsedRewards = JSON.parse(savedRewards);
+              const userIsActive = currentUser?.status === 'active';
+              if (userIsActive) {
+                setTeamRewards(parsedRewards);
+              } else {
+                setTeamRewards([]);
+              }
+            }
         }
-    }, []);
+    }, [currentUser]);
 
     const getLevelForUser = useCallback((userEmail: string): number => {
         const taskBalanceKey = `${userEmail}_taskRewardsBalance`;
@@ -100,7 +108,8 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         const purchasedReferrals = parseInt(localStorage.getItem(`${user.email}_purchased_referrals`) || '0');
 
         const calculateLayer = (members: User[]): TeamLevelData => {
-            const enrichedMembers: TeamMember[] = members.map(m => ({ ...m, level: getLevelForUser(m.email) }));
+            const activeMembers = members.filter(m => m.status === 'active');
+            const enrichedMembers: TeamMember[] = activeMembers.map(m => ({ ...m, level: getLevelForUser(m.email) }));
             const totalDeposits = enrichedMembers.reduce((sum, m) => sum + getDepositsForUser(m.email), 0);
             const dailyTaskEarnings = enrichedMembers.reduce((sum, m) => {
                  const levelData = defaultLevels.find(l => l.level === m.level);
@@ -183,3 +192,5 @@ export const useTeam = () => {
     }
     return context;
 };
+
+    

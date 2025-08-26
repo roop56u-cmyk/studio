@@ -13,7 +13,7 @@ export function useTeamCommission() {
   const { currentUser } = useAuth();
 
   useEffect(() => {
-    if (!teamData || !currentUser) return;
+    if (!teamData || !currentUser || currentUser.status !== 'active') return;
     
     const now = new Date();
     const istTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
@@ -47,3 +47,5 @@ export function useTeamCommission() {
     }
   }, [teamData, commissionRates, commissionEnabled, addCommissionToMainBalance, currentUser, getReferralCommissionBoost]);
 }
+
+    

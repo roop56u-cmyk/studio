@@ -155,6 +155,14 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
             )}
           </div>
           <div className="space-y-2">
+            <Label>User Status</Label>
+            <div>
+                 <Badge variant={user.status === 'active' ? 'default' : 'destructive'} className={user.status === 'active' ? 'bg-green-500/20 text-green-700 border-green-500/20' : ''}>
+                    {user.status}
+                </Badge>
+            </div>
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="referralCode">Referral Code</Label>
             <Input id="referralCode" {...form.register("referralCode")} />
             {form.formState.errors.referralCode && (
@@ -247,3 +255,5 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
     </>
   );
 }
+
+    
