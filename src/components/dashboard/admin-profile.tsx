@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MoreHorizontal, User, Calendar, Hash, DollarSign, Wallet, ArrowUpCircle, TrendingUp, UserCheck, ShieldCheck } from "lucide-react";
+import { MoreHorizontal, User, Calendar, Hash, DollarSign, Wallet, ArrowUpCircle, TrendingUp, UserCheck, ShieldCheck, ArrowDownCircle, Users as UsersIcon, Link } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRequests } from "@/contexts/RequestContext";
 import { Skeleton } from "../ui/skeleton";
@@ -71,9 +71,8 @@ export function AdminProfile() {
             <div className="space-y-4">
                 <Skeleton className="h-10 w-full" />
                 <div className="space-y-2 border rounded-md p-2">
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-48 w-full" />
+                    <Skeleton className="h-48 w-full" />
                 </div>
             </div>
         ) : (
@@ -86,77 +85,96 @@ export function AdminProfile() {
             <TabsTrigger value="All">All</TabsTrigger>
           </TabsList>
             
-          <div className="space-y-2">
+          <div className="space-y-4">
              {filteredRequests.length > 0 ? (
                 filteredRequests.map((request) => (
-                  <div key={request.id} className="border rounded-lg p-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
-                        {/* Column 1 */}
-                        <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                                <Badge variant={request.type === 'Withdrawal' ? 'destructive' : 'default'}>{request.type}</Badge>
-                                <span className="font-bold text-lg">${request.amount.toFixed(2)}</span>
-                            </div>
-                            <div className="text-sm text-muted-foreground flex items-center gap-2 truncate">
-                                <User className="h-4 w-4 shrink-0" /> <span className="truncate">{request.user}</span>
-                            </div>
-                             <div className="text-sm text-muted-foreground flex items-center gap-2">
-                                <Wallet className="h-4 w-4 shrink-0" />
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                             <span className="font-mono text-xs truncate cursor-pointer">{request.address ?? 'N/A'}</span>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>{request.address ?? 'N/A'}</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                            </div>
-                        </div>
-
-                        {/* Column 2 */}
-                        <div className="space-y-2 flex flex-col items-start sm:items-end">
-                            <div className="flex items-center gap-2">
-                                <Badge
-                                    variant={
-                                    request.status === "Pending"
-                                        ? "secondary"
-                                        : request.status === "Approved"
-                                        ? "default"
-                                        : "destructive"
-                                    }
-                                    className={cn("w-20 justify-center", request.status === 'Approved' ? 'bg-green-500/20 text-green-700 border-green-500/20' : '')}
-                                >
-                                    {request.status}
-                                </Badge>
-                                 {request.status === 'Pending' && (
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button size="xs" variant="outline" className="h-7">
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem onClick={() => handleAction(request.id, 'Approved')}>Approve</DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleAction(request.id, 'Declined')}>Decline</DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleAction(request.id, 'On Hold')}>On Hold</DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
+                  <div key={request.id} className="border rounded-lg p-4 space-y-4 bg-card">
+                    {/* Header */}
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <div className={cn(
+                                "flex h-6 w-6 items-center justify-center rounded-full",
+                                request.type === 'Recharge' ? 'bg-green-100' : 'bg-red-100'
+                            )}>
+                                {request.type === 'Recharge' ? (
+                                    <ArrowUpCircle className="h-4 w-4 text-green-600" />
+                                ) : (
+                                    <ArrowDownCircle className="h-4 w-4 text-red-600" />
                                 )}
                             </div>
-                             <div className="text-xs text-muted-foreground flex items-center gap-2"><Calendar className="h-3 w-3" /> {new Date(request.date).toLocaleDateString()}</div>
-                             <div className="text-xs text-muted-foreground flex items-center gap-2"><Hash className="h-3 w-3" /> {request.id}</div>
+                            <h3 className={cn(
+                                "text-lg font-bold",
+                                request.type === 'Recharge' ? 'text-green-600' : 'text-red-600'
+                            )}>
+                                {request.type} Request
+                            </h3>
                         </div>
-
-                        {/* User stats - full width */}
-                        <div className="sm:col-span-2 pt-2 mt-2 border-t border-dashed w-full flex items-center justify-around text-xs text-muted-foreground">
-                            <div className="flex items-center gap-1"><ShieldCheck className="h-3 w-3 text-primary"/> Lvl: <span className="font-semibold text-foreground">{request.level}</span></div>
-                            <div className="flex items-center gap-1"><ArrowUpCircle className="h-3 w-3 text-green-500"/> Deps: <span className="font-semibold text-foreground">{request.deposits}</span></div>
-                            <div className="flex items-center gap-1"><TrendingUp className="h-3 w-3 text-red-500"/> WDs: <span className="font-semibold text-foreground">{request.withdrawals}</span></div>
-                             <div className="flex items-center gap-1"><DollarSign className="h-3 w-3 text-yellow-500"/> Bal: <span className="font-semibold text-foreground">${request.balance.toFixed(2)}</span></div>
+                        <p className="text-sm text-muted-foreground font-mono mt-1">{request.id}</p>
+                    </div>
+                    
+                    {/* User Info */}
+                    <div className="space-y-1 text-sm">
+                        <div className="flex items-center gap-2 text-foreground">
+                            <User className="h-4 w-4 text-muted-foreground"/>
+                            <span>{request.user}</span>
+                        </div>
+                         <div className="flex items-center gap-2 text-foreground">
+                            <Calendar className="h-4 w-4 text-muted-foreground"/>
+                            <span>{new Date(request.date).toLocaleDateString()}</span>
                         </div>
                     </div>
+                    
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-2 gap-y-4 gap-x-2 text-sm border-t border-b py-4">
+                        <div>
+                            <p className="text-muted-foreground">Amount</p>
+                            <p className="font-bold text-base text-foreground">${request.amount.toFixed(2)}</p>
+                        </div>
+                         <div>
+                            <p className="text-muted-foreground">User Level</p>
+                            <p className="font-bold text-base text-foreground">Level {request.level}</p>
+                        </div>
+                         <div>
+                            <p className="text-muted-foreground">User Deposits</p>
+                            <p className="font-bold text-base text-foreground">{request.deposits}</p>
+                        </div>
+                         <div>
+                            <p className="text-muted-foreground">User Withdrawals</p>
+                            <p className="font-bold text-base text-foreground">{request.withdrawals}</p>
+                        </div>
+                        <div>
+                            <p className="text-muted-foreground">User Referrals</p>
+                            <p className="font-bold text-base text-foreground">0</p>
+                        </div>
+                        <div>
+                            <p className="text-muted-foreground">User Main Balance</p>
+                            <p className="font-bold text-base text-foreground">${request.balance.toFixed(2)}</p>
+                        </div>
+                    </div>
+
+                    {/* Actions */}
+                     {request.status === 'Pending' ? (
+                        <div className="grid grid-cols-3 gap-2">
+                           <Button onClick={() => handleAction(request.id, 'Approved')} className="bg-green-500 hover:bg-green-600 text-white">Approve</Button>
+                           <Button onClick={() => handleAction(request.id, 'Declined')} className="bg-red-500 hover:bg-red-600 text-white">Decline</Button>
+                           <Button onClick={() => handleAction(request.id, 'On Hold')} variant="outline">On Hold</Button>
+                        </div>
+                    ) : (
+                         <div className="flex justify-end">
+                             <Badge
+                                variant={
+                                request.status === "Pending"
+                                    ? "secondary"
+                                    : request.status === "Approved"
+                                    ? "default"
+                                    : "destructive"
+                                }
+                                className={cn("w-24 justify-center py-1 text-sm", request.status === 'Approved' ? 'bg-green-500/20 text-green-700 border-green-500/20' : '')}
+                            >
+                                {request.status}
+                            </Badge>
+                         </div>
+                    )}
                   </div>
                 ))
             ) : (
