@@ -143,10 +143,14 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const handleReferralBonus = (userEmail: string, amount: number) => {
+    // This function is called when a user's recharge is approved.
+    // 'userEmail' is the user who made the deposit.
     const userDepositsKey = `${userEmail}_deposits`;
     const depositCount = parseInt(localStorage.getItem(userDepositsKey) || '0');
     
-    if (depositCount > 1) return;
+    // The bonus is only for the *first* deposit. `approveRecharge` increments the count,
+    // so we check if the count is exactly 1.
+    if (depositCount !== 1) return;
 
     const minDepositForBonus = parseInt(localStorage.getItem('system_min_deposit_for_bonus') || '100');
     if (amount < minDepositForBonus) return;
@@ -254,4 +258,5 @@ export type Transaction = {
     amount: number,
     date: string,
 }
+
 
