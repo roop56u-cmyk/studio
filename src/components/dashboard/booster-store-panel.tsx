@@ -29,6 +29,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "../ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { platformMessages } from "@/lib/platform-messages";
 
 const boosterIcons: { [key in Booster['type']]: React.ReactNode } = {
     TASK_EARNING: <Star className="h-6 w-6 text-yellow-500" />,
@@ -37,6 +38,25 @@ const boosterIcons: { [key in Booster['type']]: React.ReactNode } = {
     REFERRAL_COMMISSION: <Users className="h-6 w-6 text-purple-500" />,
     PURCHASE_REFERRAL: <UserPlus className="h-6 w-6 text-indigo-500" />,
 };
+
+const getGlobalSetting = (key: string, defaultValue: any, isJson: boolean = false) => {
+    if (typeof window === 'undefined') {
+    return defaultValue;
+    }
+    try {
+    const storedValue = localStorage.getItem(key);
+    if (storedValue) {
+        if (isJson) {
+            return JSON.parse(storedValue);
+        }
+        return storedValue;
+    }
+    } catch (error) {
+    console.error(`Failed to parse global setting ${key} from localStorage`, error);
+    }
+    return defaultValue;
+};
+
 
 const boosterValueFormatter = (type: Booster['type'], value: number) => {
     switch (type) {
@@ -63,6 +83,20 @@ export function BoosterStorePanel() {
         interestCounter
     } = useWallet();
     const [boosters, setBoosters] = useState<Booster[]>([]);
+     const [messages, setMessages] = useState<any>({});
+
+     useEffect(() => {
+        const storedMessages = getGlobalSetting("platform_custom_messages", {}, true);
+        const defaults: any = {};
+        Object.entries(platformMessages).forEach(([catKey, category]) => {
+            defaults[catKey] = {};
+            Object.entries(category.messages).forEach(([msgKey, msgItem]) => {
+                defaults[catKey][msgKey] = msgItem.defaultValue;
+            });
+        });
+        const mergedMessages = { ...defaults, ...storedMessages };
+        setMessages(mergedMessages);
+    }, []);
     
     useEffect(() => {
         const storedBoosters = localStorage.getItem("platform_boosters");
@@ -86,14 +120,8 @@ export function BoosterStorePanel() {
         if (isPurchaseLocked && booster.type !== 'PURCHASE_REFERRAL') {
              return { text: "Purchase", disabled: true, tooltip: "Complete daily activities before purchasing." };
         }
-        if (booster.type === 'PURCHASE_REFERRAL') {
-            if (isBoosterPurchased(booster.id)) {
-                return { text: "Purchased", disabled: true, tooltip: "You have already purchased this item." };
-            }
-        } else {
-            if (isBoosterTypeActive(booster.type)) {
-                return { text: "Already Active", disabled: true, tooltip: "A booster of this type is already active." };
-            }
+        if (isBoosterPurchased(booster.id)) {
+            return { text: "Purchased", disabled: true, tooltip: "You have already purchased this item." };
         }
         return { text: "Purchase", disabled: false, tooltip: null };
     };
@@ -149,15 +177,18 @@ export function BoosterStorePanel() {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>
-                                    <AlertDialogTitle>Confirm Purchase</AlertDialogTitle>
+                                    <AlertDialogTitle>{messages.boosters?.confirmPurchaseTitle}</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        Are you sure you want to buy the "{booster.name}" booster for ${booster.price.toFixed(2)}? This amount will be deducted from your main wallet balance.
+                                        {messages.boosters?.confirmPurchaseDescription
+                                            ?.replace('[BoosterName]', booster.name)
+                                            ?.replace('[BoosterPrice]', booster.price.toFixed(2))
+                                        }
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 {mainBalance < booster.price && (
                                     <div className="flex items-center gap-2 text-destructive border border-destructive/50 p-2 rounded-md">
                                         <ShieldAlert className="h-5 w-5"/>
-                                        <p className="text-sm">You have insufficient funds in your main wallet.</p>
+                                        <p className="text-sm">{messages.boosters?.insufficientFundsDescription}</p>
                                     </div>
                                 )}
                                 <AlertDialogFooter>

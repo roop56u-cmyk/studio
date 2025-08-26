@@ -78,6 +78,8 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
 
     // Deep merge defaults with stored messages
     const mergedMessages = {
+      ...defaults,
+      ...storedMessages,
       withdrawal: { ...defaults.withdrawal, ...(storedMessages.withdrawal || {}) },
       recharge: { ...defaults.recharge, ...(storedMessages.recharge || {}) }
     };
@@ -392,9 +394,12 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
       <AlertDialog open={isMaxAmountAlertOpen} onOpenChange={setIsMaxAmountAlertOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Maximum Withdrawal Limit</AlertDialogTitle>
+                <AlertDialogTitle>{messages.withdrawal?.maxAmountTitle}</AlertDialogTitle>
                 <AlertDialogDescription>
-                    The maximum withdrawal for Level {currentLevel} is ${maxWithdrawalAmount.toFixed(2)}. Please enter a lower amount.
+                    {messages.withdrawal?.maxAmountDescription
+                        ?.replace('[Y]', currentLevel)
+                        ?.replace('[Amount]', maxWithdrawalAmount.toFixed(2))
+                    }
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

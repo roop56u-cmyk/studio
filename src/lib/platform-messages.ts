@@ -14,6 +14,37 @@ export type MessageCategory = {
 };
 
 export const platformMessages: { [categoryKey: string]: MessageCategory } = {
+  auth: {
+    title: "Authentication Messages",
+    description: "Alerts related to sign-up, sign-in, and password resets.",
+    messages: {
+        noAccountFound: {
+            label: "No Account Found",
+            description: "Error when a user tries to log in with an unregistered email.",
+            defaultValue: "No account found with this email.",
+        },
+        incorrectPassword: {
+            label: "Incorrect Password",
+            description: "Error for an incorrect password during login.",
+            defaultValue: "Incorrect password. Please try again.",
+        },
+        accountDisabled: {
+            label: "Account Disabled",
+            description: "Error when a disabled user tries to log in.",
+            defaultValue: "Your account has been disabled. Please contact support.",
+        },
+        invalidReferralCode: {
+            label: "Invalid Invitation Code",
+            description: "Error during sign-up if the invitation code is invalid.",
+            defaultValue: "Invalid invitation code.",
+        },
+        emailExists: {
+            label: "Email Already Exists",
+            description: "Error during sign-up if the email is already registered.",
+            defaultValue: "An account with this email already exists.",
+        },
+    }
+  },
   withdrawal: {
     title: "Withdrawal Process Messages",
     description: "Alerts, dialogs, and notifications shown during the withdrawal process.",
@@ -53,6 +84,16 @@ export const platformMessages: { [categoryKey: string]: MessageCategory } = {
         description: "Body text for the minimum amount alert. Use [Y] for level and [Amount] for the minimum amount.",
         defaultValue: "The minimum withdrawal amount for Level [Y] is $[Amount]. Please enter a higher amount.",
       },
+       maxAmountTitle: {
+        label: "Maximum Amount Title",
+        description: "Title of the alert when the user's withdrawal amount is too high.",
+        defaultValue: "Maximum Withdrawal Limit",
+      },
+      maxAmountDescription: {
+        label: "Maximum Amount Description",
+        description: "Body text for the maximum amount alert. Use [Y] for level and [Amount] for the maximum amount.",
+        defaultValue: "The maximum withdrawal for Level [Y] is $[Amount]. Please enter a lower amount.",
+      },
     }
   },
   recharge: {
@@ -81,4 +122,30 @@ export const platformMessages: { [categoryKey: string]: MessageCategory } = {
       },
     }
   },
+  boosters: {
+    title: "Booster Store Messages",
+    description: "Alerts and notifications for purchasing boosters.",
+    messages: {
+        confirmPurchaseTitle: {
+            label: "Confirm Purchase Title",
+            description: "Title for the booster purchase confirmation dialog.",
+            defaultValue: "Confirm Purchase",
+        },
+        confirmPurchaseDescription: {
+            label: "Confirm Purchase Description",
+            description: "Body text for the confirmation dialog. Use [BoosterName] and [BoosterPrice].",
+            defaultValue: "Are you sure you want to buy the \"[BoosterName]\" booster for $[BoosterPrice]? This amount will be deducted from your main wallet balance.",
+        },
+        insufficientFundsTitle: {
+            label: "Insufficient Funds Title",
+            description: "Title for the alert when a user has insufficient funds.",
+            defaultValue: "Insufficient Funds",
+        },
+        insufficientFundsDescription: {
+            label: "Insufficient Funds Description",
+            description: "Body text for the insufficient funds alert.",
+            defaultValue: "You have insufficient funds in your main wallet.",
+        }
+    }
+  }
 };

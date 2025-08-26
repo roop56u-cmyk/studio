@@ -3,6 +3,7 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { platformMessages } from '@/lib/platform-messages';
 
 export type User = {
     email: string;
@@ -35,10 +36,43 @@ const initialAdminUser: User = {
     status: 'active',
 };
 
+const getGlobalSetting = (key: string, defaultValue: any, isJson: boolean = false) => {
+    if (typeof window === 'undefined') {
+    return defaultValue;
+    }
+    try {
+    const storedValue = localStorage.getItem(key);
+    if (storedValue) {
+        if (isJson) {
+            return JSON.parse(storedValue);
+        }
+        return storedValue;
+    }
+    } catch (error) {
+    console.error(`Failed to parse global setting ${key} from localStorage`, error);
+    }
+    return defaultValue;
+};
+
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+    const [messages, setMessages] = useState<any>({});
+
+    useEffect(() => {
+        const storedMessages = getGlobalSetting("platform_custom_messages", {}, true);
+        const defaults: any = {};
+        Object.entries(platformMessages).forEach(([catKey, category]) => {
+            defaults[catKey] = {};
+            Object.entries(category.messages).forEach(([msgKey, msgItem]) => {
+                defaults[catKey][msgKey] = msgItem.defaultValue;
+            });
+        });
+        const mergedMessages = { ...defaults, ...storedMessages };
+        setMessages(mergedMessages);
+    }, []);
+
     const [users, setUsers] = useState<User[]>(() => {
         if (typeof window === 'undefined') {
             return [initialAdminUser];
@@ -108,13 +142,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const user = users.find(u => u.email === email);
 
         if (!user) {
-            return { success: false, message: 'No account found with this email.' };
+            return { success: false, message: messages.auth?.noAccountFound };
         }
         if (user.password !== password) {
-            return { success: false, message: 'Incorrect password. Please try again.' };
+            return { success: false, message: messages.auth?.incorrectPassword };
         }
          if (user.status === 'disabled') {
-            return { success: false, message: 'Your account has been disabled. Please contact support.' };
+            return { success: false, message: messages.auth?.accountDisabled };
         }
 
         setCurrentUser(user);
@@ -125,10 +159,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const referrer = users.find(u => u.referralCode === referralCode);
 
         if (!referrer) {
-            return { success: false, message: 'Invalid invitation code.' };
+            return { success: false, message: messages.auth?.invalidReferralCode };
         }
         if (users.find(u => u.email === email)) {
-            return { success: false, message: 'An account with this email already exists.' };
+            return { success: false, message: messages.auth?.emailExists };
         }
 
         const newUser: User = { 
@@ -232,5 +266,3 @@ export const useAuth = () => {
     }
     return context;
 };
-
-    
