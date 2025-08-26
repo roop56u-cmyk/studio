@@ -207,6 +207,22 @@ export default function WebsiteUIPage() {
                 <RadioGroupItem value="organic-growth" id="organic-growth" />
                 <Label htmlFor="organic-growth" className="font-normal">Organic Growth</Label>
               </div>
+               <div className="flex items-center space-x-2">
+                <RadioGroupItem value="floating-crystals" id="floating-crystals" />
+                <Label htmlFor="floating-crystals" className="font-normal">Floating Crystals</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="cosmic-nebula" id="cosmic-nebula" />
+                <Label htmlFor="cosmic-nebula" className="font-normal">Cosmic Nebula</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="abstract-particles" id="abstract-particles" />
+                <Label htmlFor="abstract-particles" className="font-normal">Abstract Particles</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="synthwave-sunset" id="synthwave-sunset" />
+                <Label htmlFor="synthwave-sunset" className="font-normal">Synthwave Sunset</Label>
+              </div>
             </RadioGroup>
           </div>
            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
