@@ -13,6 +13,7 @@ export type User = {
     referredBy: string | null; // Stores the referral code of the user who referred them
     status: 'active' | 'disabled' | 'inactive';
     overrideLevel?: number | null;
+    isBonusDisabled?: boolean;
 };
 
 interface AuthContextType {
@@ -34,6 +35,7 @@ const initialAdminUser: User = {
     referralCode: "ADMINREF001",
     referredBy: null,
     status: 'active',
+    isBonusDisabled: true,
 };
 
 const getGlobalSetting = (key: string, defaultValue: any, isJson: boolean = false) => {
@@ -90,6 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 return parsedUsers.map((u: User) => ({
                     ...u,
                     status: u.status ?? 'active', // Set default status if missing
+                    isBonusDisabled: u.isBonusDisabled ?? false,
                     ...(u.email === initialAdminUser.email ? initialAdminUser : {}) // Ensure admin data is current
                 }));
             }
@@ -172,6 +175,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             referralCode: "TRH-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
             referredBy: referralCode,
             status: 'inactive',
+            isBonusDisabled: false,
         };
         setUsers(prev => [...prev, newUser]);
         
@@ -185,7 +189,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         router.push('/login');
     };
 
-    const updateUser = (email: string, updatedData: Partial<Omit<User, 'status'>> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; purchasedReferrals?: number }) => {
+    const updateUser = (email: string, updatedData: Partial<Omit<User, 'status'>> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; purchasedReferrals?: number; }) => {
         const { mainBalance, taskRewardsBalance, interestEarningsBalance, purchasedReferrals, ...userData } = updatedData;
         
         const originalUser = users.find(u => u.email === email);

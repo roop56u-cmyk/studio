@@ -302,7 +302,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setPurchasedReferralsCount(updatedPurchasedReferrals);
       }
     }
-  }, [users, currentUser, getInitialState]);
+  }, [users, currentUser, getInitialState, purchasedReferralsCount]);
 
 
   useEffect(() => {
@@ -409,6 +409,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
  }, [currentUser]);
 
  const handleSignUpBonus = useCallback((userEmail: string) => {
+    const user = users.find(u => u.email === userEmail);
+    if (!user || user.isBonusDisabled) return;
+
     const bonusIsEnabled = getGlobalSetting('system_referral_bonus_enabled', true, true);
     if (!bonusIsEnabled) return;
 
@@ -443,7 +446,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         }
     }, 1500); 
 
-  }, [addTransaction, toast, currentUser]);
+  }, [addTransaction, toast, currentUser, users]);
 
  const handleMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', amountToMove: number, fromAccount?: 'Task Rewards' | 'Interest Earnings') => {
     if(!currentUser) return;
@@ -530,7 +533,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             toast({ variant: "destructive", title: "Insufficient Funds", description: "You cannot move more than your main balance." });
             return;
         }
-        // Perform the state updates immediately
+        
         setMainBalance(prev => prev - numericAmount);
         
         if (destination === "Task Rewards") {
@@ -539,7 +542,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             setInterestEarningsBalance(prev => prev + numericAmount);
         }
         
-        // Record the transactions
         addTransaction(currentUser.email, {
             type: 'Fund Movement (Out)',
             description: `Moved from Main Wallet`,
@@ -556,7 +558,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         toast({ title: "Funds Moved", description: `${numericAmount.toFixed(2)} USDT has been moved from Main Wallet to ${destination}.` });
         setAmount("");
 
-        // Check for activation and bonus *after* the funds have been moved
         if (currentUser.status === 'inactive') {
             const newCommittedBalance = committedBalance + numericAmount;
             const minAmountForLevel1 = configuredLevels.find(l => l.level === 1)?.minAmount || 100;
@@ -874,4 +875,3 @@ export const useWallet = () => {
   }
   return context;
 };
-

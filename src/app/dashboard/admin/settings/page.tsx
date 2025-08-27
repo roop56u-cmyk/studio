@@ -20,14 +20,32 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { levels } from "@/components/dashboard/level-tiers";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useAuth } from "@/contexts/AuthContext";
+import { useWallet } from "@/contexts/WalletContext";
+import { User } from "@/contexts/AuthContext";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 
 
 export default function SystemSettingsPage() {
     const { toast } = useToast();
+    const { users, updateUser } = useAuth();
+    const { addTransaction } = useWallet();
+
     // Referral
     const [referralBonusEnabled, setReferralBonusEnabled] = useState(true);
     const [referralBonus, setReferralBonus] = useState("8");
     const [minDepositForBonus, setMinDepositForBonus] = useState("100");
+    const [manualBonusUser, setManualBonusUser] = useState("");
+    const [manualBonusAmount, setManualBonusAmount] = useState("");
+    const [disableBonusUser, setDisableBonusUser] = useState("");
+
     // Withdrawal
     const [isWithdrawalRestriction, setIsWithdrawalRestriction] = useState(true);
     const [withdrawalRestrictionDays, setWithdrawalRestrictionDays] = useState("45");
@@ -103,6 +121,47 @@ export default function SystemSettingsPage() {
             checked ? [...prev, level] : prev.filter(l => l !== level)
         );
     };
+
+    const handleGrantBonus = () => {
+        if (!manualBonusUser || !manualBonusAmount) {
+            toast({ variant: 'destructive', title: 'Missing Information', description: 'Please select a user and enter a bonus amount.'});
+            return;
+        }
+        const amount = parseFloat(manualBonusAmount);
+        if (isNaN(amount) || amount <= 0) {
+            toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid bonus amount.'});
+            return;
+        }
+
+        const mainBalanceKey = `${manualBonusUser}_mainBalance`;
+        const currentBalance = parseFloat(localStorage.getItem(mainBalanceKey) || '0');
+        localStorage.setItem(mainBalanceKey, (currentBalance + amount).toString());
+
+        addTransaction(manualBonusUser, {
+            type: 'Manual Bonus',
+            description: `Bonus granted by admin`,
+            amount: amount,
+            date: new Date().toISOString(),
+        });
+        
+        toast({ title: 'Bonus Granted!', description: `$${amount.toFixed(2)} has been credited to ${manualBonusUser}.`});
+        setManualBonusAmount("");
+        setManualBonusUser("");
+    }
+
+    const handleDisableBonus = () => {
+        if (!disableBonusUser) {
+            toast({ variant: 'destructive', title: 'No User Selected', description: 'Please select a user to disable their bonus.'});
+            return;
+        }
+        const userToUpdate = users.find(u => u.email === disableBonusUser);
+        if (!userToUpdate) return;
+        
+        updateUser(disableBonusUser, { ...userToUpdate, isBonusDisabled: true });
+        
+        toast({ title: 'Bonus Disabled for User', description: `Automatic sign-up bonus has been disabled for ${disableBonusUser}.`});
+        setDisableBonusUser("");
+    }
     
     if (!isClient) {
         return null;
@@ -160,6 +219,34 @@ export default function SystemSettingsPage() {
             <Label htmlFor="min-deposit">Min First Deposit for Bonus ($)</Label>
             <Input id="min-deposit" type="number" value={minDepositForBonus} onChange={e => setMinDepositForBonus(e.target.value)} disabled={!referralBonusEnabled} />
           </div>
+          <Separator className="my-6"/>
+            <div className="space-y-4">
+                <h4 className="text-sm font-medium">Manual Bonus Controls</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label>Grant Manual Bonus</Label>
+                        <Select value={manualBonusUser} onValueChange={setManualBonusUser}>
+                            <SelectTrigger><SelectValue placeholder="Select user..." /></SelectTrigger>
+                            <SelectContent>
+                                {users.map(u => <SelectItem key={u.email} value={u.email}>{u.email}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        <Input type="number" placeholder="Bonus amount ($)" value={manualBonusAmount} onChange={e => setManualBonusAmount(e.target.value)} />
+                        <Button onClick={handleGrantBonus} size="sm">Grant Bonus</Button>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Disable Bonus for User</Label>
+                         <Select value={disableBonusUser} onValueChange={setDisableBonusUser}>
+                            <SelectTrigger><SelectValue placeholder="Select user..." /></SelectTrigger>
+                            <SelectContent>
+                                {users.filter(u => !u.isBonusDisabled).map(u => <SelectItem key={u.email} value={u.email}>{u.email}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">Select a user to prevent them from receiving the automatic sign-up bonus.</p>
+                        <Button onClick={handleDisableBonus} size="sm" variant="destructive">Disable for User</Button>
+                    </div>
+                </div>
+            </div>
         </CardContent>
       </Card>
       
