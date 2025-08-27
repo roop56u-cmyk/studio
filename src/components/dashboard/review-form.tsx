@@ -18,7 +18,7 @@ import { StarRating } from "@/components/dashboard/star-rating";
 import { submitReview } from "@/app/actions";
 import { generateTaskSuggestion } from "@/app/actions";
 import type { Task } from "@/lib/tasks";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldAlert } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "../ui/skeleton";
 import { useWallet } from "@/contexts/WalletContext";
@@ -42,7 +42,17 @@ export function ReviewForm({ onTaskLoaded, onTaskCompleted, onCancel }: ReviewFo
   const [isGeneratingTask, setIsGeneratingTask] = useState(true);
   const [task, setTask] = useState<Task | null>(null);
   const { toast } = useToast();
-  const { completeTask, tasksCompletedToday, dailyTaskQuota } = useWallet();
+  const { 
+      completeTask, 
+      tasksCompletedToday, 
+      dailyTaskQuota, 
+      committedBalance, 
+      currentLevel, 
+      minRequiredBalanceForLevel 
+  } = useWallet();
+
+  const minBalanceForLevel = minRequiredBalanceForLevel(currentLevel);
+  const hasSufficientBalance = committedBalance >= minBalanceForLevel;
 
   const form = useForm<ReviewFormValues>({
     resolver: zodResolver(reviewSchema),
@@ -75,7 +85,7 @@ export function ReviewForm({ onTaskLoaded, onTaskCompleted, onCancel }: ReviewFo
   };
 
   useEffect(() => {
-    if (tasksCompletedToday < dailyTaskQuota) {
+    if (tasksCompletedToday < dailyTaskQuota && hasSufficientBalance) {
         fetchTask();
     } else {
         setIsGeneratingTask(false);
@@ -144,6 +154,20 @@ export function ReviewForm({ onTaskLoaded, onTaskCompleted, onCancel }: ReviewFo
         <div className="text-center py-8">
             <h3 className="text-lg font-semibold">All Tasks Completed!</h3>
             <p className="text-muted-foreground text-sm mt-1">You have reached your daily limit. Please come back tomorrow for more tasks.</p>
+            <Button onClick={onCancel} className="mt-4">Close</Button>
+        </div>
+      )
+  }
+
+  if (!hasSufficientBalance) {
+     return (
+        <div className="text-center py-8">
+            <ShieldAlert className="mx-auto h-12 w-12 text-destructive mb-4" />
+            <h3 className="text-lg font-semibold">Insufficient Balance</h3>
+            <p className="text-muted-foreground text-sm mt-1">
+                Your committed balance is below the ${minBalanceForLevel.toLocaleString()} minimum required for Level {currentLevel}.
+                Please add more funds to your Task or Interest wallets to continue.
+            </p>
             <Button onClick={onCancel} className="mt-4">Close</Button>
         </div>
       )
