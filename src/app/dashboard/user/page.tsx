@@ -11,6 +11,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Lock } from "lucide-react";
 import { TaskDialog } from "@/components/dashboard/task-dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 
 export type PanelConfig = {
@@ -52,12 +61,24 @@ export default function UserDashboardPage() {
   }, []);
 
   const [isTaskDialogOpen, setIsTaskDialogOpen] = React.useState(false);
+  const [isBalanceWarningOpen, setIsBalanceWarningOpen] = React.useState(false);
 
-  const isTaskLocked = currentLevel === 0 || committedBalance < minRequiredBalanceForLevel(currentLevel);
-  const isInterestLocked = currentLevel === 0 || committedBalance < minRequiredBalanceForLevel(currentLevel);
-  
+  const minBalanceForLevel = minRequiredBalanceForLevel(currentLevel);
+  const hasSufficientBalance = committedBalance >= minBalanceForLevel;
+
   const allTasksCompleted = tasksCompletedToday >= dailyTaskQuota;
+  const isTaskLocked = currentLevel === 0 || !hasSufficientBalance;
+  const isInterestLocked = currentLevel === 0 || !hasSufficientBalance;
+  
   const finalIsTaskLocked = isTaskLocked || allTasksCompleted;
+
+  const handleStartTasks = () => {
+    if (isTaskLocked) {
+        setIsBalanceWarningOpen(true);
+    } else {
+        setIsTaskDialogOpen(true);
+    }
+  }
 
   const isPanelEnabled = (id: string) => panelConfig.find(p => p.id === id)?.enabled ?? false;
 
@@ -94,7 +115,7 @@ export default function UserDashboardPage() {
         {isPanelEnabled("levelTiers") && (
          <div className="space-y-4">
             <LevelTiers 
-              onStartTasks={() => setIsTaskDialogOpen(true)}
+              onStartTasks={handleStartTasks}
               isTaskLocked={finalIsTaskLocked}
             />
           </div>
@@ -169,6 +190,20 @@ export default function UserDashboardPage() {
         open={isTaskDialogOpen}
         onOpenChange={setIsTaskDialogOpen}
       />
+       <AlertDialog open={isBalanceWarningOpen} onOpenChange={setIsBalanceWarningOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Insufficient Balance</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Your committed balance of ${committedBalance.toFixed(2)} is below the ${minBalanceForLevel.toLocaleString()} minimum required for Level {currentLevel}.
+                        Please add more funds to your Task or Interest wallets to start tasks.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogAction onClick={() => setIsBalanceWarningOpen(false)}>OK</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     </div>
   );
 }

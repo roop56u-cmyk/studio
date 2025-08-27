@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -119,7 +120,7 @@ interface LevelTiersProps {
 
 export function LevelTiers({ onStartTasks, isTaskLocked }: LevelTiersProps) {
     
-  const { currentLevel, levelUnlockProgress } = useWallet();
+  const { levelUnlockProgress } = useWallet();
   const [displayLevels, setDisplayLevels] = useState<Level[]>(levels.filter(l => l.level > 0));
 
   useEffect(() => {
@@ -195,7 +196,7 @@ export function LevelTiers({ onStartTasks, isTaskLocked }: LevelTiersProps) {
                             </div>
                              {isCurrentLevel && (
                                 <CardFooter className="p-3">
-                                    <Button onClick={onStartTasks} disabled={isTaskLocked} className="w-full" size="sm">
+                                    <Button onClick={onStartTasks} className="w-full" size="sm">
                                         <PlayCircle className="mr-2 h-4 w-4" />
                                         {isTaskLocked ? "Tasks Locked" : "Start Tasks"}
                                     </Button>
