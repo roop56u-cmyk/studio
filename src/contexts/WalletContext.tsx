@@ -295,8 +295,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     return () => clearInterval(intervalId);
   }, [activeBoosters]);
 
-  // This effect ensures that when an admin updates a user, the user's context (if they are the current user)
-  // gets the updated referral count from localStorage.
   useEffect(() => {
     if (currentUser) {
       const updatedPurchasedReferrals = getInitialState('purchased_referrals', 0);
@@ -304,7 +302,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setPurchasedReferralsCount(updatedPurchasedReferrals);
       }
     }
-  }, [users, currentUser, getInitialState, purchasedReferralsCount]);
+  }, [users, currentUser, getInitialState]);
 
 
   useEffect(() => {
@@ -419,7 +417,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
     const signUpBonus = parseInt(getGlobalSetting('system_referral_bonus', '8'), 10);
     
-    // Use a timeout to delay the bonus crediting
     setTimeout(() => {
         const mainBalanceKey = `${userEmail}_mainBalance`;
         const currentBalance = parseFloat(localStorage.getItem(mainBalanceKey) || '0');
@@ -444,7 +441,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
                 description: `You've received a $${signUpBonus} bonus for activating your account!`,
             });
         }
-    }, 1500); // 1.5-second delay
+    }, 1500); 
 
   }, [addTransaction, toast, currentUser]);
 
@@ -464,7 +461,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         toast({ variant: 'destructive', title: 'Action Locked', description: 'Cannot move funds to or from Task Rewards while you have incomplete tasks for the day.' });
         return;
     }
-
 
     if (fromAccount) {
         let sourceBalance;
@@ -534,30 +530,22 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             toast({ variant: "destructive", title: "Insufficient Funds", description: "You cannot move more than your main balance." });
             return;
         }
+        // Perform the state updates immediately
         setMainBalance(prev => prev - numericAmount);
+        
+        if (destination === "Task Rewards") {
+            setTaskRewardsBalance(prev => prev + numericAmount);
+        } else if (destination === "Interest Earnings") {
+            setInterestEarningsBalance(prev => prev + numericAmount);
+        }
+        
+        // Record the transactions
         addTransaction(currentUser.email, {
             type: 'Fund Movement (Out)',
             description: `Moved from Main Wallet`,
             amount: -numericAmount,
             date: new Date().toISOString()
         });
-
-        if (destination === "Task Rewards") {
-            setTaskRewardsBalance(prev => prev + numericAmount);
-        } else if (destination === "Interest Earnings") {
-            setInterestEarningsBalance(prev => prev + numericAmount);
-        }
-
-        // Check for activation and bonus
-        if (currentUser.status === 'inactive') {
-            const newCommittedBalance = committedBalance + numericAmount;
-            const minAmountForLevel1 = configuredLevels.find(l => l.level === 1)?.minAmount || 100;
-            if (newCommittedBalance >= minAmountForLevel1) {
-                updateUserStatus(currentUser.email, 'active');
-                handleSignUpBonus(currentUser.email);
-            }
-        }
-        
         addTransaction(currentUser.email, {
             type: 'Fund Movement (In)',
             description: `Moved to ${destination}`,
@@ -567,6 +555,17 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
         toast({ title: "Funds Moved", description: `${numericAmount.toFixed(2)} USDT has been moved from Main Wallet to ${destination}.` });
         setAmount("");
+
+        // Check for activation and bonus *after* the funds have been moved
+        if (currentUser.status === 'inactive') {
+            const newCommittedBalance = committedBalance + numericAmount;
+            const minAmountForLevel1 = configuredLevels.find(l => l.level === 1)?.minAmount || 100;
+            
+            if (newCommittedBalance >= minAmountForLevel1) {
+                updateUserStatus(currentUser.email, 'active');
+                handleSignUpBonus(currentUser.email);
+            }
+        }
     }
   };
 
@@ -875,3 +874,4 @@ export const useWallet = () => {
   }
   return context;
 };
+
