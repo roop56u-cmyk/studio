@@ -71,6 +71,7 @@ interface WalletContextType {
   tasksCompletedToday: number;
   completedTasks: CompletedTask[];
   levelUnlockProgress: Record<number, LevelUnlockStatus>;
+  minRequiredBalanceForLevel: (level: number) => number;
   amount: string;
   setAmount: (amount: string) => void;
   handleMoveFunds: (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', amountToMove: number, fromAccount?: 'Task Rewards' | 'Interest Earnings') => void;
@@ -802,6 +803,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       const boost = activeBoosters.find(b => b.type === 'REFERRAL_COMMISSION');
       return boost ? boost.value : 0;
   }
+  
+  const minRequiredBalanceForLevel = (level: number) => {
+    return configuredLevels.find(l => l.level === level)?.minAmount ?? 0;
+  }
 
   return (
     <WalletContext.Provider
@@ -822,6 +827,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         tasksCompletedToday,
         completedTasks,
         levelUnlockProgress,
+        minRequiredBalanceForLevel,
         amount,
         setAmount,
         handleMoveFunds,

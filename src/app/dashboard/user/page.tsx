@@ -38,7 +38,9 @@ export default function UserDashboardPage() {
     dailyTaskQuota,
     tasksCompletedToday,
     handleMoveFunds,
-    currentLevel
+    currentLevel,
+    committedBalance,
+    minRequiredBalanceForLevel
   } = useWallet();
   const [panelConfig, setPanelConfig] = React.useState<PanelConfig[]>(defaultPanelConfig);
 
@@ -51,7 +53,7 @@ export default function UserDashboardPage() {
 
   const [isTaskDialogOpen, setIsTaskDialogOpen] = React.useState(false);
 
-  const isTaskLocked = currentLevel === 0;
+  const isTaskLocked = currentLevel === 0 || committedBalance < minRequiredBalanceForLevel(currentLevel);
   const isInterestLocked = interestEarningsBalance < 100;
   
   const allTasksCompleted = tasksCompletedToday >= dailyTaskQuota;
