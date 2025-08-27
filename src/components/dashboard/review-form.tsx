@@ -91,7 +91,7 @@ export function ReviewForm({ onTaskLoaded, onTaskCompleted, onCancel }: ReviewFo
         setIsGeneratingTask(false);
         setTask(null);
     }
-  }, []);
+  }, [tasksCompletedToday, dailyTaskQuota, hasSufficientBalance]);
 
   const onSubmit = async (data: ReviewFormValues) => {
     if (!task) return;
@@ -112,9 +112,7 @@ export function ReviewForm({ onTaskLoaded, onTaskCompleted, onCancel }: ReviewFo
       
       const newTasksCompleted = tasksCompletedToday + 1;
 
-      if (newTasksCompleted < dailyTaskQuota) {
-          await fetchTask(); // Fetch the next task
-      } else {
+      if (newTasksCompleted >= dailyTaskQuota) {
           setTask(null); // All tasks are done
           if (onCancel) onCancel(); // Close dialog if all tasks are done
       }
@@ -148,6 +146,20 @@ export function ReviewForm({ onTaskLoaded, onTaskCompleted, onCancel }: ReviewFo
         </div>
       )
   }
+  
+  if (!hasSufficientBalance && currentLevel > 0) {
+     return (
+        <div className="text-center py-8">
+            <ShieldAlert className="mx-auto h-12 w-12 text-destructive mb-4" />
+            <h3 className="text-lg font-semibold">Insufficient Balance</h3>
+            <p className="text-muted-foreground text-sm mt-1">
+                Your committed balance of ${committedBalance.toFixed(2)} is below the ${minBalanceForLevel.toLocaleString()} minimum required for Level {currentLevel}.
+                Please add more funds to your Task or Interest wallets to continue.
+            </p>
+            <Button onClick={onCancel} className="mt-4">Close</Button>
+        </div>
+      )
+  }
 
   if (allTasksCompleted) {
       return (
@@ -159,19 +171,6 @@ export function ReviewForm({ onTaskLoaded, onTaskCompleted, onCancel }: ReviewFo
       )
   }
 
-  if (!hasSufficientBalance) {
-     return (
-        <div className="text-center py-8">
-            <ShieldAlert className="mx-auto h-12 w-12 text-destructive mb-4" />
-            <h3 className="text-lg font-semibold">Insufficient Balance</h3>
-            <p className="text-muted-foreground text-sm mt-1">
-                Your committed balance is below the ${minBalanceForLevel.toLocaleString()} minimum required for Level {currentLevel}.
-                Please add more funds to your Task or Interest wallets to continue.
-            </p>
-            <Button onClick={onCancel} className="mt-4">Close</Button>
-        </div>
-      )
-  }
 
   return (
     <Form {...form}>
