@@ -30,6 +30,7 @@ import {
 import { levels } from "./level-tiers";
 import { AddressDialog } from "./address-dialog";
 import { Badge } from "../ui/badge";
+import { Separator } from "../ui/separator";
 
 const editUserSchema = z.object({
   email: z.string().email("Invalid email address."),
@@ -54,6 +55,7 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
   const { updateUser, users } = useAuth();
   const { toast } = useToast();
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
+  const [restrictionDays, setRestrictionDays] = useState(45);
   
   const getInitialState = (key: string, defaultValue: any, userEmail?: string) => {
     if (typeof window === 'undefined' || !userEmail) return defaultValue;
@@ -116,17 +118,19 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
   const onSubmit = (data: EditUserFormValues) => {
     if (!user) return;
 
-    // Check if the new referral code is valid (if changed)
     if(data.referredBy && !users.some(u => u.referralCode === data.referredBy)) {
         toast({ title: "Invalid Referrer", description: "The 'Referred By' code does not exist.", variant: "destructive"});
         return;
     }
 
-    updateUser(user.email, { 
+    const updatedUser: Partial<User> = {
+        ...user,
         ...data,
         referredBy: data.referredBy || null,
         overrideLevel: data.overrideLevel,
-    });
+    };
+    
+    updateUser(user.email, updatedUser);
     
     toast({
       title: "User Updated",
@@ -134,10 +138,26 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
     });
     onOpenChange(false);
   };
+  
+   const handleApplyRestriction = () => {
+    if (!user || restrictionDays <= 0) return;
+    const newRestrictionDate = new Date();
+    newRestrictionDate.setDate(newRestrictionDate.getDate() + restrictionDays);
+    
+    updateUser(user.email, { ...user, withdrawalRestrictionUntil: newRestrictionDate.toISOString() });
+    toast({ title: "Restriction Applied", description: `User is restricted from withdrawals for ${restrictionDays} days.` });
+  };
+  
+  const handleRemoveRestriction = () => {
+    if (!user) return;
+    updateUser(user.email, { ...user, withdrawalRestrictionUntil: null });
+    toast({ title: "Restriction Removed", description: `User's custom withdrawal restriction has been removed.` });
+  };
 
   if (!user) return null;
   
   const userWithdrawalAddress = getInitialState('withdrawalAddress', null, user.email);
+  const isRestricted = user.withdrawalRestrictionUntil && new Date(user.withdrawalRestrictionUntil) > new Date();
 
   return (
     <>
@@ -242,6 +262,28 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
                     <p className="text-xs text-center text-muted-foreground py-2">This user has not referred anyone yet.</p>
                 )}
             </div>
+          </div>
+
+          <Separator />
+          
+          <div className="space-y-3 rounded-md border border-amber-500/50 p-3">
+             <h4 className="font-semibold text-amber-700">Custom Withdrawal Restriction</h4>
+             {isRestricted ? (
+                 <p className="text-sm text-muted-foreground">
+                    This user is restricted until: <br/>
+                    <strong className="text-foreground">{new Date(user.withdrawalRestrictionUntil!).toLocaleString()}</strong>
+                 </p>
+             ) : (
+                 <p className="text-sm text-muted-foreground">No custom restriction is active. Global settings apply.</p>
+             )}
+             <div className="space-y-2">
+                 <Label htmlFor="restriction-days">Set Restriction (Days from now)</Label>
+                 <Input id="restriction-days" type="number" value={restrictionDays} onChange={e => setRestrictionDays(Number(e.target.value))} />
+             </div>
+             <div className="flex gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={handleApplyRestriction}>Apply Restriction</Button>
+                <Button type="button" variant="destructive" size="sm" onClick={handleRemoveRestriction} disabled={!isRestricted}>Remove Restriction</Button>
+             </div>
           </div>
 
 

@@ -12,9 +12,10 @@ import { Timer } from "lucide-react";
 interface WithdrawalTimerProps {
   waitDays: number;
   startDate: string;
+  endDate?: string | null;
 }
 
-export function WithdrawalTimer({ waitDays, startDate }: WithdrawalTimerProps) {
+export function WithdrawalTimer({ waitDays, startDate, endDate }: WithdrawalTimerProps) {
   const [timeLeft, setTimeLeft] = useState<{
     days: number;
     hours: number;
@@ -23,11 +24,9 @@ export function WithdrawalTimer({ waitDays, startDate }: WithdrawalTimerProps) {
   } | null>(null);
 
   useEffect(() => {
-    if (!startDate) {
-      return;
-    }
-
-    const restrictionEndTime = new Date(startDate).getTime() + (waitDays * 24 * 60 * 60 * 1000);
+    const restrictionEndTime = endDate 
+        ? new Date(endDate).getTime()
+        : new Date(startDate).getTime() + (waitDays * 24 * 60 * 60 * 1000);
 
     const interval = setInterval(() => {
       const now = Date.now();
@@ -48,7 +47,7 @@ export function WithdrawalTimer({ waitDays, startDate }: WithdrawalTimerProps) {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [startDate, waitDays]);
+  }, [startDate, waitDays, endDate]);
 
   const formatTime = (time: typeof timeLeft) => {
     if (!time) return "00:00:00:00";

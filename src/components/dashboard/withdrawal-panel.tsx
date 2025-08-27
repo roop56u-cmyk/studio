@@ -93,7 +93,6 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
       withdrawalAddresses = [],
       deleteWithdrawalAddress,
       currentLevel,
-      minWithdrawalAmount,
       maxWithdrawalAmount,
       monthlyWithdrawalLimit,
       monthlyWithdrawalsCount,
@@ -161,6 +160,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
 
   const handleWithdraw = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!currentUser) return;
     
     const selectedAddress = withdrawalAddresses.find(a => a.id === selectedAddressId);
     if (!selectedAddress) {
@@ -193,10 +193,17 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
         toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot withdraw more than your main balance of $${mainBalance.toFixed(2)}.` });
         return;
     }
-
-    const userIsEligibleForRestriction = mainBalance > 0 || currentLevel >= 1;
-
-    if (isWithdrawalRestrictionEnabled && userIsEligibleForRestriction && currentUser) {
+    
+    // Check for user-specific restriction first
+    if (currentUser.withdrawalRestrictionUntil && new Date(currentUser.withdrawalRestrictionUntil) > new Date()) {
+        setRestrictionStartDate(currentUser.createdAt || new Date().toISOString()); // A better start date would be user creation or admin action time.
+        setIsRestrictionAlertOpen(true);
+        return;
+    }
+    
+    // Fallback to global restriction
+    const userIsEligibleForGlobalRestriction = mainBalance > 0 || currentLevel >= 1;
+    if (isWithdrawalRestrictionEnabled && userIsEligibleForGlobalRestriction) {
         const key = `${currentUser.email}_firstDepositDate`;
         let startDate = localStorage.getItem(key);
         if (!startDate) {
@@ -322,13 +329,14 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
             <AlertDialogHeader>
                 <AlertDialogTitle>Withdrawal Restricted</AlertDialogTitle>
                 <AlertDialogDescription>
-                   {messages.withdrawal?.restrictionPopup}
+                   {currentUser?.withdrawalRestrictionUntil ? 'A custom withdrawal restriction is active on your account.' : messages.withdrawal?.restrictionPopup}
                 </AlertDialogDescription>
             </AlertDialogHeader>
              {restrictionStartDate && (
                 <WithdrawalTimer 
                     waitDays={withdrawalRestrictionDays} 
                     startDate={restrictionStartDate}
+                    endDate={currentUser?.withdrawalRestrictionUntil}
                 />
             )}
             <AlertDialogFooter>

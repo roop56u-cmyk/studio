@@ -14,6 +14,7 @@ export type User = {
     status: 'active' | 'disabled' | 'inactive';
     overrideLevel?: number | null;
     isBonusDisabled?: boolean;
+    withdrawalRestrictionUntil?: string | null; // ISO date string
 };
 
 interface AuthContextType {
@@ -36,6 +37,7 @@ const initialAdminUser: User = {
     referredBy: null,
     status: 'active',
     isBonusDisabled: true,
+    withdrawalRestrictionUntil: null,
 };
 
 const getGlobalSetting = (key: string, defaultValue: any, isJson: boolean = false) => {
@@ -93,6 +95,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     ...u,
                     status: u.status ?? 'active', // Set default status if missing
                     isBonusDisabled: u.isBonusDisabled ?? false,
+                    withdrawalRestrictionUntil: u.withdrawalRestrictionUntil ?? null,
                     ...(u.email === initialAdminUser.email ? initialAdminUser : {}) // Ensure admin data is current
                 }));
             }
