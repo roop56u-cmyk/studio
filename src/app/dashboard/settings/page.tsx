@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -26,7 +27,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, X } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -40,6 +42,7 @@ export default function SettingsPage() {
 
   const [deletePassword, setDeletePassword] = useState("");
   const [showDeletePassword, setShowDeletePassword] = useState(false);
+  const isMobile = useIsMobile();
 
 
   const handleChangePassword = (e: React.FormEvent) => {
@@ -95,140 +98,152 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="grid gap-8 max-w-2xl mx-auto">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your account settings and preferences.
-        </p>
+    <div className="max-w-md mx-auto">
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+          <p className="text-muted-foreground">
+            Manage your account settings.
+          </p>
+        </div>
+        {isMobile && (
+          <Button asChild variant="ghost" size="icon">
+            <Link href="/dashboard/user">
+              <X className="h-5 w-5" />
+              <span className="sr-only">Close</span>
+            </Link>
+          </Button>
+        )}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Change Password</CardTitle>
-          <CardDescription>
-            Update your password here. For security, you will be required to
-            log in again after changing your password.
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleChangePassword}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2 relative">
-              <Label htmlFor="current-password">Current Password</Label>
-              <Input
-                id="current-password"
-                type={showCurrentPassword ? "text" : "password"}
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                required
-              />
-               <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-1 top-7 h-7 w-7"
-                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                >
-                  {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  <span className="sr-only">Toggle current password visibility</span>
-                </Button>
-            </div>
-            <div className="space-y-2 relative">
-              <Label htmlFor="new-password">New Password</Label>
-              <Input
-                id="new-password"
-                type={showNewPassword ? "text" : "password"}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-              />
-              <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-1 top-7 h-7 w-7"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                >
-                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  <span className="sr-only">Toggle new password visibility</span>
-                </Button>
-            </div>
-            <div className="space-y-2 relative">
-              <Label htmlFor="confirm-password">Confirm New Password</Label>
-              <Input
-                id="confirm-password"
-                type={showConfirmPassword ? "text" : "password"}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
-               <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-1 top-7 h-7 w-7"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                >
-                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  <span className="sr-only">Toggle confirm password visibility</span>
-                </Button>
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button type="submit">Change Password</Button>
-          </CardFooter>
-        </form>
-      </Card>
-
-      <Card className="border-destructive">
-        <CardHeader>
-          <CardTitle className="text-destructive">Danger Zone</CardTitle>
-          <CardDescription>
-            These actions are irreversible. Please proceed with caution.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive">Delete Account</Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete your
-                  account and remove your data from our servers. To confirm, please enter your current password.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-               <div className="space-y-2 relative">
-                <Label htmlFor="delete-password">Current Password</Label>
-                <Input
-                    id="delete-password"
-                    type={showDeletePassword ? "text" : "password"}
-                    value={deletePassword}
-                    onChange={(e) => setDeletePassword(e.target.value)}
+      <div className="grid gap-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Change Password</CardTitle>
+              <CardDescription>
+                Update your password here. For security, you will be required to
+                log in again after changing your password.
+              </CardDescription>
+            </CardHeader>
+            <form onSubmit={handleChangePassword}>
+              <CardContent className="space-y-4">
+                <div className="space-y-2 relative">
+                  <Label htmlFor="current-password">Current Password</Label>
+                  <Input
+                    id="current-password"
+                    type={showCurrentPassword ? "text" : "password"}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
                     required
-                />
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-1 top-7 h-7 w-7"
-                    onClick={() => setShowDeletePassword(!showDeletePassword)}
+                  />
+                  <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-7 h-7 w-7"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                     >
-                    {showDeletePassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
-               </div>
-              <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setDeletePassword('')}>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive hover:bg-destructive/90" disabled={!deletePassword}>
-                  Delete Account
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </CardContent>
-      </Card>
+                      {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      <span className="sr-only">Toggle current password visibility</span>
+                    </Button>
+                </div>
+                <div className="space-y-2 relative">
+                  <Label htmlFor="new-password">New Password</Label>
+                  <Input
+                    id="new-password"
+                    type={showNewPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                  />
+                  <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-7 h-7 w-7"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                    >
+                      {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      <span className="sr-only">Toggle new password visibility</span>
+                    </Button>
+                </div>
+                <div className="space-y-2 relative">
+                  <Label htmlFor="confirm-password">Confirm New Password</Label>
+                  <Input
+                    id="confirm-password"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                  />
+                  <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-7 h-7 w-7"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      <span className="sr-only">Toggle confirm password visibility</span>
+                    </Button>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button type="submit">Change Password</Button>
+              </CardFooter>
+            </form>
+          </Card>
+
+          <Card className="border-destructive">
+            <CardHeader>
+              <CardTitle className="text-destructive">Danger Zone</CardTitle>
+              <CardDescription>
+                These actions are irreversible. Please proceed with caution.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive">Delete Account</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete your
+                      account and remove your data from our servers. To confirm, please enter your current password.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <div className="space-y-2 relative">
+                    <Label htmlFor="delete-password">Current Password</Label>
+                    <Input
+                        id="delete-password"
+                        type={showDeletePassword ? "text" : "password"}
+                        value={deletePassword}
+                        onChange={(e) => setDeletePassword(e.target.value)}
+                        required
+                    />
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-7 h-7 w-7"
+                        onClick={() => setShowDeletePassword(!showDeletePassword)}
+                        >
+                        {showDeletePassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setDeletePassword('')}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive hover:bg-destructive/90" disabled={!deletePassword}>
+                      Delete Account
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </CardContent>
+          </Card>
+      </div>
     </div>
   );
 }

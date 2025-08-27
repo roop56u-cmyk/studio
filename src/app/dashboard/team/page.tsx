@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useMemo, useState, useEffect } from "react";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -10,7 +11,7 @@ import {
   CardTitle,
   CardFooter
 } from "@/components/ui/card";
-import { Users, DollarSign, UserPlus, Briefcase, Activity, Award } from "lucide-react";
+import { Users, DollarSign, UserPlus, Briefcase, Activity, Award, X } from "lucide-react";
 import { useTeam } from "@/contexts/TeamContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -25,6 +26,8 @@ import { Progress } from "@/components/ui/progress";
 import { TeamReward } from "../admin/team-rewards/page";
 import { useToast } from "@/hooks/use-toast";
 import { useRequests } from "@/contexts/RequestContext";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/contexts/AuthContext";
 
 const TeamRewardCard = ({ reward, totalTeamBusiness }: { reward: TeamReward, totalTeamBusiness: number }) => {
     const { toast } = useToast();
@@ -89,6 +92,8 @@ const TeamRewardCard = ({ reward, totalTeamBusiness }: { reward: TeamReward, tot
 
 export default function TeamPage() {
   const { teamData, commissionRates, commissionEnabled, isLoading, totalTeamBusiness, totalActivationsToday, teamRewards } = useTeam();
+  const { currentUser } = useAuth();
+  const isMobile = useIsMobile();
 
   const totalCommission = useMemo(() => {
       if (!teamData) return 0;
@@ -103,7 +108,7 @@ export default function TeamPage() {
 
   if (isLoading || !teamData) {
       return (
-           <div className="grid gap-8">
+           <div className="max-w-md mx-auto grid gap-8">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">My Team</h1>
                     <p className="text-muted-foreground">
@@ -131,110 +136,122 @@ export default function TeamPage() {
   ];
 
   return (
-    <div className="grid gap-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">My Team</h1>
-        <p className="text-muted-foreground">
-          View your team's structure, commissions, and performance.
-        </p>
+    <div className="max-w-md mx-auto">
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">My Team</h1>
+          <p className="text-muted-foreground">
+            View your team's structure and performance.
+          </p>
+        </div>
+        {isMobile && (
+          <Button asChild variant="ghost" size="icon">
+            <Link href="/dashboard/user">
+              <X className="h-5 w-5" />
+              <span className="sr-only">Close</span>
+            </Link>
+          </Button>
+        )}
       </div>
 
-       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Commission</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">${totalCommission.toFixed(2)}</div>
-                    <p className="text-xs text-muted-foreground">Daily earnings from your team</p>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Team Members</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{totalMembers}</div>
-                    <p className="text-xs text-muted-foreground">Across all 3 layers</p>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Team Business</CardTitle>
-                    <Briefcase className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">${totalTeamBusiness.toFixed(2)}</div>
-                    <p className="text-xs text-muted-foreground">Total deposits from all members</p>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Today's Activations</CardTitle>
-                    <Activity className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">+{totalActivationsToday}</div>
-                    <p className="text-xs text-muted-foreground">New members joined today</p>
-                </CardContent>
-            </Card>
-      </div>
-      
-      <div className="grid md:grid-cols-3 gap-4">
-        {teamLevels.map(level => (
-            <Card key={level.title}>
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">{level.title}</CardTitle>
-                        <span className={`text-sm font-bold ${level.enabled ? 'text-primary' : 'text-muted-foreground'}`}>{level.rate}%</span>
-                    </div>
-                    <CardDescription>Direct Referrals</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                     <div className="flex items-center">
-                        <UserPlus className="h-5 w-5 text-muted-foreground mr-3" />
-                        <p className="font-semibold">{level.data.count} Members</p>
-                     </div>
-                     <div className="flex items-center">
-                        <DollarSign className="h-5 w-5 text-muted-foreground mr-3" />
-                        <p className="font-semibold">${(level.data.commission * (level.rate / 100)).toFixed(2)} Commission</p>
-                     </div>
-                      <Accordion type="single" collapsible className="w-full">
-                          <AccordionItem value="item-1">
-                            <AccordionTrigger>View Members</AccordionTrigger>
-                            <AccordionContent>
-                              {level.data.members.length > 0 ? (
-                                <ul className="space-y-2 text-sm text-muted-foreground max-h-48 overflow-y-auto">
-                                    {level.data.members.map(member => (
-                                        <li key={member.email} className="flex justify-between items-center">
-                                            <span>{member.email}</span>
-                                            <Badge variant="secondary">Lvl {member.level}</Badge>
-                                        </li>
-                                    ))}
-                                </ul>
-                              ) : (
-                                <p className="text-sm text-center text-muted-foreground py-4">No members in this layer yet.</p>
-                              )}
-                            </AccordionContent>
-                          </AccordionItem>
-                        </Accordion>
-                </CardContent>
-            </Card>
-        ))}
-      </div>
-
-       {teamRewards.length > 0 && (
-         <div>
-            <h2 className="text-2xl font-bold tracking-tight mb-4">Team Business Rewards</h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {teamRewards.map(reward => (
-                    <TeamRewardCard key={reward.id} reward={reward} totalTeamBusiness={totalTeamBusiness} />
+       <div className="grid gap-8">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Commission</CardTitle>
+                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">${totalCommission.toFixed(2)}</div>
+                            <p className="text-xs text-muted-foreground">Daily earnings from your team</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Team Members</CardTitle>
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{totalMembers}</div>
+                            <p className="text-xs text-muted-foreground">Across all 3 layers</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Team Business</CardTitle>
+                            <Briefcase className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">${totalTeamBusiness.toFixed(2)}</div>
+                            <p className="text-xs text-muted-foreground">Total deposits from all members</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Today's Activations</CardTitle>
+                            <Activity className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">+{totalActivationsToday}</div>
+                            <p className="text-xs text-muted-foreground">New members joined today</p>
+                        </CardContent>
+                    </Card>
+            </div>
+            
+            <div className="grid md:grid-cols-3 gap-4">
+                {teamLevels.map(level => (
+                    <Card key={level.title}>
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-lg">{level.title}</CardTitle>
+                                <span className={`text-sm font-bold ${level.enabled ? 'text-primary' : 'text-muted-foreground'}`}>{level.rate}%</span>
+                            </div>
+                            <CardDescription>Direct Referrals</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center">
+                                <UserPlus className="h-5 w-5 text-muted-foreground mr-3" />
+                                <p className="font-semibold">{level.data.count} Members</p>
+                            </div>
+                            <div className="flex items-center">
+                                <DollarSign className="h-5 w-5 text-muted-foreground mr-3" />
+                                <p className="font-semibold">${(level.data.commission * (level.rate / 100)).toFixed(2)} Commission</p>
+                            </div>
+                            <Accordion type="single" collapsible className="w-full">
+                                <AccordionItem value="item-1">
+                                    <AccordionTrigger>View Members</AccordionTrigger>
+                                    <AccordionContent>
+                                    {level.data.members.length > 0 ? (
+                                        <ul className="space-y-2 text-sm text-muted-foreground max-h-48 overflow-y-auto">
+                                            {level.data.members.map(member => (
+                                                <li key={member.email} className="flex justify-between items-center">
+                                                    <span>{member.email}</span>
+                                                    <Badge variant="secondary">Lvl {member.level}</Badge>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <p className="text-sm text-center text-muted-foreground py-4">No members in this layer yet.</p>
+                                    )}
+                                    </AccordionContent>
+                                </AccordionItem>
+                                </Accordion>
+                        </CardContent>
+                    </Card>
                 ))}
             </div>
-         </div>
-       )}
+
+            {teamRewards.length > 0 && (
+                <div>
+                    <h2 className="text-2xl font-bold tracking-tight mb-4">Team Business Rewards</h2>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {teamRewards.map(reward => (
+                            <TeamRewardCard key={reward.id} reward={reward} totalTeamBusiness={totalTeamBusiness} />
+                        ))}
+                    </div>
+                </div>
+            )}
+       </div>
     </div>
   );
 }
