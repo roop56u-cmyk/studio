@@ -54,7 +54,7 @@ export default function UserDashboardPage() {
   const [isTaskDialogOpen, setIsTaskDialogOpen] = React.useState(false);
 
   const isTaskLocked = currentLevel === 0 || committedBalance < minRequiredBalanceForLevel(currentLevel);
-  const isInterestLocked = interestEarningsBalance < 100;
+  const isInterestLocked = currentLevel === 0 || committedBalance < minRequiredBalanceForLevel(currentLevel);
   
   const allTasksCompleted = tasksCompletedToday >= dailyTaskQuota;
   const finalIsTaskLocked = isTaskLocked || allTasksCompleted;
