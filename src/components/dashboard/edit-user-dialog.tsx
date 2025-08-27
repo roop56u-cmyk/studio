@@ -51,12 +51,13 @@ interface EditUserDialogProps {
   user: User | null;
 }
 
-export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps) {
+export function EditUserDialog({ open, onOpenChange, user: userProp }: EditUserDialogProps) {
   const { updateUser, users } = useAuth();
   const { toast } = useToast();
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
   const [restrictionDays, setRestrictionDays] = useState(45);
-  
+  const [currentUserData, setCurrentUserData] = useState<User | null>(userProp);
+
   const getInitialState = (key: string, defaultValue: any, userEmail?: string) => {
     if (typeof window === 'undefined' || !userEmail) return defaultValue;
     try {
@@ -83,19 +84,25 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
   });
 
   const referredUsers = useMemo(() => {
-      if (!user) return [];
-      return users.filter(u => u.referredBy === user.referralCode);
-  }, [user, users]);
+      if (!currentUserData) return [];
+      return users.filter(u => u.referredBy === currentUserData.referralCode);
+  }, [currentUserData, users]);
 
   useEffect(() => {
-    if (user && open) {
-      const mainBalance = getInitialState('mainBalance', 0, user.email);
-      const taskRewardsBalance = getInitialState('taskRewardsBalance', 0, user.email);
-      const interestEarningsBalance = getInitialState('interestEarningsBalance', 0, user.email);
-      const purchasedReferrals = getInitialState('purchased_referrals', 0, user.email);
+    if (userProp) {
+      setCurrentUserData(userProp);
+    }
+  }, [userProp, open]);
+
+  useEffect(() => {
+    if (currentUserData && open) {
+      const mainBalance = getInitialState('mainBalance', 0, currentUserData.email);
+      const taskRewardsBalance = getInitialState('taskRewardsBalance', 0, currentUserData.email);
+      const interestEarningsBalance = getInitialState('interestEarningsBalance', 0, currentUserData.email);
+      const purchasedReferrals = getInitialState('purchased_referrals', 0, currentUserData.email);
       const committedBalance = taskRewardsBalance + interestEarningsBalance;
       
-      const directReferrals = users.filter(u => u.referredBy === user.referralCode).length;
+      const directReferrals = users.filter(u => u.referredBy === currentUserData.referralCode).length;
       const autoLevel = levels.slice().reverse().find(l => {
           const balanceMet = committedBalance >= l.minAmount;
           const referralsMet = directReferrals >= l.referrals;
@@ -103,20 +110,20 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
       })?.level ?? 0;
 
       form.reset({
-        email: user.email,
-        referralCode: user.referralCode,
-        referredBy: user.referredBy ?? "",
-        overrideLevel: user.overrideLevel ?? autoLevel,
+        email: currentUserData.email,
+        referralCode: currentUserData.referralCode,
+        referredBy: currentUserData.referredBy ?? "",
+        overrideLevel: currentUserData.overrideLevel ?? autoLevel,
         mainBalance: mainBalance,
         taskRewardsBalance: taskRewardsBalance,
         interestEarningsBalance: interestEarningsBalance,
         purchasedReferrals: purchasedReferrals,
       });
     }
-  }, [user, open, form, users]);
+  }, [currentUserData, open, form, users]);
 
   const onSubmit = (data: EditUserFormValues) => {
-    if (!user) return;
+    if (!currentUserData) return;
 
     if(data.referredBy && !users.some(u => u.referralCode === data.referredBy)) {
         toast({ title: "Invalid Referrer", description: "The 'Referred By' code does not exist.", variant: "destructive"});
@@ -124,47 +131,51 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
     }
 
     const updatedUser: Partial<User> = {
-        ...user,
+        ...currentUserData,
         ...data,
         referredBy: data.referredBy || null,
         overrideLevel: data.overrideLevel,
     };
     
-    updateUser(user.email, updatedUser);
+    updateUser(currentUserData.email, updatedUser);
     
     toast({
       title: "User Updated",
-      description: `Details for ${user.email} have been successfully updated.`,
+      description: `Details for ${currentUserData.email} have been successfully updated.`,
     });
     onOpenChange(false);
   };
   
    const handleApplyRestriction = () => {
-    if (!user || restrictionDays <= 0) return;
+    if (!currentUserData || restrictionDays <= 0) return;
     const newRestrictionDate = new Date();
     newRestrictionDate.setDate(newRestrictionDate.getDate() + restrictionDays);
     
-    updateUser(user.email, { ...user, withdrawalRestrictionUntil: newRestrictionDate.toISOString() });
+    const updatedUser = { ...currentUserData, withdrawalRestrictionUntil: newRestrictionDate.toISOString() };
+    updateUser(currentUserData.email, updatedUser);
+    setCurrentUserData(updatedUser);
     toast({ title: "Restriction Applied", description: `User is restricted from withdrawals for ${restrictionDays} days.` });
   };
   
   const handleRemoveRestriction = () => {
-    if (!user) return;
-    updateUser(user.email, { ...user, withdrawalRestrictionUntil: null });
+    if (!currentUserData) return;
+    const updatedUser = { ...currentUserData, withdrawalRestrictionUntil: null };
+    updateUser(currentUserData.email, updatedUser);
+    setCurrentUserData(updatedUser);
     toast({ title: "Restriction Removed", description: `User's custom withdrawal restriction has been removed.` });
   };
 
-  if (!user) return null;
+  if (!currentUserData) return null;
   
-  const userWithdrawalAddress = getInitialState('withdrawalAddress', null, user.email);
-  const isRestricted = user.withdrawalRestrictionUntil && new Date(user.withdrawalRestrictionUntil) > new Date();
+  const userWithdrawalAddress = getInitialState('withdrawalAddress', null, currentUserData.email);
+  const isRestricted = currentUserData.withdrawalRestrictionUntil && new Date(currentUserData.withdrawalRestrictionUntil) > new Date();
 
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Edit User: {user.email}</DialogTitle>
+          <DialogTitle>Edit User: {currentUserData.email}</DialogTitle>
           <DialogDescription>
             Modify the user's details below. Changes are saved directly.
           </DialogDescription>
@@ -181,8 +192,8 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
           <div className="space-y-2">
             <Label>User Status</Label>
             <div>
-                 <Badge variant={user.status === 'active' ? 'default' : 'destructive'} className={user.status === 'active' ? 'bg-green-500/20 text-green-700 border-green-500/20' : ''}>
-                    {user.status}
+                 <Badge variant={currentUserData.status === 'active' ? 'default' : 'destructive'} className={currentUserData.status === 'active' ? 'bg-green-500/20 text-green-700 border-green-500/20' : ''}>
+                    {currentUserData.status}
                 </Badge>
             </div>
           </div>
@@ -271,7 +282,7 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
              {isRestricted ? (
                  <p className="text-sm text-muted-foreground">
                     This user is restricted until: <br/>
-                    <strong className="text-foreground">{new Date(user.withdrawalRestrictionUntil!).toLocaleString()}</strong>
+                    <strong className="text-foreground">{new Date(currentUserData.withdrawalRestrictionUntil!).toLocaleString()}</strong>
                  </p>
              ) : (
                  <p className="text-sm text-muted-foreground">No custom restriction is active. Global settings apply.</p>
@@ -296,12 +307,12 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
         </form>
       </DialogContent>
     </Dialog>
-    {user && (
+    {currentUserData && (
         <AddressDialog 
             open={isAddressDialogOpen}
             onOpenChange={setIsAddressDialogOpen}
             address={userWithdrawalAddress}
-            userEmail={user.email}
+            userEmail={currentUserData.email}
         />
     )}
     </>
