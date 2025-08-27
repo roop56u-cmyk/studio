@@ -85,7 +85,7 @@ interface WalletContextType {
     withdrawals: number;
   };
   requestWithdrawal: (amount: number) => void;
-  approveRecharge: (userEmail: string, amount: number) => void;
+  approveRecharge: (userEmail: string, rechargeAmount: number) => void;
   refundWithdrawal: (userEmail: string, amount: number) => void;
   approveWithdrawal: (userEmail: string) => void;
   isLoading: boolean;
@@ -128,7 +128,7 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
-  const { currentUser, users, checkAndDeactivateUser, updateUserStatus } = useAuth();
+  const { currentUser, users, checkAndDeactivateUser, updateUserStatus, updateUser } = useAuth();
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -412,14 +412,15 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const user = users.find(u => u.email === userEmail);
     if (!user || user.isBonusDisabled) return;
 
-    const bonusIsEnabled = getGlobalSetting('system_referral_bonus_enabled', true, true);
+    const bonusIsEnabled = getGlobalSetting('system_signup_bonus_enabled', true, true);
     if (!bonusIsEnabled) return;
 
     const bonusGivenKey = `${userEmail}_signup_bonus_given`;
     if (localStorage.getItem(bonusGivenKey)) return;
 
-    const signUpBonus = parseInt(getGlobalSetting('system_referral_bonus', '8'), 10);
+    const signUpBonus = parseInt(getGlobalSetting('system_signup_bonus', '8'), 10);
     
+    // Defer the bonus to a separate event loop tick to ensure state updates first
     setTimeout(() => {
         const mainBalanceKey = `${userEmail}_mainBalance`;
         const currentBalance = parseFloat(localStorage.getItem(mainBalanceKey) || '0');
@@ -578,6 +579,30 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const depositsKey = `${userEmail}_deposits`;
     const depositCount = parseInt(localStorage.getItem(depositsKey) || '0');
     localStorage.setItem(depositsKey, (depositCount + 1).toString());
+    
+    // Handle Referral Bonus
+    const user = users.find(u => u.email === userEmail);
+    if (depositCount === 0 && user?.referredBy) { // It's the first deposit
+        const refBonusEnabled = getGlobalSetting('system_referral_bonus_enabled', true, true);
+        const refBonusMinDeposit = parseFloat(getGlobalSetting('system_min_deposit_for_referral_bonus', '100'));
+        
+        if (refBonusEnabled && rechargeAmount >= refBonusMinDeposit) {
+            const referrer = users.find(u => u.referralCode === user.referredBy);
+            if (referrer) {
+                const refBonusAmount = parseFloat(getGlobalSetting('system_referral_bonus_amount', '5'));
+                const referrerMainBalanceKey = `${referrer.email}_mainBalance`;
+                const referrerCurrentBalance = parseFloat(localStorage.getItem(referrerMainBalanceKey) || '0');
+                localStorage.setItem(referrerMainBalanceKey, (referrerCurrentBalance + refBonusAmount).toString());
+                
+                addTransaction(referrer.email, {
+                    type: 'Referral Bonus',
+                    description: `Bonus from ${userEmail}'s first deposit`,
+                    amount: refBonusAmount,
+                    date: new Date().toISOString()
+                });
+            }
+        }
+    }
     
     if (depositCount === 0) { 
         localStorage.setItem(`${userEmail}_firstDepositDate`, new Date().toISOString());
@@ -875,3 +900,5 @@ export const useWallet = () => {
   }
   return context;
 };
+
+    

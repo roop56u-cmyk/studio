@@ -151,7 +151,7 @@ export function InterestCounterPanel({
       </CardContent>
        <CardFooter className="p-3">
           {!isRunning ? (
-            <Button size="sm" onClick={handleStart} className="h-7 text-xs w-full" disabled={isLoading}>
+            <Button size="sm" onClick={handleStart} className="h-7 text-xs w-full" disabled={isLoading || balance <= 0}>
                 <Zap className="mr-1 h-4 w-4" /> Start Earning
             </Button>
             ) : (
@@ -169,4 +169,5 @@ export function InterestCounterPanel({
   );
 }
 
+    
     

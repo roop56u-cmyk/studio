@@ -196,28 +196,30 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
     
     // Check for user-specific restriction first
     if (currentUser.withdrawalRestrictionUntil && new Date(currentUser.withdrawalRestrictionUntil) > new Date()) {
-        setRestrictionStartDate(currentUser.createdAt || new Date().toISOString()); // A better start date would be user creation or admin action time.
+        setRestrictionStartDate(currentUser.createdAt || new Date().toISOString()); 
         setIsRestrictionAlertOpen(true);
         return;
     }
     
-    // Fallback to global restriction
-    const userIsEligibleForGlobalRestriction = mainBalance > 0 || currentLevel >= 1;
-    if (isWithdrawalRestrictionEnabled && userIsEligibleForGlobalRestriction) {
-        const key = `${currentUser.email}_firstDepositDate`;
-        let startDate = localStorage.getItem(key);
-        if (!startDate) {
-            startDate = new Date().toISOString();
-            localStorage.setItem(key, startDate);
-        }
-        setRestrictionStartDate(startDate);
+    // Fallback to global restriction only if no user-specific restriction is active
+    if (!currentUser.withdrawalRestrictionUntil) {
+      const userIsEligibleForGlobalRestriction = mainBalance > 0 || currentLevel >= 1;
+      if (isWithdrawalRestrictionEnabled && userIsEligibleForGlobalRestriction) {
+          const key = `${currentUser.email}_firstDepositDate`;
+          let startDate = localStorage.getItem(key);
+          if (!startDate) {
+              startDate = new Date().toISOString();
+              localStorage.setItem(key, startDate);
+          }
+          setRestrictionStartDate(startDate);
 
-        const restrictionEndTime = new Date(startDate).getTime() + (withdrawalRestrictionDays * 24 * 60 * 60 * 1000);
-        
-        if (Date.now() < restrictionEndTime) {
-            setIsRestrictionAlertOpen(true);
-            return;
-        }
+          const restrictionEndTime = new Date(startDate).getTime() + (withdrawalRestrictionDays * 24 * 60 * 60 * 1000);
+          
+          if (Date.now() < restrictionEndTime) {
+              setIsRestrictionAlertOpen(true);
+              return;
+          }
+      }
     }
     
     requestWithdrawal(numericAmount);
@@ -395,3 +397,5 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
     </>
   );
 }
+
+    

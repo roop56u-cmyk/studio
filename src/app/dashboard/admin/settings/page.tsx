@@ -38,13 +38,19 @@ export default function SystemSettingsPage() {
     const { users, updateUser } = useAuth();
     const { addTransaction } = useWallet();
 
-    // Referral
-    const [referralBonusEnabled, setReferralBonusEnabled] = useState(true);
-    const [referralBonus, setReferralBonus] = useState("8");
-    const [minDepositForBonus, setMinDepositForBonus] = useState("100");
+    // Signup Bonus
+    const [signupBonusEnabled, setSignupBonusEnabled] = useState(true);
+    const [signupBonus, setSignupBonus] = useState("8");
+    const [minDepositForSignupBonus, setMinDepositForSignupBonus] = useState("100");
     const [manualBonusUser, setManualBonusUser] = useState("");
     const [manualBonusAmount, setManualBonusAmount] = useState("");
     const [disableBonusUser, setDisableBonusUser] = useState("");
+
+    // Referral Bonus
+    const [referralBonusEnabled, setReferralBonusEnabled] = useState(true);
+    const [referralBonusAmount, setReferralBonusAmount] = useState("5");
+    const [minDepositForReferralBonus, setMinDepositForReferralBonus] = useState("100");
+
 
     // Withdrawal
     const [isWithdrawalRestriction, setIsWithdrawalRestriction] = useState(true);
@@ -59,13 +65,21 @@ export default function SystemSettingsPage() {
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
-        // Referral
-        const savedBonusEnabled = localStorage.getItem('system_referral_bonus_enabled');
-        if (savedBonusEnabled) setReferralBonusEnabled(JSON.parse(savedBonusEnabled));
-        const savedReferralBonus = localStorage.getItem('system_referral_bonus');
-        if (savedReferralBonus) setReferralBonus(savedReferralBonus);
-        const savedMinDeposit = localStorage.getItem('system_min_deposit_for_bonus');
-        if (savedMinDeposit) setMinDepositForBonus(savedMinDeposit);
+        // Signup Bonus
+        const savedBonusEnabled = localStorage.getItem('system_signup_bonus_enabled');
+        if (savedBonusEnabled) setSignupBonusEnabled(JSON.parse(savedBonusEnabled));
+        const savedSignupBonus = localStorage.getItem('system_signup_bonus');
+        if (savedSignupBonus) setSignupBonus(savedSignupBonus);
+        const savedMinDepositSignup = localStorage.getItem('system_min_deposit_for_signup_bonus');
+        if (savedMinDepositSignup) setMinDepositForSignupBonus(savedMinDepositSignup);
+
+        // Referral Bonus
+        const savedRefBonusEnabled = localStorage.getItem('system_referral_bonus_enabled');
+        if (savedRefBonusEnabled) setReferralBonusEnabled(JSON.parse(savedRefBonusEnabled));
+        const savedRefBonusAmount = localStorage.getItem('system_referral_bonus_amount');
+        if (savedRefBonusAmount) setReferralBonusAmount(savedRefBonusAmount);
+        const savedMinDepositRef = localStorage.getItem('system_min_deposit_for_referral_bonus');
+        if (savedMinDepositRef) setMinDepositForReferralBonus(savedMinDepositRef);
         
         // Withdrawal
         const savedWithdrawalRestriction = localStorage.getItem('system_withdrawal_restriction_enabled');
@@ -92,10 +106,15 @@ export default function SystemSettingsPage() {
 
 
     const handleSaveChanges = () => {
-        // Referral
+        // Signup Bonus
+        localStorage.setItem('system_signup_bonus_enabled', JSON.stringify(signupBonusEnabled));
+        localStorage.setItem('system_signup_bonus', signupBonus);
+        localStorage.setItem('system_min_deposit_for_signup_bonus', minDepositForSignupBonus);
+
+        // Referral Bonus
         localStorage.setItem('system_referral_bonus_enabled', JSON.stringify(referralBonusEnabled));
-        localStorage.setItem('system_referral_bonus', referralBonus);
-        localStorage.setItem('system_min_deposit_for_bonus', minDepositForBonus);
+        localStorage.setItem('system_referral_bonus_amount', referralBonusAmount);
+        localStorage.setItem('system_min_deposit_for_referral_bonus', minDepositForReferralBonus);
         
         // Withdrawal
         localStorage.setItem('system_withdrawal_restriction_enabled', JSON.stringify(isWithdrawalRestriction));
@@ -208,16 +227,16 @@ export default function SystemSettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center space-x-2">
-            <Switch id="referral-bonus-toggle" checked={referralBonusEnabled} onCheckedChange={setReferralBonusEnabled} />
-            <Label htmlFor="referral-bonus-toggle">Enable Sign-up Bonus</Label>
+            <Switch id="signup-bonus-toggle" checked={signupBonusEnabled} onCheckedChange={setSignupBonusEnabled} />
+            <Label htmlFor="signup-bonus-toggle">Enable Sign-up Bonus</Label>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="referral-bonus">Sign-up Bonus ($)</Label>
-            <Input id="referral-bonus" type="number" value={referralBonus} onChange={e => setReferralBonus(e.target.value)} disabled={!referralBonusEnabled} />
+            <Label htmlFor="signup-bonus">Sign-up Bonus ($)</Label>
+            <Input id="signup-bonus" type="number" value={signupBonus} onChange={e => setSignupBonus(e.target.value)} disabled={!signupBonusEnabled} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="min-deposit">Min First Deposit for Bonus ($)</Label>
-            <Input id="min-deposit" type="number" value={minDepositForBonus} onChange={e => setMinDepositForBonus(e.target.value)} disabled={!referralBonusEnabled} />
+            <Label htmlFor="min-deposit-signup">Min First Deposit for Bonus ($)</Label>
+            <Input id="min-deposit-signup" type="number" value={minDepositForSignupBonus} onChange={e => setMinDepositForSignupBonus(e.target.value)} disabled={!signupBonusEnabled} />
           </div>
           <Separator className="my-6"/>
             <div className="space-y-4">
@@ -235,7 +254,7 @@ export default function SystemSettingsPage() {
                         <Button onClick={handleGrantBonus} size="sm">Grant Bonus</Button>
                     </div>
                     <div className="space-y-2">
-                        <Label>Disable Bonus for User</Label>
+                        <Label>Disable Sign-up Bonus for User</Label>
                          <Select value={disableBonusUser} onValueChange={setDisableBonusUser}>
                             <SelectTrigger><SelectValue placeholder="Select user..." /></SelectTrigger>
                             <SelectContent>
@@ -247,6 +266,29 @@ export default function SystemSettingsPage() {
                     </div>
                 </div>
             </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Referral Bonus Program</CardTitle>
+          <CardDescription>
+            Reward referrers when their invited users make their first deposit.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <Switch id="referral-bonus-toggle" checked={referralBonusEnabled} onCheckedChange={setReferralBonusEnabled} />
+            <Label htmlFor="referral-bonus-toggle">Enable Referral Bonus</Label>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="referral-bonus-amount">Referral Bonus ($)</Label>
+            <Input id="referral-bonus-amount" type="number" value={referralBonusAmount} onChange={e => setReferralBonusAmount(e.target.value)} disabled={!referralBonusEnabled} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="min-deposit-referral">Min First Deposit for Bonus ($)</Label>
+            <Input id="min-deposit-referral" type="number" value={minDepositForReferralBonus} onChange={e => setMinDepositForReferralBonus(e.target.value)} disabled={!referralBonusEnabled} />
+          </div>
         </CardContent>
       </Card>
       
@@ -317,3 +359,5 @@ export default function SystemSettingsPage() {
     </div>
   );
 }
+
+    
