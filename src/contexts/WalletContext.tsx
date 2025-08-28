@@ -8,6 +8,7 @@ import { useAuth } from './AuthContext';
 import { GenerateTaskSuggestionOutput } from '@/app/actions';
 import { levels as defaultLevels, Level } from '@/components/dashboard/level-tiers';
 import { platformMessages } from '@/lib/platform-messages';
+import type { BonusTier } from '@/app/dashboard/admin/settings/page';
 
 
 export type CompletedTask = {
@@ -128,7 +129,7 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
-  const { currentUser, users, checkAndDeactivateUser, updateUserStatus, updateUser } = useAuth();
+  const { currentUser, users, checkAndDeactivateUser, updateUserStatus } = useAuth();
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -414,26 +415,33 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
     const bonusIsEnabled = getGlobalSetting('system_signup_bonus_enabled', true, true);
     if (!bonusIsEnabled) return;
-
+    
     const bonusGivenKey = `${userEmail}_signup_bonus_given`;
     if (localStorage.getItem(bonusGivenKey)) return;
 
-    const signUpBonus = parseInt(getGlobalSetting('system_signup_bonus', '8'), 10);
-    
-    // Defer the bonus to a separate event loop tick to ensure state updates first
-    setTimeout(() => {
-        const mainBalanceKey = `${userEmail}_mainBalance`;
-        const currentBalance = parseFloat(localStorage.getItem(mainBalanceKey) || '0');
-        localStorage.setItem(mainBalanceKey, (currentBalance + signUpBonus).toString());
+    const signupBonuses: BonusTier[] = getGlobalSetting('system_signup_bonuses', [], true);
+    if (signupBonuses.length === 0) return;
 
+    const mainBalanceKey = `${userEmail}_mainBalance`;
+    const currentBalance = parseFloat(localStorage.getItem(mainBalanceKey) || '0');
+    
+    const committedBalanceKey = `${userEmail}_taskRewardsBalance`;
+    const committedBalance = parseFloat(localStorage.getItem(committedBalanceKey) || '0');
+    
+    const applicableBonus = signupBonuses
+      .filter(b => committedBalance >= b.minDeposit)
+      .sort((a,b) => b.minDeposit - a.minDeposit)[0];
+
+    if (applicableBonus) {
+        localStorage.setItem(mainBalanceKey, (currentBalance + applicableBonus.bonusAmount).toString());
         if(currentUser?.email === userEmail) {
-            setMainBalance(prev => prev + signUpBonus);
+            setMainBalance(prev => prev + applicableBonus.bonusAmount);
         }
 
         addTransaction(userEmail, {
             type: 'Sign-up Bonus',
-            description: 'Bonus for activating your account',
-            amount: signUpBonus,
+            description: `Bonus for activating account`,
+            amount: applicableBonus.bonusAmount,
             date: new Date().toISOString(),
         });
         
@@ -442,10 +450,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         if(currentUser?.email === userEmail) {
             toast({
                 title: "Sign-up Bonus Received!",
-                description: `You've received a $${signUpBonus} bonus for activating your account!`,
+                description: `You've received a $${applicableBonus.bonusAmount} bonus!`,
             });
         }
-    }, 1500); 
+    }
 
   }, [addTransaction, toast, currentUser, users]);
 
@@ -457,116 +465,72 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     
-    if ((fromAccount === 'Interest Earnings' || destination === 'Interest Earnings') && isFundMovementLocked('interest')) {
-        toast({ variant: 'destructive', title: 'Action Locked', description: 'Cannot move funds to or from Interest Earnings while the timer is running. Please claim your earnings first.' });
-        return;
-    }
-     if ((fromAccount === 'Task Rewards' || destination === 'Task Rewards') && isFundMovementLocked('task')) {
-        toast({ variant: 'destructive', title: 'Action Locked', description: 'Cannot move funds to or from Task Rewards while you have incomplete tasks for the day.' });
-        return;
-    }
-
-    if (fromAccount) {
-        let sourceBalance;
-        let setSourceBalance;
+    // --- Fund Movement Logic ---
+    let newMainBalance = mainBalance;
+    let newTaskRewardsBalance = taskRewardsBalance;
+    let newInterestEarningsBalance = interestEarningsBalance;
+    
+    if (fromAccount) { // Moving from earning wallets to main/other earning
         if (fromAccount === 'Task Rewards') {
-            sourceBalance = taskRewardsBalance;
-            setSourceBalance = setTaskRewardsBalance;
-        } else {
-            sourceBalance = interestEarningsBalance;
-            setSourceBalance = setInterestEarningsBalance;
+            if (numericAmount > taskRewardsBalance) {
+                toast({ variant: "destructive", title: "Insufficient Funds", description: `Cannot move more than available in Task Rewards.` });
+                return;
+            }
+            newTaskRewardsBalance -= numericAmount;
+        } else { // From Interest Earnings
+             if (numericAmount > interestEarningsBalance) {
+                toast({ variant: "destructive", title: "Insufficient Funds", description: `Cannot move more than available in Interest Earnings.` });
+                return;
+            }
+            newInterestEarningsBalance -= numericAmount;
         }
-        if (numericAmount > sourceBalance) {
-          toast({ variant: "destructive", title: "Insufficient Funds", description: `Cannot move more than available in ${fromAccount}.` });
-          return;
+
+        if (destination === 'Main Wallet') {
+            newMainBalance += numericAmount;
+        } else if (destination === 'Interest Earnings') {
+            newInterestEarningsBalance += numericAmount;
+        } else { // to Task Rewards
+            newTaskRewardsBalance += numericAmount;
         }
-        
-        const newCommittedBalance = committedBalance - numericAmount;
+
+        const newCommittedBalance = (newTaskRewardsBalance + newInterestEarningsBalance);
         const minAmountForCurrentLevel = currentLevelData.minAmount;
-        
-        if (currentLevel > 0 && newCommittedBalance < minAmountForCurrentLevel) {
+         if (currentLevel > 0 && newCommittedBalance < minAmountForCurrentLevel) {
             toast({
                 variant: "destructive",
-                title: "Warning: Earning Level Affected",
-                description: `Moving these funds will drop your committed balance below the $${minAmountForCurrentLevel.toLocaleString()} required for Level ${currentLevel}. Your earnings will be affected.`,
+                title: "Warning: Level Affected",
+                description: `This will drop your committed balance below $${minAmountForCurrentLevel.toLocaleString()} for Level ${currentLevel}.`,
                 duration: 6000
             });
         }
-
-
-        setSourceBalance(prev => prev - numericAmount);
-
-        addTransaction(currentUser.email, {
-            type: 'Fund Movement (Out)',
-            description: `Moved from ${fromAccount}`,
-            amount: -numericAmount,
-            date: new Date().toISOString()
-        });
-
-        if (destination === 'Main Wallet') {
-            setMainBalance(prev => prev + numericAmount);
-             addTransaction(currentUser.email, {
-                type: 'Fund Movement (In)',
-                description: `Moved to Main Wallet`,
-                amount: numericAmount,
-                date: new Date().toISOString()
-            });
-        } else if (destination === 'Interest Earnings') {
-            setInterestEarningsBalance(prev => prev + numericAmount);
-             addTransaction(currentUser.email, {
-                type: 'Fund Movement (In)',
-                description: `Moved to Interest Earnings`,
-                amount: numericAmount,
-                date: new Date().toISOString()
-            });
-        } else if (destination === 'Task Rewards') {
-            setTaskRewardsBalance(prev => prev + numericAmount);
-             addTransaction(currentUser.email, {
-                type: 'Fund Movement (In)',
-                description: `Moved to Task Rewards`,
-                amount: numericAmount,
-                date: new Date().toISOString()
-            });
-        }
-        toast({ title: "Funds Moved", description: `${numericAmount.toFixed(2)} USDT has been moved from ${fromAccount} to ${destination}.` });
     } else { // Moving from Main Wallet
         if (numericAmount > mainBalance) {
             toast({ variant: "destructive", title: "Insufficient Funds", description: "You cannot move more than your main balance." });
             return;
         }
-        
-        setMainBalance(prev => prev - numericAmount);
-        
+        newMainBalance -= numericAmount;
         if (destination === "Task Rewards") {
-            setTaskRewardsBalance(prev => prev + numericAmount);
+            newTaskRewardsBalance += numericAmount;
         } else if (destination === "Interest Earnings") {
-            setInterestEarningsBalance(prev => prev + numericAmount);
+            newInterestEarningsBalance += numericAmount;
         }
+    }
+
+    // --- Update Balances Immediately ---
+    setMainBalance(newMainBalance);
+    setTaskRewardsBalance(newTaskRewardsBalance);
+    setInterestEarningsBalance(newInterestEarningsBalance);
+    toast({ title: "Funds Moved", description: `${numericAmount.toFixed(2)} USDT transfer complete.` });
+    setAmount("");
+
+    // --- Post-Movement Logic (Activation & Bonus) ---
+    if (!fromAccount && currentUser.status === 'inactive') {
+        const updatedCommittedBalance = newInterestEarningsBalance + newTaskRewardsBalance;
+        const minAmountForLevel1 = configuredLevels.find(l => l.level === 1)?.minAmount || 100;
         
-        addTransaction(currentUser.email, {
-            type: 'Fund Movement (Out)',
-            description: `Moved from Main Wallet`,
-            amount: -numericAmount,
-            date: new Date().toISOString()
-        });
-        addTransaction(currentUser.email, {
-            type: 'Fund Movement (In)',
-            description: `Moved to ${destination}`,
-            amount: numericAmount,
-            date: new Date().toISOString()
-        });
-
-        toast({ title: "Funds Moved", description: `${numericAmount.toFixed(2)} USDT has been moved from Main Wallet to ${destination}.` });
-        setAmount("");
-
-        if (currentUser.status === 'inactive') {
-            const newCommittedBalance = committedBalance + numericAmount;
-            const minAmountForLevel1 = configuredLevels.find(l => l.level === 1)?.minAmount || 100;
-            
-            if (newCommittedBalance >= minAmountForLevel1) {
-                updateUserStatus(currentUser.email, 'active');
-                handleSignUpBonus(currentUser.email);
-            }
+        if (updatedCommittedBalance >= minAmountForLevel1) {
+            updateUserStatus(currentUser.email, 'active');
+            setTimeout(() => handleSignUpBonus(currentUser.email), 1500);
         }
     }
   };
@@ -584,22 +548,27 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const user = users.find(u => u.email === userEmail);
     if (depositCount === 0 && user?.referredBy) { // It's the first deposit
         const refBonusEnabled = getGlobalSetting('system_referral_bonus_enabled', true, true);
-        const refBonusMinDeposit = parseFloat(getGlobalSetting('system_min_deposit_for_referral_bonus', '100'));
-        
-        if (refBonusEnabled && rechargeAmount >= refBonusMinDeposit) {
+        const referralBonuses: BonusTier[] = getGlobalSetting('system_referral_bonuses', [], true);
+
+        if (refBonusEnabled && referralBonuses.length > 0) {
             const referrer = users.find(u => u.referralCode === user.referredBy);
             if (referrer) {
-                const refBonusAmount = parseFloat(getGlobalSetting('system_referral_bonus_amount', '5'));
-                const referrerMainBalanceKey = `${referrer.email}_mainBalance`;
-                const referrerCurrentBalance = parseFloat(localStorage.getItem(referrerMainBalanceKey) || '0');
-                localStorage.setItem(referrerMainBalanceKey, (referrerCurrentBalance + refBonusAmount).toString());
-                
-                addTransaction(referrer.email, {
-                    type: 'Referral Bonus',
-                    description: `Bonus from ${userEmail}'s first deposit`,
-                    amount: refBonusAmount,
-                    date: new Date().toISOString()
-                });
+                const applicableBonus = referralBonuses
+                    .filter(b => rechargeAmount >= b.minDeposit)
+                    .sort((a,b) => b.minDeposit - a.minDeposit)[0];
+
+                if(applicableBonus) {
+                    const referrerMainBalanceKey = `${referrer.email}_mainBalance`;
+                    const referrerCurrentBalance = parseFloat(localStorage.getItem(referrerMainBalanceKey) || '0');
+                    localStorage.setItem(referrerMainBalanceKey, (referrerCurrentBalance + applicableBonus.bonusAmount).toString());
+                    
+                    addTransaction(referrer.email, {
+                        type: 'Referral Bonus',
+                        description: `Bonus from ${userEmail}'s first deposit`,
+                        amount: applicableBonus.bonusAmount,
+                        date: new Date().toISOString()
+                    });
+                }
             }
         }
     }

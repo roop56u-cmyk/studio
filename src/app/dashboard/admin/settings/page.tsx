@@ -31,6 +31,63 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { PlusCircle, Edit, Trash2 } from "lucide-react";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
+export type BonusTier = {
+    id: string;
+    minDeposit: number;
+    bonusAmount: number;
+};
+
+const BonusTierForm = ({
+  tier,
+  onSave,
+  onCancel,
+}: {
+  tier: Partial<BonusTier> | null;
+  onSave: (tier: Omit<BonusTier, 'id'>) => void;
+  onCancel: () => void;
+}) => {
+  const [minDeposit, setMinDeposit] = useState(tier?.minDeposit || 100);
+  const [bonusAmount, setBonusAmount] = useState(tier?.bonusAmount || 8);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (minDeposit <= 0 || bonusAmount <= 0) {
+      alert("Please fill all fields with valid positive values.");
+      return;
+    }
+    onSave({ minDeposit, bonusAmount });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="min-deposit">Min First Deposit ($)</Label>
+        <Input id="min-deposit" type="number" value={minDeposit} onChange={e => setMinDeposit(Number(e.target.value))} required />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="bonus-amount">Bonus Amount ($)</Label>
+        <Input id="bonus-amount" type="number" value={bonusAmount} onChange={e => setBonusAmount(Number(e.target.value))} required />
+      </div>
+      <DialogFooter>
+        <DialogClose asChild>
+            <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button>
+        </DialogClose>
+        <Button type="submit">Save Tier</Button>
+      </DialogFooter>
+    </form>
+  );
+};
 
 
 export default function SystemSettingsPage() {
@@ -40,17 +97,18 @@ export default function SystemSettingsPage() {
 
     // Signup Bonus
     const [signupBonusEnabled, setSignupBonusEnabled] = useState(true);
-    const [signupBonus, setSignupBonus] = useState("8");
-    const [minDepositForSignupBonus, setMinDepositForSignupBonus] = useState("100");
+    const [signupBonuses, setSignupBonuses] = useState<BonusTier[]>([]);
     const [manualBonusUser, setManualBonusUser] = useState("");
     const [manualBonusAmount, setManualBonusAmount] = useState("");
     const [disableBonusUser, setDisableBonusUser] = useState("");
+    const [isSignupFormOpen, setIsSignupFormOpen] = useState(false);
+    const [editingSignupBonus, setEditingSignupBonus] = useState<BonusTier | null>(null);
 
     // Referral Bonus
     const [referralBonusEnabled, setReferralBonusEnabled] = useState(true);
-    const [referralBonusAmount, setReferralBonusAmount] = useState("5");
-    const [minDepositForReferralBonus, setMinDepositForReferralBonus] = useState("100");
-
+    const [referralBonuses, setReferralBonuses] = useState<BonusTier[]>([]);
+    const [isReferralFormOpen, setIsReferralFormOpen] = useState(false);
+    const [editingReferralBonus, setEditingReferralBonus] = useState<BonusTier | null>(null);
 
     // Withdrawal
     const [isWithdrawalRestriction, setIsWithdrawalRestriction] = useState(true);
@@ -68,18 +126,17 @@ export default function SystemSettingsPage() {
         // Signup Bonus
         const savedBonusEnabled = localStorage.getItem('system_signup_bonus_enabled');
         if (savedBonusEnabled) setSignupBonusEnabled(JSON.parse(savedBonusEnabled));
-        const savedSignupBonus = localStorage.getItem('system_signup_bonus');
-        if (savedSignupBonus) setSignupBonus(savedSignupBonus);
-        const savedMinDepositSignup = localStorage.getItem('system_min_deposit_for_signup_bonus');
-        if (savedMinDepositSignup) setMinDepositForSignupBonus(savedMinDepositSignup);
+        const savedSignupBonuses = localStorage.getItem('system_signup_bonuses');
+        if (savedSignupBonuses) setSignupBonuses(JSON.parse(savedSignupBonuses));
+        else setSignupBonuses([{id: 'default-signup', minDeposit: 100, bonusAmount: 8}]);
+
 
         // Referral Bonus
         const savedRefBonusEnabled = localStorage.getItem('system_referral_bonus_enabled');
         if (savedRefBonusEnabled) setReferralBonusEnabled(JSON.parse(savedRefBonusEnabled));
-        const savedRefBonusAmount = localStorage.getItem('system_referral_bonus_amount');
-        if (savedRefBonusAmount) setReferralBonusAmount(savedRefBonusAmount);
-        const savedMinDepositRef = localStorage.getItem('system_min_deposit_for_referral_bonus');
-        if (savedMinDepositRef) setMinDepositForReferralBonus(savedMinDepositRef);
+        const savedReferralBonuses = localStorage.getItem('system_referral_bonuses');
+        if (savedReferralBonuses) setReferralBonuses(JSON.parse(savedReferralBonuses));
+        else setReferralBonuses([{id: 'default-referral', minDeposit: 100, bonusAmount: 5}]);
         
         // Withdrawal
         const savedWithdrawalRestriction = localStorage.getItem('system_withdrawal_restriction_enabled');
@@ -108,13 +165,11 @@ export default function SystemSettingsPage() {
     const handleSaveChanges = () => {
         // Signup Bonus
         localStorage.setItem('system_signup_bonus_enabled', JSON.stringify(signupBonusEnabled));
-        localStorage.setItem('system_signup_bonus', signupBonus);
-        localStorage.setItem('system_min_deposit_for_signup_bonus', minDepositForSignupBonus);
+        localStorage.setItem('system_signup_bonuses', JSON.stringify(signupBonuses));
 
         // Referral Bonus
         localStorage.setItem('system_referral_bonus_enabled', JSON.stringify(referralBonusEnabled));
-        localStorage.setItem('system_referral_bonus_amount', referralBonusAmount);
-        localStorage.setItem('system_min_deposit_for_referral_bonus', minDepositForReferralBonus);
+        localStorage.setItem('system_referral_bonuses', JSON.stringify(referralBonuses));
         
         // Withdrawal
         localStorage.setItem('system_withdrawal_restriction_enabled', JSON.stringify(isWithdrawalRestriction));
@@ -182,6 +237,54 @@ export default function SystemSettingsPage() {
         setDisableBonusUser("");
     }
     
+    // Sign-up bonus tier management
+    const handleSaveSignupBonus = (tier: Omit<BonusTier, 'id'>) => {
+        if (editingSignupBonus) {
+            setSignupBonuses(prev => prev.map(t => t.id === editingSignupBonus.id ? {...t, ...tier} : t).sort((a,b) => a.minDeposit - b.minDeposit));
+        } else {
+            setSignupBonuses(prev => [...prev, { ...tier, id: `s-bonus-${Date.now()}` }].sort((a,b) => a.minDeposit - b.minDeposit));
+        }
+        closeSignupForm();
+    };
+
+    const handleEditSignupBonus = (tier: BonusTier) => {
+        setEditingSignupBonus(tier);
+        setIsSignupFormOpen(true);
+    };
+
+    const handleDeleteSignupBonus = (id: string) => {
+        setSignupBonuses(prev => prev.filter(t => t.id !== id));
+    };
+
+    const closeSignupForm = () => {
+        setEditingSignupBonus(null);
+        setIsSignupFormOpen(false);
+    }
+    
+    // Referral bonus tier management
+    const handleSaveReferralBonus = (tier: Omit<BonusTier, 'id'>) => {
+        if (editingReferralBonus) {
+            setReferralBonuses(prev => prev.map(t => t.id === editingReferralBonus.id ? {...t, ...tier} : t).sort((a,b) => a.minDeposit - b.minDeposit));
+        } else {
+            setReferralBonuses(prev => [...prev, { ...tier, id: `r-bonus-${Date.now()}` }].sort((a,b) => a.minDeposit - b.minDeposit));
+        }
+        closeReferralForm();
+    };
+
+    const handleEditReferralBonus = (tier: BonusTier) => {
+        setEditingReferralBonus(tier);
+        setIsReferralFormOpen(true);
+    };
+
+    const handleDeleteReferralBonus = (id: string) => {
+        setReferralBonuses(prev => prev.filter(t => t.id !== id));
+    };
+
+    const closeReferralForm = () => {
+        setEditingReferralBonus(null);
+        setIsReferralFormOpen(false);
+    }
+
     if (!isClient) {
         return null;
     }
@@ -222,22 +325,38 @@ export default function SystemSettingsPage() {
         <CardHeader>
           <CardTitle>Sign-up Bonus Program</CardTitle>
           <CardDescription>
-            Configure the bonus for a new user's first qualifying deposit.
+            Configure bonuses for a new user's first qualifying deposit. The highest applicable bonus will be awarded.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center space-x-2">
             <Switch id="signup-bonus-toggle" checked={signupBonusEnabled} onCheckedChange={setSignupBonusEnabled} />
-            <Label htmlFor="signup-bonus-toggle">Enable Sign-up Bonus</Label>
+            <Label htmlFor="signup-bonus-toggle">Enable Sign-up Bonus Program</Label>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="signup-bonus">Sign-up Bonus ($)</Label>
-            <Input id="signup-bonus" type="number" value={signupBonus} onChange={e => setSignupBonus(e.target.value)} disabled={!signupBonusEnabled} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="min-deposit-signup">Min First Deposit for Bonus ($)</Label>
-            <Input id="min-deposit-signup" type="number" value={minDepositForSignupBonus} onChange={e => setMinDepositForSignupBonus(e.target.value)} disabled={!signupBonusEnabled} />
-          </div>
+           <div className="space-y-2">
+                <Label>Bonus Tiers</Label>
+                <div className="space-y-2 rounded-md border p-2">
+                    {signupBonuses.map(tier => (
+                        <div key={tier.id} className="flex justify-between items-center text-sm p-1">
+                            <span>Deposit ${tier.minDeposit}+, get ${tier.bonusAmount} bonus</span>
+                             <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditSignupBonus(tier)}><Edit className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteSignupBonus(tier.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                            </div>
+                        </div>
+                    ))}
+                    {signupBonuses.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">No bonus tiers configured.</p>}
+                </div>
+                <Dialog open={isSignupFormOpen} onOpenChange={setIsSignupFormOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" onClick={() => setEditingSignupBonus(null)}><PlusCircle className="mr-2 h-4 w-4"/>Add Tier</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader><DialogTitle>{editingSignupBonus ? 'Edit' : 'Add'} Sign-up Bonus Tier</DialogTitle></DialogHeader>
+                        <BonusTierForm tier={editingSignupBonus} onSave={handleSaveSignupBonus} onCancel={closeSignupForm} />
+                    </DialogContent>
+                </Dialog>
+           </div>
           <Separator className="my-6"/>
             <div className="space-y-4">
                 <h4 className="text-sm font-medium">Manual Bonus Controls</h4>
@@ -273,22 +392,38 @@ export default function SystemSettingsPage() {
         <CardHeader>
           <CardTitle>Referral Bonus Program</CardTitle>
           <CardDescription>
-            Reward referrers when their invited users make their first deposit.
+            Reward referrers when their invited users make their first deposit. The highest applicable bonus will be awarded.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center space-x-2">
             <Switch id="referral-bonus-toggle" checked={referralBonusEnabled} onCheckedChange={setReferralBonusEnabled} />
-            <Label htmlFor="referral-bonus-toggle">Enable Referral Bonus</Label>
+            <Label htmlFor="referral-bonus-toggle">Enable Referral Bonus Program</Label>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="referral-bonus-amount">Referral Bonus ($)</Label>
-            <Input id="referral-bonus-amount" type="number" value={referralBonusAmount} onChange={e => setReferralBonusAmount(e.target.value)} disabled={!referralBonusEnabled} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="min-deposit-referral">Min First Deposit for Bonus ($)</Label>
-            <Input id="min-deposit-referral" type="number" value={minDepositForReferralBonus} onChange={e => setMinDepositForReferralBonus(e.target.value)} disabled={!referralBonusEnabled} />
-          </div>
+                <Label>Bonus Tiers</Label>
+                <div className="space-y-2 rounded-md border p-2">
+                    {referralBonuses.map(tier => (
+                        <div key={tier.id} className="flex justify-between items-center text-sm p-1">
+                            <span>Referred user deposits ${tier.minDeposit}+, referrer gets ${tier.bonusAmount}</span>
+                             <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditReferralBonus(tier)}><Edit className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteReferralBonus(tier.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                            </div>
+                        </div>
+                    ))}
+                    {referralBonuses.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">No bonus tiers configured.</p>}
+                </div>
+                <Dialog open={isReferralFormOpen} onOpenChange={setIsReferralFormOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" onClick={() => setEditingReferralBonus(null)}><PlusCircle className="mr-2 h-4 w-4"/>Add Tier</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader><DialogTitle>{editingReferralBonus ? 'Edit' : 'Add'} Referral Bonus Tier</DialogTitle></DialogHeader>
+                        <BonusTierForm tier={editingReferralBonus} onSave={handleSaveReferralBonus} onCancel={closeReferralForm} />
+                    </DialogContent>
+                </Dialog>
+           </div>
         </CardContent>
       </Card>
       
