@@ -129,7 +129,7 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
-  const { currentUser, users, checkAndDeactivateUser, updateUserStatus } = useAuth();
+  const { currentUser, users, updateUserStatus } = useAuth();
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -425,11 +425,15 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const mainBalanceKey = `${userEmail}_mainBalance`;
     const currentBalance = parseFloat(localStorage.getItem(mainBalanceKey) || '0');
     
+    // Use the committed balance from the first deposit to check for bonus eligibility
     const committedBalanceKey = `${userEmail}_taskRewardsBalance`;
-    const committedBalance = parseFloat(localStorage.getItem(committedBalanceKey) || '0');
+    const interestBalanceKey = `${userEmail}_interestEarningsBalance`;
+    const taskBalance = parseFloat(localStorage.getItem(committedBalanceKey) || '0');
+    const interestBalance = parseFloat(localStorage.getItem(interestBalanceKey) || '0');
+    const firstCommittedBalance = taskBalance + interestBalance;
     
     const applicableBonus = signupBonuses
-      .filter(b => committedBalance >= b.minDeposit)
+      .filter(b => firstCommittedBalance >= b.minDeposit)
       .sort((a,b) => b.minDeposit - a.minDeposit)[0];
 
     if (applicableBonus) {
@@ -450,7 +454,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         if(currentUser?.email === userEmail) {
             toast({
                 title: "Sign-up Bonus Received!",
-                description: `You've received a $${applicableBonus.bonusAmount} bonus!`,
+                description: `You've received a $${applicableBonus.bonusAmount.toFixed(2)} bonus!`,
             });
         }
     }
@@ -464,12 +468,13 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid positive number to move.' });
       return;
     }
-    
+
     // --- Fund Movement Logic ---
     let newMainBalance = mainBalance;
     let newTaskRewardsBalance = taskRewardsBalance;
     let newInterestEarningsBalance = interestEarningsBalance;
-    
+    const wasInactive = currentUser.status === 'inactive';
+
     if (fromAccount) { // Moving from earning wallets to main/other earning
         if (fromAccount === 'Task Rewards') {
             if (numericAmount > taskRewardsBalance) {
@@ -524,14 +529,22 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setAmount("");
 
     // --- Post-Movement Logic (Activation & Bonus) ---
-    if (!fromAccount && currentUser.status === 'inactive') {
-        const updatedCommittedBalance = newInterestEarningsBalance + newTaskRewardsBalance;
-        const minAmountForLevel1 = configuredLevels.find(l => l.level === 1)?.minAmount || 100;
-        
-        if (updatedCommittedBalance >= minAmountForLevel1) {
-            updateUserStatus(currentUser.email, 'active');
-            setTimeout(() => handleSignUpBonus(currentUser.email), 1500);
-        }
+    if (wasInactive && !fromAccount) {
+      const updatedCommittedBalance = newTaskRewardsBalance + newInterestEarningsBalance;
+      const minAmountForLevel1 = configuredLevels.find(l => l.level === 1)?.minAmount || 100;
+  
+      if (updatedCommittedBalance >= minAmountForLevel1) {
+        updateUserStatus(currentUser.email, 'active');
+        toast({
+          title: "Account Activated!",
+          description: "You can now start earning. Your bonus will be credited shortly."
+        });
+
+        // Delay bonus credit
+        setTimeout(() => {
+          handleSignUpBonus(currentUser.email);
+        }, 1500);
+      }
     }
   };
 
@@ -636,7 +649,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         date: new Date().toISOString()
     });
 
-    checkAndDeactivateUser(userEmail);
+    // checkAndDeactivateUser(userEmail);
 
     if(currentUser?.email === userEmail) {
       setWithdrawals(prev => prev + 1);
@@ -668,8 +681,12 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const startCounter = (type: CounterType) => {
       const now = Date.now();
       if (type === 'interest') {
+          if (interestEarningsBalance <= 0) {
+            toast({ variant: "destructive", title: "No Funds", description: "You must have funds in your interest wallet to start earning." });
+            return;
+          }
           setInterestCounter({ isRunning: true, startTime: now });
-           toast({ title: "Daily Interest Started", description: "Your 24-hour earning cycle has begun." });
+          toast({ title: "Daily Interest Started", description: "Your 24-hour earning cycle has begun." });
       }
   };
   
@@ -687,7 +704,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       if(!currentUser) return;
       const dailyRate = currentRate / 100;
       if (type === 'interest') {
-          const earnings = committedBalance * dailyRate;
+          const earnings = interestEarningsBalance * dailyRate;
           setInterestEarningsBalance(prev => prev + earnings);
           addTransaction(currentUser.email, {
             type: 'Interest Claim',
@@ -869,5 +886,3 @@ export const useWallet = () => {
   }
   return context;
 };
-
-    

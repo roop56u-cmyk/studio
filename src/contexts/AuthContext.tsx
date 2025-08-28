@@ -15,6 +15,7 @@ export type User = {
     overrideLevel?: number | null;
     isBonusDisabled?: boolean;
     withdrawalRestrictionUntil?: string | null; // ISO date string
+    createdAt: string; // ISO date string
 };
 
 interface AuthContextType {
@@ -26,7 +27,7 @@ interface AuthContextType {
   updateUser: (email: string, updatedData: Partial<Omit<User, 'status'>> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; purchasedReferrals?: number; }) => void;
   deleteUser: (email: string, isSelfDelete?: boolean) => void;
   updateUserStatus: (email: string, status: User['status']) => void;
-  checkAndDeactivateUser: (email: string) => void;
+  // checkAndDeactivateUser: (email: string) => void;
 }
 
 const initialAdminUser: User = {
@@ -38,6 +39,7 @@ const initialAdminUser: User = {
     status: 'active',
     isBonusDisabled: true,
     withdrawalRestrictionUntil: null,
+    createdAt: new Date(0).toISOString(),
 };
 
 const getGlobalSetting = (key: string, defaultValue: any, isJson: boolean = false) => {
@@ -96,6 +98,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     status: u.status ?? 'active', // Set default status if missing
                     isBonusDisabled: u.isBonusDisabled ?? false,
                     withdrawalRestrictionUntil: u.withdrawalRestrictionUntil ?? null,
+                    createdAt: u.createdAt ?? new Date().toISOString(),
                     ...(u.email === initialAdminUser.email ? initialAdminUser : {}) // Ensure admin data is current
                 }));
             }
@@ -179,6 +182,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             referredBy: referralCode,
             status: 'inactive',
             isBonusDisabled: false,
+            createdAt: new Date().toISOString(),
         };
         setUsers(prev => [...prev, newUser]);
         
@@ -251,21 +255,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setCurrentUser(prev => prev ? { ...prev, status } : null);
         }
     }
-    
-    const checkAndDeactivateUser = (email: string) => {
-        const mainBalance = parseFloat(localStorage.getItem(`${email}_mainBalance`) || '0');
-        const taskBalance = parseFloat(localStorage.getItem(`${email}_taskRewardsBalance`) || '0');
-        const interestBalance = parseFloat(localStorage.getItem(`${email}_interestEarningsBalance`) || '0');
-        const totalBalance = mainBalance + taskBalance + interestBalance;
-
-        if (totalBalance <= 0) {
-            updateUserStatus(email, 'disabled');
-        }
-    }
 
 
     return (
-        <AuthContext.Provider value={{ currentUser, users, login, signup, logout, updateUser, deleteUser, updateUserStatus, checkAndDeactivateUser }}>
+        <AuthContext.Provider value={{ currentUser, users, login, signup, logout, updateUser, deleteUser, updateUserStatus }}>
             {children}
         </AuthContext.Provider>
     );
