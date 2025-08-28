@@ -150,8 +150,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [referralBonuses, setReferralBonuses] = useState<BonusTier[]>([]);
   const [isReferralApprovalRequired, setIsReferralApprovalRequired] = useState(false);
 
-
-  const getInitialState = (key: string, defaultValue: any, userEmail?: string) => {
+  const getInitialState = useCallback((key: string, defaultValue: any, userEmail?: string) => {
     const targetEmail = userEmail || currentUser?.email;
     if (typeof window === 'undefined' || !targetEmail) {
       return defaultValue;
@@ -165,7 +164,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       console.error(`Failed to parse ${key} from localStorage for ${targetEmail}`, error);
     }
     return defaultValue;
-  };
+  }, [currentUser?.email]);
   
   const getGlobalSetting = (key: string, defaultValue: any, isJson: boolean = false) => {
      if (typeof window === 'undefined') {
@@ -329,18 +328,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   }, [activeBoosters]);
 
   useEffect(() => {
-    if (currentUser) {
-      // This is a failsafe to ensure that if an admin changes the bonus referrals for the current user,
-      // the state is updated. The primary update mechanism should be in the Edit User dialog itself for immediate feedback.
-      const updatedPurchasedReferrals = parseInt(localStorage.getItem(`${currentUser.email}_purchased_referrals`) || '0');
-      if (updatedPurchasedReferrals !== purchasedReferralsCount) {
-        setPurchasedReferralsCount(updatedPurchasedReferrals);
-      }
-    }
-  }, [currentUser, users, purchasedReferralsCount]);
-
-
-  useEffect(() => {
     setIsLoading(true);
     
     // Global settings
@@ -421,7 +408,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setClaimedReferralIds([]);
     }
     setIsLoading(false);
-  }, [currentUser]);
+  }, [currentUser?.email]);
 
 
   useEffect(() => { if (!isLoading) setPersistentState('mainBalance', mainBalance)}, [mainBalance, isLoading, setPersistentState]);
