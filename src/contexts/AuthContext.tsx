@@ -4,7 +4,6 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { platformMessages } from '@/lib/platform-messages';
-import { useWallet } from './WalletContext';
 
 export type User = {
     email: string;
@@ -67,7 +66,6 @@ const getGlobalSetting = (key: string, defaultValue: any, isJson: boolean = fals
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-    const { setPurchasedReferralsCount } = useWallet();
     const [messages, setMessages] = useState<any>({});
 
     useEffect(() => {
@@ -231,12 +229,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (interestEarningsBalance !== undefined) localStorage.setItem(`${targetEmail}_interestEarningsBalance`, JSON.stringify(interestEarningsBalance));
         if (purchasedReferrals !== undefined) {
              localStorage.setItem(`${targetEmail}_purchased_referrals`, JSON.stringify(purchasedReferrals));
-             // If the admin is editing the currently logged-in user, update their WalletContext state
-             if (currentUser?.email === targetEmail) {
-                setPurchasedReferralsCount(purchasedReferrals);
-             }
         }
-
 
         setUsers(prevUsers => prevUsers.map(user => 
             user.email === email ? { ...user, ...userData } : user
