@@ -97,6 +97,7 @@ export default function SystemSettingsPage() {
 
     // Signup Bonus
     const [signupBonusEnabled, setSignupBonusEnabled] = useState(true);
+    const [signupBonusApprovalRequired, setSignupBonusApprovalRequired] = useState(false);
     const [signupBonuses, setSignupBonuses] = useState<BonusTier[]>([]);
     const [manualBonusUser, setManualBonusUser] = useState("");
     const [manualBonusAmount, setManualBonusAmount] = useState("");
@@ -106,6 +107,7 @@ export default function SystemSettingsPage() {
 
     // Referral Bonus
     const [referralBonusEnabled, setReferralBonusEnabled] = useState(true);
+    const [referralBonusApprovalRequired, setReferralBonusApprovalRequired] = useState(false);
     const [referralBonuses, setReferralBonuses] = useState<BonusTier[]>([]);
     const [isReferralFormOpen, setIsReferralFormOpen] = useState(false);
     const [editingReferralBonus, setEditingReferralBonus] = useState<BonusTier | null>(null);
@@ -126,6 +128,8 @@ export default function SystemSettingsPage() {
         // Signup Bonus
         const savedBonusEnabled = localStorage.getItem('system_signup_bonus_enabled');
         if (savedBonusEnabled) setSignupBonusEnabled(JSON.parse(savedBonusEnabled));
+        const savedSignupBonusApproval = localStorage.getItem('system_signup_bonus_approval_required');
+        if (savedSignupBonusApproval) setSignupBonusApprovalRequired(JSON.parse(savedSignupBonusApproval));
         const savedSignupBonuses = localStorage.getItem('system_signup_bonuses');
         if (savedSignupBonuses) setSignupBonuses(JSON.parse(savedSignupBonuses));
         else setSignupBonuses([{id: 'default-signup', minDeposit: 100, bonusAmount: 8}]);
@@ -134,6 +138,8 @@ export default function SystemSettingsPage() {
         // Referral Bonus
         const savedRefBonusEnabled = localStorage.getItem('system_referral_bonus_enabled');
         if (savedRefBonusEnabled) setReferralBonusEnabled(JSON.parse(savedRefBonusEnabled));
+        const savedRefBonusApproval = localStorage.getItem('system_referral_bonus_approval_required');
+        if (savedRefBonusApproval) setReferralBonusApprovalRequired(JSON.parse(savedRefBonusApproval));
         const savedReferralBonuses = localStorage.getItem('system_referral_bonuses');
         if (savedReferralBonuses) setReferralBonuses(JSON.parse(savedReferralBonuses));
         else setReferralBonuses([{id: 'default-referral', minDeposit: 100, bonusAmount: 5}]);
@@ -165,10 +171,12 @@ export default function SystemSettingsPage() {
     const handleSaveChanges = () => {
         // Signup Bonus
         localStorage.setItem('system_signup_bonus_enabled', JSON.stringify(signupBonusEnabled));
+        localStorage.setItem('system_signup_bonus_approval_required', JSON.stringify(signupBonusApprovalRequired));
         localStorage.setItem('system_signup_bonuses', JSON.stringify(signupBonuses));
 
         // Referral Bonus
         localStorage.setItem('system_referral_bonus_enabled', JSON.stringify(referralBonusEnabled));
+        localStorage.setItem('system_referral_bonus_approval_required', JSON.stringify(referralBonusApprovalRequired));
         localStorage.setItem('system_referral_bonuses', JSON.stringify(referralBonuses));
         
         // Withdrawal
@@ -333,6 +341,10 @@ export default function SystemSettingsPage() {
             <Switch id="signup-bonus-toggle" checked={signupBonusEnabled} onCheckedChange={setSignupBonusEnabled} />
             <Label htmlFor="signup-bonus-toggle">Enable Sign-up Bonus Program</Label>
           </div>
+           <div className="flex items-center space-x-2">
+            <Switch id="signup-bonus-approval-toggle" checked={signupBonusApprovalRequired} onCheckedChange={setSignupBonusApprovalRequired} />
+            <Label htmlFor="signup-bonus-approval-toggle">Require Admin Approval for Claims</Label>
+          </div>
            <div className="space-y-2">
                 <Label>Bonus Tiers</Label>
                 <div className="space-y-2 rounded-md border p-2">
@@ -399,6 +411,10 @@ export default function SystemSettingsPage() {
           <div className="flex items-center space-x-2">
             <Switch id="referral-bonus-toggle" checked={referralBonusEnabled} onCheckedChange={setReferralBonusEnabled} />
             <Label htmlFor="referral-bonus-toggle">Enable Referral Bonus Program</Label>
+          </div>
+           <div className="flex items-center space-x-2">
+            <Switch id="referral-bonus-approval-toggle" checked={referralBonusApprovalRequired} onCheckedChange={setReferralBonusApprovalRequired} />
+            <Label htmlFor="referral-bonus-approval-toggle">Require Admin Approval for Claims</Label>
           </div>
           <div className="space-y-2">
                 <Label>Bonus Tiers</Label>

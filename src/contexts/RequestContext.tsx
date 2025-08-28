@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
@@ -9,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 export type Request = {
     id: string;
     user: string;
-    type: 'Recharge' | 'Withdrawal' | 'Team Reward' | 'Team Size Reward';
+    type: 'Recharge' | 'Withdrawal' | 'Team Reward' | 'Team Size Reward' | 'Sign-up Bonus' | 'Referral Bonus';
     amount: number;
     address: string | null;
     level: number;
@@ -151,7 +152,7 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
   const updateRequestStatus = (id: string, status: 'Approved' | 'Declined' | 'On Hold', userEmail: string, type: Request['type'], amount: number) => {
     setRequests(prev => prev.map(req => req.id === id ? { ...req, status } : req));
     
-    const handleBonusCredit = (bonusType: 'Team Reward' | 'Team Size Reward') => {
+    const handleBonusCredit = (bonusType: 'Team Reward' | 'Team Size Reward' | 'Sign-up Bonus' | 'Referral Bonus') => {
         const userMainBalanceKey = `${userEmail}_mainBalance`;
         const currentBalance = parseFloat(localStorage.getItem(userMainBalanceKey) || '0');
         localStorage.setItem(userMainBalanceKey, (currentBalance + amount).toString());
@@ -168,13 +169,13 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
         approveRecharge(userEmail, amount);
       } else if (type === 'Withdrawal') {
         approveWithdrawal(userEmail);
-      } else if (type === 'Team Reward' || type === 'Team Size Reward') {
+      } else if (type === 'Team Reward' || type === 'Team Size Reward' || type === 'Sign-up Bonus' || type === 'Referral Bonus') {
         handleBonusCredit(type);
       }
     } else if (status === 'Declined') {
        if (type === 'Withdrawal') {
          refundWithdrawal(userEmail, amount);
-       } else if (type === 'Recharge' || type === 'Team Reward' || type === 'Team Size Reward') {
+       } else if (type === 'Recharge' || type === 'Team Reward' || type === 'Team Size Reward' || type === 'Sign-up Bonus' || type === 'Referral Bonus') {
           addTransaction(userEmail, {
             type: type,
             description: `${type} request declined`,

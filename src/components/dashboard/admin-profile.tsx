@@ -11,32 +11,24 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MoreHorizontal, User, Calendar, Hash, DollarSign, Wallet, ArrowUpCircle, TrendingUp, UserCheck, ShieldCheck, ArrowDownCircle, Users as UsersIcon, Link } from "lucide-react";
+import { User, Calendar, Wallet, ArrowUpCircle, ArrowDownCircle, Users as UsersIcon, Gift } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRequests } from "@/contexts/RequestContext";
 import { Skeleton } from "../ui/skeleton";
 import { cn } from "@/lib/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+import { useAuth } from "@/contexts/AuthContext";
 
 type RequestStatus = 'Pending' | 'Approved' | 'Declined' | 'On Hold';
+type RequestType = 'Finance' | 'Rewards';
 
 export function AdminProfile() {
     const { toast } = useToast();
     const { requests, updateRequestStatus } = useRequests();
+    const { users } = useAuth();
     const [isClient, setIsClient] = React.useState(false);
-    const [activeTab, setActiveTab] = useState<RequestStatus | 'All'>('Pending');
+    const [activeTab, setActiveTab] = useState<RequestType>('Finance');
+    const [activeStatus, setActiveStatus] = useState<RequestStatus | 'All'>('Pending');
 
     React.useEffect(() => {
         setIsClient(true);
@@ -55,14 +47,11 @@ export function AdminProfile() {
 
     const getSavedWithdrawalAddress = useCallback((userEmail: string) => {
         if (!isClient) return null;
-        // This key should match the one in WalletContext to fetch the correct addresses
         const storedAddresses = localStorage.getItem(`${userEmail}_withdrawalAddresses`);
         if (!storedAddresses) return null;
         
         try {
             const addresses = JSON.parse(storedAddresses);
-            // Assuming the first enabled address is the primary one for display, or just the first if none are enabled.
-            // A more complex logic could be needed if multiple addresses are to be displayed.
             if (Array.isArray(addresses) && addresses.length > 0) {
                  return addresses.map(a => a.address).join(", ");
             }
@@ -74,16 +63,40 @@ export function AdminProfile() {
     }, [isClient]);
 
     const filteredRequests = useMemo(() => {
-        if (activeTab === 'All') return requests;
-        return requests.filter(req => req.status === activeTab);
-    }, [requests, activeTab]);
+        const financeTypes = ['Recharge', 'Withdrawal'];
+        const rewardTypes = ['Team Reward', 'Team Size Reward', 'Sign-up Bonus', 'Referral Bonus'];
+
+        const typeFilter = activeTab === 'Finance' ? financeTypes : rewardTypes;
+        
+        return requests.filter(req => {
+            const isTypeMatch = typeFilter.includes(req.type);
+            const isStatusMatch = activeStatus === 'All' || req.status === activeStatus;
+            return isTypeMatch && isStatusMatch;
+        });
+    }, [requests, activeTab, activeStatus]);
+
+    const getUserActivationDate = useCallback((email: string) => {
+        const user = users.find(u => u.email === email);
+        return user ? new Date(user.createdAt).toLocaleDateString() : 'N/A';
+    }, [users]);
+    
+    const getTeamSize = useCallback((userEmail: string) => {
+        const user = users.find(u => u.email === userEmail);
+        if(!user) return 0;
+        
+        const level1 = users.filter(u => u.referredBy === user.referralCode);
+        const level2 = level1.flatMap(l1 => users.filter(u => u.referredBy === l1.referralCode));
+        const level3 = level2.flatMap(l2 => users.filter(u => u.referredBy === l2.referralCode));
+
+        return level1.length + level2.length + level3.length;
+    }, [users]);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Admin Panel</CardTitle>
         <CardDescription>
-          Manage all user recharge and withdrawal requests from this panel.
+          Manage all user requests from this panel.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -96,38 +109,53 @@ export function AdminProfile() {
                 </div>
             </div>
         ) : (
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as RequestStatus | 'All')}>
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 mb-4">
-            <TabsTrigger value="Pending">Pending</TabsTrigger>
-            <TabsTrigger value="Approved">Approved</TabsTrigger>
-            <TabsTrigger value="Declined">Declined</TabsTrigger>
-            <TabsTrigger value="On Hold">On Hold</TabsTrigger>
-            <TabsTrigger value="All">All</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as RequestType)}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="Finance">Finance Requests</TabsTrigger>
+            <TabsTrigger value="Rewards">Reward Requests</TabsTrigger>
           </TabsList>
             
-          <div className="space-y-4">
+          <TabsList className="grid w-full grid-cols-5 mt-4">
+            <TabsTrigger value="Pending" onClick={() => setActiveStatus('Pending')}>Pending</TabsTrigger>
+            <TabsTrigger value="Approved" onClick={() => setActiveStatus('Approved')}>Approved</TabsTrigger>
+            <TabsTrigger value="Declined" onClick={() => setActiveStatus('Declined')}>Declined</TabsTrigger>
+            <TabsTrigger value="On Hold" onClick={() => setActiveStatus('On Hold')}>On Hold</TabsTrigger>
+            <TabsTrigger value="All" onClick={() => setActiveStatus('All')}>All</TabsTrigger>
+          </TabsList>
+
+          <div className="space-y-4 mt-4">
              {filteredRequests.length > 0 ? (
                 filteredRequests.map((request) => {
                   const userWithdrawalAddress = getSavedWithdrawalAddress(request.user);
+                  const userActivationDate = getUserActivationDate(request.user);
+                  const teamSize = getTeamSize(request.user);
+                  const isFinanceRequest = activeTab === 'Finance';
+
+                  const getIcon = () => {
+                      switch (request.type) {
+                        case 'Recharge': return <ArrowUpCircle className="h-4 w-4 text-green-600" />;
+                        case 'Withdrawal': return <ArrowDownCircle className="h-4 w-4 text-red-600" />;
+                        default: return <Gift className="h-4 w-4 text-yellow-600" />;
+                      }
+                  }
+
+                  const getIconBg = () => {
+                      switch (request.type) {
+                        case 'Recharge': return 'bg-green-100';
+                        case 'Withdrawal': return 'bg-red-100';
+                        default: return 'bg-yellow-100';
+                      }
+                  }
+                  
                   return (
                   <div key={request.id} className="border rounded-lg p-4 space-y-4 bg-card">
                     {/* Header */}
                     <div>
                         <div className="flex items-center gap-2">
-                            <div className={cn(
-                                "flex h-6 w-6 items-center justify-center rounded-full",
-                                request.type === 'Recharge' ? 'bg-green-100' : 'bg-red-100'
-                            )}>
-                                {request.type === 'Recharge' ? (
-                                    <ArrowUpCircle className="h-4 w-4 text-green-600" />
-                                ) : (
-                                    <ArrowDownCircle className="h-4 w-4 text-red-600" />
-                                )}
+                            <div className={cn("flex h-6 w-6 items-center justify-center rounded-full", getIconBg())}>
+                                {getIcon()}
                             </div>
-                            <h3 className={cn(
-                                "text-lg font-bold",
-                                request.type === 'Recharge' ? 'text-green-600' : 'text-red-600'
-                            )}>
+                            <h3 className="text-lg font-bold text-foreground">
                                 {request.type} Request
                             </h3>
                         </div>
@@ -142,12 +170,18 @@ export function AdminProfile() {
                         </div>
                          <div className="flex items-center gap-2 text-foreground">
                             <Calendar className="h-4 w-4 text-muted-foreground"/>
-                            <span>{new Date(request.date).toLocaleDateString()}</span>
+                            <span>Activated: {userActivationDate}</span>
                         </div>
-                        {userWithdrawalAddress && (
+                        {userWithdrawalAddress && isFinanceRequest && (
                              <div className="flex items-center gap-2 text-foreground">
                                 <Wallet className="h-4 w-4 text-muted-foreground"/>
                                 <span className="font-mono text-xs">{userWithdrawalAddress}</span>
+                            </div>
+                        )}
+                        {(request.type === 'Team Reward' || request.type === 'Team Size Reward') && (
+                             <div className="flex items-center gap-2 text-foreground">
+                                <UsersIcon className="h-4 w-4 text-muted-foreground"/>
+                                <span className="font-mono text-xs">{request.address}</span>
                             </div>
                         )}
                     </div>
@@ -171,10 +205,14 @@ export function AdminProfile() {
                             <p className="font-bold text-base text-foreground">{request.withdrawals}</p>
                         </div>
                         <div>
-                            <p className="text-muted-foreground">User Referrals</p>
-                            <p className="font-bold text-base text-foreground">0</p>
+                            <p className="text-muted-foreground">Direct Referrals</p>
+                            <p className="font-bold text-base text-foreground">{request.referrals}</p>
                         </div>
                         <div>
+                            <p className="text-muted-foreground">Team Size</p>
+                            <p className="font-bold text-base text-foreground">{teamSize}</p>
+                        </div>
+                         <div>
                             <p className="text-muted-foreground">User Main Balance</p>
                             <p className="font-bold text-base text-foreground">${request.balance.toFixed(2)}</p>
                         </div>
@@ -208,7 +246,7 @@ export function AdminProfile() {
                 })
             ) : (
                  <div className="col-span-full text-center py-12">
-                    <p className="text-muted-foreground">No requests found for this status.</p>
+                    <p className="text-muted-foreground">No {activeStatus.toLowerCase()} {activeTab.toLowerCase()} requests found.</p>
                 </div>
             )}
           </div>

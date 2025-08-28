@@ -18,13 +18,12 @@ import { useWallet } from "@/contexts/WalletContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { ScrollArea } from "../ui/scroll-area";
 import { Separator } from "../ui/separator";
+import { useRequests } from "@/contexts/RequestContext";
 
 export function RewardsPanel() {
     const { toast } = useToast();
-    const {
-        currentUser,
-        users
-    } = useAuth();
+    const { currentUser, users } = useAuth();
+    const { addRequest } = useRequests();
     const { 
         claimSignUpBonus, 
         hasClaimedSignUpBonus, 
@@ -35,28 +34,60 @@ export function RewardsPanel() {
         claimedReferralIds
     } = useWallet();
 
+    const [isSignupApprovalRequired, setIsSignupApprovalRequired] = React.useState(false);
+    const [isReferralApprovalRequired, setIsReferralApprovalRequired] = React.useState(false);
+    
+    React.useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const signupApproval = localStorage.getItem('system_signup_bonus_approval_required');
+            if(signupApproval) setIsSignupApprovalRequired(JSON.parse(signupApproval));
+
+            const referralApproval = localStorage.getItem('system_referral_bonus_approval_required');
+            if(referralApproval) setIsReferralApprovalRequired(JSON.parse(referralApproval));
+        }
+    }, []);
+
     const directReferrals = React.useMemo(() => {
         if (!currentUser) return [];
         return users.filter(u => u.referredBy === currentUser.referralCode);
     }, [currentUser, users]);
 
     const handleClaimSignUp = () => {
-        const success = claimSignUpBonus();
-        if (success) {
+        if (isSignupApprovalRequired) {
+            addRequest({ type: 'Sign-up Bonus', amount: signupBonusAmount });
             toast({
-                title: "Sign-up Bonus Claimed!",
-                description: `The reward of $${signupBonusAmount.toFixed(2)} has been added to your main wallet.`,
+                title: "Sign-up Bonus Claim Submitted!",
+                description: `Your claim for $${signupBonusAmount.toFixed(2)} is pending admin approval.`
             });
+        } else {
+            const success = claimSignUpBonus();
+            if (success) {
+                toast({
+                    title: "Sign-up Bonus Claimed!",
+                    description: `The reward of $${signupBonusAmount.toFixed(2)} has been added to your main wallet.`,
+                });
+            }
         }
     };
     
     const handleClaimReferral = (referralEmail: string) => {
-        const claimedAmount = claimReferralBonus(referralEmail);
-         if (claimedAmount) {
+        const bonusAmount = referralBonusFor(referralEmail);
+        if (bonusAmount <= 0) return;
+
+        if (isReferralApprovalRequired) {
+            addRequest({ type: 'Referral Bonus', amount: bonusAmount, address: referralEmail });
             toast({
-                title: "Referral Bonus Claimed!",
-                description: `Reward of $${claimedAmount.toFixed(2)} for referring ${referralEmail} has been credited.`,
+                title: "Referral Bonus Claim Submitted!",
+                description: `Your claim for referring ${referralEmail} is pending admin approval.`
             });
+        } else {
+            const claimedAmount = claimReferralBonus(referralEmail);
+             if (claimedAmount) {
+                toast({
+                    title: "Referral Bonus Claimed!",
+                    description: `Reward of $${claimedAmount.toFixed(2)} for referring ${referralEmail} has been credited.`,
+                });
+            }
         }
     }
 
