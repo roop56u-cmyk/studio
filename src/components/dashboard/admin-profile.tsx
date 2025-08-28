@@ -18,6 +18,7 @@ import { useRequests } from "@/contexts/RequestContext";
 import { Skeleton } from "../ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWallet } from "@/contexts/WalletContext";
 
 type RequestStatus = 'Pending' | 'Approved' | 'Declined' | 'On Hold';
 type RequestType = 'Finance' | 'Rewards';
@@ -26,6 +27,7 @@ export function AdminProfile() {
     const { toast } = useToast();
     const { requests, updateRequestStatus } = useRequests();
     const { users } = useAuth();
+    const { approveRecharge, approveWithdrawal, refundWithdrawal } = useWallet();
     const [isClient, setIsClient] = React.useState(false);
     const [activeTab, setActiveTab] = useState<RequestType>('Finance');
     const [activeStatus, setActiveStatus] = useState<RequestStatus | 'All'>('Pending');
@@ -37,6 +39,18 @@ export function AdminProfile() {
     const handleAction = (requestId: string, action: RequestStatus) => {
         const request = requests.find(r => r.id === requestId);
         if (!request) return;
+
+        if (action === 'Approved') {
+            if(request.type === 'Recharge') {
+                approveRecharge(request.user, request.amount);
+            } else if (request.type === 'Withdrawal') {
+                approveWithdrawal(request.user);
+            }
+        } else if (action === 'Declined') {
+             if (request.type === 'Withdrawal') {
+                refundWithdrawal(request.user, request.amount);
+            }
+        }
 
         updateRequestStatus(requestId, action, request.user, request.type, request.amount);
         toast({
@@ -178,7 +192,7 @@ export function AdminProfile() {
                                 <span className="font-mono text-xs">{userWithdrawalAddress}</span>
                             </div>
                         )}
-                        {(request.type === 'Team Reward' || request.type === 'Team Size Reward') && (
+                        {(request.type === 'Team Reward' || request.type === 'Team Size Reward' || request.type === 'Referral Bonus') && (
                              <div className="flex items-center gap-2 text-foreground">
                                 <UsersIcon className="h-4 w-4 text-muted-foreground"/>
                                 <span className="font-mono text-xs">{request.address}</span>
@@ -214,7 +228,7 @@ export function AdminProfile() {
                         </div>
                          <div>
                             <p className="text-muted-foreground">User Main Balance</p>
-                            <p className="font-bold text-base text-foreground">${request.balance.toFixed(2)}</p>
+                            <p className="font-bold text-base text-foreground">${(request.balance ?? 0).toFixed(2)}</p>
                         </div>
                     </div>
 
