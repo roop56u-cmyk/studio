@@ -349,7 +349,7 @@ export default function SystemSettingsPage() {
                 </div>
                 <Dialog open={isSignupFormOpen} onOpenChange={setIsSignupFormOpen}>
                     <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" onClick={() => setEditingSignupBonus(null)}><PlusCircle className="mr-2 h-4 w-4"/>Add Tier</Button>
+                        <Button variant="outline" size="sm" onClick={() => { setEditingSignupBonus(null); setIsSignupFormOpen(true); }}><PlusCircle className="mr-2 h-4 w-4"/>Add Tier</Button>
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader><DialogTitle>{editingSignupBonus ? 'Edit' : 'Add'} Sign-up Bonus Tier</DialogTitle></DialogHeader>
@@ -416,7 +416,7 @@ export default function SystemSettingsPage() {
                 </div>
                 <Dialog open={isReferralFormOpen} onOpenChange={setIsReferralFormOpen}>
                     <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" onClick={() => setEditingReferralBonus(null)}><PlusCircle className="mr-2 h-4 w-4"/>Add Tier</Button>
+                        <Button variant="outline" size="sm" onClick={() => { setEditingReferralBonus(null); setIsReferralFormOpen(true); }}><PlusCircle className="mr-2 h-4 w-4"/>Add Tier</Button>
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader><DialogTitle>{editingReferralBonus ? 'Edit' : 'Add'} Referral Bonus Tier</DialogTitle></DialogHeader>
@@ -494,5 +494,3 @@ export default function SystemSettingsPage() {
     </div>
   );
 }
-
-    

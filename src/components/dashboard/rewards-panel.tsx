@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React from "react";
@@ -28,7 +29,8 @@ export function RewardsPanel() {
         claimSignUpBonus, 
         hasClaimedSignUpBonus, 
         isEligibleForSignUpBonus,
-        referralBonuses,
+        signupBonusAmount,
+        referralBonusFor,
         claimReferralBonus,
         claimedReferralIds
     } = useWallet();
@@ -43,17 +45,17 @@ export function RewardsPanel() {
         if (success) {
             toast({
                 title: "Sign-up Bonus Claimed!",
-                description: "The reward has been added to your main wallet.",
+                description: `The reward of $${signupBonusAmount.toFixed(2)} has been added to your main wallet.`,
             });
         }
     };
     
     const handleClaimReferral = (referralEmail: string) => {
-        const success = claimReferralBonus(referralEmail);
-         if (success) {
+        const claimedAmount = claimReferralBonus(referralEmail);
+         if (claimedAmount) {
             toast({
                 title: "Referral Bonus Claimed!",
-                description: `Reward for referring ${referralEmail} has been credited.`,
+                description: `Reward of $${claimedAmount.toFixed(2)} for referring ${referralEmail} has been credited.`,
             });
         }
     }
@@ -76,12 +78,12 @@ export function RewardsPanel() {
                 </CardHeader>
                 <CardContent>
                     <p className="text-sm">
-                        Welcome! As a new active member, you're eligible for a one-time bonus.
+                        Welcome! As a new active member, you're eligible for a one-time bonus based on your first deposit.
                     </p>
                 </CardContent>
                 <CardFooter className="flex justify-between items-center">
-                    <p className="text-lg font-bold text-primary">$8.00</p>
-                    <Button onClick={handleClaimSignUp} disabled={!isEligibleForSignUpBonus || hasClaimedSignUpBonus}>
+                    <p className="text-lg font-bold text-primary">${signupBonusAmount.toFixed(2)}</p>
+                    <Button onClick={handleClaimSignUp} disabled={!isEligibleForSignUpBonus || hasClaimedSignUpBonus || signupBonusAmount === 0}>
                         {hasClaimedSignUpBonus ? (
                             <>
                                 <CheckCircle className="mr-2 h-4 w-4" /> Claimed
@@ -107,7 +109,8 @@ export function RewardsPanel() {
                 <CardContent className="space-y-4">
                      {directReferrals.length > 0 ? directReferrals.map((referral, index) => {
                          const isClaimed = claimedReferralIds.includes(referral.email);
-                         const isClaimable = referral.isAccountActive && !isClaimed;
+                         const bonusAmount = referralBonusFor(referral.email);
+                         const isClaimable = referral.isAccountActive && !isClaimed && bonusAmount > 0;
 
                          return (
                             <React.Fragment key={referral.email}>
@@ -119,7 +122,7 @@ export function RewardsPanel() {
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <p className="text-md font-bold text-primary">$5.00</p>
+                                        <p className="text-md font-bold text-primary">${bonusAmount.toFixed(2)}</p>
                                         <Button size="sm" onClick={() => handleClaimReferral(referral.email)} disabled={!isClaimable}>
                                            {isClaimed ? 'Claimed' : 'Claim'}
                                         </Button>
