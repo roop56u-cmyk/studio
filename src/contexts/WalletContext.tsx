@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect, useMemo } from 'react';
@@ -129,7 +128,7 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
-  const { currentUser, users, updateUserStatus } = useAuth();
+  const { currentUser, users, updateUserStatus, updateUser } = useAuth();
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -409,80 +408,28 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
      }
  }, [currentUser]);
 
- const handleSignUpBonus = useCallback((userEmail: string) => {
-    const user = users.find(u => u.email === userEmail);
-    if (!user || user.isBonusDisabled) return;
-
-    const bonusIsEnabled = getGlobalSetting('system_signup_bonus_enabled', true, true);
-    if (!bonusIsEnabled) return;
-    
-    const bonusGivenKey = `${userEmail}_signup_bonus_given`;
-    if (localStorage.getItem(bonusGivenKey)) return;
-
-    const signupBonuses: BonusTier[] = getGlobalSetting('system_signup_bonuses', [], true);
-    if (signupBonuses.length === 0) return;
-
-    const mainBalanceKey = `${userEmail}_mainBalance`;
-    const currentBalance = parseFloat(localStorage.getItem(mainBalanceKey) || '0');
-    
-    // Use the committed balance from the first deposit to check for bonus eligibility
-    const committedBalanceKey = `${userEmail}_taskRewardsBalance`;
-    const interestBalanceKey = `${userEmail}_interestEarningsBalance`;
-    const taskBalance = parseFloat(localStorage.getItem(committedBalanceKey) || '0');
-    const interestBalance = parseFloat(localStorage.getItem(interestBalanceKey) || '0');
-    const firstCommittedBalance = taskBalance + interestBalance;
-    
-    const applicableBonus = signupBonuses
-      .filter(b => firstCommittedBalance >= b.minDeposit)
-      .sort((a,b) => b.minDeposit - a.minDeposit)[0];
-
-    if (applicableBonus) {
-        localStorage.setItem(mainBalanceKey, (currentBalance + applicableBonus.bonusAmount).toString());
-        if(currentUser?.email === userEmail) {
-            setMainBalance(prev => prev + applicableBonus.bonusAmount);
-        }
-
-        addTransaction(userEmail, {
-            type: 'Sign-up Bonus',
-            description: `Bonus for activating account`,
-            amount: applicableBonus.bonusAmount,
-            date: new Date().toISOString(),
-        });
-        
-        localStorage.setItem(bonusGivenKey, 'true');
-
-        if(currentUser?.email === userEmail) {
-            toast({
-                title: "Sign-up Bonus Received!",
-                description: `You've received a $${applicableBonus.bonusAmount.toFixed(2)} bonus!`,
-            });
-        }
-    }
-
-  }, [addTransaction, toast, currentUser, users]);
-
  const handleMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', amountToMove: number, fromAccount?: 'Task Rewards' | 'Interest Earnings') => {
     if(!currentUser) return;
+
     const numericAmount = fromAccount ? amountToMove : parseFloat(amount);
     if (isNaN(numericAmount) || numericAmount <= 0) {
       toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid positive number to move.' });
       return;
     }
 
-    // --- Fund Movement Logic ---
     let newMainBalance = mainBalance;
     let newTaskRewardsBalance = taskRewardsBalance;
     let newInterestEarningsBalance = interestEarningsBalance;
     const wasInactive = currentUser.status === 'inactive';
 
-    if (fromAccount) { // Moving from earning wallets to main/other earning
+    if (fromAccount) {
         if (fromAccount === 'Task Rewards') {
             if (numericAmount > taskRewardsBalance) {
                 toast({ variant: "destructive", title: "Insufficient Funds", description: `Cannot move more than available in Task Rewards.` });
                 return;
             }
             newTaskRewardsBalance -= numericAmount;
-        } else { // From Interest Earnings
+        } else {
              if (numericAmount > interestEarningsBalance) {
                 toast({ variant: "destructive", title: "Insufficient Funds", description: `Cannot move more than available in Interest Earnings.` });
                 return;
@@ -494,7 +441,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             newMainBalance += numericAmount;
         } else if (destination === 'Interest Earnings') {
             newInterestEarningsBalance += numericAmount;
-        } else { // to Task Rewards
+        } else {
             newTaskRewardsBalance += numericAmount;
         }
 
@@ -508,7 +455,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
                 duration: 6000
             });
         }
-    } else { // Moving from Main Wallet
+    } else {
         if (numericAmount > mainBalance) {
             toast({ variant: "destructive", title: "Insufficient Funds", description: "You cannot move more than your main balance." });
             return;
@@ -521,32 +468,51 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         }
     }
 
-    // --- Update Balances Immediately ---
     setMainBalance(newMainBalance);
     setTaskRewardsBalance(newTaskRewardsBalance);
     setInterestEarningsBalance(newInterestEarningsBalance);
     toast({ title: "Funds Moved", description: `${numericAmount.toFixed(2)} USDT transfer complete.` });
     setAmount("");
 
-    // --- Post-Movement Logic (Activation & Bonus) ---
     if (wasInactive && !fromAccount) {
-      const updatedCommittedBalance = newTaskRewardsBalance + newInterestEarningsBalance;
-      const minAmountForLevel1 = configuredLevels.find(l => l.level === 1)?.minAmount || 100;
-  
-      if (updatedCommittedBalance >= minAmountForLevel1) {
-        updateUserStatus(currentUser.email, 'active');
-        toast({
-          title: "Account Activated!",
-          description: "You can now start earning. Your bonus will be credited shortly."
-        });
+        const updatedCommittedBalance = newTaskRewardsBalance + newInterestEarningsBalance;
+        const minAmountForLevel1 = configuredLevels.find(l => l.level === 1)?.minAmount || 100;
 
-        // Delay bonus credit
-        setTimeout(() => {
-          handleSignUpBonus(currentUser.email);
-        }, 1500);
-      }
+        if (updatedCommittedBalance >= minAmountForLevel1) {
+            updateUserStatus(currentUser.email, 'active');
+            
+            setTimeout(() => {
+                const bonusIsEnabled = getGlobalSetting('system_signup_bonus_enabled', true, true);
+                if (!bonusIsEnabled || currentUser.isBonusDisabled) return;
+
+                const signupBonuses: BonusTier[] = getGlobalSetting('system_signup_bonuses', [], true);
+                if (signupBonuses.length === 0) return;
+                
+                const applicableBonus = signupBonuses
+                    .filter(b => updatedCommittedBalance >= b.minDeposit)
+                    .sort((a,b) => b.minDeposit - a.minDeposit)[0];
+                
+                if (applicableBonus) {
+                    setMainBalance(prev => prev + applicableBonus.bonusAmount);
+                    addTransaction(currentUser.email, {
+                        type: 'Sign-up Bonus',
+                        description: `Bonus for activating account`,
+                        amount: applicableBonus.bonusAmount,
+                        date: new Date().toISOString(),
+                    });
+                    
+                    // Update user to prevent getting bonus again
+                    updateUser(currentUser.email, { isBonusDisabled: true });
+                    
+                    toast({
+                        title: "Sign-up Bonus Received!",
+                        description: `You've received a $${applicableBonus.bonusAmount.toFixed(2)} bonus!`,
+                    });
+                }
+            }, 1500);
+        }
     }
-  };
+};
 
   const approveRecharge = (userEmail: string, rechargeAmount: number) => {
     const key = `${userEmail}_mainBalance`;
@@ -573,7 +539,12 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
                 if(applicableBonus) {
                     const referrerMainBalanceKey = `${referrer.email}_mainBalance`;
                     const referrerCurrentBalance = parseFloat(localStorage.getItem(referrerMainBalanceKey) || '0');
-                    localStorage.setItem(referrerMainBalanceKey, (referrerCurrentBalance + applicableBonus.bonusAmount).toString());
+                    const newReferrerBalance = referrerCurrentBalance + applicableBonus.bonusAmount;
+                    localStorage.setItem(referrerMainBalanceKey, newReferrerBalance.toString());
+                    
+                    if(currentUser?.email === referrer.email) {
+                        setMainBalance(newReferrerBalance);
+                    }
                     
                     addTransaction(referrer.email, {
                         type: 'Referral Bonus',
@@ -649,8 +620,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         date: new Date().toISOString()
     });
 
-    // checkAndDeactivateUser(userEmail);
-
     if(currentUser?.email === userEmail) {
       setWithdrawals(prev => prev + 1);
       setMonthlyWithdrawalsCount(prev => prev + 1);
@@ -685,6 +654,11 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             toast({ variant: "destructive", title: "No Funds", description: "You must have funds in your interest wallet to start earning." });
             return;
           }
+          const minBalanceForLevel1 = configuredLevels.find(l => l.level === 1)?.minAmount ?? 100;
+           if (interestEarningsBalance < minBalanceForLevel1) {
+                toast({ variant: "destructive", title: "Insufficient Funds", description: `A minimum of $${minBalanceForLevel1} is required in the interest wallet.` });
+                return;
+           }
           setInterestCounter({ isRunning: true, startTime: now });
           toast({ title: "Daily Interest Started", description: "Your 24-hour earning cycle has begun." });
       }

@@ -100,6 +100,7 @@ export function InterestCounterPanel({
   };
 
   const minBalanceForLevel1 = levels.find(l => l.level === 1)?.minAmount ?? 100;
+  const canStart = !isLoading && balance >= minBalanceForLevel1 && !isRunning;
 
   if (isLocked) {
     return (
@@ -122,7 +123,6 @@ export function InterestCounterPanel({
   }
   
   const isClaimable = timeLeft !== null && timeLeft <= 0;
-  const canStart = !isLoading && balance >= minBalanceForLevel1;
 
   return (
     <Card className="relative overflow-hidden flex flex-col">

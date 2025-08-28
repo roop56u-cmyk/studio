@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
@@ -16,6 +15,7 @@ export type Request = {
     level: number;
     deposits: number;
     withdrawals: number;
+    referrals: number;
     balance: number;
     status: 'Pending' | 'Approved' | 'Declined' | 'On Hold';
     date: string;
@@ -38,6 +38,7 @@ const mockRequests: Request[] = [
     level: 2,
     deposits: 5,
     withdrawals: 2,
+    referrals: 3,
     balance: 750.00,
     status: "Pending",
     date: "2024-07-31",
@@ -51,6 +52,7 @@ const mockRequests: Request[] = [
     level: 1,
     deposits: 1,
     withdrawals: 0,
+    referrals: 0,
     balance: 120.50,
     status: "Approved",
     date: "2024-07-30",
@@ -64,6 +66,7 @@ const mockRequests: Request[] = [
     level: 3,
     deposits: 10,
     withdrawals: 5,
+    referrals: 10,
     balance: 2100.00,
     status: "Declined",
     date: "2024-07-29",
@@ -73,7 +76,7 @@ const mockRequests: Request[] = [
 const RequestContext = createContext<RequestContextType | undefined>(undefined);
 
 export const RequestProvider = ({ children }: { children: ReactNode }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, users } = useAuth();
   const { getWalletData, approveRecharge, refundWithdrawal, approveWithdrawal, addTransaction } = useWallet();
   const { toast } = useToast();
 
@@ -120,6 +123,8 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
         return;
     }
     
+    const referralCount = users.filter(u => u.referredBy === currentUser.referralCode).length;
+
     const newRequest: Request = {
         ...getWalletData(), // Gets balance, level, deposits, withdrawals
         id: `REQ-${Date.now()}`,
@@ -129,6 +134,7 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
         type: requestData.type!,
         amount: requestData.amount!,
         address: requestData.address,
+        referrals: referralCount,
     };
 
     setRequests(prev => [newRequest, ...prev]);
