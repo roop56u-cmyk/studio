@@ -47,8 +47,8 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></link>
       </head>
       <body className={cn("font-body antialiased", theme)}>
-        <AuthProvider>
-          <WalletProvider>
+        <WalletProvider>
+          <AuthProvider>
             <RequestProvider>
                 <TeamProvider>
                     <InboxProvider>
@@ -56,8 +56,8 @@ export default function RootLayout({
                     </InboxProvider>
                 </TeamProvider>
             </RequestProvider>
-          </WalletProvider>
-        </AuthProvider>
+          </AuthProvider>
+        </WalletProvider>
         <Toaster />
       </body>
     </html>

@@ -108,14 +108,16 @@ interface WalletContextType {
   transactionHistory: Transaction[];
   multipleAddressesEnabled: boolean;
   // Manual Bonus Claiming
-  claimSignUpBonus: () => void;
+  claimSignUpBonus: () => boolean;
   hasClaimedSignUpBonus: boolean;
   isEligibleForSignUpBonus: boolean;
   signupBonusAmount: number;
   referralBonuses: BonusTier[];
   referralBonusFor: (referralEmail: string) => number;
-  claimReferralBonus: (referralEmail: string) => void;
+  claimReferralBonus: (referralEmail: string) => number | null;
   claimedReferralIds: string[];
+  purchasedReferralsCount: number;
+  setPurchasedReferralsCount: React.Dispatch<React.SetStateAction<number>>;
 }
 
 export type Transaction = {
@@ -456,43 +458,35 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    // Unconditional fund movement
-    let newMainBalance = mainBalance;
-    let fromWalletEmpty = false;
-
-    if (fromAccount) {
-      if (fromAccount === 'Task Rewards') {
-        if (numericAmount > taskRewardsBalance) { toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than the available balance of $${taskRewardsBalance.toFixed(2)}.` }); return; }
-        setTaskRewardsBalance(prev => prev - numericAmount);
-      } else {
-        if (numericAmount > interestEarningsBalance) { toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than the available balance of $${interestEarningsBalance.toFixed(2)}.` }); return; }
-        setInterestEarningsBalance(prev => prev - numericAmount);
-      }
-      if (destination === 'Main Wallet') {
-        newMainBalance += numericAmount;
-      }
-    } else { // From main to earning
+    if (fromAccount) { // Moving from earning wallet to main or other earning wallet
+        if (fromAccount === 'Task Rewards') {
+            if (numericAmount > taskRewardsBalance) { toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than the available balance of $${taskRewardsBalance.toFixed(2)}.` }); return; }
+            setTaskRewardsBalance(prev => prev - numericAmount);
+            if (destination === 'Main Wallet') setMainBalance(prev => prev + numericAmount);
+            if (destination === 'Interest Earnings') setInterestEarningsBalance(prev => prev + numericAmount);
+        } else { // From Interest Earnings
+            if (numericAmount > interestEarningsBalance) { toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than the available balance of $${interestEarningsBalance.toFixed(2)}.` }); return; }
+            setInterestEarningsBalance(prev => prev - numericAmount);
+            if (destination === 'Main Wallet') setMainBalance(prev => prev + numericAmount);
+            if (destination === 'Task Rewards') setTaskRewardsBalance(prev => prev + numericAmount);
+        }
+    } else { // Moving from Main Wallet to earning wallet
       if (numericAmount > mainBalance) { toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than your main balance of $${mainBalance.toFixed(2)}.` }); return; }
-      newMainBalance -= numericAmount;
+      setMainBalance(prev => prev - numericAmount);
+      if (destination === 'Task Rewards') setTaskRewardsBalance(prev => prev + numericAmount);
+      if (destination === 'Interest Earnings') setInterestEarningsBalance(prev => prev + numericAmount);
     }
-    
-    setMainBalance(newMainBalance);
-    if (destination === 'Task Rewards') setTaskRewardsBalance(prev => prev + numericAmount);
-    if (destination === 'Interest Earnings') setInterestEarningsBalance(prev => prev + numericAmount);
 
     toast({ title: "Funds Moved", description: `${numericAmount.toFixed(2)} USDT transfer complete.` });
     setAmount("");
 
-    // Post-movement activation check
-    setTimeout(() => {
-        if (!currentUser.isAccountActive) {
-            const userFirstDepositKey = `${currentUser.email}_firstDepositAmount`;
-            if (!localStorage.getItem(userFirstDepositKey)) {
-                localStorage.setItem(userFirstDepositKey, JSON.stringify(numericAmount));
-            }
-            activateUserAccount(currentUser.email);
-        }
-    }, 100);
+    if (!fromAccount && !currentUser.isAccountActive) {
+      const userFirstDepositKey = `${currentUser.email}_firstDepositAmount`;
+      if (!localStorage.getItem(userFirstDepositKey)) {
+        localStorage.setItem(userFirstDepositKey, JSON.stringify(numericAmount));
+        activateUserAccount(currentUser.email);
+      }
+    }
   };
 
   const approveRecharge = (userEmail: string, rechargeAmount: number) => {
@@ -732,7 +726,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         const referralCount = booster.value;
         const newReferralCount = purchasedReferralsCount + referralCount;
         setPurchasedReferralsCount(newReferralCount);
-        setPersistentState('purchased_referrals', newReferralCount);
         setPurchasedBoosterIds(prev => [...prev, booster.id]);
         addTransaction(currentUser.email, {
             type: 'Booster Purchase',
@@ -763,7 +756,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   };
   
   const claimSignUpBonus = () => {
-    if (!isEligibleForSignUpBonus || !currentUser || signupBonusAmount <= 0) return;
+    if (!isEligibleForSignUpBonus || !currentUser || signupBonusAmount <= 0) return false;
     
     setMainBalance(prev => prev + signupBonusAmount);
     addTransaction(currentUser.email, {
@@ -777,6 +770,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         title: "Sign-up Bonus Claimed!",
         description: `The reward of $${signupBonusAmount.toFixed(2)} has been added to your main wallet.`,
     });
+    return true;
   };
   
   const referralBonusFor = useCallback((referralEmail: string): number => {
@@ -794,13 +788,13 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   }, [referralBonuses]);
   
   const claimReferralBonus = (referralEmail: string) => {
-    if (!currentUser || claimedReferralIds.includes(referralEmail)) return;
+    if (!currentUser || claimedReferralIds.includes(referralEmail)) return null;
 
     const referral = users.find(u => u.email === referralEmail);
-    if (!referral || !referral.isAccountActive) return;
+    if (!referral || !referral.isAccountActive) return null;
     
     const bonusAmount = referralBonusFor(referralEmail);
-    if (bonusAmount <= 0) return;
+    if (bonusAmount <= 0) return null;
 
     setMainBalance(prev => prev + bonusAmount);
      addTransaction(currentUser.email, {
@@ -814,6 +808,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         title: "Referral Bonus Claimed!",
         description: `Reward of $${bonusAmount.toFixed(2)} for referring ${referralEmail} has been credited.`,
     });
+    return bonusAmount;
   };
   
   const getReferralCommissionBoost = () => {
@@ -881,7 +876,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         referralBonuses,
         referralBonusFor,
         claimReferralBonus,
-        claimedReferralIds
+        claimedReferralIds,
+        purchasedReferralsCount,
+        setPurchasedReferralsCount
       }}
     >
       {children}
@@ -896,5 +893,3 @@ export const useWallet = () => {
   }
   return context;
 };
-
-    
