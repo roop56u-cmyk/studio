@@ -92,6 +92,7 @@ import { ReferralCard } from "@/components/dashboard/referral-card";
 import { InboxPanel } from "@/components/dashboard/inbox-panel";
 import { BoosterStorePanel } from "@/components/dashboard/booster-store-panel";
 import { QuestPanel } from "@/components/dashboard/quest-panel";
+import { RewardsPanel } from "@/components/dashboard/rewards-panel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -154,7 +155,7 @@ const adminPanelTitles: Record<PanelType, { title: string; description: string }
     messageManagement: { title: "Manage Messages", description: "Edit platform-wide custom messages and text." },
 };
 
-function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransactionHistoryClick, onTaskHistoryClick, onReferralClick, onInboxClick, onBoosterStoreClick, onQuestPanelClick, onAdminPanelClick }: { onRechargeClick: () => void, onWithdrawalClick: () => void, onTransactionHistoryClick: () => void, onTaskHistoryClick: () => void, onReferralClick: () => void, onInboxClick: () => void, onBoosterStoreClick: () => void, onQuestPanelClick: () => void, onAdminPanelClick: (panel: PanelType) => void }) {
+function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransactionHistoryClick, onTaskHistoryClick, onReferralClick, onInboxClick, onBoosterStoreClick, onQuestPanelClick, onRewardsPanelClick, onAdminPanelClick }: { onRechargeClick: () => void, onWithdrawalClick: () => void, onTransactionHistoryClick: () => void, onTaskHistoryClick: () => void, onReferralClick: () => void, onInboxClick: () => void, onBoosterStoreClick: () => void, onQuestPanelClick: () => void, onRewardsPanelClick: () => void, onAdminPanelClick: (panel: PanelType) => void }) {
   const pathname = usePathname();
   const { logout, currentUser } = useAuth();
   const { 
@@ -333,6 +334,15 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
                     >
                         <CheckCheck />
                         <span>Daily Quests</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton
+                        onClick={onRewardsPanelClick}
+                        tooltip={{ children: "Rewards" }}
+                    >
+                        <Gift />
+                        <span>Rewards</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                  <SidebarMenuItem>
@@ -594,6 +604,7 @@ export default function DashboardLayout({
     const [isInboxOpen, setIsInboxOpen] = React.useState(false);
     const [isBoosterStoreOpen, setIsBoosterStoreOpen] = React.useState(false);
     const [isQuestPanelOpen, setIsQuestPanelOpen] = React.useState(false);
+    const [isRewardsPanelOpen, setIsRewardsPanelOpen] = React.useState(false);
 
     // Admin panel states
     const [activeAdminPanel, setActiveAdminPanel] = React.useState<PanelType | null>(null);
@@ -632,6 +643,7 @@ export default function DashboardLayout({
                 onInboxClick={handleInboxClick}
                 onBoosterStoreClick={() => setIsBoosterStoreOpen(true)}
                 onQuestPanelClick={() => setIsQuestPanelOpen(true)}
+                onRewardsPanelClick={() => setIsRewardsPanelOpen(true)}
                 onAdminPanelClick={handleAdminPanelClick}
             />
           </Sidebar>
@@ -764,6 +776,20 @@ export default function DashboardLayout({
                 </SheetHeader>
                 <div className="mt-4">
                     <QuestPanel />
+                </div>
+                 <SheetClose />
+            </SheetContent>
+        </Sheet>
+         <Sheet open={isRewardsPanelOpen} onOpenChange={setIsRewardsPanelOpen}>
+            <SheetContent className="w-full sm:max-w-lg">
+                <SheetHeader>
+                    <SheetTitle>Claim Rewards</SheetTitle>
+                    <SheetDescription>
+                        Claim your sign-up and referral bonuses here.
+                    </SheetDescription>
+                </SheetHeader>
+                <div className="mt-4">
+                    <RewardsPanel />
                 </div>
                  <SheetClose />
             </SheetContent>

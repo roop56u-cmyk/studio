@@ -12,6 +12,7 @@ export type User = {
     referralCode: string;
     referredBy: string | null; // Stores the referral code of the user who referred them
     status: 'active' | 'disabled' | 'inactive';
+    isAccountActive: boolean; // Tracks if user has made a qualifying deposit
     overrideLevel?: number | null;
     isBonusDisabled?: boolean;
     withdrawalRestrictionUntil?: string | null; // ISO date string
@@ -24,10 +25,10 @@ interface AuthContextType {
   login: (email: string, password: string) => { success: boolean, message: string, isAdmin?: boolean };
   signup: (email: string, password: string, referralCode: string) => { success: boolean, message: string };
   logout: () => void;
-  updateUser: (email: string, updatedData: Partial<Omit<User, 'status'>> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; purchasedReferrals?: number; }) => void;
+  updateUser: (email: string, updatedData: Partial<Omit<User, 'status' | 'isAccountActive'>> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; purchasedReferrals?: number; }) => void;
   deleteUser: (email: string, isSelfDelete?: boolean) => void;
   updateUserStatus: (email: string, status: User['status']) => void;
-  // checkAndDeactivateUser: (email: string) => void;
+  activateUserAccount: (email: string) => void;
 }
 
 const initialAdminUser: User = {
@@ -37,6 +38,7 @@ const initialAdminUser: User = {
     referralCode: "ADMINREF001",
     referredBy: null,
     status: 'active',
+    isAccountActive: true,
     isBonusDisabled: true,
     withdrawalRestrictionUntil: null,
     createdAt: new Date(0).toISOString(),
@@ -87,19 +89,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const storedUsers = localStorage.getItem('users');
             if (storedUsers) {
                 const parsedUsers = JSON.parse(storedUsers);
-                // Ensure admin user always exists and has the correct properties
                 const adminExists = parsedUsers.some((u: User) => u.email === initialAdminUser.email);
                 if (!adminExists) {
                     return [initialAdminUser, ...parsedUsers];
                 }
-                // Ensure all users have a status
                 return parsedUsers.map((u: User) => ({
                     ...u,
-                    status: u.status ?? 'active', // Set default status if missing
+                    status: u.status ?? 'active',
+                    isAccountActive: u.isAccountActive ?? false,
                     isBonusDisabled: u.isBonusDisabled ?? false,
                     withdrawalRestrictionUntil: u.withdrawalRestrictionUntil ?? null,
                     createdAt: u.createdAt ?? new Date().toISOString(),
-                    ...(u.email === initialAdminUser.email ? initialAdminUser : {}) // Ensure admin data is current
+                    ...(u.email === initialAdminUser.email ? initialAdminUser : {})
                 }));
             }
         } catch (error) {
@@ -181,6 +182,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             referralCode: "TRH-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
             referredBy: referralCode,
             status: 'inactive',
+            isAccountActive: false,
             isBonusDisabled: false,
             createdAt: new Date().toISOString(),
         };
@@ -196,13 +198,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         router.push('/login');
     };
 
-    const updateUser = (email: string, updatedData: Partial<Omit<User, 'status'>> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; purchasedReferrals?: number; }) => {
+    const updateUser = (email: string, updatedData: Partial<Omit<User, 'status' | 'isAccountActive'>> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; purchasedReferrals?: number; }) => {
         const { mainBalance, taskRewardsBalance, interestEarningsBalance, purchasedReferrals, ...userData } = updatedData;
         
         const originalUser = users.find(u => u.email === email);
         if (!originalUser) return;
 
-        // If email is being changed, we need to update all localStorage keys
         if (userData.email && userData.email !== email) {
             const keysToMigrate = [
                 'mainBalance', 'taskRewardsBalance', 'interestEarningsBalance',
@@ -223,7 +224,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         
         const targetEmail = userData.email || email;
-        // Update balances in localStorage
         if (mainBalance !== undefined) localStorage.setItem(`${targetEmail}_mainBalance`, JSON.stringify(mainBalance));
         if (taskRewardsBalance !== undefined) localStorage.setItem(`${targetEmail}_taskRewardsBalance`, JSON.stringify(taskRewardsBalance));
         if (interestEarningsBalance !== undefined) localStorage.setItem(`${targetEmail}_interestEarningsBalance`, JSON.stringify(interestEarningsBalance));
@@ -234,18 +234,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             user.email === email ? { ...user, ...userData } : user
         ));
         
-        // If the currently logged-in user is being updated, update their session data too
         if (currentUser?.email === email) {
             setCurrentUser(prev => prev ? { ...prev, ...userData } : null);
         }
     };
 
     const deleteUser = (email: string, isSelfDelete: boolean = false) => {
-        // Prevent deleting the main admin account
         if (email === initialAdminUser.email) {
             return;
         }
-        // If it's a self-delete, the password has already been verified in the component.
         setUsers(prevUsers => prevUsers.filter(user => user.email !== email));
     };
 
@@ -255,10 +252,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setCurrentUser(prev => prev ? { ...prev, status } : null);
         }
     }
+    
+    const activateUserAccount = (email: string) => {
+        setUsers(prev => prev.map(u => u.email === email ? { ...u, isAccountActive: true, status: 'active' } : u));
+        if (currentUser?.email === email) {
+            setCurrentUser(prev => prev ? { ...prev, isAccountActive: true, status: 'active' } : null);
+        }
+    }
 
 
     return (
-        <AuthContext.Provider value={{ currentUser, users, login, signup, logout, updateUser, deleteUser, updateUserStatus }}>
+        <AuthContext.Provider value={{ currentUser, users, login, signup, logout, updateUser, deleteUser, updateUserStatus, activateUserAccount }}>
             {children}
         </AuthContext.Provider>
     );
