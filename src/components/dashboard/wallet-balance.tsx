@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState } from "react";
@@ -30,8 +29,10 @@ interface WalletBalanceProps {
 export function WalletBalance({ title, description, balance = "0.00", onMoveToMain, showMoveToOther = false, accentColor = "bg-primary" }: WalletBalanceProps) {
   const [moveAmount, setMoveAmount] = useState("");
   const { toast } = useToast();
-  const { handleMoveFunds } = useWallet();
+  const { handleMoveFunds, isFundMovementLocked } = useWallet();
   const canMove = parseFloat(balance) > 0;
+  
+  const isLocked = isFundMovementLocked(title === "Task Rewards" ? 'task' : 'interest');
 
   const handleMoveClick = () => {
     if (!onMoveToMain) return;
@@ -105,7 +106,7 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
               className="h-7 text-xs"
               value={moveAmount}
               onChange={(e) => setMoveAmount(e.target.value)}
-              disabled={!canMove}
+              disabled={!canMove || isLocked}
             />
             <div className="flex items-center gap-1 w-full">
             {onMoveToMain && (
@@ -114,7 +115,7 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
                 size="sm" 
                 className="h-7 text-xs flex-1 px-2"
                 onClick={handleMoveClick}
-                disabled={!canMove}
+                disabled={!canMove || isLocked}
                 >
                 <ArrowLeftRight className="mr-1 h-3 w-3" />
                 To Main
@@ -126,13 +127,14 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
               size="sm" 
               className="h-7 text-xs flex-1 px-2"
               onClick={handleMoveToOther}
-              disabled={!canMove}
+              disabled={!canMove || isLocked}
             >
               <ArrowRight className="mr-1 h-3 w-3" />
               To {title === "Task Rewards" ? "Interest" : "Tasks"}
             </Button>
            )}
            </div>
+           {isLocked && <p className="text-xs text-destructive mt-1">Cannot move funds while timer is active.</p>}
           </div>
         </CardFooter>
       )}

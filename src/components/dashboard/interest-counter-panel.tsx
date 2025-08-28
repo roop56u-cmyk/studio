@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -123,7 +122,7 @@ export function InterestCounterPanel({
   }
   
   const isClaimable = timeLeft !== null && timeLeft <= 0;
-  const canStart = !isLoading && balance > 0;
+  const canStart = !isLoading && balance >= minBalanceForLevel1;
 
   return (
     <Card className="relative overflow-hidden flex flex-col">
