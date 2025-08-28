@@ -17,6 +17,7 @@ import { useWallet } from "@/contexts/WalletContext";
 import type { CounterType } from "@/contexts/WalletContext";
 import { Skeleton } from "../ui/skeleton";
 import { cn } from "@/lib/utils";
+import { levels } from "./level-tiers";
 
 interface InterestCounterPanelProps {
   title: string;
@@ -99,6 +100,8 @@ export function InterestCounterPanel({
     claimAndRestartCounter(counterType);
   };
 
+  const minBalanceForLevel1 = levels.find(l => l.level === 1)?.minAmount ?? 100;
+
   if (isLocked) {
     return (
         <Card className="h-full relative overflow-hidden flex flex-col justify-between">
@@ -112,7 +115,7 @@ export function InterestCounterPanel({
             <CardContent className="flex flex-col items-center justify-center text-center pt-0 p-3">
                 <div className="text-lg font-bold">-.--%</div>
                 <p className="text-xs text-muted-foreground pt-1">
-                    Unlock by committing at least $100.
+                    Unlock by committing at least ${minBalanceForLevel1}.
                 </p>
             </CardContent>
         </Card>
@@ -120,6 +123,7 @@ export function InterestCounterPanel({
   }
   
   const isClaimable = timeLeft !== null && timeLeft <= 0;
+  const canStart = !isLoading && balance > 0;
 
   return (
     <Card className="relative overflow-hidden flex flex-col">
@@ -151,7 +155,7 @@ export function InterestCounterPanel({
       </CardContent>
        <CardFooter className="p-3">
           {!isRunning ? (
-            <Button size="sm" onClick={handleStart} className="h-7 text-xs w-full" disabled={isLoading || balance <= 0}>
+            <Button size="sm" onClick={handleStart} className="h-7 text-xs w-full" disabled={!canStart}>
                 <Zap className="mr-1 h-4 w-4" /> Start Earning
             </Button>
             ) : (
@@ -168,6 +172,3 @@ export function InterestCounterPanel({
     </Card>
   );
 }
-
-    
-    
