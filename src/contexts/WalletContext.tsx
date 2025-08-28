@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect, useMemo } from 'react';
@@ -109,13 +108,13 @@ interface WalletContextType {
   transactionHistory: Transaction[];
   multipleAddressesEnabled: boolean;
   // Manual Bonus Claiming
-  claimSignUpBonus: () => boolean;
+  claimSignUpBonus: () => void;
   hasClaimedSignUpBonus: boolean;
   isEligibleForSignUpBonus: boolean;
   signupBonusAmount: number;
   referralBonuses: BonusTier[];
   referralBonusFor: (referralEmail: string) => number;
-  claimReferralBonus: (referralEmail: string) => number | null;
+  claimReferralBonus: (referralEmail: string) => void;
   claimedReferralIds: string[];
 }
 
@@ -277,7 +276,29 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     return dailyEarningPotential / dailyTaskQuota;
   }, [committedBalance, currentRate, dailyTaskQuota, earningModel, currentLevelData]);
 
-  const isEligibleForSignUpBonus = currentUser?.isAccountActive === true && !hasClaimedSignUpBonus;
+  const isEligibleForSignUpBonus = useMemo(() => {
+    if (!currentUser || hasClaimedSignUpBonus) return false;
+    const signupBonusEnabled = getGlobalSetting('system_signup_bonus_enabled', true, true);
+    if (!signupBonusEnabled || currentUser.isBonusDisabled) return false;
+
+    // Check if the user has a first deposit recorded
+    const firstDeposit = getInitialState('firstDepositAmount', 0);
+    return firstDeposit > 0;
+  }, [currentUser, hasClaimedSignUpBonus, getInitialState]);
+
+
+  const signupBonusAmount = useMemo(() => {
+    if (!currentUser) return 0;
+    
+    const firstDeposit = getInitialState('firstDepositAmount', 0);
+    if (firstDeposit === 0) return 0;
+
+    const applicableTiers = signupBonuses
+      .filter(tier => firstDeposit >= tier.minDeposit)
+      .sort((a, b) => b.bonusAmount - a.bonusAmount);
+
+    return applicableTiers.length > 0 ? applicableTiers[0].bonusAmount : 0;
+  }, [currentUser, signupBonuses, getInitialState]);
 
 
   const setPersistentState = useCallback((key: string, value: any) => {
@@ -427,45 +448,51 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
  }, [currentUser]);
 
   const handleMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', amountToMove: number, fromAccount?: 'Task Rewards' | 'Interest Earnings') => {
-    if(!currentUser) return;
+    if (!currentUser) return;
 
     const numericAmount = fromAccount ? amountToMove : parseFloat(amount);
     if (isNaN(numericAmount) || numericAmount <= 0) {
       toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid positive number to move.' });
       return;
     }
-    
-    // Perform the fund transfer
+
+    // Unconditional fund movement
     let newMainBalance = mainBalance;
-    if (fromAccount) { // Moving from earning wallet to main/other earning
-        if (fromAccount === 'Task Rewards') {
-            if (numericAmount > taskRewardsBalance) { throw new Error("Insufficient funds in Task Rewards"); }
-            setTaskRewardsBalance(prev => prev - numericAmount);
-        } else {
-            if (numericAmount > interestEarningsBalance) { throw new Error("Insufficient funds in Interest Earnings"); }
-            setInterestEarningsBalance(prev => prev - numericAmount);
-        }
-        if (destination === 'Main Wallet') newMainBalance += numericAmount;
-    } else { // Moving from main to earning
-        if (numericAmount > mainBalance) { throw new Error("Insufficient funds in Main Wallet"); }
-        newMainBalance -= numericAmount;
+    let fromWalletEmpty = false;
+
+    if (fromAccount) {
+      if (fromAccount === 'Task Rewards') {
+        if (numericAmount > taskRewardsBalance) { toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than the available balance of $${taskRewardsBalance.toFixed(2)}.` }); return; }
+        setTaskRewardsBalance(prev => prev - numericAmount);
+      } else {
+        if (numericAmount > interestEarningsBalance) { toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than the available balance of $${interestEarningsBalance.toFixed(2)}.` }); return; }
+        setInterestEarningsBalance(prev => prev - numericAmount);
+      }
+      if (destination === 'Main Wallet') {
+        newMainBalance += numericAmount;
+      }
+    } else { // From main to earning
+      if (numericAmount > mainBalance) { toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than your main balance of $${mainBalance.toFixed(2)}.` }); return; }
+      newMainBalance -= numericAmount;
     }
     
+    setMainBalance(newMainBalance);
     if (destination === 'Task Rewards') setTaskRewardsBalance(prev => prev + numericAmount);
     if (destination === 'Interest Earnings') setInterestEarningsBalance(prev => prev + numericAmount);
-    setMainBalance(newMainBalance);
 
     toast({ title: "Funds Moved", description: `${numericAmount.toFixed(2)} USDT transfer complete.` });
     setAmount("");
 
-    // Check for account activation
-    if (!currentUser.isAccountActive) {
-      const userFirstDepositKey = `${currentUser.email}_firstDepositAmount`;
-      if (!localStorage.getItem(userFirstDepositKey)) {
-        localStorage.setItem(userFirstDepositKey, JSON.stringify(numericAmount));
-      }
-      activateUserAccount(currentUser.email);
-    }
+    // Post-movement activation check
+    setTimeout(() => {
+        if (!currentUser.isAccountActive) {
+            const userFirstDepositKey = `${currentUser.email}_firstDepositAmount`;
+            if (!localStorage.getItem(userFirstDepositKey)) {
+                localStorage.setItem(userFirstDepositKey, JSON.stringify(numericAmount));
+            }
+            activateUserAccount(currentUser.email);
+        }
+    }, 100);
   };
 
   const approveRecharge = (userEmail: string, rechargeAmount: number) => {
@@ -487,18 +514,32 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     // Add referral bonus to referrer
     if (userToUpdate?.referredBy) {
       const referrer = users.find(u => u.referralCode === userToUpdate.referredBy);
-      if (referrer) {
-        const bonusAmount = referralBonusFor(userEmail, rechargeAmount);
-        if (bonusAmount > 0) {
-          const referrerBalanceKey = `${referrer.email}_mainBalance`;
-          const currentReferrerBalance = parseFloat(localStorage.getItem(referrerBalanceKey) || '0');
-          localStorage.setItem(referrerBalanceKey, (currentReferrerBalance + bonusAmount).toString());
-          addTransaction(referrer.email, {
-            type: "Referral Bonus",
-            description: `Bonus for referral: ${userEmail}`,
-            amount: bonusAmount,
-            date: new Date().toISOString()
-          });
+      const referralBonusEnabled = getGlobalSetting('system_referral_bonus_enabled', true, true);
+      if (referrer && referralBonusEnabled) {
+          // Temporarily use state for calculation, as localStorage is not immediate
+          const tempReferralBonuses = getGlobalSetting('system_referral_bonuses', [], true);
+
+          const applicableTiers = tempReferralBonuses
+            .filter((tier: BonusTier) => rechargeAmount >= tier.minDeposit)
+            .sort((a: BonusTier, b: BonusTier) => b.bonusAmount - a.bonusAmount);
+          
+          const bonusAmount = applicableTiers.length > 0 ? applicableTiers[0].bonusAmount : 0;
+        
+          if (bonusAmount > 0) {
+            const referrerBalanceKey = `${referrer.email}_mainBalance`;
+            const currentReferrerBalance = parseFloat(localStorage.getItem(referrerBalanceKey) || '0');
+            localStorage.setItem(referrerBalanceKey, (currentReferrerBalance + bonusAmount).toString());
+            addTransaction(referrer.email, {
+              type: "Referral Bonus",
+              description: `Bonus for referral: ${userEmail}`,
+              amount: bonusAmount,
+              date: new Date().toISOString()
+            });
+
+            // If the admin is the referrer, update their state
+            if(currentUser?.email === referrer.email) {
+                setMainBalance(prev => prev + bonusAmount);
+            }
         }
       }
     }
@@ -606,7 +647,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         return interestCounter.isRunning;
       }
       if (type === 'task') {
-        return tasksCompletedToday > 0 && tasksCompletedToday < dailyTaskQuota;
+        return tasksCompletedToday > 0;
       }
       return false;
   }
@@ -721,22 +762,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     return true;
   };
   
-  const signupBonusAmount = useMemo(() => {
-    if (!isEligibleForSignUpBonus || !currentUser) return 0;
-    
-    const firstDeposit = getInitialState('firstDepositAmount', 0);
-    if (firstDeposit === 0) return 0;
-
-    const applicableTiers = signupBonuses
-      .filter(tier => firstDeposit >= tier.minDeposit)
-      .sort((a, b) => b.bonusAmount - a.bonusAmount);
-
-    return applicableTiers.length > 0 ? applicableTiers[0].bonusAmount : 0;
-  }, [isEligibleForSignUpBonus, currentUser, signupBonuses, getInitialState]);
-
-
-  const claimSignUpBonus = (): boolean => {
-    if (!isEligibleForSignUpBonus || !currentUser || signupBonusAmount === 0) return false;
+  const claimSignUpBonus = () => {
+    if (!isEligibleForSignUpBonus || !currentUser || signupBonusAmount <= 0) return;
     
     setMainBalance(prev => prev + signupBonusAmount);
     addTransaction(currentUser.email, {
@@ -746,12 +773,18 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       date: new Date().toISOString()
     });
     setHasClaimedSignUpBonus(true);
-    return true;
+    toast({
+        title: "Sign-up Bonus Claimed!",
+        description: `The reward of $${signupBonusAmount.toFixed(2)} has been added to your main wallet.`,
+    });
   };
   
-  const referralBonusFor = useCallback((referralEmail: string, depositAmount?: number): number => {
-    const firstDeposit = depositAmount ?? parseFloat(localStorage.getItem(`${referralEmail}_firstDepositAmount`) || '0');
+  const referralBonusFor = useCallback((referralEmail: string): number => {
+    const firstDeposit = parseFloat(localStorage.getItem(`${referralEmail}_firstDepositAmount`) || '0');
     if (firstDeposit === 0) return 0;
+    
+    const referralBonusEnabled = getGlobalSetting('system_referral_bonus_enabled', true, true);
+    if (!referralBonusEnabled) return 0;
 
     const applicableTiers = referralBonuses
         .filter(tier => firstDeposit >= tier.minDeposit)
@@ -760,14 +793,14 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     return applicableTiers.length > 0 ? applicableTiers[0].bonusAmount : 0;
   }, [referralBonuses]);
   
-  const claimReferralBonus = (referralEmail: string): number | null => {
-    if (!currentUser || claimedReferralIds.includes(referralEmail)) return null;
+  const claimReferralBonus = (referralEmail: string) => {
+    if (!currentUser || claimedReferralIds.includes(referralEmail)) return;
 
     const referral = users.find(u => u.email === referralEmail);
-    if (!referral || !referral.isAccountActive) return null;
+    if (!referral || !referral.isAccountActive) return;
     
     const bonusAmount = referralBonusFor(referralEmail);
-    if (bonusAmount <= 0) return null;
+    if (bonusAmount <= 0) return;
 
     setMainBalance(prev => prev + bonusAmount);
      addTransaction(currentUser.email, {
@@ -777,7 +810,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       date: new Date().toISOString()
     });
     setClaimedReferralIds(prev => [...prev, referralEmail]);
-    return bonusAmount;
+    toast({
+        title: "Referral Bonus Claimed!",
+        description: `Reward of $${bonusAmount.toFixed(2)} for referring ${referralEmail} has been credited.`,
+    });
   };
   
   const getReferralCommissionBoost = () => {
@@ -860,3 +896,5 @@ export const useWallet = () => {
   }
   return context;
 };
+
+    
