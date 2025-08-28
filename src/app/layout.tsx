@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import './globals.css';
@@ -48,15 +49,15 @@ export default function RootLayout({
       </head>
       <body className={cn("font-body antialiased", theme)}>
         <AuthProvider>
-          <WalletProvider>
-            <RequestProvider>
+          <RequestProvider>
+            <WalletProvider>
                 <TeamProvider>
                     <InboxProvider>
                         {children}
                     </InboxProvider>
                 </TeamProvider>
-            </RequestProvider>
-          </WalletProvider>
+            </WalletProvider>
+          </RequestProvider>
         </AuthProvider>
         <Toaster />
       </body>

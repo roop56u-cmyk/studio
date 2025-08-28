@@ -4,7 +4,6 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { useWallet } from './WalletContext';
 import { useToast } from '@/hooks/use-toast';
 
 export type Request = {
@@ -22,9 +21,16 @@ export type Request = {
     date: string;
 };
 
+type WalletData = {
+    balance: number;
+    level: number;
+    deposits: number;
+    withdrawals: number;
+    referrals: number;
+}
 interface RequestContextType {
   requests: Request[];
-  addRequest: (request: Partial<Omit<Request, 'id' | 'date' | 'status' | 'user'>>) => void;
+  addRequest: (requestData: Partial<Omit<Request, 'id' | 'date' | 'status' | 'user'>>, walletData: WalletData) => void;
   updateRequestStatus: (id: string, status: 'Approved' | 'Declined' | 'On Hold', userEmail: string, type: Request['type'], amount: number) => void;
   userRequests: Request[];
 }
@@ -78,7 +84,6 @@ const RequestContext = createContext<RequestContextType | undefined>(undefined);
 
 export const RequestProvider = ({ children }: { children: ReactNode }) => {
   const { currentUser, users } = useAuth();
-  const { getWalletData, approveRecharge, refundWithdrawal, approveWithdrawal, addTransaction } = useWallet();
   const { toast } = useToast();
 
   const [requests, setRequests] = useState<Request[]>(() => {
@@ -118,72 +123,29 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
   }, [currentUser, requests]);
 
 
-  const addRequest = (requestData: Partial<Omit<Request, 'id' | 'date' | 'status' | 'user'>>) => {
+  const addRequest = (requestData: Partial<Omit<Request, 'id' | 'date' | 'status' | 'user'>>, walletData: WalletData) => {
     if (!currentUser) {
         console.error("Cannot add request: no user logged in.");
         return;
     }
     
-    const referralCount = users.filter(u => u.referredBy === currentUser.referralCode).length;
-
     const newRequest: Request = {
-        ...getWalletData(), // Gets balance, level, deposits, withdrawals
         id: `REQ-${Date.now()}`,
         date: new Date().toISOString(),
         status: 'Pending',
         user: currentUser.email,
         type: requestData.type!,
         amount: requestData.amount!,
-        address: requestData.address,
-        referrals: referralCount,
+        address: requestData.address ?? null,
+        ...walletData
     };
 
     setRequests(prev => [newRequest, ...prev]);
-
-    // Log pending request to user's transaction history
-     addTransaction(currentUser.email, {
-        type: newRequest.type,
-        description: `${newRequest.type} request submitted`,
-        amount: newRequest.type === 'Recharge' ? newRequest.amount : -newRequest.amount,
-        date: newRequest.date,
-    });
   };
 
   const updateRequestStatus = (id: string, status: 'Approved' | 'Declined' | 'On Hold', userEmail: string, type: Request['type'], amount: number) => {
+    // This function now only updates the request status. All balance logic is handled in WalletContext.
     setRequests(prev => prev.map(req => req.id === id ? { ...req, status } : req));
-    
-    const handleBonusCredit = (bonusType: 'Team Reward' | 'Team Size Reward' | 'Sign-up Bonus' | 'Referral Bonus') => {
-        const userMainBalanceKey = `${userEmail}_mainBalance`;
-        const currentBalance = parseFloat(localStorage.getItem(userMainBalanceKey) || '0');
-        localStorage.setItem(userMainBalanceKey, (currentBalance + amount).toString());
-        addTransaction(userEmail, {
-          type: bonusType,
-          description: `${bonusType} bonus approved`,
-          amount: amount,
-          date: new Date().toISOString(),
-        });
-    };
-
-    if (status === 'Approved') {
-      if (type === 'Recharge') {
-        approveRecharge(userEmail, amount);
-      } else if (type === 'Withdrawal') {
-        approveWithdrawal(userEmail);
-      } else if (type === 'Team Reward' || type === 'Team Size Reward' || type === 'Sign-up Bonus' || type === 'Referral Bonus') {
-        handleBonusCredit(type);
-      }
-    } else if (status === 'Declined') {
-       if (type === 'Withdrawal') {
-         refundWithdrawal(userEmail, amount);
-       } else if (type === 'Recharge' || type === 'Team Reward' || type === 'Team Size Reward' || type === 'Sign-up Bonus' || type === 'Referral Bonus') {
-          addTransaction(userEmail, {
-            type: type,
-            description: `${type} request declined`,
-            amount: 0,
-            date: new Date().toISOString()
-          });
-       }
-    }
   };
 
 

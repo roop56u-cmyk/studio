@@ -23,7 +23,7 @@ import { useRequests } from "@/contexts/RequestContext";
 export function RewardsPanel() {
     const { toast } = useToast();
     const { currentUser, users } = useAuth();
-    const { addRequest } = useRequests();
+    const { addRequest, userRequests } = useRequests();
     const { 
         claimSignUpBonus, 
         hasClaimedSignUpBonus, 
@@ -51,6 +51,8 @@ export function RewardsPanel() {
         if (!currentUser) return [];
         return users.filter(u => u.referredBy === currentUser.referralCode);
     }, [currentUser, users]);
+
+    const hasPendingSignUpBonus = userRequests.some(req => req.type === 'Sign-up Bonus' && req.status === 'Pending');
 
     const handleClaimSignUp = () => {
         if (isSignupApprovalRequired) {
@@ -114,11 +116,12 @@ export function RewardsPanel() {
                 </CardContent>
                 <CardFooter className="flex justify-between items-center">
                     <p className="text-lg font-bold text-primary">${signupBonusAmount.toFixed(2)}</p>
-                    <Button onClick={handleClaimSignUp} disabled={!isEligibleForSignUpBonus || hasClaimedSignUpBonus || signupBonusAmount === 0}>
+                    <Button onClick={handleClaimSignUp} disabled={!isEligibleForSignUpBonus || hasClaimedSignUpBonus || hasPendingSignUpBonus || signupBonusAmount === 0}>
                         {hasClaimedSignUpBonus ? (
                             <>
                                 <CheckCircle className="mr-2 h-4 w-4" /> Claimed
                             </>
+                        ) : hasPendingSignUpBonus ? ( "Pending Approval"
                         ) : !isEligibleForSignUpBonus ? "Not Eligible" : "Claim Now"}
                     </Button>
                 </CardFooter>
@@ -140,8 +143,9 @@ export function RewardsPanel() {
                 <CardContent className="space-y-4">
                      {directReferrals.length > 0 ? directReferrals.map((referral, index) => {
                          const isClaimed = claimedReferralIds.includes(referral.email);
+                         const hasPending = userRequests.some(req => req.type === 'Referral Bonus' && req.address === referral.email && req.status === 'Pending');
                          const bonusAmount = referralBonusFor(referral.email);
-                         const isClaimable = referral.isAccountActive && !isClaimed && bonusAmount > 0;
+                         const isClaimable = referral.isAccountActive && !isClaimed && !hasPending && bonusAmount > 0;
 
                          return (
                             <React.Fragment key={referral.email}>
@@ -155,7 +159,7 @@ export function RewardsPanel() {
                                     <div className="flex items-center gap-2">
                                         <p className="text-md font-bold text-primary">${bonusAmount.toFixed(2)}</p>
                                         <Button size="sm" onClick={() => handleClaimReferral(referral.email)} disabled={!isClaimable}>
-                                           {isClaimed ? 'Claimed' : 'Claim'}
+                                           {isClaimed ? 'Claimed' : hasPending ? 'Pending' : 'Claim'}
                                         </Button>
                                     </div>
                                 </div>
