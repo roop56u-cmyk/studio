@@ -24,10 +24,9 @@ type RequestStatus = 'Pending' | 'Approved' | 'Declined' | 'On Hold';
 type RequestType = 'Finance' | 'Rewards';
 
 export function AdminProfile() {
-    const { toast } = useToast();
-    const { requests, updateRequestStatus } = useRequests();
+    const { requests } = useRequests();
+    const { updateRequestStatus } = useWallet();
     const { users } = useAuth();
-    const { approveRecharge, approveWithdrawal, refundWithdrawal } = useWallet();
     const [isClient, setIsClient] = React.useState(false);
     const [activeTab, setActiveTab] = useState<RequestType>('Finance');
     const [activeStatus, setActiveStatus] = useState<RequestStatus | 'All'>('Pending');
@@ -40,23 +39,7 @@ export function AdminProfile() {
         const request = requests.find(r => r.id === requestId);
         if (!request) return;
 
-        if (action === 'Approved') {
-            if(request.type === 'Recharge') {
-                approveRecharge(request.user, request.amount);
-            } else if (request.type === 'Withdrawal') {
-                approveWithdrawal(request.user);
-            }
-        } else if (action === 'Declined') {
-             if (request.type === 'Withdrawal') {
-                refundWithdrawal(request.user, request.amount);
-            }
-        }
-
-        updateRequestStatus(requestId, action, request.user, request.type, request.amount);
-        toast({
-            title: `Request ${action}`,
-            description: `Request ID ${requestId} has been marked as ${action.toLowerCase()}.`,
-        });
+        updateRequestStatus(requestId, action, request.user, request.type, request.amount, request.address);
     };
 
     const getSavedWithdrawalAddress = useCallback((userEmail: string) => {

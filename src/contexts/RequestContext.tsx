@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
@@ -31,8 +30,8 @@ type WalletData = {
 interface RequestContextType {
   requests: Request[];
   addRequest: (requestData: Partial<Omit<Request, 'id' | 'date' | 'status' | 'user'>>, walletData: WalletData) => void;
-  updateRequestStatus: (id: string, status: 'Approved' | 'Declined' | 'On Hold', userEmail: string, type: Request['type'], amount: number) => void;
   userRequests: Request[];
+  setRequests: React.Dispatch<React.SetStateAction<Request[]>>;
 }
 
 const mockRequests: Request[] = [
@@ -83,8 +82,7 @@ const mockRequests: Request[] = [
 const RequestContext = createContext<RequestContextType | undefined>(undefined);
 
 export const RequestProvider = ({ children }: { children: ReactNode }) => {
-  const { currentUser, users } = useAuth();
-  const { toast } = useToast();
+  const { currentUser } = useAuth();
 
   const [requests, setRequests] = useState<Request[]>(() => {
     if (typeof window === 'undefined') {
@@ -143,19 +141,14 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
     setRequests(prev => [newRequest, ...prev]);
   };
 
-  const updateRequestStatus = (id: string, status: 'Approved' | 'Declined' | 'On Hold', userEmail: string, type: Request['type'], amount: number) => {
-    // This function now only updates the request status. All balance logic is handled in WalletContext.
-    setRequests(prev => prev.map(req => req.id === id ? { ...req, status } : req));
-  };
-
 
   return (
     <RequestContext.Provider
       value={{
         requests,
         addRequest,
-        updateRequestStatus,
         userRequests,
+        setRequests
       }}
     >
       {children}
