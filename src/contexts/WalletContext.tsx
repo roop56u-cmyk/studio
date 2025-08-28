@@ -151,20 +151,21 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [isReferralApprovalRequired, setIsReferralApprovalRequired] = useState(false);
 
 
-  const getInitialState = useCallback((key: string, defaultValue: any) => {
-    if (typeof window === 'undefined' || !currentUser) {
+  const getInitialState = (key: string, defaultValue: any, userEmail?: string) => {
+    const targetEmail = userEmail || currentUser?.email;
+    if (typeof window === 'undefined' || !targetEmail) {
       return defaultValue;
     }
     try {
-      const storedValue = localStorage.getItem(`${currentUser.email}_${key}`);
+      const storedValue = localStorage.getItem(`${targetEmail}_${key}`);
       if (storedValue) {
         return JSON.parse(storedValue);
       }
     } catch (error) {
-      console.error(`Failed to parse ${key} from localStorage`, error);
+      console.error(`Failed to parse ${key} from localStorage for ${targetEmail}`, error);
     }
     return defaultValue;
-  }, [currentUser]);
+  };
   
   const getGlobalSetting = (key: string, defaultValue: any, isJson: boolean = false) => {
      if (typeof window === 'undefined') {
@@ -184,24 +185,23 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     return defaultValue;
   };
 
-  const [mainBalance, setMainBalance] = useState(() => getInitialState('mainBalance', 0));
-  const [taskRewardsBalance, setTaskRewardsBalance] = useState(() => getInitialState('taskRewardsBalance', 0));
-  const [interestEarningsBalance, setInterestEarningsBalance] = useState(() => getInitialState('interestEarningsBalance', 0));
-  const [deposits, setDeposits] = useState(() => getInitialState('deposits', 0));
-  const [withdrawals, setWithdrawals] = useState(() => getInitialState('withdrawals', 0));
-  const [transactionHistory, setTransactionHistory] = useState<Transaction[]>(() => getInitialState('transactionHistory', []));
-  const [interestCounter, setInterestCounter] = useState<CounterState>(() => getInitialState('interestCounter', { isRunning: false, startTime: null }));
-  const [tasksCompletedToday, setTasksCompletedToday] = useState(() => getInitialState('tasksCompletedToday', 0));
-  const [lastTaskCompletionDate, setLastTaskCompletionDate] = useState(() => getInitialState('lastTaskCompletionDate', ''));
-  const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>(() => getInitialState('completedTasks', []));
-  const [withdrawalAddresses, setWithdrawalAddresses] = useState<WithdrawalAddress[]>(() => getInitialState('withdrawalAddresses', []));
-  const [monthlyWithdrawalsCount, setMonthlyWithdrawalsCount] = useState(() => getInitialState('monthlyWithdrawalsCount', 0));
-  const [lastWithdrawalMonth, setLastWithdrawalMonth] = useState(() => getInitialState('lastWithdrawalMonth', -1));
-  const [activeBoosters, setActiveBoosters] = useState<ActiveBooster[]>(() => getInitialState('activeBoosters', []));
-  const [purchasedBoosterIds, setPurchasedBoosterIds] = useState<string[]>(() => getInitialState('purchasedBoosterIds', []));
-  const [purchasedReferralsCount, setPurchasedReferralsCount] = useState<number>(() => getInitialState('purchased_referrals', 0));
-  const [hasClaimedSignUpBonus, setHasClaimedSignUpBonus] = useState<boolean>(() => getInitialState('hasClaimedSignUpBonus', false));
-  const [claimedReferralIds, setClaimedReferralIds] = useState<string[]>(() => getInitialState('claimedReferralIds', []));
+  const [mainBalance, setMainBalance] = useState(0);
+  const [taskRewardsBalance, setTaskRewardsBalance] = useState(0);
+  const [interestEarningsBalance, setInterestEarningsBalance] = useState(0);
+  const [deposits, setDeposits] = useState(0);
+  const [withdrawals, setWithdrawals] = useState(0);
+  const [transactionHistory, setTransactionHistory] = useState<Transaction[]>([]);
+  const [interestCounter, setInterestCounter] = useState<CounterState>({ isRunning: false, startTime: null });
+  const [tasksCompletedToday, setTasksCompletedToday] = useState(0);
+  const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>([]);
+  const [withdrawalAddresses, setWithdrawalAddresses] = useState<WithdrawalAddress[]>([]);
+  const [monthlyWithdrawalsCount, setMonthlyWithdrawalsCount] = useState(0);
+  const [lastWithdrawalMonth, setLastWithdrawalMonth] = useState(-1);
+  const [activeBoosters, setActiveBoosters] = useState<ActiveBooster[]>([]);
+  const [purchasedBoosterIds, setPurchasedBoosterIds] = useState<string[]>([]);
+  const [purchasedReferralsCount, setPurchasedReferralsCount] = useState<number>(0);
+  const [hasClaimedSignUpBonus, setHasClaimedSignUpBonus] = useState<boolean>(false);
+  const [claimedReferralIds, setClaimedReferralIds] = useState<string[]>([]);
 
   
   const taskQuotaBoost = activeBoosters.find(b => b.type === 'TASK_QUOTA')?.value || 0;
@@ -285,8 +285,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const signupBonusEnabled = getGlobalSetting('system_signup_bonus_enabled', true, true);
     if (!signupBonusEnabled || currentUser.isBonusDisabled) return false;
 
-    // Check if the user has a first deposit recorded
-    const firstDeposit = getInitialState('firstDepositAmount', 0);
+    const firstDeposit = getInitialState('firstDepositAmount');
     return firstDeposit > 0;
   }, [currentUser, getInitialState]);
 
@@ -343,6 +342,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     setIsLoading(true);
+    
+    // Global settings
     setIsWithdrawalRestrictionEnabled(getGlobalSetting('system_withdrawal_restriction_enabled', true, true));
     setWithdrawalRestrictionDays(parseInt(getGlobalSetting('system_withdrawal_restriction_days', '45'), 10));
     setConfiguredLevels(getGlobalSetting('platform_levels', defaultLevels, true));
@@ -353,7 +354,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setIsSignupApprovalRequired(getGlobalSetting('system_signup_bonus_approval_required', false, true));
     setIsReferralApprovalRequired(getGlobalSetting('system_referral_bonus_approval_required', false, true));
 
-
+    // User-specific data
     if (currentUser) {
         const now = new Date();
         const IST_OFFSET = 5.5 * 60 * 60 * 1000;
@@ -420,26 +421,26 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setClaimedReferralIds([]);
     }
     setIsLoading(false);
-  }, [currentUser, setPersistentState, getInitialState]);
+  }, [currentUser]);
 
 
-  useEffect(() => setPersistentState('mainBalance', mainBalance), [mainBalance, setPersistentState]);
-  useEffect(() => setPersistentState('taskRewardsBalance', taskRewardsBalance), [taskRewardsBalance, setPersistentState]);
-  useEffect(() => setPersistentState('interestEarningsBalance', interestEarningsBalance), [interestEarningsBalance, setPersistentState]);
-  useEffect(() => setPersistentState('deposits', deposits), [deposits, setPersistentState]);
-  useEffect(() => setPersistentState('withdrawals', withdrawals), [withdrawals, setPersistentState]);
-  useEffect(() => setPersistentState('transactionHistory', transactionHistory), [transactionHistory, setPersistentState]);
-  useEffect(() => setPersistentState('interestCounter', interestCounter), [interestCounter, setPersistentState]);
-  useEffect(() => setPersistentState('tasksCompletedToday', tasksCompletedToday), [tasksCompletedToday, setPersistentState]);
-  useEffect(() => setPersistentState('completedTasks', completedTasks), [completedTasks, setPersistentState]);
-  useEffect(() => setPersistentState('withdrawalAddresses', withdrawalAddresses), [withdrawalAddresses, setPersistentState]);
-  useEffect(() => setPersistentState('monthlyWithdrawalsCount', monthlyWithdrawalsCount), [monthlyWithdrawalsCount, setPersistentState]);
-  useEffect(() => setPersistentState('lastWithdrawalMonth', lastWithdrawalMonth), [lastWithdrawalMonth, setPersistentState]);
-  useEffect(() => setPersistentState('activeBoosters', activeBoosters), [activeBoosters, setPersistentState]);
-  useEffect(() => setPersistentState('purchasedBoosterIds', purchasedBoosterIds), [purchasedBoosterIds, setPersistentState]);
-  useEffect(() => setPersistentState('purchased_referrals', purchasedReferralsCount), [purchasedReferralsCount, setPersistentState]);
-  useEffect(() => setPersistentState('hasClaimedSignUpBonus', hasClaimedSignUpBonus), [hasClaimedSignUpBonus, setPersistentState]);
-  useEffect(() => setPersistentState('claimedReferralIds', claimedReferralIds), [claimedReferralIds, setPersistentState]);
+  useEffect(() => { if (!isLoading) setPersistentState('mainBalance', mainBalance)}, [mainBalance, isLoading, setPersistentState]);
+  useEffect(() => { if (!isLoading) setPersistentState('taskRewardsBalance', taskRewardsBalance)}, [taskRewardsBalance, isLoading, setPersistentState]);
+  useEffect(() => { if (!isLoading) setPersistentState('interestEarningsBalance', interestEarningsBalance)}, [interestEarningsBalance, isLoading, setPersistentState]);
+  useEffect(() => { if (!isLoading) setPersistentState('deposits', deposits)}, [deposits, isLoading, setPersistentState]);
+  useEffect(() => { if (!isLoading) setPersistentState('withdrawals', withdrawals)}, [withdrawals, isLoading, setPersistentState]);
+  useEffect(() => { if (!isLoading) setPersistentState('transactionHistory', transactionHistory)}, [transactionHistory, isLoading, setPersistentState]);
+  useEffect(() => { if (!isLoading) setPersistentState('interestCounter', interestCounter)}, [interestCounter, isLoading, setPersistentState]);
+  useEffect(() => { if (!isLoading) setPersistentState('tasksCompletedToday', tasksCompletedToday)}, [tasksCompletedToday, isLoading, setPersistentState]);
+  useEffect(() => { if (!isLoading) setPersistentState('completedTasks', completedTasks)}, [completedTasks, isLoading, setPersistentState]);
+  useEffect(() => { if (!isLoading) setPersistentState('withdrawalAddresses', withdrawalAddresses)}, [withdrawalAddresses, isLoading, setPersistentState]);
+  useEffect(() => { if (!isLoading) setPersistentState('monthlyWithdrawalsCount', monthlyWithdrawalsCount)}, [monthlyWithdrawalsCount, isLoading, setPersistentState]);
+  useEffect(() => { if (!isLoading) setPersistentState('lastWithdrawalMonth', lastWithdrawalMonth)}, [lastWithdrawalMonth, isLoading, setPersistentState]);
+  useEffect(() => { if (!isLoading) setPersistentState('activeBoosters', activeBoosters)}, [activeBoosters, isLoading, setPersistentState]);
+  useEffect(() => { if (!isLoading) setPersistentState('purchasedBoosterIds', purchasedBoosterIds)}, [purchasedBoosterIds, isLoading, setPersistentState]);
+  useEffect(() => { if (!isLoading) setPersistentState('purchased_referrals', purchasedReferralsCount)}, [purchasedReferralsCount, isLoading, setPersistentState]);
+  useEffect(() => { if (!isLoading) setPersistentState('hasClaimedSignUpBonus', hasClaimedSignUpBonus)}, [hasClaimedSignUpBonus, isLoading, setPersistentState]);
+  useEffect(() => { if (!isLoading) setPersistentState('claimedReferralIds', claimedReferralIds)}, [claimedReferralIds, isLoading, setPersistentState]);
 
  const addTransaction = useCallback((userEmail: string, transaction: Omit<Transaction, 'id'>) => {
     const newTransaction: Transaction = {
@@ -619,13 +620,15 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         type: 'Withdrawal',
         amount: withdrawalAmount,
         address: withdrawalAddress,
+    }
+    const walletData = {
         balance: mainBalance - withdrawalAmount, // Pass updated balance
         level: currentLevel,
         deposits: deposits,
         withdrawals: withdrawals,
         referrals: directReferralsCount,
     }
-    addRequest(requestData);
+    addRequest(requestData, walletData);
   }
 
   const approveWithdrawal = (userEmail: string) => {
@@ -810,15 +813,14 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     if (bonus <= 0) return;
 
     if (isSignupApprovalRequired) {
-        addRequest({ 
-            type: 'Sign-up Bonus', 
-            amount: bonus,
+        const walletData = {
             balance: mainBalance,
             level: currentLevel,
             deposits: deposits,
             withdrawals: withdrawals,
             referrals: directReferralsCount,
-        });
+        }
+        addRequest({ type: 'Sign-up Bonus', amount: bonus }, walletData);
         toast({
             title: "Sign-up Bonus Claim Submitted!",
             description: `Your claim for $${bonus.toFixed(2)} is pending admin approval.`
@@ -840,7 +842,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   };
   
   const referralBonusFor = useCallback((referralEmail: string): number => {
-    const firstDeposit = parseFloat(localStorage.getItem(`${referralEmail}_firstDepositAmount`) || '0');
+    const firstDeposit = parseFloat(getInitialState('firstDepositAmount', 0, referralEmail));
     if (firstDeposit === 0) return 0;
     
     const referralBonusEnabled = getGlobalSetting('system_referral_bonus_enabled', true, true);
@@ -851,7 +853,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         .sort((a, b) => b.bonusAmount - a.bonusAmount);
 
     return applicableTiers.length > 0 ? applicableTiers[0].bonusAmount : 0;
-  }, [referralBonuses]);
+  }, [referralBonuses, getInitialState]);
   
   const claimReferralBonus = (referralEmail: string) => {
     if (!currentUser || claimedReferralIds.includes(referralEmail) || userRequests.some(req => req.type === 'Referral Bonus' && req.address === referralEmail && req.status === 'Pending')) return;
@@ -863,16 +865,18 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     if (bonusAmount <= 0) return;
 
     if(isReferralApprovalRequired) {
-        addRequest({ 
-            type: 'Referral Bonus', 
-            amount: bonusAmount, 
-            address: referralEmail,
+        const walletData = {
             balance: mainBalance,
             level: currentLevel,
             deposits: deposits,
             withdrawals: withdrawals,
             referrals: directReferralsCount,
-        });
+        }
+        addRequest({ 
+            type: 'Referral Bonus', 
+            amount: bonusAmount, 
+            address: referralEmail,
+        }, walletData);
         toast({
             title: "Referral Bonus Claim Submitted!",
             description: `Your claim for referring ${referralEmail} is pending admin approval.`
