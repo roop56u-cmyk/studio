@@ -93,6 +93,7 @@ import { InboxPanel } from "@/components/dashboard/inbox-panel";
 import { BoosterStorePanel } from "@/components/dashboard/booster-store-panel";
 import { QuestPanel } from "@/components/dashboard/quest-panel";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Admin Panel Imports
 import UserManagementPage from "./admin/users/page";
@@ -161,7 +162,10 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
     amount, 
     setAmount, 
     handleMoveFunds,
-    isLoading
+    isLoading,
+    isFundMovementLocked,
+    tasksCompletedToday,
+    dailyTaskQuota
   } = useWallet();
   const [isClient, setIsClient] = React.useState(false);
 
@@ -171,6 +175,23 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
   
   const isAdmin = currentUser?.isAdmin;
   const isMainAdminPage = pathname === "/dashboard/admin";
+  
+  const isMoveToTaskLocked = isFundMovementLocked('task');
+  const isMoveToInterestLocked = isFundMovementLocked('interest');
+  
+  const moveFundsDisabled = isMoveToTaskLocked || isMoveToInterestLocked;
+  
+  const getMoveFundsTooltip = () => {
+    if (isMoveToTaskLocked) {
+      return "Cannot add funds while tasks are active.";
+    }
+    if (isMoveToInterestLocked) {
+      return "Cannot add funds while interest timer is active.";
+    }
+    return null;
+  }
+
+  const moveFundsTooltipContent = getMoveFundsTooltip();
 
   return (
     <SidebarContent>
@@ -389,24 +410,64 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
                             )}
                             <div className="space-y-2">
                                 <Label htmlFor="move-amount">Amount (USDT)</Label>
-                                <Input 
-                                    id="move-amount"
-                                    type="number"
-                                    placeholder="e.g., 50.00"
-                                    value={amount}
-                                    onChange={(e) => setAmount(e.target.value)}
-                                    disabled={isLoading}
-                                />
+                                 <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                        <div className="relative">
+                                            <Input 
+                                                id="move-amount"
+                                                type="number"
+                                                placeholder="e.g., 50.00"
+                                                value={amount}
+                                                onChange={(e) => setAmount(e.target.value)}
+                                                disabled={isLoading || moveFundsDisabled}
+                                            />
+                                            {moveFundsDisabled && <div className="absolute inset-0 cursor-not-allowed" />}
+                                        </div>
+                                        </TooltipTrigger>
+                                        {moveFundsTooltipContent && (
+                                            <TooltipContent>
+                                                <p>{moveFundsTooltipContent}</p>
+                                            </TooltipContent>
+                                        )}
+                                    </Tooltip>
+                                </TooltipProvider>
                             </div>
                             <div className="grid grid-cols-1 gap-2">
-                                <Button variant="outline" size="sm" className="justify-start gap-2" onClick={() => handleMoveFunds("Task Rewards", 0)} disabled={isLoading}>
-                                    <Gift className="h-4 w-4 text-primary" />
-                                    <span>Move to Task Rewards</span>
-                                </Button>
-                                <Button variant="outline" size="sm" className="justify-start gap-2" onClick={() => handleMoveFunds("Interest Earnings", 0)} disabled={isLoading}>
-                                    <TrendingUp className="h-4 w-4 text-accent" />
-                                    <span>Move to Interest</span>
-                                </Button>
+                               <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <div>
+                                                <Button variant="outline" size="sm" className="justify-start gap-2 w-full" onClick={() => handleMoveFunds("Task Rewards", 0)} disabled={isLoading || moveFundsDisabled}>
+                                                    <Gift className="h-4 w-4 text-primary" />
+                                                    <span>Move to Task Rewards</span>
+                                                </Button>
+                                            </div>
+                                        </TooltipTrigger>
+                                        {moveFundsTooltipContent && (
+                                            <TooltipContent>
+                                                <p>{moveFundsTooltipContent}</p>
+                                            </TooltipContent>
+                                        )}
+                                    </Tooltip>
+                                </TooltipProvider>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <div>
+                                                <Button variant="outline" size="sm" className="justify-start gap-2 w-full" onClick={() => handleMoveFunds("Interest Earnings", 0)} disabled={isLoading || moveFundsDisabled}>
+                                                    <TrendingUp className="h-4 w-4 text-accent" />
+                                                    <span>Move to Interest</span>
+                                                </Button>
+                                            </div>
+                                        </TooltipTrigger>
+                                        {moveFundsTooltipContent && (
+                                            <TooltipContent>
+                                                <p>{moveFundsTooltipContent}</p>
+                                            </TooltipContent>
+                                        )}
+                                    </Tooltip>
+                                </TooltipProvider>
                             </div>
                         </div>
                     </CollapsibleContent>

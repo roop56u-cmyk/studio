@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect, useMemo } from 'react';
@@ -416,13 +417,14 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid positive number to move.' });
       return;
     }
-
+    
+    // This is the immediate state update for the fund transfer
     let newMainBalance = mainBalance;
     let newTaskRewardsBalance = taskRewardsBalance;
     let newInterestEarningsBalance = interestEarningsBalance;
     const wasInactive = currentUser.status === 'inactive';
 
-    if (fromAccount) {
+    if (fromAccount) { // Moving from earning wallet to main
         if (fromAccount === 'Task Rewards') {
             if (numericAmount > taskRewardsBalance) {
                 toast({ variant: "destructive", title: "Insufficient Funds", description: `Cannot move more than available in Task Rewards.` });
@@ -444,18 +446,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         } else {
             newTaskRewardsBalance += numericAmount;
         }
-
-        const newCommittedBalance = (newTaskRewardsBalance + newInterestEarningsBalance);
-        const minAmountForCurrentLevel = currentLevelData.minAmount;
-         if (currentLevel > 0 && newCommittedBalance < minAmountForCurrentLevel) {
-            toast({
-                variant: "destructive",
-                title: "Warning: Level Affected",
-                description: `This will drop your committed balance below $${minAmountForCurrentLevel.toLocaleString()} for Level ${currentLevel}.`,
-                duration: 6000
-            });
-        }
-    } else {
+    } else { // Moving from main wallet to earning wallet
         if (numericAmount > mainBalance) {
             toast({ variant: "destructive", title: "Insufficient Funds", description: "You cannot move more than your main balance." });
             return;
@@ -468,12 +459,14 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         }
     }
 
+    // Set the new balances immediately for UI responsiveness
     setMainBalance(newMainBalance);
     setTaskRewardsBalance(newTaskRewardsBalance);
     setInterestEarningsBalance(newInterestEarningsBalance);
     toast({ title: "Funds Moved", description: `${numericAmount.toFixed(2)} USDT transfer complete.` });
     setAmount("");
 
+    // Check for activation and bonus AFTER the transfer state is updated
     if (wasInactive && !fromAccount) {
         const updatedCommittedBalance = newTaskRewardsBalance + newInterestEarningsBalance;
         const minAmountForLevel1 = configuredLevels.find(l => l.level === 1)?.minAmount || 100;
@@ -481,9 +474,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         if (updatedCommittedBalance >= minAmountForLevel1) {
             updateUserStatus(currentUser.email, 'active');
             
+            // Use setTimeout to delay the bonus credit
             setTimeout(() => {
-                const bonusIsEnabled = getGlobalSetting('system_signup_bonus_enabled', true, true);
-                if (!bonusIsEnabled || currentUser.isBonusDisabled) return;
+                const isBonusEnabled = getGlobalSetting('system_signup_bonus_enabled', true, true);
+                if (!isBonusEnabled || getInitialState('isBonusDisabled', false)) return;
 
                 const signupBonuses: BonusTier[] = getGlobalSetting('system_signup_bonuses', [], true);
                 if (signupBonuses.length === 0) return;
@@ -501,7 +495,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
                         date: new Date().toISOString(),
                     });
                     
-                    // Update user to prevent getting bonus again
                     updateUser(currentUser.email, { isBonusDisabled: true });
                     
                     toast({
@@ -650,10 +643,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const startCounter = (type: CounterType) => {
       const now = Date.now();
       if (type === 'interest') {
-          if (interestEarningsBalance <= 0) {
-            toast({ variant: "destructive", title: "No Funds", description: "You must have funds in your interest wallet to start earning." });
-            return;
-          }
           const minBalanceForLevel1 = configuredLevels.find(l => l.level === 1)?.minAmount ?? 100;
            if (interestEarningsBalance < minBalanceForLevel1) {
                 toast({ variant: "destructive", title: "Insufficient Funds", description: `A minimum of $${minBalanceForLevel1} is required in the interest wallet.` });
