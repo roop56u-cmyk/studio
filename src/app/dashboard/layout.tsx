@@ -607,6 +607,7 @@ export default function DashboardLayout({
     const [isRewardsPanelOpen, setIsRewardsPanelOpen] = React.useState(false);
 
     // Admin panel states
+    const [isAdminPanelOpen, setIsAdminPanelOpen] = React.useState(false);
     const [activeAdminPanel, setActiveAdminPanel] = React.useState<PanelType | null>(null);
     const AdminPanelComponent = activeAdminPanel ? adminPanelComponents[activeAdminPanel] : null;
 
@@ -618,17 +619,16 @@ export default function DashboardLayout({
     
     const handleAdminPanelClick = (panel: PanelType) => {
         setActiveAdminPanel(panel);
+        setIsAdminPanelOpen(true);
     }
     
     const handleInboxClick = () => {
         if (currentUser?.isAdmin) {
-            setActiveAdminPanel('inbox');
+            handleAdminPanelClick('inbox');
         } else {
             setIsInboxOpen(true);
         }
     }
-    
-    const sheetOpen = !!activeAdminPanel;
 
   return (
       <SidebarProvider>
@@ -794,7 +794,7 @@ export default function DashboardLayout({
                  <SheetClose />
             </SheetContent>
         </Sheet>
-        <Sheet open={sheetOpen} onOpenChange={(open) => !open && setActiveAdminPanel(null)}>
+        <Sheet open={isAdminPanelOpen} onOpenChange={setIsAdminPanelOpen}>
              <SheetContent className="w-full sm:max-w-4xl overflow-y-auto">
                 {activeAdminPanel && (
                     <>
