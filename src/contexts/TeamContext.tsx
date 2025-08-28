@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo, useCallback } from 'react';
@@ -7,6 +8,7 @@ import type { User } from './AuthContext';
 import { levels as defaultLevels } from '@/components/dashboard/level-tiers';
 import { useWallet } from './WalletContext';
 import { TeamReward } from '@/app/dashboard/admin/team-rewards/page';
+import { TeamSizeReward } from '@/app/dashboard/admin/team-size-rewards/page';
 
 type TeamMember = User & {
     level: number;
@@ -14,6 +16,7 @@ type TeamMember = User & {
 
 type TeamLevelData = {
     count: number;
+    activeCount: number;
     commission: number;
     members: TeamMember[];
     totalDeposits: number;
@@ -29,6 +32,7 @@ type TeamData = {
 interface TeamContextType {
   teamData: TeamData | null;
   teamRewards: TeamReward[];
+  teamSizeRewards: TeamSizeReward[];
   commissionRates: { level1: number; level2: number; level3: number; };
   commissionEnabled: { level1: boolean; level2: boolean; level3: boolean; };
   isLoading: boolean;
@@ -43,6 +47,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const { currentUser, users } = useAuth();
     const [teamData, setTeamData] = useState<TeamData | null>(null);
     const [teamRewards, setTeamRewards] = useState<TeamReward[]>([]);
+    const [teamSizeRewards, setTeamSizeRewards] = useState<TeamSizeReward[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     
     const [commissionRates, setCommissionRates] = useState({ level1: 10, level2: 5, level3: 2 });
@@ -65,6 +70,17 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
                 setTeamRewards(parsedRewards);
               } else {
                 setTeamRewards([]);
+              }
+            }
+
+            const savedSizeRewards = localStorage.getItem('platform_team_size_rewards');
+             if (savedSizeRewards) {
+              const parsedRewards = JSON.parse(savedSizeRewards).filter((r: TeamSizeReward) => r.enabled);
+              const userIsActive = currentUser?.status === 'active';
+              if (userIsActive) {
+                setTeamSizeRewards(parsedRewards);
+              } else {
+                setTeamSizeRewards([]);
               }
             }
         }
@@ -109,7 +125,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
         const calculateLayer = (members: User[]): TeamLevelData => {
             const activeMembers = members.filter(m => m.status === 'active');
-            const enrichedMembers: TeamMember[] = activeMembers.map(m => ({ ...m, level: getLevelForUser(m.email) }));
+            const enrichedMembers: TeamMember[] = members.map(m => ({ ...m, level: getLevelForUser(m.email) }));
             const totalDeposits = enrichedMembers.reduce((sum, m) => sum + getDepositsForUser(m.email), 0);
             const dailyTaskEarnings = enrichedMembers.reduce((sum, m) => {
                  const levelData = defaultLevels.find(l => l.level === m.level);
@@ -120,6 +136,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             
             return {
                 count: members.length,
+                activeCount: activeMembers.length,
                 commission: dailyTaskEarnings,
                 members: enrichedMembers,
                 totalDeposits,
@@ -171,6 +188,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const value = {
         teamData,
         teamRewards,
+        teamSizeRewards,
         commissionRates,
         commissionEnabled,
         isLoading,
@@ -192,5 +210,3 @@ export const useTeam = () => {
     }
     return context;
 };
-
-    

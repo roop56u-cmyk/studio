@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 export type Request = {
     id: string;
     user: string;
-    type: 'Recharge' | 'Withdrawal' | 'Team Reward';
+    type: 'Recharge' | 'Withdrawal' | 'Team Reward' | 'Team Size Reward';
     amount: number;
     address: string | null;
     level: number;
@@ -145,36 +145,33 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
   const updateRequestStatus = (id: string, status: 'Approved' | 'Declined' | 'On Hold', userEmail: string, type: Request['type'], amount: number) => {
     setRequests(prev => prev.map(req => req.id === id ? { ...req, status } : req));
     
+    const handleBonusCredit = (bonusType: 'Team Reward' | 'Team Size Reward') => {
+        const userMainBalanceKey = `${userEmail}_mainBalance`;
+        const currentBalance = parseFloat(localStorage.getItem(userMainBalanceKey) || '0');
+        localStorage.setItem(userMainBalanceKey, (currentBalance + amount).toString());
+        addTransaction(userEmail, {
+          type: bonusType,
+          description: `${bonusType} bonus approved`,
+          amount: amount,
+          date: new Date().toISOString(),
+        });
+    };
+
     if (status === 'Approved') {
       if (type === 'Recharge') {
         approveRecharge(userEmail, amount);
       } else if (type === 'Withdrawal') {
         approveWithdrawal(userEmail);
-      } else if (type === 'Team Reward') {
-        const userMainBalanceKey = `${userEmail}_mainBalance`;
-        const currentBalance = parseFloat(localStorage.getItem(userMainBalanceKey) || '0');
-        localStorage.setItem(userMainBalanceKey, (currentBalance + amount).toString());
-        addTransaction(userEmail, {
-          type: 'Team Reward',
-          description: `Team reward bonus approved`,
-          amount: amount,
-          date: new Date().toISOString(),
-        });
+      } else if (type === 'Team Reward' || type === 'Team Size Reward') {
+        handleBonusCredit(type);
       }
     } else if (status === 'Declined') {
        if (type === 'Withdrawal') {
          refundWithdrawal(userEmail, amount);
-       } else if (type === 'Recharge') {
+       } else if (type === 'Recharge' || type === 'Team Reward' || type === 'Team Size Reward') {
           addTransaction(userEmail, {
-            type: 'Recharge',
-            description: `Recharge request declined`,
-            amount: 0,
-            date: new Date().toISOString()
-          });
-       } else if (type === 'Team Reward') {
-          addTransaction(userEmail, {
-            type: 'Team Reward',
-            description: `Team reward request declined`,
+            type: type,
+            description: `${type} request declined`,
             amount: 0,
             date: new Date().toISOString()
           });

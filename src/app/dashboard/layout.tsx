@@ -75,7 +75,8 @@ import {
   CheckCheck,
   Award,
   Network,
-  MessageSquare
+  MessageSquare,
+  Trophy
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -107,10 +108,11 @@ import SystemSettingsPage from "./admin/settings/page";
 import ActivityLogPage from "./admin/activity-log/page";
 import ManageRechargeAddressesPage from "./admin/recharge-addresses/page";
 import ManageTeamRewardsPage from "./admin/team-rewards/page";
+import ManageTeamSizeRewardsPage from "./admin/team-size-rewards/page";
 import ManageMessagesPage from "./admin/messages/page";
 
 
-type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'messageManagement';
+type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement';
 
 
 const adminPanelComponents: Record<PanelType, React.ComponentType> = {
@@ -128,6 +130,7 @@ const adminPanelComponents: Record<PanelType, React.ComponentType> = {
     inbox: InboxPanel,
     rechargeAddresses: ManageRechargeAddressesPage,
     teamRewards: ManageTeamRewardsPage,
+    teamSizeRewards: ManageTeamSizeRewardsPage,
     messageManagement: ManageMessagesPage,
 };
 
@@ -146,6 +149,7 @@ const adminPanelTitles: Record<PanelType, { title: string; description: string }
     inbox: { title: "Inbox", description: "View and respond to user messages." },
     rechargeAddresses: { title: "Recharge Addresses", description: "Manage official deposit addresses." },
     teamRewards: { title: "Team Rewards", description: "Create and manage team deposit bonuses." },
+    teamSizeRewards: { title: "Team Size Rewards", description: "Create and manage rewards for team size milestones." },
     messageManagement: { title: "Manage Messages", description: "Edit platform-wide custom messages and text." },
 };
 
@@ -230,6 +234,12 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
                     <SidebarMenuButton onClick={() => onAdminPanelClick('teamRewards')} tooltip={{ children: "Team Rewards" }}>
                         <Award />
                         <span>Team Rewards</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('teamSizeRewards')} tooltip={{ children: "Team Size Rewards" }}>
+                        <Trophy />
+                        <span>Team Size Rewards</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                  <SidebarMenuItem>
