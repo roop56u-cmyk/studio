@@ -62,18 +62,25 @@ export default function UserDashboardPage() {
 
   const [isTaskDialogOpen, setIsTaskDialogOpen] = React.useState(false);
   const [isBalanceWarningOpen, setIsBalanceWarningOpen] = React.useState(false);
+  const [warningMessage, setWarningMessage] = React.useState("");
 
   const minBalanceForLevel = minRequiredBalanceForLevel(currentLevel);
-  const hasSufficientBalance = committedBalance >= minBalanceForLevel;
+  const hasSufficientTotalBalance = committedBalance >= minBalanceForLevel;
+  const hasSufficientTaskBalance = taskRewardsBalance >= minBalanceForLevel;
 
   const allTasksCompleted = tasksCompletedToday >= dailyTaskQuota;
-  const isTaskLocked = currentLevel === 0 || !hasSufficientBalance;
-  const isInterestLocked = currentLevel === 0 || !hasSufficientBalance;
+  const isTaskLockedByLevel = currentLevel === 0 || !hasSufficientTotalBalance;
+  const isTaskLockedByBalance = !hasSufficientTaskBalance && currentLevel > 0;
   
-  const finalIsTaskLocked = isTaskLocked || allTasksCompleted;
+  const finalIsTaskLocked = isTaskLockedByLevel || isTaskLockedByBalance || allTasksCompleted;
+  const isInterestLocked = currentLevel === 0 || !hasSufficientTotalBalance;
 
   const handleStartTasks = () => {
-    if (isTaskLocked) {
+    if (isTaskLockedByLevel) {
+        setWarningMessage(`Your total committed balance of $${committedBalance.toFixed(2)} is below the $${minBalanceForLevel.toLocaleString()} minimum required for Level ${currentLevel}. Please add more funds to unlock tasks.`);
+        setIsBalanceWarningOpen(true);
+    } else if (isTaskLockedByBalance) {
+         setWarningMessage(`Your Task Rewards balance is $${taskRewardsBalance.toFixed(2)}. You need at least $${minBalanceForLevel.toLocaleString()} in your Task Rewards wallet to start tasks for Level ${currentLevel}.`);
         setIsBalanceWarningOpen(true);
     } else {
         setIsTaskDialogOpen(true);
@@ -152,7 +159,7 @@ export default function UserDashboardPage() {
             )}
              {isPanelEnabled("featureLock") && (
                 <>
-                    {(isTaskLocked && isInterestLocked) ? (
+                    {(isTaskLockedByLevel && isInterestLocked) ? (
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center"><Lock className="mr-2 h-5 w-5" /> Features Locked</CardTitle>
@@ -193,10 +200,9 @@ export default function UserDashboardPage() {
        <AlertDialog open={isBalanceWarningOpen} onOpenChange={setIsBalanceWarningOpen}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Insufficient Balance</AlertDialogTitle>
+                    <AlertDialogTitle>Action Required</AlertDialogTitle>
                     <AlertDialogDescription>
-                        Your committed balance of ${committedBalance.toFixed(2)} is below the ${minBalanceForLevel.toLocaleString()} minimum required for Level {currentLevel}.
-                        Please add more funds to your Task or Interest wallets to start tasks.
+                       {warningMessage}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
