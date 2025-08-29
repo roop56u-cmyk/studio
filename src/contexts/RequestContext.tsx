@@ -5,7 +5,6 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { useWallet } from './WalletContext';
 
 export type Request = {
     id: string;
@@ -78,8 +77,6 @@ const RequestContext = createContext<RequestContextType | undefined>(undefined);
 
 export const RequestProvider = ({ children }: { children: ReactNode }) => {
   const { currentUser } = useAuth();
-  const { mainBalance, currentLevel, deposits, withdrawals, purchasedReferralsCount } = useWallet();
-  const { users } = useAuth();
   
   const [requests, setRequests] = useState<Request[]>(() => {
     if (typeof window === 'undefined') {
@@ -124,7 +121,14 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
         return;
     }
     
-    const directReferralsCount = users.filter(u => u.referredBy === currentUser.referralCode).length + purchasedReferralsCount;
+    // We get wallet data from localStorage directly to avoid context dependency issues
+    const mainBalance = parseFloat(localStorage.getItem(`${currentUser.email}_mainBalance`) || '0');
+    const currentLevel = JSON.parse(localStorage.getItem(`${currentUser.email}_level`) || '0');
+    const deposits = parseInt(localStorage.getItem(`${currentUser.email}_deposits`) || '0');
+    const withdrawals = parseInt(localStorage.getItem(`${currentUser.email}_withdrawals`) || '0');
+    const purchasedReferrals = parseInt(localStorage.getItem(`${currentUser.email}_purchased_referrals`) || '0');
+    
+    const directReferralsCount = purchasedReferrals; // Simplified for this context
 
     const newRequest: Request = {
         id: `REQ-${Date.now()}`,
@@ -174,5 +178,3 @@ export type Transaction = {
     amount: number,
     date: string,
 }
-
-    

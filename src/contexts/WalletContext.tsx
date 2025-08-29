@@ -1,9 +1,11 @@
 
+
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect, useMemo } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from './AuthContext';
+import { useRequests } from './RequestContext';
 import { GenerateTaskSuggestionOutput } from '@/app/actions';
 import { levels as defaultLevels, Level } from '@/components/dashboard/level-tiers';
 import { platformMessages } from '@/lib/platform-messages';
@@ -133,7 +135,7 @@ interface WalletContextType {
   claimReferralBonus: (referralEmail: string) => void;
   claimedReferralIds: string[];
   purchasedReferralsCount: number;
-  dailyRewardState: DailyRewardState;
+  dailyRewardState?: DailyRewardState;
   claimDailyReward: () => void;
 }
 
@@ -157,6 +159,7 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
   const { currentUser, users, activateUserAccount } = useAuth();
+  const { userRequests, setRequests } = useRequests();
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -206,7 +209,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [purchasedReferralsCount, setPurchasedReferralsCount] = useState<number>(0);
   const [hasClaimedSignUpBonus, setHasClaimedSignUpBonus] = useState<boolean>(false);
   const [claimedReferralIds, setClaimedReferralIds] = useState<string[]>([]);
-  const [requests, setRequests] = useState<Request[]>([]);
   const [dailyRewardState, setDailyRewardState] = useState<DailyRewardState>({ isEnabled: false, canClaim: false, streak: 0, reward: 0 });
   
   const taskQuotaBoost = activeBoosters.find(b => b.type === 'TASK_QUOTA')?.value || 0;
@@ -324,7 +326,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setReferralBonuses(getGlobalSetting('system_referral_bonuses', [], true));
     setIsSignupApprovalRequired(getGlobalSetting('system_signup_bonus_approval_required', false, true));
     setIsReferralApprovalRequired(getGlobalSetting('system_referral_bonus_approval_required', false, true));
-    setRequests(getGlobalSetting('requests', [], true));
 
     // User-specific data
     if (currentUser?.email) {
@@ -418,11 +419,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     }
     setIsLoading(false);
   }, [currentUser?.email, getInitialState, setPersistentState]);
-
-  const userRequests = useMemo(() => {
-    if (!currentUser) return [];
-    return requests.filter(req => req.user === currentUser.email);
-  }, [currentUser, requests]);
 
   const hasPendingSignUpBonus = useMemo(() => {
     return userRequests.some(req => req.type === 'Sign-up Bonus' && req.status === 'Pending');
@@ -555,60 +551,35 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setAmount("");
   };
 
-  const addRequest = (requestData: Partial<Omit<Request, 'id' | 'date' | 'status' | 'user'>>) => {
-    if (!currentUser) return;
-    const walletData = {
-        balance: mainBalance,
-        level: currentLevel,
-        deposits: deposits,
-        withdrawals: withdrawals,
-        referrals: directReferralsCount,
-    }
-    const newRequest: Request = {
-        id: `REQ-${Date.now()}`,
-        date: new Date().toISOString(),
-        status: 'Pending',
-        user: currentUser.email,
-        type: requestData.type!,
-        amount: requestData.amount!,
-        address: requestData.address ?? null,
-        ...walletData
-    };
-    const allRequests = getGlobalSetting('requests', [], true);
-    localStorage.setItem('requests', JSON.stringify([newRequest, ...allRequests]));
-    setRequests(prev => [newRequest, ...prev]);
+  const approveRecharge = (userEmail: string, rechargeAmount: number) => {
+      const key = `${userEmail}_mainBalance`;
+      const currentBalance = parseFloat(localStorage.getItem(key) || '0');
+      localStorage.setItem(key, (currentBalance + rechargeAmount).toString());
+
+      const depositsKey = `${userEmail}_deposits`;
+      const depositCount = parseInt(localStorage.getItem(depositsKey) || '0');
+      localStorage.setItem(depositsKey, (depositCount + 1).toString());
+      
+      const userToUpdate = users.find(u => u.email === userEmail);
+      const userFirstDepositKey = `${userEmail}_firstDepositAmount`;
+      if (userToUpdate && !localStorage.getItem(userFirstDepositKey)) {
+          localStorage.setItem(userFirstDepositKey, JSON.stringify(rechargeAmount));
+          activateUserAccount(userEmail);
+      }
+
+      addTransaction(userEmail, {
+          type: 'Recharge',
+          description: 'Recharge approved by admin',
+          amount: rechargeAmount,
+          date: new Date().toISOString()
+      });
+
+      if(currentUser?.email === userEmail) {
+          setMainBalance(prev => prev + rechargeAmount);
+          setDeposits(prev => prev + 1);
+          toast({ title: "Recharge Approved", description: `Your balance has been updated by ${rechargeAmount.toFixed(2)} USDT.` });
+      }
   };
-  
-    const approveRecharge = (userEmail: string, rechargeAmount: number) => {
-        const key = `${userEmail}_mainBalance`;
-        const currentBalance = parseFloat(localStorage.getItem(key) || '0');
-        localStorage.setItem(key, (currentBalance + rechargeAmount).toString());
-
-        const depositsKey = `${userEmail}_deposits`;
-        const depositCount = parseInt(localStorage.getItem(depositsKey) || '0');
-        localStorage.setItem(depositsKey, (depositCount + 1).toString());
-        
-        // Activate account and set first deposit amount if it's the first one
-        const userToUpdate = users.find(u => u.email === userEmail);
-        const userFirstDepositKey = `${userEmail}_firstDepositAmount`;
-        if (userToUpdate && !localStorage.getItem(userFirstDepositKey)) {
-            localStorage.setItem(userFirstDepositKey, JSON.stringify(rechargeAmount));
-            activateUserAccount(userEmail);
-        }
-
-        addTransaction(userEmail, {
-            type: 'Recharge',
-            description: 'Recharge approved by admin',
-            amount: rechargeAmount,
-            date: new Date().toISOString()
-        });
-
-        if(currentUser?.email === userEmail) {
-            setMainBalance(prev => prev + rechargeAmount);
-            setDeposits(prev => prev + 1);
-            toast({ title: "Recharge Approved", description: `Your balance has been updated by ${rechargeAmount.toFixed(2)} USDT.` });
-        }
-    };
   
   const addRecharge = (rechargeAmount: number) => {
     setMainBalance(prev => prev + rechargeAmount);
@@ -629,11 +600,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const requestWithdrawal = (withdrawalAmount: number, withdrawalAddress: string) => { 
     if (!currentUser) return;
     setMainBalance(prev => prev - withdrawalAmount); 
-    addRequest({
-        type: 'Withdrawal',
-        amount: withdrawalAmount,
-        address: withdrawalAddress,
-    });
+    // This function doesn't need to create the request itself anymore,
+    // as RequestContext's `addRequest` handles it.
   }
 
   const approveWithdrawal = (userEmail: string, amount: number) => {
@@ -739,7 +707,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         }
         const allRequests = getGlobalSetting('requests', [], true);
         const updatedRequests = allRequests.map((req: Request) => req.id === id ? { ...req, status } : req);
-        localStorage.setItem('requests', JSON.stringify(updatedRequests));
         setRequests(updatedRequests);
         toast({
             title: `Request ${status}`,
