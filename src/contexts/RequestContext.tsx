@@ -5,6 +5,7 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useWallet } from './WalletContext';
 
 export type Request = {
     id: string;
@@ -21,16 +22,9 @@ export type Request = {
     date: string;
 };
 
-type WalletData = {
-    balance: number;
-    level: number;
-    deposits: number;
-    withdrawals: number;
-    referrals: number;
-}
 interface RequestContextType {
   requests: Request[];
-  addRequest: (requestData: Partial<Omit<Request, 'id' | 'date' | 'status' | 'user'>>, walletData: WalletData) => void;
+  addRequest: (requestData: Partial<Omit<Request, 'id' | 'date' | 'status' | 'user'>>) => void;
   userRequests: Request[];
   setRequests: React.Dispatch<React.SetStateAction<Request[]>>;
 }
@@ -84,6 +78,8 @@ const RequestContext = createContext<RequestContextType | undefined>(undefined);
 
 export const RequestProvider = ({ children }: { children: ReactNode }) => {
   const { currentUser } = useAuth();
+  const { mainBalance, currentLevel, deposits, withdrawals, purchasedReferralsCount } = useWallet();
+  const { users } = useAuth();
   
   const [requests, setRequests] = useState<Request[]>(() => {
     if (typeof window === 'undefined') {
@@ -122,12 +118,14 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
   }, [currentUser, requests]);
 
 
-  const addRequest = (requestData: Partial<Omit<Request, 'id' | 'date' | 'status' | 'user'>>, walletData: WalletData) => {
+  const addRequest = (requestData: Partial<Omit<Request, 'id' | 'date' | 'status' | 'user'>>) => {
     if (!currentUser) {
         console.error("Cannot add request: no user logged in.");
         return;
     }
     
+    const directReferralsCount = users.filter(u => u.referredBy === currentUser.referralCode).length + purchasedReferralsCount;
+
     const newRequest: Request = {
         id: `REQ-${Date.now()}`,
         date: new Date().toISOString(),
@@ -136,7 +134,11 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
         type: requestData.type!,
         amount: requestData.amount!,
         address: requestData.address ?? null,
-        ...walletData
+        balance: mainBalance,
+        level: currentLevel,
+        deposits: deposits,
+        withdrawals: withdrawals,
+        referrals: directReferralsCount
     };
 
     setRequests(prev => [newRequest, ...prev]);

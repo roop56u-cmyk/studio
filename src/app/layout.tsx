@@ -49,15 +49,15 @@ export default function RootLayout({
       </head>
       <body className={cn("font-body antialiased", theme)}>
         <AuthProvider>
-          <RequestProvider>
-            <WalletProvider>
+          <WalletProvider>
+            <RequestProvider>
                 <TeamProvider>
                     <InboxProvider>
                         {children}
                     </InboxProvider>
                 </TeamProvider>
-            </WalletProvider>
-          </RequestProvider>
+            </RequestProvider>
+          </WalletProvider>
         </AuthProvider>
         <Toaster />
       </body>

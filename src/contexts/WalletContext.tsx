@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect, useMemo } from 'react';
@@ -9,8 +8,21 @@ import { GenerateTaskSuggestionOutput } from '@/app/actions';
 import { levels as defaultLevels, Level } from '@/components/dashboard/level-tiers';
 import { platformMessages } from '@/lib/platform-messages';
 import type { BonusTier } from '@/app/dashboard/admin/settings/page';
-import { useRequests } from './RequestContext';
-import type { Request } from './RequestContext';
+
+export type Request = {
+    id: string;
+    user: string;
+    type: 'Recharge' | 'Withdrawal' | 'Team Reward' | 'Team Size Reward' | 'Sign-up Bonus' | 'Referral Bonus';
+    amount: number;
+    address: string | null;
+    level: number;
+    deposits: number;
+    withdrawals: number;
+    referrals: number;
+    balance: number;
+    status: 'Pending' | 'Approved' | 'Declined' | 'On Hold';
+    date: string;
+};
 
 
 export type CompletedTask = {
@@ -134,7 +146,6 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
   const { currentUser, users, activateUserAccount } = useAuth();
-  const { addRequest, setRequests } = useRequests();
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -184,7 +195,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [purchasedReferralsCount, setPurchasedReferralsCount] = useState<number>(0);
   const [hasClaimedSignUpBonus, setHasClaimedSignUpBonus] = useState<boolean>(false);
   const [claimedReferralIds, setClaimedReferralIds] = useState<string[]>([]);
-
+  const [requests, setRequests] = useState<Request[]>([]);
   
   const taskQuotaBoost = activeBoosters.find(b => b.type === 'TASK_QUOTA')?.value || 0;
   const interestRateBoost = activeBoosters.find(b => b.type === 'INTEREST_RATE')?.value || 0;
@@ -221,6 +232,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const actualReferrals = users.filter(u => u.referredBy === currentUser.referralCode).length;
     return actualReferrals + purchasedReferralsCount;
   }, [currentUser, users, purchasedReferralsCount]);
+
 
   const { currentLevel, levelUnlockProgress } = useMemo(() => {
     if (currentUser?.overrideLevel !== null && currentUser?.overrideLevel !== undefined) {
@@ -274,6 +286,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const currentRate = baseRate + (baseRate * (interestRateBoost / 100));
   const dailyTaskQuota = baseDailyTaskQuota + taskQuotaBoost;
   
+  const minRequiredBalanceForLevel = (level: number) => {
+    return configuredLevels.find(l => l.level === level)?.minAmount ?? 0;
+  }
+
   const earningPerTask = useMemo(() => {
     if (earningModel === 'fixed') {
         return currentLevelData.earningPerTask;
@@ -281,7 +297,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     if (dailyTaskQuota === 0 || taskRewardsBalance < minRequiredBalanceForLevel(currentLevel)) return 0;
     const dailyEarningPotential = taskRewardsBalance * (currentRate / 100);
     return dailyEarningPotential / dailyTaskQuota;
-  }, [taskRewardsBalance, currentRate, dailyTaskQuota, earningModel, currentLevelData]);
+  }, [taskRewardsBalance, currentRate, dailyTaskQuota, earningModel, currentLevelData, currentLevel, minRequiredBalanceForLevel]);
   
   useEffect(() => {
     setIsLoading(true);
@@ -296,6 +312,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setReferralBonuses(getGlobalSetting('system_referral_bonuses', [], true));
     setIsSignupApprovalRequired(getGlobalSetting('system_signup_bonus_approval_required', false, true));
     setIsReferralApprovalRequired(getGlobalSetting('system_referral_bonus_approval_required', false, true));
+    setRequests(getGlobalSetting('requests', [], true));
 
     // User-specific data
     if (currentUser?.email) {
@@ -366,8 +383,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   }, [currentUser?.email, getInitialState, setPersistentState]);
 
-
-  const { userRequests } = useRequests();
+  const userRequests = useMemo(() => {
+    if (!currentUser) return [];
+    return requests.filter(req => req.user === currentUser.email);
+  }, [currentUser, requests]);
 
   const hasPendingSignUpBonus = useMemo(() => {
     return userRequests.some(req => req.type === 'Sign-up Bonus' && req.status === 'Pending');
@@ -499,6 +518,30 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     toast({ title: "Funds Moved", description: `${numericAmount.toFixed(2)} USDT transfer complete.` });
     setAmount("");
   };
+
+  const addRequest = (requestData: Partial<Omit<Request, 'id' | 'date' | 'status' | 'user'>>) => {
+    if (!currentUser) return;
+    const walletData = {
+        balance: mainBalance,
+        level: currentLevel,
+        deposits: deposits,
+        withdrawals: withdrawals,
+        referrals: directReferralsCount,
+    }
+    const newRequest: Request = {
+        id: `REQ-${Date.now()}`,
+        date: new Date().toISOString(),
+        status: 'Pending',
+        user: currentUser.email,
+        type: requestData.type!,
+        amount: requestData.amount!,
+        address: requestData.address ?? null,
+        ...walletData
+    };
+    const allRequests = getGlobalSetting('requests', [], true);
+    localStorage.setItem('requests', JSON.stringify([newRequest, ...allRequests]));
+    setRequests(prev => [newRequest, ...prev]);
+  };
   
     const approveRecharge = (userEmail: string, rechargeAmount: number) => {
         const key = `${userEmail}_mainBalance`;
@@ -550,18 +593,11 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const requestWithdrawal = (withdrawalAmount: number, withdrawalAddress: string) => { 
     if (!currentUser) return;
     setMainBalance(prev => prev - withdrawalAmount); 
-    const walletData = {
-        balance: mainBalance - withdrawalAmount, // Pass updated balance
-        level: currentLevel,
-        deposits: deposits,
-        withdrawals: withdrawals,
-        referrals: directReferralsCount,
-    }
     addRequest({
         type: 'Withdrawal',
         amount: withdrawalAmount,
         address: withdrawalAddress,
-    }, walletData);
+    });
   }
 
   const approveWithdrawal = (userEmail: string, amount: number) => {
@@ -665,8 +701,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
                 refundWithdrawal(userEmail, amount);
             }
         }
-
-        setRequests(prev => prev.map(req => req.id === id ? { ...req, status } : req));
+        const allRequests = getGlobalSetting('requests', [], true);
+        const updatedRequests = allRequests.map((req: Request) => req.id === id ? { ...req, status } : req);
+        localStorage.setItem('requests', JSON.stringify(updatedRequests));
+        setRequests(updatedRequests);
         toast({
             title: `Request ${status}`,
             description: `Request ID ${id} has been marked as ${status.toLowerCase()}.`,
@@ -813,14 +851,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     if (bonus <= 0) return;
 
     if (isSignupApprovalRequired) {
-        const walletData = {
-            balance: mainBalance,
-            level: currentLevel,
-            deposits: deposits,
-            withdrawals: withdrawals,
-            referrals: directReferralsCount,
-        }
-        addRequest({ type: 'Sign-up Bonus', amount: bonus }, walletData);
+        addRequest({ type: 'Sign-up Bonus', amount: bonus });
         toast({
             title: "Sign-up Bonus Claim Submitted!",
             description: `Your claim for $${bonus.toFixed(2)} is pending admin approval.`
@@ -875,18 +906,11 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     if (bonusAmount <= 0) return;
 
     if(isReferralApprovalRequired) {
-        const walletData = {
-            balance: mainBalance,
-            level: currentLevel,
-            deposits: deposits,
-            withdrawals: withdrawals,
-            referrals: directReferralsCount,
-        }
         addRequest({ 
             type: 'Referral Bonus', 
             amount: bonusAmount, 
             address: referralEmail,
-        }, walletData);
+        });
         toast({
             title: "Referral Bonus Claim Submitted!",
             description: `Your claim for referring ${referralEmail} is pending admin approval.`
@@ -910,10 +934,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const getReferralCommissionBoost = () => {
       const boost = activeBoosters.find(b => b.type === 'REFERRAL_COMMISSION');
       return boost ? boost.value : 0;
-  }
-  
-  const minRequiredBalanceForLevel = (level: number) => {
-    return configuredLevels.find(l => l.level === level)?.minAmount ?? 0;
   }
 
   return (
