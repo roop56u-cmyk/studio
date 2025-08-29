@@ -191,6 +191,31 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
   const committedBalance = taskRewardsBalance + interestEarningsBalance;
   
+  const getInitialState = useCallback((key: string, defaultValue: any) => {
+    if (typeof window === 'undefined' || !currentUser?.email) {
+      return defaultValue;
+    }
+    try {
+      const storedValue = localStorage.getItem(`${currentUser.email}_${key}`);
+      if (storedValue) {
+        return JSON.parse(storedValue);
+      }
+    } catch (error) {
+      console.error(`Failed to parse ${key} from localStorage for ${currentUser.email}`, error);
+    }
+    return defaultValue;
+  }, [currentUser?.email]);
+
+  const setPersistentState = useCallback((key: string, value: any) => {
+    if (typeof window !== 'undefined' && currentUser?.email) {
+      try {
+        localStorage.setItem(`${currentUser.email}_${key}`, JSON.stringify(value));
+      } catch (error) {
+        console.error(`Failed to save ${key} to localStorage for ${currentUser.email}`, error);
+      }
+    }
+  }, [currentUser?.email]);
+
   const directReferralsCount = useMemo(() => {
     if (!currentUser) return 0;
     const actualReferrals = users.filter(u => u.referredBy === currentUser.referralCode).length;
@@ -253,38 +278,11 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     if (earningModel === 'fixed') {
         return currentLevelData.earningPerTask;
     }
-    if (dailyTaskQuota === 0) return 0;
-    const dailyEarningPotential = committedBalance * (currentRate / 100);
+    if (dailyTaskQuota === 0 || taskRewardsBalance < minRequiredBalanceForLevel(currentLevel)) return 0;
+    const dailyEarningPotential = taskRewardsBalance * (currentRate / 100);
     return dailyEarningPotential / dailyTaskQuota;
-  }, [committedBalance, currentRate, dailyTaskQuota, earningModel, currentLevelData]);
-
-  const getInitialState = useCallback((key: string, defaultValue: any, userEmail?: string) => {
-    const targetEmail = userEmail || currentUser?.email;
-    if (typeof window === 'undefined' || !targetEmail) {
-      return defaultValue;
-    }
-    try {
-      const storedValue = localStorage.getItem(`${targetEmail}_${key}`);
-      if (storedValue) {
-        return JSON.parse(storedValue);
-      }
-    } catch (error) {
-      console.error(`Failed to parse ${key} from localStorage for ${targetEmail}`, error);
-    }
-    return defaultValue;
-  }, [currentUser?.email]);
-
-  const setPersistentState = useCallback((key: string, value: any, userEmail?: string) => {
-    const targetEmail = userEmail || currentUser?.email;
-    if (typeof window !== 'undefined' && targetEmail) {
-      try {
-        localStorage.setItem(`${targetEmail}_${key}`, JSON.stringify(value));
-      } catch (error) {
-        console.error(`Failed to save ${key} to localStorage for ${targetEmail}`, error);
-      }
-    }
-  }, [currentUser?.email]);
-
+  }, [taskRewardsBalance, currentRate, dailyTaskQuota, earningModel, currentLevelData]);
+  
   useEffect(() => {
     setIsLoading(true);
     
@@ -313,38 +311,38 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             lastReset.setUTCDate(lastReset.getUTCDate() - 1);
         }
         const lastCompletionTime = getInitialState('lastCompletionTime');
-        if (lastCompletionTime < lastReset.getTime()) {
+        if (!lastCompletionTime || lastCompletionTime < lastReset.getTime()) {
              setTasksCompletedToday(0);
              setPersistentState('tasksCompletedToday', 0);
         } else {
-             setTasksCompletedToday(getInitialState('tasksCompletedToday', 0));
+             setTasksCompletedToday(getInitialState('tasksCompletedToday'));
         }
 
       const currentMonth = new Date().getMonth();
-      const lastMonth = getInitialState('lastWithdrawalMonth', -1);
+      const lastMonth = getInitialState('lastWithdrawalMonth');
       if (currentMonth !== lastMonth) {
         setMonthlyWithdrawalsCount(0);
         setPersistentState('monthlyWithdrawalsCount', 0);
         setLastWithdrawalMonth(currentMonth);
         setPersistentState('lastWithdrawalMonth', currentMonth);
       } else {
-         setMonthlyWithdrawalsCount(getInitialState('monthlyWithdrawalsCount', 0));
+         setMonthlyWithdrawalsCount(getInitialState('monthlyWithdrawalsCount'));
       }
 
-      setMainBalance(getInitialState('mainBalance', 0));
-      setTaskRewardsBalance(getInitialState('taskRewardsBalance', 0));
-      setInterestEarningsBalance(getInitialState('interestEarningsBalance', 0));
-      setDeposits(getInitialState('deposits', 0));
-      setWithdrawals(getInitialState('withdrawals', 0));
-      setTransactionHistory(getInitialState('transactionHistory', []));
-      setInterestCounter(getInitialState('interestCounter', { isRunning: false, startTime: null }));
-      setCompletedTasks(getInitialState('completedTasks', []));
-      setWithdrawalAddresses(getInitialState('withdrawalAddresses', []));
-      setActiveBoosters(getInitialState('activeBoosters', []));
-      setPurchasedBoosterIds(getInitialState('purchasedBoosterIds', []));
-      setPurchasedReferralsCount(getInitialState('purchased_referrals', 0));
-      setHasClaimedSignUpBonus(getInitialState('hasClaimedSignUpBonus', false));
-      setClaimedReferralIds(getInitialState('claimedReferralIds', []));
+      setMainBalance(getInitialState('mainBalance'));
+      setTaskRewardsBalance(getInitialState('taskRewardsBalance'));
+      setInterestEarningsBalance(getInitialState('interestEarningsBalance'));
+      setDeposits(getInitialState('deposits'));
+      setWithdrawals(getInitialState('withdrawals'));
+      setTransactionHistory(getInitialState('transactionHistory'));
+      setInterestCounter(getInitialState('interestCounter'));
+      setCompletedTasks(getInitialState('completedTasks'));
+      setWithdrawalAddresses(getInitialState('withdrawalAddresses'));
+      setActiveBoosters(getInitialState('activeBoosters'));
+      setPurchasedBoosterIds(getInitialState('purchasedBoosterIds'));
+      setPurchasedReferralsCount(getInitialState('purchased_referrals'));
+      setHasClaimedSignUpBonus(getInitialState('hasClaimedSignUpBonus'));
+      setClaimedReferralIds(getInitialState('claimedReferralIds'));
 
     } else {
         setMainBalance(0);
@@ -366,7 +364,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setClaimedReferralIds([]);
     }
     setIsLoading(false);
-  }, [currentUser?.email]);
+  }, [currentUser?.email, getInitialState, setPersistentState]);
 
 
   const { userRequests } = useRequests();
@@ -388,7 +386,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const signupBonusAmount = useMemo(() => {
     if (!currentUser) return 0;
     
-    const firstDeposit = getInitialState('firstDepositAmount', 0);
+    const firstDeposit = getInitialState('firstDepositAmount');
     if (firstDeposit === 0) return 0;
 
     const applicableTiers = signupBonuses
@@ -566,7 +564,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     }, walletData);
   }
 
-  const approveWithdrawal = (userEmail: string) => {
+  const approveWithdrawal = (userEmail: string, amount: number) => {
     const withdrawalsKey = `${userEmail}_withdrawals`;
     const withdrawalCount = parseInt(localStorage.getItem(withdrawalsKey) || '0');
     localStorage.setItem(withdrawalsKey, (withdrawalCount + 1).toString());
@@ -578,8 +576,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
     addTransaction(userEmail, {
         type: 'Withdrawal',
-        description: 'Withdrawal approved by admin',
-        amount: 0,
+        description: `Withdrawal of $${amount.toFixed(2)} approved`,
+        amount: -amount,
         date: new Date().toISOString()
     });
 
@@ -596,7 +594,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const currentBalance = parseFloat(localStorage.getItem(key) || '0');
     localStorage.setItem(key, (currentBalance + amount).toString());
 
-    setPersistentState('hasClaimedSignUpBonus', true, userEmail);
+    localStorage.setItem(`${userEmail}_hasClaimedSignUpBonus`, JSON.stringify(true));
 
     addTransaction(userEmail, {
         type: 'Sign-up Bonus',
@@ -656,7 +654,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             if (type === 'Recharge') {
                 approveRecharge(userEmail, amount);
             } else if (type === 'Withdrawal') {
-                approveWithdrawal(userEmail);
+                approveWithdrawal(userEmail, amount);
             } else if (type === 'Sign-up Bonus') {
                 approveSignUpBonus(userEmail, amount);
             } else if (type === 'Referral Bonus' && address) {
@@ -693,7 +691,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         return interestCounter.isRunning;
       }
       if (type === 'task') {
-        return tasksCompletedToday > 0;
+        // A user can always move funds to the task wallet, even if tasks are in progress.
+        return false;
       }
       return false;
   }
@@ -830,7 +829,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setMainBalance(prev => prev + bonus);
         addTransaction(currentUser.email, {
             type: "Sign-up Bonus",
-            description: `Sign-up bonus claimed for $${getInitialState('firstDepositAmount', 0)} deposit.`,
+            description: `Sign-up bonus claimed for $${getInitialState('firstDepositAmount')} deposit.`,
             amount: bonus,
             date: new Date().toISOString()
         });
@@ -843,7 +842,17 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   };
   
   const referralBonusFor = useCallback((referralEmail: string): number => {
-    const firstDeposit = parseFloat(getInitialState('firstDepositAmount', 0, referralEmail));
+    const getReferralInitialState = (key: string, defaultValue: any) => {
+        if (typeof window === 'undefined') return defaultValue;
+        try {
+            const storedValue = localStorage.getItem(`${referralEmail}_${key}`);
+            return storedValue ? JSON.parse(storedValue) : defaultValue;
+        } catch (error) {
+            return defaultValue;
+        }
+    };
+    const firstDeposit = parseFloat(getReferralInitialState('firstDepositAmount', 0));
+
     if (firstDeposit === 0) return 0;
     
     const referralBonusEnabled = getGlobalSetting('system_referral_bonus_enabled', true, true);
@@ -854,7 +863,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         .sort((a, b) => b.bonusAmount - a.bonusAmount);
 
     return applicableTiers.length > 0 ? applicableTiers[0].bonusAmount : 0;
-  }, [referralBonuses, getInitialState]);
+  }, [referralBonuses]);
   
   const claimReferralBonus = (referralEmail: string) => {
     if (!currentUser || claimedReferralIds.includes(referralEmail) || userRequests.some(req => req.type === 'Referral Bonus' && req.address === referralEmail && req.status === 'Pending')) return;
@@ -976,3 +985,5 @@ export const useWallet = () => {
   }
   return context;
 };
+
+    

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
@@ -83,7 +84,7 @@ const RequestContext = createContext<RequestContextType | undefined>(undefined);
 
 export const RequestProvider = ({ children }: { children: ReactNode }) => {
   const { currentUser } = useAuth();
-
+  
   const [requests, setRequests] = useState<Request[]>(() => {
     if (typeof window === 'undefined') {
         return mockRequests;
@@ -171,3 +172,5 @@ export type Transaction = {
     amount: number,
     date: string,
 }
+
+    
