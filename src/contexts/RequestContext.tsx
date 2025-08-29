@@ -5,6 +5,7 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useWallet } from './WalletContext';
 
 export type Request = {
     id: string;
