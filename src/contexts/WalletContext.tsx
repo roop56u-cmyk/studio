@@ -8,6 +8,8 @@ import { GenerateTaskSuggestionOutput } from '@/app/actions';
 import { levels as defaultLevels, Level } from '@/components/dashboard/level-tiers';
 import { platformMessages } from '@/lib/platform-messages';
 import type { BonusTier } from '@/app/dashboard/admin/settings/page';
+import type { DailyReward } from '@/app/dashboard/admin/daily-rewards/page';
+
 
 export type Request = {
     id: string;
@@ -70,6 +72,13 @@ type LevelUnlockStatus = {
     currentReferrals?: number;
 };
 
+type DailyRewardState = {
+  isEnabled: boolean;
+  canClaim: boolean;
+  streak: number;
+  reward: number;
+};
+
 interface WalletContextType {
   mainBalance: number;
   taskRewardsBalance: number;
@@ -124,6 +133,8 @@ interface WalletContextType {
   claimReferralBonus: (referralEmail: string) => void;
   claimedReferralIds: string[];
   purchasedReferralsCount: number;
+  dailyRewardState: DailyRewardState;
+  claimDailyReward: () => void;
 }
 
 export type Transaction = {
@@ -196,6 +207,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [hasClaimedSignUpBonus, setHasClaimedSignUpBonus] = useState<boolean>(false);
   const [claimedReferralIds, setClaimedReferralIds] = useState<string[]>([]);
   const [requests, setRequests] = useState<Request[]>([]);
+  const [dailyRewardState, setDailyRewardState] = useState<DailyRewardState>({ isEnabled: false, canClaim: false, streak: 0, reward: 0 });
   
   const taskQuotaBoost = activeBoosters.find(b => b.type === 'TASK_QUOTA')?.value || 0;
   const interestRateBoost = activeBoosters.find(b => b.type === 'INTEREST_RATE')?.value || 0;
@@ -316,6 +328,23 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
     // User-specific data
     if (currentUser?.email) {
+        setMainBalance(getInitialState('mainBalance', 0));
+        setTaskRewardsBalance(getInitialState('taskRewardsBalance', 0));
+        setInterestEarningsBalance(getInitialState('interestEarningsBalance', 0));
+        setDeposits(getInitialState('deposits', 0));
+        setWithdrawals(getInitialState('withdrawals', 0));
+        setTransactionHistory(getInitialState('transactionHistory', []));
+        setInterestCounter(getInitialState('interestCounter', { isRunning: false, startTime: null }));
+        setTasksCompletedToday(getInitialState('tasksCompletedToday', 0));
+        setCompletedTasks(getInitialState('completedTasks', []));
+        setWithdrawalAddresses(getInitialState('withdrawalAddresses', []));
+        setActiveBoosters(getInitialState('activeBoosters', []));
+        setPurchasedBoosterIds(getInitialState('purchasedBoosterIds', []));
+        setPurchasedReferralsCount(getInitialState('purchased_referrals', 0));
+        setHasClaimedSignUpBonus(getInitialState('hasClaimedSignUpBonus', false));
+        setClaimedReferralIds(getInitialState('claimedReferralIds', []));
+
+        // Reset daily task count
         const now = new Date();
         const IST_OFFSET = 5.5 * 60 * 60 * 1000;
         const nowIST = new Date(now.getTime() + IST_OFFSET);
@@ -327,40 +356,46 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         if (nowIST < lastReset) {
             lastReset.setUTCDate(lastReset.getUTCDate() - 1);
         }
-        const lastCompletionTime = getInitialState('lastCompletionTime');
+        const lastCompletionTime = getInitialState('lastCompletionTime', 0);
         if (!lastCompletionTime || lastCompletionTime < lastReset.getTime()) {
              setTasksCompletedToday(0);
              setPersistentState('tasksCompletedToday', 0);
         } else {
-             setTasksCompletedToday(getInitialState('tasksCompletedToday'));
+             setTasksCompletedToday(getInitialState('tasksCompletedToday', 0));
         }
 
       const currentMonth = new Date().getMonth();
-      const lastMonth = getInitialState('lastWithdrawalMonth');
+      const lastMonth = getInitialState('lastWithdrawalMonth', -1);
       if (currentMonth !== lastMonth) {
         setMonthlyWithdrawalsCount(0);
         setPersistentState('monthlyWithdrawalsCount', 0);
         setLastWithdrawalMonth(currentMonth);
         setPersistentState('lastWithdrawalMonth', currentMonth);
       } else {
-         setMonthlyWithdrawalsCount(getInitialState('monthlyWithdrawalsCount'));
+         setMonthlyWithdrawalsCount(getInitialState('monthlyWithdrawalsCount', 0));
       }
 
-      setMainBalance(getInitialState('mainBalance'));
-      setTaskRewardsBalance(getInitialState('taskRewardsBalance'));
-      setInterestEarningsBalance(getInitialState('interestEarningsBalance'));
-      setDeposits(getInitialState('deposits'));
-      setWithdrawals(getInitialState('withdrawals'));
-      setTransactionHistory(getInitialState('transactionHistory'));
-      setInterestCounter(getInitialState('interestCounter'));
-      setCompletedTasks(getInitialState('completedTasks'));
-      setWithdrawalAddresses(getInitialState('withdrawalAddresses'));
-      setActiveBoosters(getInitialState('activeBoosters'));
-      setPurchasedBoosterIds(getInitialState('purchasedBoosterIds'));
-      setPurchasedReferralsCount(getInitialState('purchased_referrals'));
-      setHasClaimedSignUpBonus(getInitialState('hasClaimedSignUpBonus'));
-      setClaimedReferralIds(getInitialState('claimedReferralIds'));
+      // Daily Reward Logic
+      const isEnabled = getGlobalSetting('daily_login_rewards_enabled', true, true);
+      const lastClaimDateStr = getInitialState('last_daily_claim_date', null);
+      const streak = getInitialState('daily_claim_streak', 0);
+      const today = new Date().toISOString().split('T')[0];
+      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+      
+      let newStreak = streak;
+      if (lastClaimDateStr && lastClaimDateStr < yesterday) {
+          newStreak = 0; // Reset streak if they missed a day
+      }
 
+      const canClaim = lastClaimDateStr !== today;
+      const rewardTiers: DailyReward[] = getGlobalSetting('daily_login_rewards', [], true);
+      const rewardIndex = newStreak % rewardTiers.length;
+      const reward = rewardTiers.length > 0 ? rewardTiers[rewardIndex]?.reward ?? 0 : 0;
+
+      setDailyRewardState({ isEnabled, canClaim, streak: newStreak, reward });
+      if (newStreak !== streak) {
+        setPersistentState('daily_claim_streak', newStreak);
+      }
     } else {
         setMainBalance(0);
         setTaskRewardsBalance(0);
@@ -379,6 +414,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setPurchasedReferralsCount(0);
         setHasClaimedSignUpBonus(false);
         setClaimedReferralIds([]);
+        setDailyRewardState({ isEnabled: false, canClaim: false, streak: 0, reward: 0 });
     }
     setIsLoading(false);
   }, [currentUser?.email, getInitialState, setPersistentState]);
@@ -397,7 +433,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const signupBonusEnabled = getGlobalSetting('system_signup_bonus_enabled', true, true);
     if (!signupBonusEnabled || currentUser.isBonusDisabled) return false;
 
-    const firstDeposit = getInitialState('firstDepositAmount');
+    const firstDeposit = getInitialState('firstDepositAmount', 0);
     return firstDeposit > 0;
   }, [currentUser, getInitialState]);
 
@@ -405,7 +441,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const signupBonusAmount = useMemo(() => {
     if (!currentUser) return 0;
     
-    const firstDeposit = getInitialState('firstDepositAmount');
+    const firstDeposit = getInitialState('firstDepositAmount', 0);
     if (firstDeposit === 0) return 0;
 
     const applicableTiers = signupBonuses
@@ -930,6 +966,32 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         });
     }
   };
+
+  const claimDailyReward = () => {
+    if (!dailyRewardState.canClaim || !dailyRewardState.isEnabled) return;
+    
+    const rewardAmount = dailyRewardState.reward;
+    addRecharge(rewardAmount);
+    addTransaction(currentUser.email, {
+        type: 'Daily Reward',
+        description: `Daily check-in streak: Day ${dailyRewardState.streak + 1}`,
+        amount: rewardAmount,
+        date: new Date().toISOString()
+    });
+
+    const newStreak = dailyRewardState.streak + 1;
+    const today = new Date().toISOString().split('T')[0];
+    
+    setPersistentState('last_daily_claim_date', today);
+    setPersistentState('daily_claim_streak', newStreak);
+
+    setDailyRewardState(prev => ({...prev, canClaim: false, streak: newStreak}));
+    
+    toast({
+        title: "Daily Reward Claimed!",
+        description: `$${rewardAmount.toFixed(2)} has been added to your main wallet.`
+    });
+  }
   
   const getReferralCommissionBoost = () => {
       const boost = activeBoosters.find(b => b.type === 'REFERRAL_COMMISSION');
@@ -991,6 +1053,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         claimReferralBonus,
         claimedReferralIds,
         purchasedReferralsCount,
+        dailyRewardState,
+        claimDailyReward,
       }}
     >
       {children}

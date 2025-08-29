@@ -6,7 +6,7 @@ import { InterestCounterPanel } from "@/components/dashboard/interest-counter-pa
 import { LevelTiers, Level, levels } from "@/components/dashboard/level-tiers";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { useWallet } from "@/contexts/WalletContext";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Lock, CalendarCheck } from "lucide-react";
 import { TaskDialog } from "@/components/dashboard/task-dialog";
@@ -122,7 +122,7 @@ export default function UserDashboardPage() {
             Welcome back! Here's your space to manage reviews.
           </p>
         </div>
-        {isPanelEnabled("dailyCheckIn") && dailyRewardState.isEnabled && (
+        {isPanelEnabled("dailyCheckIn") && dailyRewardState && dailyRewardState.isEnabled && (
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -235,3 +235,4 @@ export default function UserDashboardPage() {
     </div>
   );
 }
+
