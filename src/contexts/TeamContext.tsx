@@ -107,9 +107,10 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         return mainBalance + taskBalance + interestBalance;
     }, []);
 
-    const getIsNewToday = useCallback((userEmail: string): boolean => {
-         if (typeof window === 'undefined') return false;
-         const firstDepositDateStr = localStorage.getItem(`${userEmail}_firstDepositDate`);
+    const getIsNewToday = useCallback((user: User): boolean => {
+         if (typeof window === 'undefined' || user.status !== 'active') return false;
+         
+         const firstDepositDateStr = localStorage.getItem(`${user.email}_firstDepositDate`);
          if (!firstDepositDateStr) return false;
 
          const firstDepositDate = new Date(firstDepositDateStr);
@@ -132,7 +133,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
                  return sum + (levelData ? levelData.earningPerTask * levelData.dailyTasks : 0);
             }, 0);
 
-            const activationsToday = members.filter(m => getIsNewToday(m.email)).length;
+            const activationsToday = members.filter(m => getIsNewToday(m)).length;
             
             return {
                 count: members.length,
