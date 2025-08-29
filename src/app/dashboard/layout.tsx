@@ -76,7 +76,8 @@ import {
   Award,
   Network,
   MessageSquare,
-  Trophy
+  Trophy,
+  CalendarDays
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -112,9 +113,10 @@ import ManageRechargeAddressesPage from "./admin/recharge-addresses/page";
 import ManageTeamRewardsPage from "./admin/team-rewards/page";
 import ManageTeamSizeRewardsPage from "./admin/team-size-rewards/page";
 import ManageMessagesPage from "./admin/messages/page";
+import ManageDailyRewardsPage from './admin/daily-rewards/page';
 
 
-type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement';
+type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards';
 
 
 const adminPanelComponents: Record<PanelType, React.ComponentType> = {
@@ -134,6 +136,7 @@ const adminPanelComponents: Record<PanelType, React.ComponentType> = {
     teamRewards: ManageTeamRewardsPage,
     teamSizeRewards: ManageTeamSizeRewardsPage,
     messageManagement: ManageMessagesPage,
+    dailyRewards: ManageDailyRewardsPage,
 };
 
 const adminPanelTitles: Record<PanelType, { title: string; description: string }> = {
@@ -153,6 +156,7 @@ const adminPanelTitles: Record<PanelType, { title: string; description: string }
     teamRewards: { title: "Team Rewards", description: "Create and manage team deposit bonuses." },
     teamSizeRewards: { title: "Team Size Rewards", description: "Create and manage rewards for team size milestones." },
     messageManagement: { title: "Manage Messages", description: "Edit platform-wide custom messages and text." },
+    dailyRewards: { title: "Daily Login Rewards", description: "Configure rewards for daily check-ins." },
 };
 
 function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransactionHistoryClick, onTaskHistoryClick, onReferralClick, onInboxClick, onBoosterStoreClick, onQuestPanelClick, onRewardsPanelClick, onAdminPanelClick }: { onRechargeClick: () => void, onWithdrawalClick: () => void, onTransactionHistoryClick: () => void, onTaskHistoryClick: () => void, onReferralClick: () => void, onInboxClick: () => void, onBoosterStoreClick: () => void, onQuestPanelClick: () => void, onRewardsPanelClick: () => void, onAdminPanelClick: (panel: PanelType) => void }) {
@@ -250,6 +254,12 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
                     <SidebarMenuButton onClick={() => onAdminPanelClick('teamCommission')} tooltip={{ children: "Team Commission" }}>
                         <Percent />
                         <span>Team Commission</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('dailyRewards')} tooltip={{ children: "Daily Rewards" }}>
+                        <CalendarDays />
+                        <span>Daily Rewards</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>

@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React from "react";
@@ -9,8 +8,9 @@ import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { useWallet } from "@/contexts/WalletContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Lock } from "lucide-react";
+import { Lock, CalendarCheck } from "lucide-react";
 import { TaskDialog } from "@/components/dashboard/task-dialog";
+import { Button } from "@/components/ui/button";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -36,6 +36,7 @@ export const defaultPanelConfig: PanelConfig[] = [
     { id: "transactionHistory", name: "Transaction History", enabled: true },
     { id: "taskHistory", name: "Task History", enabled: true },
     { id: "featureLock", name: "Feature Lock Notice", enabled: true },
+    { id: "dailyCheckIn", name: "Daily Check-in", enabled: true },
 ];
 
 export default function UserDashboardPage() {
@@ -49,7 +50,9 @@ export default function UserDashboardPage() {
     handleMoveFunds,
     currentLevel,
     committedBalance,
-    minRequiredBalanceForLevel
+    minRequiredBalanceForLevel,
+    dailyRewardState,
+    claimDailyReward,
   } = useWallet();
   const [panelConfig, setPanelConfig] = React.useState<PanelConfig[]>(defaultPanelConfig);
 
@@ -119,6 +122,25 @@ export default function UserDashboardPage() {
             Welcome back! Here's your space to manage reviews.
           </p>
         </div>
+        {isPanelEnabled("dailyCheckIn") && dailyRewardState.isEnabled && (
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <CalendarCheck className="h-5 w-5 text-primary" />
+                        Daily Check-in
+                    </CardTitle>
+                    <CardDescription>Claim your daily reward for logging in.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm">You are on a <strong className="text-primary">{dailyRewardState.streak} day</strong> streak. Keep it up!</p>
+                </CardContent>
+                <CardFooter>
+                    <Button className="w-full" disabled={!dailyRewardState.canClaim} onClick={claimDailyReward}>
+                        {dailyRewardState.canClaim ? `Claim Today's Reward ($${dailyRewardState.reward.toFixed(2)})` : "Claimed Today"}
+                    </Button>
+                </CardFooter>
+            </Card>
+        )}
         {isPanelEnabled("levelTiers") && (
          <div className="space-y-4">
             <LevelTiers 
@@ -213,5 +235,3 @@ export default function UserDashboardPage() {
     </div>
   );
 }
-
-    

@@ -29,7 +29,6 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -47,12 +46,21 @@ import {
 import type { Booster, BoosterType } from "@/contexts/WalletContext";
 
 const boosterTypeLabels: { [key in BoosterType]: string } = {
-    TASK_EARNING: "Task Earning Boost (%)",
-    TASK_QUOTA: "Task Quota Boost (+Tasks)",
-    INTEREST_RATE: "Interest Rate Boost (%)",
-    REFERRAL_COMMISSION: "Referral Commission Boost (%)",
-    PURCHASE_REFERRAL: "Purchase Referral (+Refs)",
+    TASK_EARNING: "Task Earning Boost",
+    TASK_QUOTA: "Task Quota Boost",
+    INTEREST_RATE: "Interest Rate Boost",
+    REFERRAL_COMMISSION: "Referral Commission Boost",
+    PURCHASE_REFERRAL: "Purchase Referral",
 };
+
+const boosterValueLabels: { [key in BoosterType]: string } = {
+    TASK_EARNING: "Value (%)",
+    TASK_QUOTA: "Value (+Tasks)",
+    INTEREST_RATE: "Value (%)",
+    REFERRAL_COMMISSION: "Value (%)",
+    PURCHASE_REFERRAL: "Value (+Refs)",
+};
+
 
 const BoosterForm = ({
   booster,
@@ -113,7 +121,7 @@ const BoosterForm = ({
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
          <div className="space-y-2">
-            <Label htmlFor="value" className="text-foreground">Value</Label>
+            <Label htmlFor="value" className="text-foreground">{boosterValueLabels[type]}</Label>
             <Input id="value" type="number" value={value} onChange={e => setValue(Number(e.target.value))} required />
         </div>
          <div className="space-y-2">
