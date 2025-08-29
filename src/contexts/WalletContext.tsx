@@ -297,7 +297,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     if (dailyTaskQuota === 0 || taskRewardsBalance < minRequiredBalanceForLevel(currentLevel)) return 0;
     const dailyEarningPotential = taskRewardsBalance * (currentRate / 100);
     return dailyEarningPotential / dailyTaskQuota;
-  }, [taskRewardsBalance, currentRate, dailyTaskQuota, earningModel, currentLevelData, currentLevel, minRequiredBalanceForLevel]);
+  }, [taskRewardsBalance, currentRate, dailyTaskQuota, earningModel, currentLevelData, currentLevel]);
   
   useEffect(() => {
     setIsLoading(true);
