@@ -7,6 +7,7 @@ import { platformMessages } from '@/lib/platform-messages';
 
 export type User = {
     email: string;
+    fullName: string;
     password?: string; // Password is now optional for security reasons after login
     isAdmin: boolean;
     referralCode: string;
@@ -23,7 +24,7 @@ interface AuthContextType {
   currentUser: User | null;
   users: User[];
   login: (email: string, password: string) => { success: boolean, message: string, isAdmin?: boolean };
-  signup: (email: string, password: string, referralCode: string) => { success: boolean, message: string };
+  signup: (email: string, password: string, fullName: string, referralCode: string) => { success: boolean, message: string };
   logout: () => void;
   updateUser: (email: string, updatedData: Partial<Omit<User, 'status' | 'isAccountActive'>> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; purchasedReferrals?: number; }) => void;
   deleteUser: (email: string, isSelfDelete?: boolean) => void;
@@ -33,6 +34,7 @@ interface AuthContextType {
 
 const initialAdminUser: User = {
     email: 'admin@stakinghub.com',
+    fullName: 'Platform Admin',
     password: 'admin123',
     isAdmin: true,
     referralCode: "ADMINREF001",
@@ -95,6 +97,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 }
                 return parsedUsers.map((u: User) => ({
                     ...u,
+                    fullName: u.fullName || u.email, // Fallback for old users
                     status: u.status ?? 'active',
                     isAccountActive: u.isAccountActive ?? false,
                     isBonusDisabled: u.isBonusDisabled ?? false,
@@ -165,7 +168,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { success: true, message: 'Logged in successfully!', isAdmin: user.isAdmin };
     };
 
-    const signup = (email: string, password: string, referralCode: string) => {
+    const signup = (email: string, password: string, fullName: string, referralCode: string) => {
         const referrer = users.find(u => u.referralCode === referralCode);
 
         if (!referrer) {
@@ -177,7 +180,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         const newUser: User = { 
             email, 
-            password, 
+            password,
+            fullName,
             isAdmin: false,
             referralCode: "TRH-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
             referredBy: referralCode,

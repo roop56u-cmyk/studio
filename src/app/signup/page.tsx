@@ -31,7 +31,7 @@ export default function SignupPage() {
 
   const handleSignUp = (e: React.FormEvent) => {
     e.preventDefault();
-    const result = signup(email, password, invitationCode);
+    const result = signup(email, password, fullName, invitationCode);
 
     if (result.success) {
       toast({
