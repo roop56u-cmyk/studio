@@ -25,8 +25,8 @@ export type Request = {
 interface RequestContextType {
   requests: Request[];
   addRequest: (requestData: Partial<Omit<Request, 'id' | 'date' | 'status' | 'user'>>) => void;
+  updateRequestStatus: (id: string, status: 'Approved' | 'Declined' | 'On Hold') => void;
   userRequests: Request[];
-  setRequests: React.Dispatch<React.SetStateAction<Request[]>>;
 }
 
 const mockRequests: Request[] = [
@@ -78,6 +78,14 @@ const RequestContext = createContext<RequestContextType | undefined>(undefined);
 
 export const RequestProvider = ({ children }: { children: ReactNode }) => {
   const { currentUser } = useAuth();
+  const { toast } = useToast();
+  const { 
+      approveRecharge, 
+      approveWithdrawal,
+      approveSignUpBonus,
+      approveReferralBonus,
+      refundWithdrawal 
+  } = useWallet();
   
   const [requests, setRequests] = useState<Request[]>(() => {
     if (typeof window === 'undefined') {
@@ -149,14 +157,47 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
     setRequests(prev => [newRequest, ...prev]);
   };
 
+  const updateRequestStatus = (id: string, status: 'Approved' | 'Declined' | 'On Hold') => {
+        const requestToUpdate = requests.find(r => r.id === id);
+        if (!requestToUpdate) return;
+        const { user: userEmail, type, amount, address } = requestToUpdate;
+
+        if (status === 'Approved') {
+            if (type === 'Recharge') {
+                approveRecharge(userEmail, amount);
+            } else if (type === 'Withdrawal') {
+                approveWithdrawal(userEmail, amount);
+            } else if (type === 'Sign-up Bonus') {
+                approveSignUpBonus(userEmail, amount);
+            } else if (type === 'Referral Bonus' && address) {
+                approveReferralBonus(userEmail, address, amount);
+            }
+        } else if (status === 'Declined') {
+            if (type === 'Withdrawal') {
+                refundWithdrawal(userEmail, amount);
+            }
+        }
+        
+        const updatedRequests = requests.map((req) => 
+            req.id === id ? { ...req, status } : req
+        );
+        
+        setRequests(updatedRequests);
+        
+        toast({
+            title: `Request ${status}`,
+            description: `Request ID ${id} has been marked as ${status.toLowerCase()}.`,
+        });
+    };
+
 
   return (
     <RequestContext.Provider
       value={{
         requests,
         addRequest,
+        updateRequestStatus,
         userRequests,
-        setRequests
       }}
     >
       {children}

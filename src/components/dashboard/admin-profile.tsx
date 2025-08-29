@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo, useCallback } from "react";
@@ -13,19 +14,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Calendar, Wallet, ArrowUpCircle, ArrowDownCircle, Users as UsersIcon, Gift } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { useRequests } from "@/contexts/RequestContext";
 import { Skeleton } from "../ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { useWallet } from "@/contexts/WalletContext";
 
 type RequestStatus = 'Pending' | 'Approved' | 'Declined' | 'On Hold';
 type RequestType = 'Finance' | 'Rewards';
 
 export function AdminProfile() {
-    const { requests } = useRequests();
-    const { updateRequestStatus } = useWallet();
+    const { requests, updateRequestStatus } = useRequests();
     const { users } = useAuth();
     const [isClient, setIsClient] = React.useState(false);
     const [activeTab, setActiveTab] = useState<RequestType>('Finance');
@@ -36,10 +34,7 @@ export function AdminProfile() {
     }, []);
 
     const handleAction = (requestId: string, action: RequestStatus) => {
-        const request = requests.find(r => r.id === requestId);
-        if (!request) return;
-
-        updateRequestStatus(requestId, action, request.user, request.type, request.amount, request.address);
+        updateRequestStatus(requestId, action);
     };
 
     const getSavedWithdrawalAddress = useCallback((userEmail: string) => {

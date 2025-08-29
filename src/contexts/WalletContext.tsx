@@ -5,7 +5,6 @@
 import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect, useMemo } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from './AuthContext';
-import { useRequests } from './RequestContext';
 import { GenerateTaskSuggestionOutput } from '@/app/actions';
 import { levels as defaultLevels, Level } from '@/components/dashboard/level-tiers';
 import { platformMessages } from '@/lib/platform-messages';
@@ -102,10 +101,13 @@ interface WalletContextType {
   amount: string;
   setAmount: (amount: string) => void;
   handleMoveFunds: (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', amountToMove: number, fromAccount?: 'Task Rewards' | 'Interest Earnings') => void;
-  addRecharge: (amount: number) => void;
+  approveRecharge: (userEmail: string, rechargeAmount: number) => void;
   addCommissionToMainBalance: (commissionAmount: number) => void;
   requestWithdrawal: (withdrawalAmount: number, withdrawalAddress: string) => void;
-  updateRequestStatus: (id: string, status: 'Approved' | 'Declined' | 'On Hold', userEmail: string, type: Request['type'], amount: number, address: string | null) => void;
+  approveWithdrawal: (userEmail: string, amount: number) => void;
+  approveSignUpBonus: (userEmail: string, amount: number) => void;
+  approveReferralBonus: (userEmail: string, referredUser: string, amount: number) => void;
+  refundWithdrawal: (userEmail: string, withdrawalAmount: number) => void;
   isLoading: boolean;
   interestCounter: CounterState;
   startCounter: (type: 'task' | 'interest') => void;
@@ -159,7 +161,6 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
   const { currentUser, users, activateUserAccount } = useAuth();
-  const { requests, setRequests } = useRequests();
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -210,9 +211,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [hasClaimedSignUpBonus, setHasClaimedSignUpBonus] = useState<boolean>(false);
   const [claimedReferralIds, setClaimedReferralIds] = useState<string[]>([]);
   const [dailyRewardState, setDailyRewardState] = useState<DailyRewardState>({ isEnabled: false, canClaim: false, streak: 0, reward: 0 });
+  const [isReady, setIsReady] = useState(false);
   
-  const taskQuotaBoost = activeBoosters.find(b => b.type === 'TASK_QUOTA')?.value || 0;
-  const interestRateBoost = activeBoosters.find(b => b.type === 'INTEREST_RATE')?.value || 0;
+  const taskQuotaBoost = useMemo(() => activeBoosters.find(b => b.type === 'TASK_QUOTA')?.value || 0, [activeBoosters]);
+  const interestRateBoost = useMemo(() => activeBoosters.find(b => b.type === 'INTEREST_RATE')?.value || 0, [activeBoosters]);
 
   const committedBalance = taskRewardsBalance + interestEarningsBalance;
   
@@ -294,12 +296,12 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   }, [committedBalance, directReferralsCount, configuredLevels, currentUser]);
 
 
-  const currentLevelData = configuredLevels.find(level => level.level === currentLevel) ?? configuredLevels[0];
+  const currentLevelData = useMemo(() => configuredLevels.find(level => level.level === currentLevel) ?? configuredLevels[0], [configuredLevels, currentLevel]);
   const { rate: baseRate, dailyTasks: baseDailyTaskQuota, monthlyWithdrawals: monthlyWithdrawalLimit, minWithdrawal: minWithdrawalAmount, maxWithdrawal: maxWithdrawalAmount, withdrawalFee } = currentLevelData;
   
-  const minRequiredBalanceForLevel = (level: number) => {
+  const minRequiredBalanceForLevel = useCallback((level: number) => {
     return configuredLevels.find(l => l.level === level)?.minAmount ?? 0;
-  }
+  }, [configuredLevels]);
 
   const currentRate = baseRate + (baseRate * (interestRateBoost / 100));
   const dailyTaskQuota = baseDailyTaskQuota + taskQuotaBoost;
@@ -311,7 +313,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     if (dailyTaskQuota === 0 || taskRewardsBalance < minRequiredBalanceForLevel(currentLevel)) return 0;
     const dailyEarningPotential = taskRewardsBalance * (currentRate / 100);
     return dailyEarningPotential / dailyTaskQuota;
-  }, [taskRewardsBalance, currentRate, dailyTaskQuota, earningModel, currentLevelData, currentLevel]);
+  }, [taskRewardsBalance, currentRate, dailyTaskQuota, earningModel, currentLevelData, currentLevel, minRequiredBalanceForLevel]);
   
   useEffect(() => {
     setIsLoading(true);
@@ -418,11 +420,24 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setDailyRewardState({ isEnabled: false, canClaim: false, streak: 0, reward: 0 });
     }
     setIsLoading(false);
+    setIsReady(true);
   }, [currentUser?.email, getInitialState, setPersistentState]);
 
+  const { requests: userRequests } = useMemo(() => {
+    if (typeof window === 'undefined' || !currentUser) {
+        return { requests: [] };
+    }
+    const storedRequests = localStorage.getItem('requests');
+    const allRequests: Request[] = storedRequests ? JSON.parse(storedRequests) : [];
+    return {
+        requests: allRequests.filter(req => req.user === currentUser.email)
+    };
+  }, [currentUser, isReady]); // Re-run when context is ready
+
   const hasPendingSignUpBonus = useMemo(() => {
-    return requests.some(req => req.type === 'Sign-up Bonus' && req.status === 'Pending');
-  }, [requests]);
+    return userRequests.some(req => req.type === 'Sign-up Bonus' && req.status === 'Pending');
+  }, [userRequests]);
+
 
   const isEligibleForSignUpBonus = useMemo(() => {
     if (!currentUser) return false;
@@ -580,10 +595,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
           toast({ title: "Recharge Approved", description: `Your balance has been updated by ${rechargeAmount.toFixed(2)} USDT.` });
       }
   };
-  
-  const addRecharge = (rechargeAmount: number) => {
-    setMainBalance(prev => prev + rechargeAmount);
-  };
 
   const addCommissionToMainBalance = useCallback((commissionAmount: number) => {
     if (!currentUser) return;
@@ -689,35 +700,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     }
   }
   
-    const updateRequestStatus = (id: string, status: 'Approved' | 'Declined' | 'On Hold', userEmail: string, type: Request['type'], amount: number, address: string | null) => {
-        if (status === 'Approved') {
-            if (type === 'Recharge') {
-                approveRecharge(userEmail, amount);
-            } else if (type === 'Withdrawal') {
-                approveWithdrawal(userEmail, amount);
-            } else if (type === 'Sign-up Bonus') {
-                approveSignUpBonus(userEmail, amount);
-            } else if (type === 'Referral Bonus' && address) {
-                approveReferralBonus(userEmail, address, amount);
-            }
-        } else if (status === 'Declined') {
-            if (type === 'Withdrawal') {
-                refundWithdrawal(userEmail, amount);
-            }
-        }
-        
-        const allRequests = getGlobalSetting('requests', [], true);
-        const updatedRequests = allRequests.map((req: Request) => req.id === id ? { ...req, status } : req);
-        
-        localStorage.setItem('requests', JSON.stringify(updatedRequests));
-        setRequests(updatedRequests);
-        
-        toast({
-            title: `Request ${status}`,
-            description: `Request ID ${id} has been marked as ${status.toLowerCase()}.`,
-        });
-    };
-
   const startCounter = (type: CounterType) => {
       const now = Date.now();
       if (type === 'interest') {
@@ -858,11 +840,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     if (bonus <= 0) return;
 
     if (isSignupApprovalRequired) {
-        addRequest({ type: 'Sign-up Bonus', amount: bonus });
-        toast({
-            title: "Sign-up Bonus Claim Submitted!",
-            description: `Your claim for $${bonus.toFixed(2)} is pending admin approval.`
-        });
+        // This is handled by RequestContext now.
     } else {
         setMainBalance(prev => prev + bonus);
         addTransaction(currentUser.email, {
@@ -904,7 +882,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   }, [referralBonuses]);
   
   const claimReferralBonus = (referralEmail: string) => {
-    if (!currentUser || claimedReferralIds.includes(referralEmail) || requests.some(req => req.type === 'Referral Bonus' && req.address === referralEmail && req.status === 'Pending')) return;
+    if (!currentUser || claimedReferralIds.includes(referralEmail) || userRequests.some(req => req.type === 'Referral Bonus' && req.address === referralEmail && req.status === 'Pending')) return;
 
     const referral = users.find(u => u.email === referralEmail);
     if (!referral || !referral.isAccountActive) return;
@@ -913,15 +891,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     if (bonusAmount <= 0) return;
 
     if(isReferralApprovalRequired) {
-        addRequest({ 
-            type: 'Referral Bonus', 
-            amount: bonusAmount, 
-            address: referralEmail,
-        });
-        toast({
-            title: "Referral Bonus Claim Submitted!",
-            description: `Your claim for referring ${referralEmail} is pending admin approval.`
-        });
+        // Handled by RequestContext
     } else {
         setMainBalance(prev => prev + bonusAmount);
         addTransaction(currentUser.email, {
@@ -939,10 +909,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const claimDailyReward = () => {
-    if (!dailyRewardState.canClaim || !dailyRewardState.isEnabled) return;
+    if (!currentUser || !dailyRewardState.canClaim || !dailyRewardState.isEnabled) return;
     
     const rewardAmount = dailyRewardState.reward;
-    addRecharge(rewardAmount);
+    setMainBalance(prev => prev + rewardAmount);
     addTransaction(currentUser.email, {
         type: 'Daily Reward',
         description: `Daily check-in streak: Day ${dailyRewardState.streak + 1}`,
@@ -992,10 +962,13 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         amount,
         setAmount,
         handleMoveFunds,
-        addRecharge,
+        approveRecharge,
         addCommissionToMainBalance,
         requestWithdrawal,
-        updateRequestStatus,
+        approveWithdrawal,
+        approveSignUpBonus,
+        approveReferralBonus,
+        refundWithdrawal,
         isLoading,
         interestCounter,
         startCounter,
