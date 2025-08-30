@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo, useCallback } from 'react';
@@ -41,6 +40,8 @@ interface TeamContextType {
   totalActivationsToday: number;
   totalUplineCommission: number;
   uplineCommissionSettings: UplineCommissionSettings;
+  uplineInfo: { name: string; email: string; } | null;
+  activeL1Referrals: number;
 }
 
 
@@ -53,6 +54,8 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const [teamSizeRewards, setTeamSizeRewards] = useState<TeamSizeReward[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [totalUplineCommission, setTotalUplineCommission] = useState(0);
+    const [uplineInfo, setUplineInfo] = useState<{ name: string; email: string; } | null>(null);
+    const [activeL1Referrals, setActiveL1Referrals] = useState(0);
     
     const [commissionRates, setCommissionRates] = useState({ level1: 10, level2: 5, level3: 2 });
     const [commissionEnabled, setCommissionEnabled] = useState({ level1: true, level2: true, level3: true });
@@ -137,13 +140,12 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         return mainBalance + taskBalance + interestBalance;
     }, []);
 
-    const getIsNewToday = useCallback((user: User, allUsers: User[]): boolean => {
-         const latestUser = allUsers.find(u => u.email === user.email) || user;
-         if (latestUser.status !== 'active' || !latestUser.activatedAt) {
+    const getIsNewToday = useCallback((user: User): boolean => {
+         if (!user.activatedAt) {
              return false;
          }
 
-         const activationDate = new Date(latestUser.activatedAt);
+         const activationDate = new Date(user.activatedAt);
          const today = new Date();
 
          return activationDate.getFullYear() === today.getFullYear() &&
@@ -176,7 +178,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
                  }
             }, 0);
 
-            const activationsToday = activeMembers.filter(m => getIsNewToday(m, allUsers)).length;
+            const activationsToday = allUsers.filter(u => members.some(m => m.email === u.email) && u.status === 'active' && getIsNewToday(u)).length;
             
             return {
                 count: members.length,
@@ -194,9 +196,22 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         
         const level1 = calculateLayer(level1Members);
         level1.count += purchasedReferrals; 
+        setActiveL1Referrals(level1.activeCount);
+
 
         const level2 = calculateLayer(level2Members);
         const level3 = calculateLayer(level3Members);
+        
+        if (user.referredBy) {
+            const uplineUser = allUsers.find(u => u.referralCode === user.referredBy);
+            if (uplineUser) {
+                setUplineInfo({ name: uplineUser.fullName, email: uplineUser.email });
+            } else {
+                setUplineInfo(null);
+            }
+        } else {
+            setUplineInfo(null);
+        }
 
         return { level1, level2, level3 };
 
@@ -204,15 +219,9 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
 
     useEffect(() => {
-        if (currentUser && users.length > 1) {
+        if (currentUser) {
             setIsLoading(true);
             const data = calculateTeamData(currentUser, users);
-            setTeamData(data);
-            setIsLoading(false);
-        } else if (currentUser) {
-            // Handle case where user has no referrals yet but might have purchased some
-            setIsLoading(true);
-            const data = calculateTeamData(currentUser, []);
             setTeamData(data);
             setIsLoading(false);
         }
@@ -240,6 +249,8 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         totalActivationsToday,
         totalUplineCommission,
         uplineCommissionSettings,
+        uplineInfo,
+        activeL1Referrals,
     };
 
     return (

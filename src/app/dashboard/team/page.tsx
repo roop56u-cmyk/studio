@@ -12,7 +12,7 @@ import {
   CardTitle,
   CardFooter
 } from "@/components/ui/card";
-import { Users, DollarSign, UserPlus, Briefcase, Activity, Award, X, Trophy, ArrowUp } from "lucide-react";
+import { Users, DollarSign, UserPlus, Briefcase, Activity, Award, X, Trophy, ArrowUp, Info } from "lucide-react";
 import { useTeam } from "@/contexts/TeamContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -32,6 +32,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWallet } from "@/contexts/WalletContext";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const TeamRewardCard = ({ reward, totalTeamBusiness }: { reward: TeamReward, totalTeamBusiness: number }) => {
     const { toast } = useToast();
@@ -155,8 +156,20 @@ const TeamSizeRewardCard = ({ reward, totalActiveMembers }: { reward: TeamSizeRe
 
 
 export default function TeamPage() {
-  const { teamData, commissionRates, commissionEnabled, isLoading, totalTeamBusiness, totalActivationsToday, teamRewards, teamSizeRewards, totalUplineCommission, uplineCommissionSettings } = useTeam();
-  const { currentUser } = useAuth();
+  const { 
+      teamData, 
+      commissionRates, 
+      commissionEnabled, 
+      isLoading, 
+      totalTeamBusiness, 
+      totalActivationsToday, 
+      teamRewards, 
+      teamSizeRewards, 
+      totalUplineCommission, 
+      uplineCommissionSettings,
+      uplineInfo,
+      activeL1Referrals
+  } = useTeam();
   const { currentLevel } = useWallet();
   const isMobile = useIsMobile();
 
@@ -169,7 +182,10 @@ export default function TeamPage() {
       return total;
   }, [teamData, commissionRates, commissionEnabled]);
   
-  const totalActiveMembers = (teamData?.level1?.activeCount ?? 0) + (teamData?.level2?.activeCount ?? 0) + (teamData?.level3?.activeCount ?? 0);
+  const totalActiveMembers = useMemo(() => {
+    if (!teamData) return 0;
+    return teamData.level1.activeCount + teamData.level2.activeCount + teamData.level3.activeCount;
+  }, [teamData]);
 
   if (isLoading || !teamData) {
       return (
@@ -202,6 +218,7 @@ export default function TeamPage() {
   
   const availableTeamRewards = teamRewards.filter(r => r.level === 0 || r.level <= currentLevel);
   const availableTeamSizeRewards = teamSizeRewards.filter(r => r.level === 0 || r.level <= currentLevel);
+  const uplineReferralProgress = uplineCommissionSettings.requiredReferrals > 0 ? (activeL1Referrals / uplineCommissionSettings.requiredReferrals) * 100 : 100;
 
   return (
     <div className="max-w-md mx-auto">
@@ -273,10 +290,37 @@ export default function TeamPage() {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">+{totalActivationsToday}</div>
-                            <p className="text-xs text-muted-foreground">New members joined today</p>
+                            <p className="text-xs text-muted-foreground">New active members today</p>
                         </CardContent>
                     </Card>
             </div>
+
+            {uplineCommissionSettings.enabled && (
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center gap-2">
+                           <ArrowUp className="h-5 w-5 text-primary" />
+                           <CardTitle>Upline Sponsor Details</CardTitle>
+                        </div>
+                        {uplineInfo ? (
+                             <CardDescription>
+                                Earn {uplineCommissionSettings.rate}% from your sponsor: <strong className="text-foreground">{uplineInfo.name}</strong> ({uplineInfo.email})
+                            </CardDescription>
+                        ) : (
+                             <CardDescription>Your sponsor information is not available.</CardDescription>
+                        )}
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                <span>Unlock Progress (Active L1 Referrals)</span>
+                                <span>{activeL1Referrals} / {uplineCommissionSettings.requiredReferrals}</span>
+                            </div>
+                            <Progress value={uplineReferralProgress} />
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
             
             <div className="grid md:grid-cols-3 gap-4">
                 {teamLevels.map(level => (
@@ -284,7 +328,18 @@ export default function TeamPage() {
                         <CardHeader>
                             <div className="flex items-center justify-between">
                                 <CardTitle className="text-lg">{level.title}</CardTitle>
-                                <span className={`text-sm font-bold ${level.enabled ? 'text-primary' : 'text-muted-foreground'}`}>{level.rate}%</span>
+                                {level.enabled ? (
+                                    <span className="text-sm font-bold text-primary">{level.rate}%</span>
+                                ) : (
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger>
+                                                <span className="text-sm font-bold text-muted-foreground line-through">{level.rate}%</span>
+                                            </TooltipTrigger>
+                                            <TooltipContent><p>Commission for this level is disabled.</p></TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                )}
                             </div>
                             <CardDescription>Direct Referrals</CardDescription>
                         </CardHeader>
