@@ -9,6 +9,7 @@ import { levels as defaultLevels, Level } from '@/components/dashboard/level-tie
 import { useWallet } from './WalletContext';
 import { TeamReward } from '@/app/dashboard/admin/team-rewards/page';
 import { TeamSizeReward } from '@/app/dashboard/admin/team-size-rewards/page';
+import type { UplineCommissionSettings } from '@/app/dashboard/admin/upline-commission/page';
 
 type TeamMember = User & {
     level: number;
@@ -39,6 +40,7 @@ interface TeamContextType {
   totalTeamBusiness: number;
   totalActivationsToday: number;
   totalUplineCommission: number;
+  uplineCommissionSettings: UplineCommissionSettings;
 }
 
 
@@ -54,6 +56,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     
     const [commissionRates, setCommissionRates] = useState({ level1: 10, level2: 5, level3: 2 });
     const [commissionEnabled, setCommissionEnabled] = useState({ level1: true, level2: true, level3: true });
+    const [uplineCommissionSettings, setUplineCommissionSettings] = useState<UplineCommissionSettings>({ enabled: false, rate: 5, requiredReferrals: 3 });
 
 
     useEffect(() => {
@@ -85,6 +88,9 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
                 setTeamSizeRewards([]);
               }
             }
+            
+            const savedUplineSettings = localStorage.getItem('upline_commission_settings');
+            if(savedUplineSettings) setUplineCommissionSettings(JSON.parse(savedUplineSettings));
         }
     }, [currentUser]);
 
@@ -232,7 +238,8 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         isLoading,
         totalTeamBusiness,
         totalActivationsToday,
-        totalUplineCommission
+        totalUplineCommission,
+        uplineCommissionSettings,
     };
 
     return (
