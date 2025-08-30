@@ -210,12 +210,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [purchasedReferralsCount, setPurchasedReferralsCount] = useState<number>(0);
   const [hasClaimedSignUpBonus, setHasClaimedSignUpBonus] = useState<boolean>(false);
   const [claimedReferralIds, setClaimedReferralIds] = useState<string[]>([]);
-  const [dailyRewardState, setDailyRewardState] = useState<DailyRewardState>({ isEnabled: false, canClaim: false, streak: 0, reward: 0 });
+  const [dailyRewardState, setDailyRewardState] = useState<DailyRewardState | undefined>(undefined);
   const [isReady, setIsReady] = useState(false);
   
-  const taskQuotaBoost = useMemo(() => activeBoosters.find(b => b.type === 'TASK_QUOTA')?.value || 0, [activeBoosters]);
-  const interestRateBoost = useMemo(() => activeBoosters.find(b => b.type === 'INTEREST_RATE')?.value || 0, [activeBoosters]);
-
   const committedBalance = taskRewardsBalance + interestEarningsBalance;
   
   const getInitialState = useCallback((key: string, defaultValue: any) => {
@@ -297,12 +294,15 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
 
   const currentLevelData = useMemo(() => configuredLevels.find(level => level.level === currentLevel) ?? configuredLevels[0], [configuredLevels, currentLevel]);
-  const { rate: baseRate, dailyTasks: baseDailyTaskQuota, monthlyWithdrawals: monthlyWithdrawalLimit, minWithdrawal: minWithdrawalAmount, maxWithdrawal: maxWithdrawalAmount, withdrawalFee } = currentLevelData;
   
   const minRequiredBalanceForLevel = useCallback((level: number) => {
     return configuredLevels.find(l => l.level === level)?.minAmount ?? 0;
   }, [configuredLevels]);
 
+  const taskQuotaBoost = useMemo(() => activeBoosters.find(b => b.type === 'TASK_QUOTA')?.value || 0, [activeBoosters]);
+  const interestRateBoost = useMemo(() => activeBoosters.find(b => b.type === 'INTEREST_RATE')?.value || 0, [activeBoosters]);
+  
+  const { rate: baseRate, dailyTasks: baseDailyTaskQuota, monthlyWithdrawals: monthlyWithdrawalLimit, minWithdrawal: minWithdrawalAmount, maxWithdrawal: maxWithdrawalAmount, withdrawalFee } = currentLevelData;
   const currentRate = baseRate + (baseRate * (interestRateBoost / 100));
   const dailyTaskQuota = baseDailyTaskQuota + taskQuotaBoost;
   
@@ -505,6 +505,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     }
 
     let description = '';
+    let newCommittedBalance = committedBalance;
+    const oldLevel = currentLevel;
 
     // Moving from Main Wallet
     if (!fromAccount) {
@@ -513,6 +515,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       setMainBalance(prev => prev - numericAmount);
+      newCommittedBalance += numericAmount;
+
       if (destination === 'Task Rewards') {
         setTaskRewardsBalance(prev => prev + numericAmount);
         description = `Moved $${numericAmount.toFixed(2)} to Task Rewards`;
@@ -527,10 +531,23 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
       if (isFirstDeposit) {
           localStorage.setItem(userFirstDepositKey, JSON.stringify(numericAmount));
-          setTimeout(() => {
-              activateUserAccount(currentUser.email);
-          }, 1500)
+          activateUserAccount(currentUser.email);
       }
+      
+      // New logic for setting activation date
+      const activationDateKey = `${currentUser.email}_activationDate`;
+      const hasBeenActivated = localStorage.getItem(activationDateKey);
+      
+      const newLevelData = configuredLevels.slice().reverse().find(l => {
+          const balanceMet = newCommittedBalance >= l.minAmount;
+          const referralsMet = directReferralsCount >= l.referrals;
+          return balanceMet && referralsMet;
+      });
+
+      if (!hasBeenActivated && newLevelData && newLevelData.level >= 1) {
+          localStorage.setItem(activationDateKey, new Date().toISOString());
+      }
+
 
     // Moving from Earning Wallet
     } else {
@@ -579,7 +596,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       const userFirstDepositKey = `${userEmail}_firstDepositAmount`;
       if (userToUpdate && !localStorage.getItem(userFirstDepositKey)) {
           localStorage.setItem(userFirstDepositKey, JSON.stringify(rechargeAmount));
-          activateUserAccount(userEmail);
+          // Activation is now tied to committing funds, not just recharge.
       }
 
       addTransaction(userEmail, {
@@ -909,7 +926,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const claimDailyReward = () => {
-    if (!currentUser || !dailyRewardState.canClaim || !dailyRewardState.isEnabled) return;
+    if (!currentUser || !dailyRewardState?.canClaim || !dailyRewardState.isEnabled) return;
     
     const rewardAmount = dailyRewardState.reward;
     setMainBalance(prev => prev + rewardAmount);
@@ -926,7 +943,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setPersistentState('last_daily_claim_date', today);
     setPersistentState('daily_claim_streak', newStreak);
 
-    setDailyRewardState(prev => ({...prev, canClaim: false, streak: newStreak}));
+    setDailyRewardState(prev => ({...prev!, canClaim: false, streak: newStreak}));
     
     toast({
         title: "Daily Reward Claimed!",

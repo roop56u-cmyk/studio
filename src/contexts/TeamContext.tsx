@@ -120,20 +120,22 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         return mainBalance + taskBalance + interestBalance;
     }, []);
 
-    const getIsNewToday = useCallback((userEmail: string): boolean => {
+    const getIsNewToday = useCallback((user: User): boolean => {
          if (typeof window === 'undefined') return false;
          
-         const firstDepositDateStr = localStorage.getItem(`${userEmail}_firstDepositDate`);
-         if (!firstDepositDateStr) return false;
+         const activationDateStr = localStorage.getItem(`${user.email}_activationDate`);
+         if (!activationDateStr) return false;
 
-         const firstDepositDate = new Date(firstDepositDateStr);
+         const activationDate = new Date(activationDateStr);
          const today = new Date();
 
-         const isToday = firstDepositDate.getFullYear() === today.getFullYear() &&
-                firstDepositDate.getMonth() === today.getMonth() &&
-                firstDepositDate.getDate() === today.getDate();
+         const isToday = activationDate.getFullYear() === today.getFullYear() &&
+                activationDate.getMonth() === today.getMonth() &&
+                activationDate.getDate() === today.getDate();
+        
+        // Ensure we check the LATEST status from the users array
+        const latestUser = users.find(u => u.email === user.email);
 
-        const latestUser = users.find(u => u.email === userEmail);
         return isToday && latestUser?.status === 'active';
     }, [users]);
 
@@ -142,7 +144,10 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         const platformLevels = JSON.parse(localStorage.getItem('platform_levels') || JSON.stringify(defaultLevels));
 
         const calculateLayer = (members: User[]): TeamLevelData => {
-            const activeMembers = members.filter(m => m.status === 'active');
+            const activeMembers = members.filter(m => {
+                const latestUser = allUsers.find(u => u.email === m.email);
+                return latestUser?.status === 'active';
+            });
             const enrichedMembers: TeamMember[] = members.map(m => ({ ...m, level: getLevelForUser(m, allUsers) }));
             const totalDeposits = enrichedMembers.reduce((sum, m) => sum + getDepositsForUser(m.email), 0);
             const dailyTaskEarnings = enrichedMembers.reduce((sum, m) => {
@@ -150,7 +155,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
                  return sum + (levelData ? levelData.earningPerTask * levelData.dailyTasks : 0);
             }, 0);
 
-            const activationsToday = members.filter(m => getIsNewToday(m.email)).length;
+            const activationsToday = members.filter(m => getIsNewToday(m)).length;
             
             return {
                 count: members.length,
