@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
@@ -259,7 +260,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     
     const activateUserAccount = (email: string) => {
-        setUsers(prev => prev.map(u => u.email === email ? { ...u, isAccountActive: true, status: 'active' } : u));
+        const newUsers = users.map(u => u.email === email ? { ...u, isAccountActive: true, status: 'active' } : u);
+        setUsers(newUsers);
+        localStorage.setItem('users', JSON.stringify(newUsers));
+
         if (currentUser?.email === email) {
             setCurrentUser(prev => prev ? { ...prev, isAccountActive: true, status: 'active' } : null);
         }
@@ -280,3 +284,4 @@ export const useAuth = () => {
     }
     return context;
 };
+

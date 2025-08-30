@@ -540,7 +540,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       });
 
       const newLevel = newLevelData?.level ?? 0;
-      if (newLevel >= 1 && oldLevel === 0) {
+      if (newLevel >= 1 && oldLevel === 0 && currentUser.status === 'inactive') {
         const activationDateKey = `${currentUser.email}_activationDate`;
         if (!localStorage.getItem(activationDateKey)) {
           localStorage.setItem(activationDateKey, new Date().toISOString());
@@ -585,13 +585,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
   const approveRecharge = (userEmail: string, rechargeAmount: number) => {
       const mainBalanceKey = `${userEmail}_mainBalance`;
-      const taskRewardsKey = `${userEmail}_taskRewardsBalance`;
-      const interestEarningsKey = `${userEmail}_interestEarningsBalance`;
-
       const currentMainBalance = parseFloat(localStorage.getItem(mainBalanceKey) || '0');
-      const currentTaskBalance = parseFloat(localStorage.getItem(taskRewardsKey) || '0');
-      const currentInterestBalance = parseFloat(localStorage.getItem(interestEarningsKey) || '0');
-      
       const newMainBalance = currentMainBalance + rechargeAmount;
       localStorage.setItem(mainBalanceKey, newMainBalance.toString());
 
@@ -599,31 +593,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       const depositCount = parseInt(localStorage.getItem(depositsKey) || '0');
       localStorage.setItem(depositsKey, (depositCount + 1).toString());
       
-      const userToUpdate = users.find(u => u.email === userEmail);
-      if(userToUpdate){
-        const userFirstDepositKey = `${userEmail}_firstDepositAmount`;
-        if (!localStorage.getItem(userFirstDepositKey)) {
-            localStorage.setItem(userFirstDepositKey, JSON.stringify(rechargeAmount));
-        }
-
-        // Check for activation on recharge approval
-        const currentCommittedBalance = currentTaskBalance + currentInterestBalance;
-        const tempUsers = JSON.parse(localStorage.getItem('users') || '[]');
-        const tempDirectReferrals = tempUsers.filter((u:any) => u.referredBy === userToUpdate.referralCode).length;
-
-        const newLevelData = configuredLevels.slice().reverse().find(l => {
-          const balanceMet = currentCommittedBalance >= l.minAmount;
-          const referralsMet = tempDirectReferrals >= l.referrals;
-          return balanceMet && referralsMet;
-        });
-
-        if ((newLevelData?.level ?? 0) >= 1 && userToUpdate.status === 'inactive') {
-          activateUserAccount(userEmail);
-          const activationDateKey = `${userEmail}_activationDate`;
-          if (!localStorage.getItem(activationDateKey)) {
-              localStorage.setItem(activationDateKey, new Date().toISOString());
-          }
-        }
+      if(currentUser?.email === userEmail) {
+          setMainBalance(prev => prev + rechargeAmount);
+          setDeposits(prev => prev + 1);
+          toast({ title: "Recharge Approved", description: `Your balance has been updated by ${rechargeAmount.toFixed(2)} USDT.` });
       }
 
       addTransaction(userEmail, {
@@ -632,12 +605,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
           amount: rechargeAmount,
           date: new Date().toISOString()
       });
-
-      if(currentUser?.email === userEmail) {
-          setMainBalance(prev => prev + rechargeAmount);
-          setDeposits(prev => prev + 1);
-          toast({ title: "Recharge Approved", description: `Your balance has been updated by ${rechargeAmount.toFixed(2)} USDT.` });
-      }
   };
 
   const addCommissionToMainBalance = useCallback((commissionAmount: number) => {
@@ -1059,3 +1026,4 @@ export const useWallet = () => {
 };
 
     
+
