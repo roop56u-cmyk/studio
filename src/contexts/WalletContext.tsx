@@ -550,16 +550,14 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     if (newLevel >= 1 && currentUser.status === 'inactive') {
       activateUserAccount(currentUser.email);
     } else if (newLevel === 0 && currentUser.status === 'active') {
-      // Deactivation Logic
-      updateUserStatus(currentUser.email, 'inactive');
+       updateUserStatus(currentUser.email, 'inactive');
     }
 
     // Record first deposit for bonus eligibility
     if (!fromAccount) {
-        const userFirstDepositKey = `${currentUser.email}_firstDepositAmount`;
-        if (!localStorage.getItem(userFirstDepositKey)) {
-            localStorage.setItem(userFirstDepositKey, JSON.stringify(numericAmount));
-            setPersistentState('activationDate', new Date().toISOString());
+        const userActivationKey = `${currentUser.email}_activationDate`;
+        if (!localStorage.getItem(userActivationKey) && newLevel >= 1) {
+            localStorage.setItem(userActivationKey, new Date().toISOString());
         }
     }
 
@@ -587,25 +585,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
           setMainBalance(prev => prev + rechargeAmount);
           setDeposits(prev => prev + 1);
           toast({ title: "Recharge Approved", description: `Your balance has been updated by ${rechargeAmount.toFixed(2)} USDT.` });
-      }
-
-      // Check if this recharge makes the user active
-      const userToUpdate = users.find(u => u.email === userEmail);
-      if (userToUpdate && userToUpdate.status === 'inactive') {
-          const taskBalance = parseFloat(localStorage.getItem(`${userEmail}_taskRewardsBalance`) || '0');
-          const interestBalance = parseFloat(localStorage.getItem(`${userEmail}_interestEarningsBalance`) || '0');
-          const committedBalance = taskBalance + interestBalance;
-          
-          const levelData = configuredLevels.slice().reverse().find(l => {
-             const balanceMet = committedBalance >= l.minAmount;
-             // Simplified referral check for this context
-             const referralsMet = true; // Assuming we check referrals elsewhere
-             return balanceMet && referralsMet;
-          });
-
-          if (levelData && levelData.level >= 1) {
-              activateUserAccount(userEmail);
-          }
       }
 
       addTransaction(userEmail, {
@@ -762,6 +741,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const completeTask = (task: GenerateTaskSuggestionOutput) => {
+      if (!currentUser) return;
       if (tasksCompletedToday >= dailyTaskQuota) {
           toast({ variant: "destructive", title: "Daily Limit Reached", description: "You have already completed all your tasks for today." });
           return;
@@ -781,6 +761,30 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       const newTasksCompleted = tasksCompletedToday + 1;
       setTasksCompletedToday(newTasksCompleted);
       setPersistentState('lastCompletionTime', new Date().getTime());
+
+      // Distribute commission to active L1 downline
+      const l1CommissionRate = (getGlobalSetting('team_commission_rates', {level1: 10}, true).level1 || 10) / 100;
+      const l1CommissionEnabled = getGlobalSetting('team_commission_enabled', {level1: true}, true).level1;
+
+      if (l1CommissionEnabled && l1CommissionRate > 0) {
+          const directReferrals = users.filter(u => u.referredBy === currentUser.referralCode && u.status === 'active');
+          if (directReferrals.length > 0) {
+              const totalCommission = finalEarning * l1CommissionRate;
+              const commissionPerMember = totalCommission / directReferrals.length;
+
+              directReferrals.forEach(member => {
+                  const memberBalanceKey = `${member.email}_mainBalance`;
+                  const currentMemberBalance = parseFloat(localStorage.getItem(memberBalanceKey) || '0');
+                  localStorage.setItem(memberBalanceKey, (currentMemberBalance + commissionPerMember).toString());
+                  addTransaction(member.email, {
+                      type: 'Upline Commission',
+                      description: `Commission from upline: ${currentUser.email}`,
+                      amount: commissionPerMember,
+                      date: new Date().toISOString()
+                  });
+              });
+          }
+      }
 
       toast({ title: "Task Completed!", description: `You've earned ${finalEarning.toFixed(4)} USDT.` });
   };
@@ -1035,5 +1039,6 @@ export const useWallet = () => {
 };
 
     
+
 
 

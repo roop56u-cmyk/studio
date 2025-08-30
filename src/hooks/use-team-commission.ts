@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect } from "react";
@@ -6,19 +7,18 @@ import { useTeam } from "@/contexts/TeamContext";
 import { useWallet } from "@/contexts/WalletContext";
 import { useAuth } from "@/contexts/AuthContext";
 
-// This hook is responsible for calculating and crediting team commission daily.
+// This hook is now disabled as the new "top-down" commission logic is handled
+// directly within the `completeTask` function in WalletContext.
 export function useTeamCommission() {
-  const { teamData, commissionRates, commissionEnabled } = useTeam();
-  const { addCommissionToMainBalance, getReferralCommissionBoost } = useWallet();
-  const { currentUser } = useAuth();
-
+  
   useEffect(() => {
+    // The entire logic is commented out to prevent it from running.
+    /*
     if (!teamData || !currentUser || currentUser.status !== 'active') return;
     
     const now = new Date();
     const istTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
     
-    // Define the time for the daily credit (e.g., 9:30 AM IST)
     const creditHourIST = 9;
     const creditMinuteIST = 30;
 
@@ -29,7 +29,6 @@ export function useTeamCommission() {
     const todayCreditTime = new Date(istTime);
     todayCreditTime.setHours(creditHourIST, creditMinuteIST, 0, 0);
 
-    // If current time is past today's credit time and the last credit was before today's credit time
     if (istTime >= todayCreditTime && lastCreditDate < todayCreditTime) {
         let totalCommission = 0;
         if (commissionEnabled.level1) totalCommission += teamData.level1.commission * (commissionRates.level1 / 100);
@@ -45,7 +44,8 @@ export function useTeamCommission() {
             localStorage.setItem(lastCreditKey, new Date().toISOString());
         }
     }
-  }, [teamData, commissionRates, commissionEnabled, addCommissionToMainBalance, currentUser, getReferralCommissionBoost]);
+    */
+  }, []); // Empty dependency array ensures this runs once and does nothing.
 }
 
     
