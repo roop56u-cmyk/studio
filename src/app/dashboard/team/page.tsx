@@ -12,7 +12,7 @@ import {
   CardTitle,
   CardFooter
 } from "@/components/ui/card";
-import { Users, DollarSign, UserPlus, Briefcase, Activity, Award, X, Trophy, ArrowUp, Info } from "lucide-react";
+import { Users, DollarSign, UserPlus, Briefcase, Activity, Award, X, Trophy, ArrowUp, Info, HandCoins } from "lucide-react";
 import { useTeam } from "@/contexts/TeamContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -33,6 +33,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useWallet } from "@/contexts/WalletContext";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { SalaryPackage } from "../admin/salary/page";
 
 const TeamRewardCard = ({ reward, totalTeamBusiness }: { reward: TeamReward, totalTeamBusiness: number }) => {
     const { toast } = useToast();
@@ -154,6 +155,64 @@ const TeamSizeRewardCard = ({ reward, totalActiveMembers }: { reward: TeamSizeRe
     )
 }
 
+const SalaryPackageCard = ({ pkg }: { pkg: SalaryPackage }) => {
+    const { toast } = useToast();
+    const { addRequest } = useRequests();
+    const { currentUser } = useAuth();
+    const [lastClaimDate, setLastClaimDate] = useState<Date | null>(null);
+
+    useEffect(() => {
+        if (currentUser) {
+            const lastClaimStr = localStorage.getItem(`salary_claimed_${currentUser.email}_${pkg.id}`);
+            if (lastClaimStr) {
+                setLastClaimDate(new Date(lastClaimStr));
+            }
+        }
+    }, [pkg.id, currentUser]);
+    
+    const canClaim = useMemo(() => {
+        if (!lastClaimDate) return true;
+        const now = new Date();
+        const nextClaimDate = new Date(lastClaimDate.getTime() + pkg.periodDays * 24 * 60 * 60 * 1000);
+        return now >= nextClaimDate;
+    }, [lastClaimDate, pkg.periodDays]);
+
+    const handleClaim = () => {
+        addRequest({
+            type: 'Salary Claim',
+            amount: pkg.amount,
+            address: pkg.name,
+        });
+        const now = new Date();
+        localStorage.setItem(`salary_claimed_${currentUser?.email}_${pkg.id}`, now.toISOString());
+        setLastClaimDate(now);
+        toast({
+            title: "Salary Claim Submitted!",
+            description: `Your claim for "${pkg.name}" is pending admin approval.`
+        });
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <div className="flex items-center gap-2">
+                    <HandCoins className="h-5 w-5 text-green-500"/>
+                    <CardTitle className="text-base">{pkg.name}</CardTitle>
+                </div>
+                <CardDescription>Claim your recurring salary bonus.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <p className="text-sm text-muted-foreground">You are eligible to claim a salary of <strong className="text-foreground">${pkg.amount.toLocaleString()}</strong> every <strong className="text-foreground">{pkg.periodDays} days</strong>.</p>
+            </CardContent>
+            <CardFooter>
+                <Button className="w-full" disabled={!canClaim} onClick={handleClaim}>
+                    {canClaim ? "Claim Salary" : `Claimable on ${lastClaimDate ? new Date(lastClaimDate.getTime() + pkg.periodDays * 24 * 60 * 60 * 1000).toLocaleDateString() : ''}`}
+                </Button>
+            </CardFooter>
+        </Card>
+    );
+};
+
 
 export default function TeamPage() {
   const { 
@@ -164,7 +223,8 @@ export default function TeamPage() {
       totalTeamBusiness, 
       totalActivationsToday, 
       teamRewards, 
-      teamSizeRewards, 
+      teamSizeRewards,
+      salaryPackages,
       totalUplineCommission, 
       uplineCommissionSettings,
       uplineInfo,
@@ -380,6 +440,17 @@ export default function TeamPage() {
                     </Card>
                 ))}
             </div>
+
+            {salaryPackages.length > 0 && (
+                 <div>
+                    <h2 className="text-2xl font-bold tracking-tight mb-4">Salary Packages</h2>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {salaryPackages.map(pkg => (
+                            <SalaryPackageCard key={pkg.id} pkg={pkg} />
+                        ))}
+                    </div>
+                </div>
+            )}
             
             {availableTeamSizeRewards.length > 0 && (
                 <div>

@@ -15,7 +15,7 @@ import type { DailyReward } from '@/app/dashboard/admin/daily-rewards/page';
 export type Request = {
     id: string;
     user: string;
-    type: 'Recharge' | 'Withdrawal' | 'Team Reward' | 'Team Size Reward' | 'Sign-up Bonus' | 'Referral Bonus';
+    type: 'Recharge' | 'Withdrawal' | 'Team Reward' | 'Team Size Reward' | 'Sign-up Bonus' | 'Referral Bonus' | 'Salary Claim';
     amount: number;
     address: string | null;
     level: number;
@@ -107,6 +107,7 @@ interface WalletContextType {
   approveWithdrawal: (userEmail: string, amount: number) => void;
   approveSignUpBonus: (userEmail: string, amount: number) => void;
   approveReferralBonus: (userEmail: string, referredUser: string, amount: number) => void;
+  approveSalary: (userEmail: string, amount: number) => void;
   refundWithdrawal: (userEmail: string, withdrawalAmount: number) => void;
   isLoading: boolean;
   interestCounter: CounterState;
@@ -508,6 +509,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     let tempMainBalance = mainBalance;
     let tempTaskBalance = taskRewardsBalance;
     let tempInterestBalance = interestEarningsBalance;
+    let originalCommittedBalance = taskRewardsBalance + interestEarningsBalance;
 
     if (!fromAccount) { // Moving from Main Wallet
       if (numericAmount > mainBalance) {
@@ -538,15 +540,11 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setInterestEarningsBalance(tempInterestBalance);
 
     const newCommittedBalance = tempTaskBalance + tempInterestBalance;
-    const currentCommittedBalance = taskRewardsBalance + interestEarningsBalance;
     
     // Check for Activation
-    if (!fromAccount && getInitialState('activationDate', null) === null) {
-      const minBalanceForL1 = minRequiredBalanceForLevel(1);
-      if (newCommittedBalance >= minBalanceForL1) {
-          activateUserAccount(currentUser.email);
-          setPersistentState('activationDate', new Date().toISOString());
-      }
+    const minBalanceForL1 = minRequiredBalanceForLevel(1);
+    if (!fromAccount && originalCommittedBalance < minBalanceForL1 && newCommittedBalance >= minBalanceForL1) {
+      activateUserAccount(currentUser.email);
     }
     
     // Check for Deactivation
@@ -672,6 +670,23 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     if (currentUser?.email === userEmail) {
         setMainBalance(prev => prev + amount);
         setClaimedReferralIds(prev => [...prev, referredUser]);
+    }
+  };
+  
+  const approveSalary = (userEmail: string, amount: number) => {
+    const key = `${userEmail}_mainBalance`;
+    const currentBalance = parseFloat(localStorage.getItem(key) || '0');
+    localStorage.setItem(key, (currentBalance + amount).toString());
+
+    addTransaction(userEmail, {
+        type: 'Salary Claim',
+        description: 'Salary claim approved by admin',
+        amount: amount,
+        date: new Date().toISOString()
+    });
+    
+    if (currentUser?.email === userEmail) {
+        setMainBalance(prev => prev + amount);
     }
   };
 
@@ -986,6 +1001,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         approveWithdrawal,
         approveSignUpBonus,
         approveReferralBonus,
+        approveSalary,
         refundWithdrawal,
         isLoading,
         interestCounter,
@@ -1031,9 +1047,3 @@ export const useWallet = () => {
   }
   return context;
 };
-
-    
-
-
-
-

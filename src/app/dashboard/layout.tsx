@@ -78,7 +78,8 @@ import {
   MessageSquare,
   Trophy,
   CalendarDays,
-  ArrowUp
+  ArrowUp,
+  Briefcase
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -116,9 +117,10 @@ import ManageTeamSizeRewardsPage from "./admin/team-size-rewards/page";
 import ManageMessagesPage from "./admin/messages/page";
 import ManageDailyRewardsPage from './admin/daily-rewards/page';
 import UplineCommissionPage from './admin/upline-commission/page';
+import ManageSalaryPage from './admin/salary/page';
 
 
-type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards';
+type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement';
 
 
 const adminPanelComponents: Record<PanelType, React.ComponentType> = {
@@ -140,6 +142,7 @@ const adminPanelComponents: Record<PanelType, React.ComponentType> = {
     teamSizeRewards: ManageTeamSizeRewardsPage,
     messageManagement: ManageMessagesPage,
     dailyRewards: ManageDailyRewardsPage,
+    salaryManagement: ManageSalaryPage,
 };
 
 const adminPanelTitles: Record<PanelType, { title: string; description: string }> = {
@@ -161,6 +164,7 @@ const adminPanelTitles: Record<PanelType, { title: string; description: string }
     teamSizeRewards: { title: "Team Size Rewards", description: "Create and manage rewards for team size milestones." },
     messageManagement: { title: "Manage Messages", description: "Edit platform-wide custom messages and text." },
     dailyRewards: { title: "Daily Login Rewards", description: "Configure rewards for daily check-ins." },
+    salaryManagement: { title: "Manage Salary", description: "Create and configure salary packages for users." },
 };
 
 function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransactionHistoryClick, onTaskHistoryClick, onReferralClick, onInboxClick, onBoosterStoreClick, onQuestPanelClick, onRewardsPanelClick, onAdminPanelClick }: { onRechargeClick: () => void, onWithdrawalClick: () => void, onTransactionHistoryClick: () => void, onTaskHistoryClick: () => void, onReferralClick: () => void, onInboxClick: () => void, onBoosterStoreClick: () => void, onQuestPanelClick: () => void, onRewardsPanelClick: () => void, onAdminPanelClick: (panel: PanelType) => void }) {
@@ -246,6 +250,12 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
                     <SidebarMenuButton onClick={() => onAdminPanelClick('boosterManagement')} tooltip={{ children: "Manage Boosters" }}>
                         <Flame />
                         <span>Manage Boosters</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('salaryManagement')} tooltip={{ children: "Manage Salary" }}>
+                        <Briefcase />
+                        <span>Manage Salary</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>

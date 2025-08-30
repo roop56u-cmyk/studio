@@ -10,7 +10,7 @@ import { useWallet } from './WalletContext';
 export type Request = {
     id: string;
     user: string;
-    type: 'Recharge' | 'Withdrawal' | 'Team Reward' | 'Team Size Reward' | 'Sign-up Bonus' | 'Referral Bonus';
+    type: 'Recharge' | 'Withdrawal' | 'Team Reward' | 'Team Size Reward' | 'Sign-up Bonus' | 'Referral Bonus' | 'Salary Claim';
     amount: number;
     address: string | null;
     level: number;
@@ -84,6 +84,7 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
       approveWithdrawal,
       approveSignUpBonus,
       approveReferralBonus,
+      approveSalary,
       refundWithdrawal 
   } = useWallet();
   
@@ -171,6 +172,8 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
                 approveSignUpBonus(userEmail, amount);
             } else if (type === 'Referral Bonus' && address) {
                 approveReferralBonus(userEmail, address, amount);
+            } else if (type === 'Salary Claim') {
+                approveSalary(userEmail, amount);
             }
         } else if (status === 'Declined') {
             if (type === 'Withdrawal') {

@@ -9,9 +9,11 @@ import { useWallet } from './WalletContext';
 import { TeamReward } from '@/app/dashboard/admin/team-rewards/page';
 import { TeamSizeReward } from '@/app/dashboard/admin/team-size-rewards/page';
 import type { UplineCommissionSettings } from '@/app/dashboard/admin/upline-commission/page';
+import type { SalaryPackage } from '@/app/dashboard/admin/salary/page';
 
 type TeamMember = User & {
     level: number;
+    status: 'active' | 'inactive' | 'disabled';
 };
 
 type TeamLevelData = {
@@ -33,6 +35,7 @@ interface TeamContextType {
   teamData: TeamData | null;
   teamRewards: TeamReward[];
   teamSizeRewards: TeamSizeReward[];
+  salaryPackages: SalaryPackage[];
   commissionRates: { level1: number; level2: number; level3: number; };
   commissionEnabled: { level1: boolean; level2: boolean; level3: boolean; };
   isLoading: boolean;
@@ -52,10 +55,12 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const [teamData, setTeamData] = useState<TeamData | null>(null);
     const [teamRewards, setTeamRewards] = useState<TeamReward[]>([]);
     const [teamSizeRewards, setTeamSizeRewards] = useState<TeamSizeReward[]>([]);
+    const [salaryPackages, setSalaryPackages] = useState<SalaryPackage[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [totalUplineCommission, setTotalUplineCommission] = useState(0);
     const [uplineInfo, setUplineInfo] = useState<{ name: string; email: string; } | null>(null);
     const [activeL1Referrals, setActiveL1Referrals] = useState(0);
+    const { currentLevel } = useWallet();
     
     const [commissionRates, setCommissionRates] = useState({ level1: 10, level2: 5, level3: 2 });
     const [commissionEnabled, setCommissionEnabled] = useState({ level1: true, level2: true, level3: true });
@@ -94,8 +99,19 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             
             const savedUplineSettings = localStorage.getItem('upline_commission_settings');
             if(savedUplineSettings) setUplineCommissionSettings(JSON.parse(savedUplineSettings));
+
+            const savedSalaryPackages = localStorage.getItem('platform_salary_packages');
+            if (savedSalaryPackages && currentUser) {
+                const allPackages = JSON.parse(savedSalaryPackages);
+                const eligiblePackages = allPackages.filter((pkg: SalaryPackage) => {
+                    const levelMatch = pkg.level === 0 || currentLevel >= pkg.level;
+                    const userMatch = !pkg.userEmail || pkg.userEmail === currentUser.email;
+                    return levelMatch && userMatch;
+                });
+                setSalaryPackages(eligiblePackages);
+            }
         }
-    }, [currentUser]);
+    }, [currentUser, currentLevel]);
 
     useEffect(() => {
         if (currentUser?.email) {
@@ -141,7 +157,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     const getIsNewToday = useCallback((user: User): boolean => {
-         if (!user.activatedAt) {
+         if (!user.activatedAt || user.status !== 'active') {
              return false;
          }
 
@@ -154,7 +170,6 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     const calculateTeamData = useCallback((user: User, allUsers: User[]): TeamData => {
-        const purchasedReferrals = parseInt(localStorage.getItem(`${user.email}_purchased_referrals`) || '0');
         const platformLevels = JSON.parse(localStorage.getItem('platform_levels') || JSON.stringify(defaultLevels));
         const earningModel = localStorage.getItem('system_earning_model') || 'dynamic';
 
@@ -178,7 +193,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
                  }
             }, 0);
 
-            const activationsToday = allUsers.filter(u => members.some(m => m.email === u.email) && u.status === 'active' && getIsNewToday(u)).length;
+            const activationsToday = allUsers.filter(u => members.some(m => m.email === u.email) && getIsNewToday(u)).length;
             
             return {
                 count: members.length,
@@ -195,6 +210,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         const level3Members = level2Members.flatMap(l2User => allUsers.filter(u => u.referredBy === l2User.referralCode));
         
         const level1 = calculateLayer(level1Members);
+        const purchasedReferrals = parseInt(localStorage.getItem(`${user.email}_purchased_referrals`) || '0');
         level1.count += purchasedReferrals; 
         setActiveL1Referrals(level1.activeCount);
 
@@ -242,6 +258,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         teamData,
         teamRewards,
         teamSizeRewards,
+        salaryPackages,
         commissionRates,
         commissionEnabled,
         isLoading,
