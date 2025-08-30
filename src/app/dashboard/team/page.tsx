@@ -28,7 +28,7 @@ import { TeamReward } from "../admin/team-rewards/page";
 import { TeamSizeReward } from "../admin/team-size-rewards/page";
 import { useToast } from "@/hooks/use-toast";
 import { useRequests } from "@/contexts/RequestContext";
-import { useIsMobile } from "@/hooks/use-is-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWallet } from "@/contexts/WalletContext";
 import { cn } from "@/lib/utils";
