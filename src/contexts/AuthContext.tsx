@@ -19,6 +19,7 @@ export type User = {
     isBonusDisabled?: boolean;
     withdrawalRestrictionUntil?: string | null; // ISO date string
     createdAt: string; // ISO date string
+    activatedAt?: string | null; // ISO date string
 };
 
 interface AuthContextType {
@@ -45,6 +46,7 @@ const initialAdminUser: User = {
     isBonusDisabled: true,
     withdrawalRestrictionUntil: null,
     createdAt: new Date(0).toISOString(),
+    activatedAt: new Date(0).toISOString(),
 };
 
 const getGlobalSetting = (key: string, defaultValue: any, isJson: boolean = false) => {
@@ -104,6 +106,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     isBonusDisabled: u.isBonusDisabled ?? false,
                     withdrawalRestrictionUntil: u.withdrawalRestrictionUntil ?? null,
                     createdAt: u.createdAt ?? new Date().toISOString(),
+                    activatedAt: u.activatedAt ?? null,
                     ...(u.email === initialAdminUser.email ? initialAdminUser : {})
                 }));
             }
@@ -190,6 +193,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             isAccountActive: false,
             isBonusDisabled: false,
             createdAt: new Date().toISOString(),
+            activatedAt: null,
         };
         setUsers(prev => [...prev, newUser]);
         
@@ -253,19 +257,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const updateUserStatus = (email: string, status: User['status']) => {
-        setUsers(prev => prev.map(u => u.email === email ? { ...u, status } : u));
-         if (currentUser?.email === email) {
-            setCurrentUser(prev => prev ? { ...prev, status } : null);
+        setUsers(prev => prev.map(u => {
+            if (u.email === email) {
+                const updatedUser = { ...u, status };
+                if (status === 'inactive') {
+                    updatedUser.activatedAt = null;
+                }
+                return updatedUser;
+            }
+            return u;
+        }));
+        if (currentUser?.email === email) {
+            setCurrentUser(prev => prev ? { ...prev, status, ...(status === 'inactive' && { activatedAt: null }) } : null);
         }
     }
     
     const activateUserAccount = (email: string) => {
-        const newUsers = users.map(u => u.email === email ? { ...u, isAccountActive: true, status: 'active' } : u);
+        const newUsers = users.map(u => {
+            if (u.email === email) {
+                // Only set activatedAt if it's not already set
+                return { ...u, status: 'active', activatedAt: u.activatedAt || new Date().toISOString() };
+            }
+            return u;
+        });
         setUsers(newUsers);
         localStorage.setItem('users', JSON.stringify(newUsers));
 
         if (currentUser?.email === email) {
-            setCurrentUser(prev => prev ? { ...prev, isAccountActive: true, status: 'active' } : null);
+            setCurrentUser(prev => prev ? { ...prev, status: 'active', activatedAt: prev.activatedAt || new Date().toISOString() } : null);
         }
     }
 
@@ -284,4 +303,3 @@ export const useAuth = () => {
     }
     return context;
 };
-

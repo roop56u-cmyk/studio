@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,11 +12,12 @@ import {
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { User, Mail, ShieldCheck } from "lucide-react";
+import { User, Mail, ShieldCheck, CalendarCheck } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { format } from 'date-fns';
 
 export default function ProfilePage() {
   const { currentUser } = useAuth();
@@ -77,6 +79,15 @@ export default function ProfilePage() {
                     <Skeleton className="h-6 w-20" />
                  )}
             </div>
+            {currentUser?.status === 'active' && currentUser.activatedAt && (
+              <div className="flex items-center gap-4 p-3 bg-muted rounded-lg">
+                  <CalendarCheck className="h-5 w-5 text-muted-foreground" />
+                   <div className="text-sm">
+                      <p className="text-foreground font-medium">Activated On</p>
+                      <p className="text-muted-foreground text-xs">{format(new Date(currentUser.activatedAt), 'PPP p')}</p>
+                   </div>
+              </div>
+            )}
              <Button asChild variant="outline" className="w-full">
                 <Link href="/dashboard/settings">
                     Manage Settings & Password
