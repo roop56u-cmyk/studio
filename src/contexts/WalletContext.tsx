@@ -531,12 +531,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
       if (isFirstDeposit) {
           localStorage.setItem(userFirstDepositKey, JSON.stringify(numericAmount));
-          activateUserAccount(currentUser.email);
       }
-      
-      // New logic for setting activation date
-      const activationDateKey = `${currentUser.email}_activationDate`;
-      const hasBeenActivated = localStorage.getItem(activationDateKey);
       
       const newLevelData = configuredLevels.slice().reverse().find(l => {
           const balanceMet = newCommittedBalance >= l.minAmount;
@@ -544,8 +539,13 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
           return balanceMet && referralsMet;
       });
 
-      if (!hasBeenActivated && newLevelData && newLevelData.level >= 1) {
+      const newLevel = newLevelData?.level ?? 0;
+      if (newLevel >= 1 && oldLevel === 0) {
+        const activationDateKey = `${currentUser.email}_activationDate`;
+        if (!localStorage.getItem(activationDateKey)) {
           localStorage.setItem(activationDateKey, new Date().toISOString());
+        }
+        activateUserAccount(currentUser.email);
       }
 
 
@@ -584,19 +584,46 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const approveRecharge = (userEmail: string, rechargeAmount: number) => {
-      const key = `${userEmail}_mainBalance`;
-      const currentBalance = parseFloat(localStorage.getItem(key) || '0');
-      localStorage.setItem(key, (currentBalance + rechargeAmount).toString());
+      const mainBalanceKey = `${userEmail}_mainBalance`;
+      const taskRewardsKey = `${userEmail}_taskRewardsBalance`;
+      const interestEarningsKey = `${userEmail}_interestEarningsBalance`;
+
+      const currentMainBalance = parseFloat(localStorage.getItem(mainBalanceKey) || '0');
+      const currentTaskBalance = parseFloat(localStorage.getItem(taskRewardsKey) || '0');
+      const currentInterestBalance = parseFloat(localStorage.getItem(interestEarningsKey) || '0');
+      
+      const newMainBalance = currentMainBalance + rechargeAmount;
+      localStorage.setItem(mainBalanceKey, newMainBalance.toString());
 
       const depositsKey = `${userEmail}_deposits`;
       const depositCount = parseInt(localStorage.getItem(depositsKey) || '0');
       localStorage.setItem(depositsKey, (depositCount + 1).toString());
       
       const userToUpdate = users.find(u => u.email === userEmail);
-      const userFirstDepositKey = `${userEmail}_firstDepositAmount`;
-      if (userToUpdate && !localStorage.getItem(userFirstDepositKey)) {
-          localStorage.setItem(userFirstDepositKey, JSON.stringify(rechargeAmount));
-          // Activation is now tied to committing funds, not just recharge.
+      if(userToUpdate){
+        const userFirstDepositKey = `${userEmail}_firstDepositAmount`;
+        if (!localStorage.getItem(userFirstDepositKey)) {
+            localStorage.setItem(userFirstDepositKey, JSON.stringify(rechargeAmount));
+        }
+
+        // Check for activation on recharge approval
+        const currentCommittedBalance = currentTaskBalance + currentInterestBalance;
+        const tempUsers = JSON.parse(localStorage.getItem('users') || '[]');
+        const tempDirectReferrals = tempUsers.filter((u:any) => u.referredBy === userToUpdate.referralCode).length;
+
+        const newLevelData = configuredLevels.slice().reverse().find(l => {
+          const balanceMet = currentCommittedBalance >= l.minAmount;
+          const referralsMet = tempDirectReferrals >= l.referrals;
+          return balanceMet && referralsMet;
+        });
+
+        if ((newLevelData?.level ?? 0) >= 1 && userToUpdate.status === 'inactive') {
+          activateUserAccount(userEmail);
+          const activationDateKey = `${userEmail}_activationDate`;
+          if (!localStorage.getItem(activationDateKey)) {
+              localStorage.setItem(activationDateKey, new Date().toISOString());
+          }
+        }
       }
 
       addTransaction(userEmail, {
