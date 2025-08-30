@@ -11,9 +11,11 @@ import {
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { User, Mail } from "lucide-react";
+import { User, Mail, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 export default function ProfilePage() {
   const { currentUser } = useAuth();
@@ -31,7 +33,7 @@ export default function ProfilePage() {
       <Card>
         <CardHeader className="items-center text-center">
             <Avatar className="h-24 w-24 mb-4">
-                <AvatarImage src={`https://placehold.co/100x100/${'673ab7'}/${'ffffff'}.png?text=${currentUser?.fullName?.[0].toUpperCase() ?? 'U'}`} alt="User Avatar" />
+                <AvatarImage src={`https://placehold.co/100x100/${'673ab7'}/${'ffffff'}.png?text=${currentUser?.fullName?.[0].toUpperCase() ?? 'U'}`} alt="User Avatar" data-ai-hint="user avatar" />
                 <AvatarFallback className="text-4xl">{currentUser?.fullName?.[0].toUpperCase() ?? 'U'}</AvatarFallback>
             </Avatar>
             {currentUser ? (
@@ -60,6 +62,19 @@ export default function ProfilePage() {
                     <span className="text-foreground">{currentUser.email}</span>
                  ) : (
                     <Skeleton className="h-5 w-full" />
+                 )}
+            </div>
+            <div className="flex items-center justify-between gap-4 p-3 bg-muted rounded-lg">
+                <div className="flex items-center gap-4">
+                    <ShieldCheck className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-foreground">Account Status</span>
+                </div>
+                 {currentUser ? (
+                     <Badge variant={currentUser.status === 'active' ? 'default' : 'secondary'} className={cn(currentUser.status === 'active' && 'bg-green-100 text-green-800')}>
+                        {currentUser.status.charAt(0).toUpperCase() + currentUser.status.slice(1)}
+                    </Badge>
+                 ) : (
+                    <Skeleton className="h-6 w-20" />
                  )}
             </div>
              <Button asChild variant="outline" className="w-full">
