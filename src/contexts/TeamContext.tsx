@@ -120,19 +120,22 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         return mainBalance + taskBalance + interestBalance;
     }, []);
 
-    const getIsNewToday = useCallback((user: User): boolean => {
-         if (typeof window === 'undefined' || user.status !== 'active') return false;
+    const getIsNewToday = useCallback((userEmail: string): boolean => {
+         if (typeof window === 'undefined') return false;
          
-         const firstDepositDateStr = localStorage.getItem(`${user.email}_firstDepositDate`);
+         const firstDepositDateStr = localStorage.getItem(`${userEmail}_firstDepositDate`);
          if (!firstDepositDateStr) return false;
 
          const firstDepositDate = new Date(firstDepositDateStr);
          const today = new Date();
 
-         return firstDepositDate.getFullYear() === today.getFullYear() &&
+         const isToday = firstDepositDate.getFullYear() === today.getFullYear() &&
                 firstDepositDate.getMonth() === today.getMonth() &&
                 firstDepositDate.getDate() === today.getDate();
-    }, []);
+
+        const latestUser = users.find(u => u.email === userEmail);
+        return isToday && latestUser?.status === 'active';
+    }, [users]);
 
     const calculateTeamData = useCallback((user: User, allUsers: User[]): TeamData => {
         const purchasedReferrals = parseInt(localStorage.getItem(`${user.email}_purchased_referrals`) || '0');
@@ -147,7 +150,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
                  return sum + (levelData ? levelData.earningPerTask * levelData.dailyTasks : 0);
             }, 0);
 
-            const activationsToday = members.filter(m => getIsNewToday(m)).length;
+            const activationsToday = members.filter(m => getIsNewToday(m.email)).length;
             
             return {
                 count: members.length,
@@ -225,4 +228,3 @@ export const useTeam = () => {
     }
     return context;
 };
-
