@@ -37,6 +37,9 @@ export default function LoginPage() {
             title: "Login Successful",
             description: "Welcome back!",
         });
+        
+        sessionStorage.setItem("show_login_popup", "true");
+
         if (result.isAdmin) {
              router.push("/dashboard/admin");
         } else {

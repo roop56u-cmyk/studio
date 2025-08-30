@@ -21,7 +21,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Trash2 } from "lucide-react";
+import { Trash2, Pin, PinOff } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 
 export type Notice = {
   id: string;
@@ -35,17 +37,40 @@ export default function AdminNoticesPage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [notices, setNotices] = useState<Notice[]>([]);
+  const [isPopupEnabled, setIsPopupEnabled] = useState(false);
+  const [popupNoticeId, setPopupNoticeId] = useState<string | null>(null);
 
   useEffect(() => {
     const storedNotices = localStorage.getItem("platform_notices");
     if (storedNotices) {
       setNotices(JSON.parse(storedNotices));
     }
+    const storedPopupEnabled = localStorage.getItem("login_popup_enabled");
+    if (storedPopupEnabled) {
+      setIsPopupEnabled(JSON.parse(storedPopupEnabled));
+    }
+    const storedPopupNoticeId = localStorage.getItem("login_popup_notice_id");
+    if (storedPopupNoticeId) {
+      setPopupNoticeId(storedPopupNoticeId);
+    }
   }, []);
 
   useEffect(() => {
     localStorage.setItem("platform_notices", JSON.stringify(notices));
   }, [notices]);
+
+  useEffect(() => {
+    localStorage.setItem("login_popup_enabled", JSON.stringify(isPopupEnabled));
+  }, [isPopupEnabled]);
+  
+  useEffect(() => {
+    if (popupNoticeId) {
+      localStorage.setItem("login_popup_notice_id", popupNoticeId);
+    } else {
+      localStorage.removeItem("login_popup_notice_id");
+    }
+  }, [popupNoticeId]);
+
 
   const handlePublish = (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,11 +101,24 @@ export default function AdminNoticesPage() {
   };
 
   const handleDelete = (id: string) => {
+    if (id === popupNoticeId) {
+        setPopupNoticeId(null);
+    }
     setNotices(prev => prev.filter(n => n.id !== id));
     toast({
         title: "Notice Deleted",
         variant: "destructive",
     });
+  }
+
+  const handleSetPopupNotice = (id: string) => {
+    if (popupNoticeId === id) {
+      setPopupNoticeId(null); // Unset if already set
+      toast({ title: "Login Popup Notice Unset" });
+    } else {
+      setPopupNoticeId(id);
+      toast({ title: "Login Popup Notice Set" });
+    }
   }
 
   return (
@@ -91,6 +129,22 @@ export default function AdminNoticesPage() {
           Create, edit, and publish notices for all users.
         </p>
       </div>
+
+       <Card>
+        <CardHeader>
+          <CardTitle>Login Popup Notice</CardTitle>
+          <CardDescription>
+            Enable this to show a notice to users immediately after they log in. Select a notice below to be the popup.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-2">
+            <Switch id="enable-popup" checked={isPopupEnabled} onCheckedChange={setIsPopupEnabled} />
+            <Label htmlFor="enable-popup">Enable Login Popup Notice</Label>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <form onSubmit={handlePublish}>
             <Card>
@@ -143,12 +197,19 @@ export default function AdminNoticesPage() {
                                 <span>{notice.title}</span>
                                 <span className="text-xs text-muted-foreground font-normal mt-1">{notice.date}</span>
                             </div>
+                            {popupNoticeId === notice.id && <Badge variant="secondary" className="ml-auto mr-2">Login Popup</Badge>}
                         </AccordionTrigger>
                         <AccordionContent>
                             <p className="whitespace-pre-wrap">{notice.content}</p>
-                            <Button size="sm" variant="destructive" className="mt-4" onClick={() => handleDelete(notice.id)}>
-                                <Trash2 className="mr-2 h-4 w-4" /> Delete
-                            </Button>
+                            <div className="flex gap-2 mt-4">
+                                <Button size="sm" variant="outline" onClick={() => handleSetPopupNotice(notice.id)}>
+                                    {popupNoticeId === notice.id ? <PinOff className="mr-2 h-4 w-4" /> : <Pin className="mr-2 h-4 w-4" />}
+                                    {popupNoticeId === notice.id ? 'Unset as Popup' : 'Set as Popup'}
+                                </Button>
+                                <Button size="sm" variant="destructive" onClick={() => handleDelete(notice.id)}>
+                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                </Button>
+                            </div>
                         </AccordionContent>
                         </AccordionItem>
                     ))}

@@ -42,6 +42,15 @@ import {
   SheetDescription,
   SheetClose
 } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Skeleton } from "@/components/ui/skeleton";
 import { Logo } from "@/components/logo";
 import {
@@ -118,6 +127,7 @@ import ManageMessagesPage from "./admin/messages/page";
 import ManageDailyRewardsPage from './admin/daily-rewards/page';
 import UplineCommissionPage from './admin/upline-commission/page';
 import ManageSalaryPage from './admin/salary/page';
+import type { Notice } from './admin/notices/page';
 
 
 type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement';
@@ -641,10 +651,31 @@ export default function DashboardLayout({
     const [activeAdminPanel, setActiveAdminPanel] = React.useState<PanelType | null>(null);
     const AdminPanelComponent = activeAdminPanel ? adminPanelComponents[activeAdminPanel] : null;
 
+    // Login Popup Notice State
+    const [loginNotice, setLoginNotice] = React.useState<Notice | null>(null);
+    const [isLoginNoticeOpen, setIsLoginNoticeOpen] = React.useState(false);
+
     useTeamCommission();
 
     React.useEffect(() => {
         setIsClient(true);
+        const showLoginPopup = sessionStorage.getItem("show_login_popup");
+        if (showLoginPopup === "true") {
+            const popupEnabled = localStorage.getItem("login_popup_enabled") === "true";
+            if (popupEnabled) {
+                const noticeId = localStorage.getItem("login_popup_notice_id");
+                const allNoticesStr = localStorage.getItem("platform_notices");
+                if (noticeId && allNoticesStr) {
+                    const allNotices: Notice[] = JSON.parse(allNoticesStr);
+                    const noticeToShow = allNotices.find(n => n.id === noticeId);
+                    if (noticeToShow) {
+                        setLoginNotice(noticeToShow);
+                        setIsLoginNoticeOpen(true);
+                    }
+                }
+            }
+            sessionStorage.removeItem("show_login_popup");
+        }
     }, []);
     
     const handleAdminPanelClick = (panel: PanelType) => {
@@ -848,6 +879,21 @@ export default function DashboardLayout({
                  <SheetClose />
             </SheetContent>
         </Sheet>
+        {loginNotice && (
+            <AlertDialog open={isLoginNoticeOpen} onOpenChange={setIsLoginNoticeOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{loginNotice.title}</AlertDialogTitle>
+                        <AlertDialogDescription className="whitespace-pre-wrap">
+                            {loginNotice.content}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogAction onClick={() => setIsLoginNoticeOpen(false)}>Close</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        )}
       </SidebarProvider>
   );
 }
