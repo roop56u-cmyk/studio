@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { PlusCircle, Edit, Trash2, DollarSign, CalendarClock, User, Star } from "lucide-react";
+import { PlusCircle, Edit, Trash2, DollarSign, CalendarClock, User, Star, Briefcase } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/select";
 import { levels } from "@/components/dashboard/level-tiers";
 import { useAuth } from "@/contexts/AuthContext";
+import { Switch } from "@/components/ui/switch";
 
 export type SalaryPackage = {
   id: string;
@@ -50,6 +51,8 @@ export type SalaryPackage = {
   userEmail: string; // Empty string for all users at the level
   amount: number;
   periodDays: number;
+  requiredTeamBusiness: number;
+  enabled: boolean;
 };
 
 const SalaryPackageForm = ({
@@ -67,14 +70,24 @@ const SalaryPackageForm = ({
   const [userEmail, setUserEmail] = useState(pkg?.userEmail || "");
   const [amount, setAmount] = useState(pkg?.amount || 0);
   const [periodDays, setPeriodDays] = useState(pkg?.periodDays || 30);
+  const [requiredTeamBusiness, setRequiredTeamBusiness] = useState(pkg?.requiredTeamBusiness || 0);
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || amount <= 0 || periodDays <= 0) {
-      alert("Please fill all fields with valid positive values.");
+    if (!name || amount <= 0 || periodDays <= 0 || requiredTeamBusiness < 0) {
+      alert("Please fill all fields with valid values. Amounts cannot be negative.");
       return;
     }
-    onSave({ name, level, userEmail, amount, periodDays });
+    onSave({ 
+        name, 
+        level, 
+        userEmail, 
+        amount, 
+        periodDays, 
+        requiredTeamBusiness, 
+        enabled: pkg?.enabled ?? true 
+    });
   };
   
   const handleUserSelectChange = (value: string) => {
@@ -132,6 +145,10 @@ const SalaryPackageForm = ({
             <Input id="periodDays" type="number" value={periodDays} onChange={(e) => setPeriodDays(Number(e.target.value))} required />
         </div>
       </div>
+       <div className="space-y-2">
+        <Label htmlFor="requiredTeamBusiness">Required Team Business (USDT)</Label>
+        <Input id="requiredTeamBusiness" type="number" value={requiredTeamBusiness} onChange={(e) => setRequiredTeamBusiness(Number(e.target.value))} required />
+      </div>
       <DialogFooter>
         <DialogClose asChild><Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button></DialogClose>
         <Button type="submit">Save Package</Button>
@@ -171,6 +188,11 @@ export default function ManageSalaryPage() {
     }
     closeForm();
   };
+  
+  const handleToggle = (id: string, enabled: boolean) => {
+      setPackages(packages.map(p => p.id === id ? {...p, enabled} : p));
+      toast({ title: `Package ${enabled ? "Enabled" : "Disabled"}` });
+  }
 
   const handleAddNew = () => {
     setEditingPackage(null);
@@ -217,14 +239,19 @@ export default function ManageSalaryPage() {
               <div key={pkg.id} className="border p-4 rounded-lg flex justify-between items-start gap-4">
                 <div className="flex-1 space-y-2">
                   <h3 className="font-semibold">{pkg.name}</h3>
-                  <div className="text-xs text-muted-foreground grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <div className="text-xs text-muted-foreground grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
                     <div className="flex items-center gap-1.5"><DollarSign className="h-3 w-3"/><span>${pkg.amount.toLocaleString()}</span></div>
                     <div className="flex items-center gap-1.5"><CalendarClock className="h-3 w-3"/><span>Every {pkg.periodDays} days</span></div>
                     <div className="flex items-center gap-1.5"><Star className="h-3 w-3"/><span>Level {pkg.level === 0 ? "All" : `${pkg.level}+`}</span></div>
+                     <div className="flex items-center gap-1.5"><Briefcase className="h-3 w-3"/><span>&gt; ${pkg.requiredTeamBusiness.toLocaleString()} business</span></div>
                     <div className="flex items-center gap-1.5"><User className="h-3 w-3"/><span>{pkg.userEmail || "All Users"}</span></div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                   <Switch 
+                    checked={pkg.enabled}
+                    onCheckedChange={(checked) => handleToggle(pkg.id, checked)}
+                  />
                   <Button variant="ghost" size="icon" onClick={() => handleEdit(pkg)}><Edit className="h-4 w-4" /></Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>

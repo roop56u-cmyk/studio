@@ -102,16 +102,11 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
             const savedSalaryPackages = localStorage.getItem('platform_salary_packages');
             if (savedSalaryPackages && currentUser) {
-                const allPackages = JSON.parse(savedSalaryPackages);
-                const eligiblePackages = allPackages.filter((pkg: SalaryPackage) => {
-                    const levelMatch = pkg.level === 0 || currentLevel >= pkg.level;
-                    const userMatch = !pkg.userEmail || pkg.userEmail === currentUser.email;
-                    return levelMatch && userMatch;
-                });
-                setSalaryPackages(eligiblePackages);
+                const allPackages = JSON.parse(savedSalaryPackages).filter((p: SalaryPackage) => p.enabled);
+                setSalaryPackages(allPackages);
             }
         }
-    }, [currentUser, currentLevel]);
+    }, [currentUser]);
 
     useEffect(() => {
         if (currentUser?.email) {
@@ -254,11 +249,21 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         return teamData.level1.activationsToday + teamData.level2.activationsToday + teamData.level3.activationsToday;
     }, [teamData]);
     
+     const eligibleSalaryPackages = useMemo(() => {
+        if (!currentUser) return [];
+        return salaryPackages.filter((pkg: SalaryPackage) => {
+            const levelMatch = pkg.level === 0 || currentLevel >= pkg.level;
+            const userMatch = !pkg.userEmail || pkg.userEmail === currentUser.email;
+            const businessMatch = totalTeamBusiness >= pkg.requiredTeamBusiness;
+            return pkg.enabled && levelMatch && userMatch && businessMatch;
+        });
+    }, [salaryPackages, currentUser, currentLevel, totalTeamBusiness]);
+
     const value = {
         teamData,
         teamRewards,
         teamSizeRewards,
-        salaryPackages,
+        salaryPackages: eligibleSalaryPackages,
         commissionRates,
         commissionEnabled,
         isLoading,
