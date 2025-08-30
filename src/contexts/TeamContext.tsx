@@ -5,7 +5,7 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import type { User } from './AuthContext';
-import { levels as defaultLevels } from '@/components/dashboard/level-tiers';
+import { levels as defaultLevels, Level } from '@/components/dashboard/level-tiers';
 import { useWallet } from './WalletContext';
 import { TeamReward } from '@/app/dashboard/admin/team-rewards/page';
 import { TeamSizeReward } from '@/app/dashboard/admin/team-size-rewards/page';
@@ -86,17 +86,30 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [currentUser]);
 
-    const getLevelForUser = useCallback((userEmail: string): number => {
-        const taskBalanceKey = `${userEmail}_taskRewardsBalance`;
-        const interestBalanceKey = `${userEmail}_interestEarningsBalance`;
-        
+    const getLevelForUser = useCallback((user: User, allUsers: User[]): number => {
         if (typeof window === 'undefined') return 0;
-
-        const taskBalance = parseFloat(localStorage.getItem(taskBalanceKey) || '0');
-        const interestBalance = parseFloat(localStorage.getItem(interestBalanceKey) || '0');
-        const committedBalance = taskBalance + interestBalance;
         
-        return defaultLevels.slice().reverse().find(l => committedBalance >= l.minAmount)?.level ?? 0;
+        if (user.overrideLevel !== null && user.overrideLevel !== undefined) {
+            return user.overrideLevel;
+        }
+
+        const taskBalance = parseFloat(localStorage.getItem(`${user.email}_taskRewardsBalance`) || '0');
+        const interestBalance = parseFloat(localStorage.getItem(`${user.email}_interestEarningsBalance`) || '0');
+        const committedBalance = taskBalance + interestBalance;
+
+        const purchasedReferrals = parseInt(localStorage.getItem(`${user.email}_purchased_referrals`) || '0');
+        const directReferralsCount = allUsers.filter(u => u.referredBy === user.referralCode).length + purchasedReferrals;
+        
+        const platformLevels = JSON.parse(localStorage.getItem('platform_levels') || JSON.stringify(defaultLevels));
+
+        const finalLevel = platformLevels.slice().reverse().find((l:Level) => {
+            if (l.level === 0) return false;
+            const balanceMet = committedBalance >= l.minAmount;
+            const referralsMet = directReferralsCount >= l.referrals;
+            return balanceMet && referralsMet;
+        })?.level ?? 0;
+
+        return finalLevel;
     }, []);
     
     const getDepositsForUser = useCallback((userEmail: string): number => {
@@ -123,13 +136,14 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
     const calculateTeamData = useCallback((user: User, allUsers: User[]): TeamData => {
         const purchasedReferrals = parseInt(localStorage.getItem(`${user.email}_purchased_referrals`) || '0');
+        const platformLevels = JSON.parse(localStorage.getItem('platform_levels') || JSON.stringify(defaultLevels));
 
         const calculateLayer = (members: User[]): TeamLevelData => {
             const activeMembers = members.filter(m => m.status === 'active');
-            const enrichedMembers: TeamMember[] = members.map(m => ({ ...m, level: getLevelForUser(m.email) }));
+            const enrichedMembers: TeamMember[] = members.map(m => ({ ...m, level: getLevelForUser(m, allUsers) }));
             const totalDeposits = enrichedMembers.reduce((sum, m) => sum + getDepositsForUser(m.email), 0);
             const dailyTaskEarnings = enrichedMembers.reduce((sum, m) => {
-                 const levelData = defaultLevels.find(l => l.level === m.level);
+                 const levelData = platformLevels.find((l:Level) => l.level === m.level);
                  return sum + (levelData ? levelData.earningPerTask * levelData.dailyTasks : 0);
             }, 0);
 
@@ -150,7 +164,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         const level3Members = level2Members.flatMap(l2User => allUsers.filter(u => u.referredBy === l2User.referralCode));
         
         const level1 = calculateLayer(level1Members);
-        level1.count += purchasedReferrals; // Add purchased referrals to level 1 count
+        level1.count += purchasedReferrals; 
 
         const level2 = calculateLayer(level2Members);
         const level3 = calculateLayer(level3Members);
@@ -211,3 +225,4 @@ export const useTeam = () => {
     }
     return context;
 };
+
