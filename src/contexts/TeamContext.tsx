@@ -89,16 +89,18 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const getLevelForUser = useCallback((user: User, allUsers: User[]): number => {
         if (typeof window === 'undefined') return 0;
         
-        if (user.overrideLevel !== null && user.overrideLevel !== undefined) {
-            return user.overrideLevel;
+        const latestUser = allUsers.find(u => u.email === user.email) || user;
+
+        if (latestUser.overrideLevel !== null && latestUser.overrideLevel !== undefined) {
+            return latestUser.overrideLevel;
         }
 
-        const taskBalance = parseFloat(localStorage.getItem(`${user.email}_taskRewardsBalance`) || '0');
-        const interestBalance = parseFloat(localStorage.getItem(`${user.email}_interestEarningsBalance`) || '0');
+        const taskBalance = parseFloat(localStorage.getItem(`${latestUser.email}_taskRewardsBalance`) || '0');
+        const interestBalance = parseFloat(localStorage.getItem(`${latestUser.email}_interestEarningsBalance`) || '0');
         const committedBalance = taskBalance + interestBalance;
 
-        const purchasedReferrals = parseInt(localStorage.getItem(`${user.email}_purchased_referrals`) || '0');
-        const directReferralsCount = allUsers.filter(u => u.referredBy === user.referralCode).length + purchasedReferrals;
+        const purchasedReferrals = parseInt(localStorage.getItem(`${latestUser.email}_purchased_referrals`) || '0');
+        const directReferralsCount = allUsers.filter(u => u.referredBy === latestUser.referralCode).length + purchasedReferrals;
         
         const platformLevels = JSON.parse(localStorage.getItem('platform_levels') || JSON.stringify(defaultLevels));
 
@@ -133,7 +135,6 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
                 activationDate.getMonth() === today.getMonth() &&
                 activationDate.getDate() === today.getDate();
         
-        // Ensure we check the LATEST status from the users array
         const latestUser = users.find(u => u.email === user.email);
 
         return isToday && latestUser?.status === 'active';
@@ -142,17 +143,26 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const calculateTeamData = useCallback((user: User, allUsers: User[]): TeamData => {
         const purchasedReferrals = parseInt(localStorage.getItem(`${user.email}_purchased_referrals`) || '0');
         const platformLevels = JSON.parse(localStorage.getItem('platform_levels') || JSON.stringify(defaultLevels));
+        const earningModel = localStorage.getItem('system_earning_model') || 'dynamic';
 
         const calculateLayer = (members: User[]): TeamLevelData => {
             const activeMembers = members.filter(m => {
                 const latestUser = allUsers.find(u => u.email === m.email);
                 return latestUser?.status === 'active';
             });
-            const enrichedMembers: TeamMember[] = members.map(m => ({ ...m, level: getLevelForUser(m, allUsers) }));
+            const enrichedMembers: TeamMember[] = members.map(m => ({ ...m, level: getLevelForUser(m, allUsers), status: allUsers.find(u => u.email === m.email)?.status || m.status }));
             const totalDeposits = enrichedMembers.reduce((sum, m) => sum + getDepositsForUser(m.email), 0);
-            const dailyTaskEarnings = enrichedMembers.reduce((sum, m) => {
-                 const levelData = platformLevels.find((l:Level) => l.level === m.level);
-                 return sum + (levelData ? levelData.earningPerTask * levelData.dailyTasks : 0);
+            
+            const dailyTaskEarnings = activeMembers.reduce((sum, m) => {
+                 const memberLevelData = platformLevels.find((l:Level) => l.level === getLevelForUser(m, allUsers));
+                 if (!memberLevelData) return sum;
+
+                 if (earningModel === 'fixed') {
+                    return sum + (memberLevelData.earningPerTask * memberLevelData.dailyTasks);
+                 } else { // dynamic
+                    const taskBalance = parseFloat(localStorage.getItem(`${m.email}_taskRewardsBalance`) || '0');
+                    return sum + (taskBalance * (memberLevelData.rate / 100));
+                 }
             }, 0);
 
             const activationsToday = members.filter(m => getIsNewToday(m)).length;

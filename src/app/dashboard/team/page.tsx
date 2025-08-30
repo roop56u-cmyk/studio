@@ -31,6 +31,7 @@ import { useRequests } from "@/contexts/RequestContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWallet } from "@/contexts/WalletContext";
+import { cn } from "@/lib/utils";
 
 const TeamRewardCard = ({ reward, totalTeamBusiness }: { reward: TeamReward, totalTeamBusiness: number }) => {
     const { toast } = useToast();
@@ -168,7 +169,6 @@ export default function TeamPage() {
       return total;
   }, [teamData, commissionRates, commissionEnabled]);
   
-  const totalMembers = (teamData?.level1?.count ?? 0) + (teamData?.level2?.count ?? 0) + (teamData?.level3?.count ?? 0);
   const totalActiveMembers = (teamData?.level1?.activeCount ?? 0) + (teamData?.level2?.activeCount ?? 0) + (teamData?.level3?.activeCount ?? 0);
 
   if (isLoading || !teamData) {
@@ -231,16 +231,16 @@ export default function TeamPage() {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">${totalCommission.toFixed(2)}</div>
-                            <p className="text-xs text-muted-foreground">Daily earnings from your team</p>
+                            <p className="text-xs text-muted-foreground">From active members</p>
                         </CardContent>
                     </Card>
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Team Members</CardTitle>
+                            <CardTitle className="text-sm font-medium">Active Team Members</CardTitle>
                             <Users className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{totalMembers}</div>
+                            <div className="text-2xl font-bold">{totalActiveMembers}</div>
                             <p className="text-xs text-muted-foreground">Across all 3 layers</p>
                         </CardContent>
                     </Card>
@@ -293,8 +293,13 @@ export default function TeamPage() {
                                         <ul className="space-y-2 text-sm text-muted-foreground max-h-48 overflow-y-auto">
                                             {level.data.members.map(member => (
                                                 <li key={member.email} className="flex justify-between items-center">
-                                                    <span>{member.email}</span>
-                                                    <Badge variant="secondary">Lvl {member.level}</Badge>
+                                                    <span className="truncate pr-2">{member.email}</span>
+                                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                                        <Badge variant={member.status === 'active' ? 'default' : 'secondary'} className={cn('text-xs py-0.5 px-1.5 h-fit', member.status === 'active' ? 'bg-green-100 text-green-800' : '')}>
+                                                            {member.status}
+                                                        </Badge>
+                                                        <Badge variant="secondary" className="text-xs py-0.5 px-1.5 h-fit">Lvl {member.level}</Badge>
+                                                    </div>
                                                 </li>
                                             ))}
                                         </ul>
