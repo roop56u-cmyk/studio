@@ -76,6 +76,15 @@ const SalaryPackageForm = ({
     }
     onSave({ name, level, userEmail, amount, periodDays });
   };
+  
+  const handleUserSelectChange = (value: string) => {
+    if (value === "ALL_USERS") {
+      setUserEmail("");
+    } else {
+      setUserEmail(value);
+    }
+  };
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -100,12 +109,12 @@ const SalaryPackageForm = ({
         </div>
         <div className="space-y-2">
             <Label htmlFor="userEmail">Specific User (Optional)</Label>
-            <Select value={userEmail} onValueChange={setUserEmail}>
+            <Select value={userEmail || "ALL_USERS"} onValueChange={handleUserSelectChange}>
                 <SelectTrigger id="userEmail">
                     <SelectValue placeholder="All users at level" />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="">All users at level</SelectItem>
+                    <SelectItem value="ALL_USERS">All users at level</SelectItem>
                     {users.map(u => (
                         <SelectItem key={u.email} value={u.email}>{u.email}</SelectItem>
                     ))}
