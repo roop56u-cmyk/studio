@@ -12,7 +12,7 @@ import {
   CardTitle,
   CardFooter
 } from "@/components/ui/card";
-import { Users, DollarSign, UserPlus, Briefcase, Activity, Award, X, Trophy } from "lucide-react";
+import { Users, DollarSign, UserPlus, Briefcase, Activity, Award, X, Trophy, ArrowUp } from "lucide-react";
 import { useTeam } from "@/contexts/TeamContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -155,7 +155,7 @@ const TeamSizeRewardCard = ({ reward, totalActiveMembers }: { reward: TeamSizeRe
 
 
 export default function TeamPage() {
-  const { teamData, commissionRates, commissionEnabled, isLoading, totalTeamBusiness, totalActivationsToday, teamRewards, teamSizeRewards } = useTeam();
+  const { teamData, commissionRates, commissionEnabled, isLoading, totalTeamBusiness, totalActivationsToday, teamRewards, teamSizeRewards, totalUplineCommission } = useTeam();
   const { currentUser } = useAuth();
   const { currentLevel } = useWallet();
   const isMobile = useIsMobile();
@@ -223,15 +223,25 @@ export default function TeamPage() {
       </div>
 
        <div className="grid gap-8">
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-4">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Commission</CardTitle>
+                            <CardTitle className="text-sm font-medium">Team Commission</CardTitle>
                             <DollarSign className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">${totalCommission.toFixed(2)}</div>
                             <p className="text-xs text-muted-foreground">From active members</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Upline Commission</CardTitle>
+                            <ArrowUp className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">${totalUplineCommission.toFixed(2)}</div>
+                            <p className="text-xs text-muted-foreground">From your sponsor</p>
                         </CardContent>
                     </Card>
                     <Card>
@@ -254,7 +264,7 @@ export default function TeamPage() {
                             <p className="text-xs text-muted-foreground">Total deposits from all members</p>
                         </CardContent>
                     </Card>
-                    <Card>
+                    <Card className="col-span-2">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Today's Activations</CardTitle>
                             <Activity className="h-4 w-4 text-muted-foreground" />

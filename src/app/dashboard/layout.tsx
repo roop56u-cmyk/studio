@@ -77,7 +77,8 @@ import {
   Network,
   MessageSquare,
   Trophy,
-  CalendarDays
+  CalendarDays,
+  ArrowUp
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -114,9 +115,10 @@ import ManageTeamRewardsPage from "./admin/team-rewards/page";
 import ManageTeamSizeRewardsPage from "./admin/team-size-rewards/page";
 import ManageMessagesPage from "./admin/messages/page";
 import ManageDailyRewardsPage from './admin/daily-rewards/page';
+import UplineCommissionPage from './admin/upline-commission/page';
 
 
-type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards';
+type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards';
 
 
 const adminPanelComponents: Record<PanelType, React.ComponentType> = {
@@ -126,6 +128,7 @@ const adminPanelComponents: Record<PanelType, React.ComponentType> = {
     boosterManagement: ManageBoostersPage,
     levelManagement: ManageLevelsPage,
     teamCommission: TeamCommissionPage,
+    uplineCommission: UplineCommissionPage,
     noticeManagement: AdminNoticesPage,
     userPanels: ManageUserPanelsPage,
     websiteUI: WebsiteUIPage,
@@ -146,6 +149,7 @@ const adminPanelTitles: Record<PanelType, { title: string; description: string }
     boosterManagement: { title: "Manage Boosters", description: "Manage booster packs for the store." },
     levelManagement: { title: "Manage Levels", description: "Configure investment and earning levels." },
     teamCommission: { title: "Team Commission", description: "Set referral commission rates." },
+    uplineCommission: { title: "Upline Commission", description: "Set commissions users receive from their upline." },
     noticeManagement: { title: "Manage Notices", description: "Publish announcements for all users." },
     userPanels: { title: "User Panels", description: "Control visibility of user dashboard panels." },
     websiteUI: { title: "Website & UI", description: "Customize the look and feel of the website." },
@@ -254,6 +258,12 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
                     <SidebarMenuButton onClick={() => onAdminPanelClick('teamCommission')} tooltip={{ children: "Team Commission" }}>
                         <Percent />
                         <span>Team Commission</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('uplineCommission')} tooltip={{ children: "Upline Commission" }}>
+                        <ArrowUp />
+                        <span>Upline Commission</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                  <SidebarMenuItem>

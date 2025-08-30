@@ -38,6 +38,7 @@ interface TeamContextType {
   isLoading: boolean;
   totalTeamBusiness: number;
   totalActivationsToday: number;
+  totalUplineCommission: number;
 }
 
 
@@ -49,6 +50,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const [teamRewards, setTeamRewards] = useState<TeamReward[]>([]);
     const [teamSizeRewards, setTeamSizeRewards] = useState<TeamSizeReward[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [totalUplineCommission, setTotalUplineCommission] = useState(0);
     
     const [commissionRates, setCommissionRates] = useState({ level1: 10, level2: 5, level3: 2 });
     const [commissionEnabled, setCommissionEnabled] = useState({ level1: true, level2: true, level3: true });
@@ -83,6 +85,13 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
                 setTeamSizeRewards([]);
               }
             }
+        }
+    }, [currentUser]);
+
+    useEffect(() => {
+        if (currentUser?.email) {
+            const storedUplineCommission = localStorage.getItem(`${currentUser.email}_uplineCommission`);
+            setTotalUplineCommission(storedUplineCommission ? JSON.parse(storedUplineCommission) : 0);
         }
     }, [currentUser]);
 
@@ -122,12 +131,13 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         return mainBalance + taskBalance + interestBalance;
     }, []);
 
-    const getIsNewToday = useCallback((user: User): boolean => {
-         if (!user.activatedAt || user.status !== 'active') {
+    const getIsNewToday = useCallback((user: User, allUsers: User[]): boolean => {
+         const latestUser = allUsers.find(u => u.email === user.email) || user;
+         if (latestUser.status !== 'active' || !latestUser.activatedAt) {
              return false;
          }
 
-         const activationDate = new Date(user.activatedAt);
+         const activationDate = new Date(latestUser.activatedAt);
          const today = new Date();
 
          return activationDate.getFullYear() === today.getFullYear() &&
@@ -160,7 +170,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
                  }
             }, 0);
 
-            const activationsToday = members.filter(m => getIsNewToday(m)).length;
+            const activationsToday = activeMembers.filter(m => getIsNewToday(m, allUsers)).length;
             
             return {
                 count: members.length,
@@ -221,7 +231,8 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         commissionEnabled,
         isLoading,
         totalTeamBusiness,
-        totalActivationsToday
+        totalActivationsToday,
+        totalUplineCommission
     };
 
     return (

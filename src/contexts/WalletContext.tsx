@@ -509,7 +509,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     let tempTaskBalance = taskRewardsBalance;
     let tempInterestBalance = interestEarningsBalance;
 
-    if (!fromAccount) {
+    if (!fromAccount) { // Moving from Main Wallet
       if (numericAmount > mainBalance) {
         toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than your main balance of $${mainBalance.toFixed(2)}.` });
         return;
@@ -518,7 +518,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       if (destination === 'Task Rewards') tempTaskBalance += numericAmount;
       if (destination === 'Interest Earnings') tempInterestBalance += numericAmount;
       description = `Moved $${numericAmount.toFixed(2)} to ${destination}`;
-    } else {
+    } else { // Moving between earning wallets or back to main
         if (fromAccount === 'Task Rewards') {
             if (numericAmount > taskRewardsBalance) { toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than the available balance of $${taskRewardsBalance.toFixed(2)}.` }); return; }
             tempTaskBalance -= numericAmount;
@@ -538,27 +538,21 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setInterestEarningsBalance(tempInterestBalance);
 
     const newCommittedBalance = tempTaskBalance + tempInterestBalance;
+    const currentCommittedBalance = taskRewardsBalance + interestEarningsBalance;
     
-    // Activation Logic
-    const newLevelData = configuredLevels.slice().reverse().find(l => {
-        const balanceMet = newCommittedBalance >= l.minAmount;
-        const referralsMet = directReferralsCount >= l.referrals;
-        return balanceMet && referralsMet;
-    });
-    const newLevel = newLevelData?.level ?? 0;
-
-    if (newLevel >= 1 && currentUser.status === 'inactive') {
-      activateUserAccount(currentUser.email);
-    } else if (newLevel === 0 && currentUser.status === 'active') {
-       updateUserStatus(currentUser.email, 'inactive');
+    // Check for Activation
+    if (!fromAccount && getInitialState('activationDate', null) === null) {
+      const minBalanceForL1 = minRequiredBalanceForLevel(1);
+      if (newCommittedBalance >= minBalanceForL1) {
+          activateUserAccount(currentUser.email);
+          setPersistentState('activationDate', new Date().toISOString());
+      }
     }
-
-    // Record first deposit for bonus eligibility
-    if (!fromAccount) {
-        const userActivationKey = `${currentUser.email}_activationDate`;
-        if (!localStorage.getItem(userActivationKey) && newLevel >= 1) {
-            localStorage.setItem(userActivationKey, new Date().toISOString());
-        }
+    
+    // Check for Deactivation
+    const minBalanceForCurrentLevel = minRequiredBalanceForLevel(currentLevel);
+    if (newCommittedBalance < minBalanceForCurrentLevel && currentUser.status === 'active') {
+        updateUserStatus(currentUser.email, 'inactive');
     }
 
     addTransaction(currentUser.email, {
@@ -762,27 +756,27 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       setTasksCompletedToday(newTasksCompleted);
       setPersistentState('lastCompletionTime', new Date().getTime());
 
-      // Distribute commission to active L1 downline
-      const l1CommissionRate = (getGlobalSetting('team_commission_rates', {level1: 10}, true).level1 || 10) / 100;
-      const l1CommissionEnabled = getGlobalSetting('team_commission_enabled', {level1: true}, true).level1;
-
-      if (l1CommissionEnabled && l1CommissionRate > 0) {
-          const directReferrals = users.filter(u => u.referredBy === currentUser.referralCode && u.status === 'active');
-          if (directReferrals.length > 0) {
-              const totalCommission = finalEarning * l1CommissionRate;
-              const commissionPerMember = totalCommission / directReferrals.length;
-
-              directReferrals.forEach(member => {
-                  const memberBalanceKey = `${member.email}_mainBalance`;
-                  const currentMemberBalance = parseFloat(localStorage.getItem(memberBalanceKey) || '0');
-                  localStorage.setItem(memberBalanceKey, (currentMemberBalance + commissionPerMember).toString());
-                  addTransaction(member.email, {
-                      type: 'Upline Commission',
-                      description: `Commission from upline: ${currentUser.email}`,
-                      amount: commissionPerMember,
-                      date: new Date().toISOString()
-                  });
-              });
+      // Upline Commission Logic
+      const uplineSettings = getGlobalSetting('upline_commission_settings', { enabled: false, rate: 0, requiredReferrals: 0 }, true);
+      
+      if (uplineSettings.enabled && currentUser.referredBy) {
+          const upline = users.find(u => u.referralCode === currentUser.referredBy);
+          if (upline && upline.status === 'active') {
+              const uplineL1Count = users.filter(u => u.referredBy === upline.referralCode && u.status === 'active').length;
+              if (uplineL1Count >= uplineSettings.requiredReferrals) {
+                  const commissionAmount = finalEarning * (uplineSettings.rate / 100);
+                  if (commissionAmount > 0) {
+                      const uplineBalanceKey = `${upline.email}_mainBalance`;
+                      const currentUplineBalance = parseFloat(localStorage.getItem(uplineBalanceKey) || '0');
+                      localStorage.setItem(uplineBalanceKey, (currentUplineBalance + commissionAmount).toString());
+                      addTransaction(upline.email, {
+                          type: 'Upline Commission',
+                          description: `Commission from downline: ${currentUser.email}`,
+                          amount: commissionAmount,
+                          date: new Date().toISOString()
+                      });
+                  }
+              }
           }
       }
 
@@ -1039,6 +1033,7 @@ export const useWallet = () => {
 };
 
     
+
 
 
 
