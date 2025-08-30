@@ -12,7 +12,7 @@ import {
   CardTitle,
   CardFooter
 } from "@/components/ui/card";
-import { Users, DollarSign, UserPlus, Briefcase, Activity, Award, X, Trophy, ArrowUp, Info, HandCoins } from "lucide-react";
+import { Users, DollarSign, UserPlus, Briefcase, Activity, Award, X, Trophy, ArrowUp, Info, HandCoins, UserCheck } from "lucide-react";
 import { useTeam } from "@/contexts/TeamContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -28,7 +28,7 @@ import { TeamReward } from "../admin/team-rewards/page";
 import { TeamSizeReward } from "../admin/team-size-rewards/page";
 import { useToast } from "@/hooks/use-toast";
 import { useRequests } from "@/contexts/RequestContext";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-is-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWallet } from "@/contexts/WalletContext";
 import { cn } from "@/lib/utils";
@@ -155,11 +155,15 @@ const TeamSizeRewardCard = ({ reward, totalActiveMembers }: { reward: TeamSizeRe
     )
 }
 
-const SalaryPackageCard = ({ pkg }: { pkg: SalaryPackage }) => {
+const SalaryPackageCard = ({ pkg, totalTeamBusiness, activeL1Referrals }: { pkg: SalaryPackage, totalTeamBusiness: number, activeL1Referrals: number }) => {
     const { toast } = useToast();
     const { addRequest } = useRequests();
     const { currentUser } = useAuth();
     const [lastClaimDate, setLastClaimDate] = useState<Date | null>(null);
+    
+    const businessProgress = Math.min((totalTeamBusiness / pkg.requiredTeamBusiness) * 100, 100);
+    const referralProgress = Math.min((activeL1Referrals / pkg.requiredActiveReferrals) * 100, 100);
+
 
     useEffect(() => {
         if (currentUser) {
@@ -199,10 +203,23 @@ const SalaryPackageCard = ({ pkg }: { pkg: SalaryPackage }) => {
                     <HandCoins className="h-5 w-5 text-green-500"/>
                     <CardTitle className="text-base">{pkg.name}</CardTitle>
                 </div>
-                <CardDescription>Claim your recurring salary bonus.</CardDescription>
+                <CardDescription>Claim your recurring salary bonus of <strong className="text-foreground">${pkg.amount.toLocaleString()}</strong> every <strong className="text-foreground">{pkg.periodDays} days</strong>.</CardDescription>
             </CardHeader>
-            <CardContent>
-                <p className="text-sm text-muted-foreground">You are eligible to claim a salary of <strong className="text-foreground">${pkg.amount.toLocaleString()}</strong> every <strong className="text-foreground">{pkg.periodDays} days</strong>.</p>
+            <CardContent className="space-y-4">
+                 <div className="space-y-2">
+                    <div className="flex justify-between items-center text-xs text-muted-foreground">
+                        <span>Team Business</span>
+                        <span>${totalTeamBusiness.toLocaleString()} / ${pkg.requiredTeamBusiness.toLocaleString()}</span>
+                    </div>
+                    <Progress value={businessProgress} />
+                </div>
+                 <div className="space-y-2">
+                    <div className="flex justify-between items-center text-xs text-muted-foreground">
+                        <span>Active L1 Referrals</span>
+                        <span>{activeL1Referrals} / {pkg.requiredActiveReferrals}</span>
+                    </div>
+                    <Progress value={referralProgress} />
+                </div>
             </CardContent>
             <CardFooter>
                 <Button className="w-full" disabled={!canClaim} onClick={handleClaim}>
@@ -446,7 +463,7 @@ export default function TeamPage() {
                     <h2 className="text-2xl font-bold tracking-tight mb-4">Salary Packages</h2>
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {salaryPackages.map(pkg => (
-                            <SalaryPackageCard key={pkg.id} pkg={pkg} />
+                            <SalaryPackageCard key={pkg.id} pkg={pkg} totalTeamBusiness={totalTeamBusiness} activeL1Referrals={activeL1Referrals} />
                         ))}
                     </div>
                 </div>

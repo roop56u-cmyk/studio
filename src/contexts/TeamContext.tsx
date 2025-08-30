@@ -255,9 +255,10 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             const levelMatch = pkg.level === 0 || currentLevel >= pkg.level;
             const userMatch = !pkg.userEmail || pkg.userEmail === currentUser.email;
             const businessMatch = totalTeamBusiness >= pkg.requiredTeamBusiness;
-            return pkg.enabled && levelMatch && userMatch && businessMatch;
+            const referralMatch = activeL1Referrals >= pkg.requiredActiveReferrals;
+            return pkg.enabled && levelMatch && userMatch && businessMatch && referralMatch;
         });
-    }, [salaryPackages, currentUser, currentLevel, totalTeamBusiness]);
+    }, [salaryPackages, currentUser, currentLevel, totalTeamBusiness, activeL1Referrals]);
 
     const value = {
         teamData,
