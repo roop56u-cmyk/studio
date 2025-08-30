@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useMemo, useCallback } from "react";
@@ -13,7 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Calendar, Wallet, ArrowUpCircle, ArrowDownCircle, Users as UsersIcon, Gift, UserUp } from "lucide-react";
+import { User, Calendar, Wallet, ArrowUpCircle, ArrowDownCircle, Users as UsersIcon, Gift, UserCheck } from "lucide-react";
 import { useRequests } from "@/contexts/RequestContext";
 import { Skeleton } from "../ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -166,7 +165,7 @@ export function AdminProfile() {
                         </div>
                         {request.upline && (
                            <div className="flex items-center gap-2 text-foreground">
-                               <UserUp className="h-4 w-4 text-muted-foreground"/>
+                               <UserCheck className="h-4 w-4 text-muted-foreground"/>
                                <span>Sponsor: {request.upline}</span>
                            </div>
                         )}
