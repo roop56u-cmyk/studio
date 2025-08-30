@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo, useCallback } from 'react';
@@ -102,7 +103,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
             const savedSalaryPackages = localStorage.getItem('platform_salary_packages');
             if (savedSalaryPackages && currentUser) {
-                const allPackages = JSON.parse(savedSalaryPackages).filter((p: SalaryPackage) => p.enabled);
+                const allPackages = JSON.parse(savedSalaryPackages);
                 setSalaryPackages(allPackages);
             }
         }
@@ -254,11 +255,9 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         return salaryPackages.filter((pkg: SalaryPackage) => {
             const levelMatch = pkg.level === 0 || currentLevel >= pkg.level;
             const userMatch = !pkg.userEmail || pkg.userEmail === currentUser.email;
-            const businessMatch = totalTeamBusiness >= pkg.requiredTeamBusiness;
-            const referralMatch = activeL1Referrals >= pkg.requiredActiveReferrals;
-            return pkg.enabled && levelMatch && userMatch && businessMatch && referralMatch;
+            return pkg.enabled && levelMatch && userMatch;
         });
-    }, [salaryPackages, currentUser, currentLevel, totalTeamBusiness, activeL1Referrals]);
+    }, [salaryPackages, currentUser, currentLevel]);
 
     const value = {
         teamData,

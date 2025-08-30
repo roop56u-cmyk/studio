@@ -161,6 +161,9 @@ const SalaryPackageCard = ({ pkg, totalTeamBusiness, activeL1Referrals }: { pkg:
     const { currentUser } = useAuth();
     const [lastClaimDate, setLastClaimDate] = useState<Date | null>(null);
     
+    const businessMet = totalTeamBusiness >= pkg.requiredTeamBusiness;
+    const referralsMet = activeL1Referrals >= pkg.requiredActiveReferrals;
+    
     const businessProgress = Math.min((totalTeamBusiness / pkg.requiredTeamBusiness) * 100, 100);
     const referralProgress = Math.min((activeL1Referrals / pkg.requiredActiveReferrals) * 100, 100);
 
@@ -174,12 +177,14 @@ const SalaryPackageCard = ({ pkg, totalTeamBusiness, activeL1Referrals }: { pkg:
         }
     }, [pkg.id, currentUser]);
     
-    const canClaim = useMemo(() => {
+    const isClaimPeriodMet = useMemo(() => {
         if (!lastClaimDate) return true;
         const now = new Date();
         const nextClaimDate = new Date(lastClaimDate.getTime() + pkg.periodDays * 24 * 60 * 60 * 1000);
         return now >= nextClaimDate;
     }, [lastClaimDate, pkg.periodDays]);
+
+    const canClaim = businessMet && referralsMet && isClaimPeriodMet;
 
     const handleClaim = () => {
         addRequest({
@@ -195,6 +200,14 @@ const SalaryPackageCard = ({ pkg, totalTeamBusiness, activeL1Referrals }: { pkg:
             description: `Your claim for "${pkg.name}" is pending admin approval.`
         });
     };
+    
+    const nextClaimDateFormatted = useMemo(() => {
+        if (lastClaimDate) {
+            const nextDate = new Date(lastClaimDate.getTime() + pkg.periodDays * 24 * 60 * 60 * 1000);
+            return nextDate.toLocaleDateString();
+        }
+        return '';
+    }, [lastClaimDate, pkg.periodDays]);
 
     return (
         <Card>
@@ -223,7 +236,7 @@ const SalaryPackageCard = ({ pkg, totalTeamBusiness, activeL1Referrals }: { pkg:
             </CardContent>
             <CardFooter>
                 <Button className="w-full" disabled={!canClaim} onClick={handleClaim}>
-                    {canClaim ? "Claim Salary" : `Claimable on ${lastClaimDate ? new Date(lastClaimDate.getTime() + pkg.periodDays * 24 * 60 * 60 * 1000).toLocaleDateString() : ''}`}
+                    {isClaimPeriodMet ? "Claim Salary" : `Claimable on ${nextClaimDateFormatted}`}
                 </Button>
             </CardFooter>
         </Card>
