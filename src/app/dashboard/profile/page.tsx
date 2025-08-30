@@ -18,9 +18,41 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { format } from 'date-fns';
+import { useEffect, useState } from "react";
 
 export default function ProfilePage() {
   const { currentUser } = useAuth();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient) {
+    return (
+        <div className="max-w-md mx-auto">
+            <div className="flex justify-between items-center mb-4">
+                <div>
+                    <Skeleton className="h-9 w-40" />
+                    <Skeleton className="h-5 w-56 mt-2" />
+                </div>
+            </div>
+            <Card>
+                <CardHeader className="items-center text-center">
+                    <Skeleton className="h-24 w-24 rounded-full mb-4" />
+                    <Skeleton className="h-7 w-48" />
+                    <Skeleton className="h-5 w-56 mt-1" />
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                </CardContent>
+            </Card>
+        </div>
+    );
+  }
 
   return (
     <div className="max-w-md mx-auto">
