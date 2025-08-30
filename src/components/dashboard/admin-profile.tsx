@@ -13,7 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Calendar, Wallet, ArrowUpCircle, ArrowDownCircle, Users as UsersIcon, Gift } from "lucide-react";
+import { User, Calendar, Wallet, ArrowUpCircle, ArrowDownCircle, Users as UsersIcon, Gift, UserUp } from "lucide-react";
 import { useRequests } from "@/contexts/RequestContext";
 import { Skeleton } from "../ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -56,7 +56,7 @@ export function AdminProfile() {
 
     const filteredRequests = useMemo(() => {
         const financeTypes = ['Recharge', 'Withdrawal'];
-        const rewardTypes = ['Team Reward', 'Team Size Reward', 'Sign-up Bonus', 'Referral Bonus'];
+        const rewardTypes = ['Team Reward', 'Team Size Reward', 'Sign-up Bonus', 'Referral Bonus', 'Salary Claim'];
 
         const typeFilter = activeTab === 'Finance' ? financeTypes : rewardTypes;
         
@@ -69,7 +69,7 @@ export function AdminProfile() {
 
     const getUserActivationDate = useCallback((email: string) => {
         const user = users.find(u => u.email === email);
-        return user ? new Date(user.createdAt).toLocaleDateString() : 'N/A';
+        return user?.activatedAt ? new Date(user.activatedAt).toLocaleDateString() : 'N/A';
     }, [users]);
     
     const getTeamSize = useCallback((userEmail: string) => {
@@ -164,13 +164,19 @@ export function AdminProfile() {
                             <Calendar className="h-4 w-4 text-muted-foreground"/>
                             <span>Activated: {userActivationDate}</span>
                         </div>
+                        {request.upline && (
+                           <div className="flex items-center gap-2 text-foreground">
+                               <UserUp className="h-4 w-4 text-muted-foreground"/>
+                               <span>Sponsor: {request.upline}</span>
+                           </div>
+                        )}
                         {userWithdrawalAddress && isFinanceRequest && (
                              <div className="flex items-center gap-2 text-foreground">
                                 <Wallet className="h-4 w-4 text-muted-foreground"/>
                                 <span className="font-mono text-xs">{userWithdrawalAddress}</span>
                             </div>
                         )}
-                        {(request.type === 'Team Reward' || request.type === 'Team Size Reward' || request.type === 'Referral Bonus') && (
+                        {(request.type === 'Team Reward' || request.type === 'Team Size Reward' || request.type === 'Referral Bonus' || request.type === 'Salary Claim') && (
                              <div className="flex items-center gap-2 text-foreground">
                                 <UsersIcon className="h-4 w-4 text-muted-foreground"/>
                                 <span className="font-mono text-xs">{request.address}</span>

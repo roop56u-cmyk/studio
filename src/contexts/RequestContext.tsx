@@ -20,6 +20,7 @@ export type Request = {
     balance: number;
     status: 'Pending' | 'Approved' | 'Declined' | 'On Hold';
     date: string;
+    upline?: string | null;
 };
 
 interface RequestContextType {
@@ -43,6 +44,7 @@ const mockRequests: Request[] = [
     balance: 750.00,
     status: "Pending",
     date: "2024-07-31",
+    upline: "admin@stakinghub.com"
   },
   {
     id: "REQ-002",
@@ -57,6 +59,7 @@ const mockRequests: Request[] = [
     balance: 120.50,
     status: "Approved",
     date: "2024-07-30",
+    upline: "user1@example.com"
   },
    {
     id: "REQ-003",
@@ -71,13 +74,14 @@ const mockRequests: Request[] = [
     balance: 2100.00,
     status: "Declined",
     date: "2024-07-29",
+    upline: null
   },
 ];
 
 const RequestContext = createContext<RequestContextType | undefined>(undefined);
 
 export const RequestProvider = ({ children }: { children: ReactNode }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, users } = useAuth();
   const { toast } = useToast();
   const { 
       approveRecharge, 
@@ -140,6 +144,8 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
     
     const directReferralsCount = purchasedReferrals; // Simplified for this context
 
+    const upline = users.find(u => u.referralCode === currentUser.referredBy);
+
     const newRequest: Request = {
         id: `REQ-${Date.now()}`,
         date: new Date().toISOString(),
@@ -152,7 +158,8 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
         level: currentLevel,
         deposits: deposits,
         withdrawals: withdrawals,
-        referrals: directReferralsCount
+        referrals: directReferralsCount,
+        upline: upline ? upline.email : null,
     };
 
     setRequests(prev => [newRequest, ...prev]);
