@@ -123,22 +123,17 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     const getIsNewToday = useCallback((user: User): boolean => {
-         if (typeof window === 'undefined') return false;
-         
-         const activationDateStr = localStorage.getItem(`${user.email}_activationDate`);
-         if (!activationDateStr) return false;
+         if (!user.activatedAt || user.status !== 'active') {
+             return false;
+         }
 
-         const activationDate = new Date(activationDateStr);
+         const activationDate = new Date(user.activatedAt);
          const today = new Date();
 
-         const isToday = activationDate.getFullYear() === today.getFullYear() &&
+         return activationDate.getFullYear() === today.getFullYear() &&
                 activationDate.getMonth() === today.getMonth() &&
                 activationDate.getDate() === today.getDate();
-        
-        const latestUser = users.find(u => u.email === user.email);
-
-        return isToday && latestUser?.status === 'active';
-    }, [users]);
+    }, []);
 
     const calculateTeamData = useCallback((user: User, allUsers: User[]): TeamData => {
         const purchasedReferrals = parseInt(localStorage.getItem(`${user.email}_purchased_referrals`) || '0');
