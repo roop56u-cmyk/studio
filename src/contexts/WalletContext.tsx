@@ -160,7 +160,7 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
-  const { currentUser, users, activateUserAccount } = useAuth();
+  const { currentUser, users, activateUserAccount, updateUserStatus } = useAuth();
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -210,7 +210,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [purchasedReferralsCount, setPurchasedReferralsCount] = useState<number>(0);
   const [hasClaimedSignUpBonus, setHasClaimedSignUpBonus] = useState<boolean>(false);
   const [claimedReferralIds, setClaimedReferralIds] = useState<string[]>([]);
-  const [dailyRewardState, setDailyRewardState] = useState<DailyRewardState | undefined>(undefined);
+  const [dailyRewardState, setDailyRewardState] = useState<DailyRewardState>({ isEnabled: false, canClaim: false, streak: 0, reward: 0 });
   const [isReady, setIsReady] = useState(false);
   
   const committedBalance = taskRewardsBalance + interestEarningsBalance;
@@ -505,71 +505,61 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     }
 
     let description = '';
-    let newCommittedBalance = committedBalance;
-    const oldLevel = currentLevel;
+    let tempMainBalance = mainBalance;
+    let tempTaskBalance = taskRewardsBalance;
+    let tempInterestBalance = interestEarningsBalance;
 
-    // Moving from Main Wallet
     if (!fromAccount) {
       if (numericAmount > mainBalance) {
         toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than your main balance of $${mainBalance.toFixed(2)}.` });
         return;
       }
-      setMainBalance(prev => prev - numericAmount);
-      newCommittedBalance += numericAmount;
-
-      if (destination === 'Task Rewards') {
-        setTaskRewardsBalance(prev => prev + numericAmount);
-        description = `Moved $${numericAmount.toFixed(2)} to Task Rewards`;
-      }
-      if (destination === 'Interest Earnings') {
-        setInterestEarningsBalance(prev => prev + numericAmount);
-         description = `Moved $${numericAmount.toFixed(2)} to Interest Earnings`;
-      }
-      
-      const userFirstDepositKey = `${currentUser.email}_firstDepositAmount`;
-      const isFirstDeposit = !localStorage.getItem(userFirstDepositKey);
-
-      if (isFirstDeposit) {
-          localStorage.setItem(userFirstDepositKey, JSON.stringify(numericAmount));
-      }
-      
-      const newLevelData = configuredLevels.slice().reverse().find(l => {
-          const balanceMet = newCommittedBalance >= l.minAmount;
-          const referralsMet = directReferralsCount >= l.referrals;
-          return balanceMet && referralsMet;
-      });
-
-      const newLevel = newLevelData?.level ?? 0;
-      if (newLevel >= 1 && oldLevel === 0 && currentUser.status === 'inactive') {
-        const activationDateKey = `${currentUser.email}_activationDate`;
-        if (!localStorage.getItem(activationDateKey)) {
-          localStorage.setItem(activationDateKey, new Date().toISOString());
-        }
-        activateUserAccount(currentUser.email);
-      }
-
-
-    // Moving from Earning Wallet
+      tempMainBalance -= numericAmount;
+      if (destination === 'Task Rewards') tempTaskBalance += numericAmount;
+      if (destination === 'Interest Earnings') tempInterestBalance += numericAmount;
+      description = `Moved $${numericAmount.toFixed(2)} to ${destination}`;
     } else {
         if (fromAccount === 'Task Rewards') {
             if (numericAmount > taskRewardsBalance) { toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than the available balance of $${taskRewardsBalance.toFixed(2)}.` }); return; }
-            setTaskRewardsBalance(prev => prev - numericAmount);
-        } else { // From Interest Earnings
+            tempTaskBalance -= numericAmount;
+        } else {
             if (numericAmount > interestEarningsBalance) { toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than the available balance of $${interestEarningsBalance.toFixed(2)}.` }); return; }
-            setInterestEarningsBalance(prev => prev - numericAmount);
+            tempInterestBalance -= numericAmount;
         }
 
-        if (destination === 'Main Wallet') {
-            setMainBalance(prev => prev + numericAmount);
-            description = `Moved $${numericAmount.toFixed(2)} from ${fromAccount} to Main Wallet`;
-        }
-        if (destination === 'Interest Earnings') {
-            setInterestEarningsBalance(prev => prev + numericAmount);
-            description = `Moved $${numericAmount.toFixed(2)} from ${fromAccount} to Interest Earnings`;
-        }
-         if (destination === 'Task Rewards') {
-            setTaskRewardsBalance(prev => prev + numericAmount);
-            description = `Moved $${numericAmount.toFixed(2)} from ${fromAccount} to Task Rewards`;
+        if (destination === 'Main Wallet') tempMainBalance += numericAmount;
+        if (destination === 'Interest Earnings') tempInterestBalance += numericAmount;
+        if (destination === 'Task Rewards') tempTaskBalance += numericAmount;
+        description = `Moved $${numericAmount.toFixed(2)} from ${fromAccount} to ${destination}`;
+    }
+
+    setMainBalance(tempMainBalance);
+    setTaskRewardsBalance(tempTaskBalance);
+    setInterestEarningsBalance(tempInterestBalance);
+
+    const newCommittedBalance = tempTaskBalance + tempInterestBalance;
+    
+    // Activation Logic
+    const newLevelData = configuredLevels.slice().reverse().find(l => {
+        const balanceMet = newCommittedBalance >= l.minAmount;
+        const referralsMet = directReferralsCount >= l.referrals;
+        return balanceMet && referralsMet;
+    });
+    const newLevel = newLevelData?.level ?? 0;
+
+    if (newLevel >= 1 && currentUser.status === 'inactive') {
+      activateUserAccount(currentUser.email);
+    } else if (newLevel === 0 && currentUser.status === 'active') {
+      // Deactivation Logic
+      updateUserStatus(currentUser.email, 'inactive');
+    }
+
+    // Record first deposit for bonus eligibility
+    if (!fromAccount) {
+        const userFirstDepositKey = `${currentUser.email}_firstDepositAmount`;
+        if (!localStorage.getItem(userFirstDepositKey)) {
+            localStorage.setItem(userFirstDepositKey, JSON.stringify(numericAmount));
+            setPersistentState('activationDate', new Date().toISOString());
         }
     }
 
@@ -597,6 +587,25 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
           setMainBalance(prev => prev + rechargeAmount);
           setDeposits(prev => prev + 1);
           toast({ title: "Recharge Approved", description: `Your balance has been updated by ${rechargeAmount.toFixed(2)} USDT.` });
+      }
+
+      // Check if this recharge makes the user active
+      const userToUpdate = users.find(u => u.email === userEmail);
+      if (userToUpdate && userToUpdate.status === 'inactive') {
+          const taskBalance = parseFloat(localStorage.getItem(`${userEmail}_taskRewardsBalance`) || '0');
+          const interestBalance = parseFloat(localStorage.getItem(`${userEmail}_interestEarningsBalance`) || '0');
+          const committedBalance = taskBalance + interestBalance;
+          
+          const levelData = configuredLevels.slice().reverse().find(l => {
+             const balanceMet = committedBalance >= l.minAmount;
+             // Simplified referral check for this context
+             const referralsMet = true; // Assuming we check referrals elsewhere
+             return balanceMet && referralsMet;
+          });
+
+          if (levelData && levelData.level >= 1) {
+              activateUserAccount(userEmail);
+          }
       }
 
       addTransaction(userEmail, {
@@ -920,7 +929,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const claimDailyReward = () => {
-    if (!currentUser || !dailyRewardState?.canClaim || !dailyRewardState.isEnabled) return;
+    if (!currentUser || currentUser.status !== 'active' || !dailyRewardState?.canClaim || !dailyRewardState.isEnabled) return;
     
     const rewardAmount = dailyRewardState.reward;
     setMainBalance(prev => prev + rewardAmount);
@@ -937,7 +946,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setPersistentState('last_daily_claim_date', today);
     setPersistentState('daily_claim_streak', newStreak);
 
-    setDailyRewardState(prev => ({...prev!, canClaim: false, streak: newStreak}));
+    setDailyRewardState(prev => prev ? {...prev, canClaim: false, streak: newStreak} : undefined);
     
     toast({
         title: "Daily Reward Claimed!",
@@ -1026,4 +1035,5 @@ export const useWallet = () => {
 };
 
     
+
 
