@@ -13,13 +13,15 @@ export type Request = {
     type: 'Recharge' | 'Withdrawal' | 'Team Reward' | 'Team Size Reward' | 'Sign-up Bonus' | 'Referral Bonus' | 'Salary Claim';
     amount: number;
     address: string | null;
-    level: number;
-    deposits: number;
-    withdrawals: number;
-    referrals: number;
-    balance: number;
     status: 'Pending' | 'Approved' | 'Declined' | 'On Hold';
     date: string;
+    // The following fields are now deprecated from the request object
+    // and will be looked up live in the admin panel.
+    level?: number;
+    deposits?: number;
+    withdrawals?: number;
+    referrals?: number;
+    balance?: number;
     upline?: string | null;
 };
 
@@ -37,14 +39,8 @@ const mockRequests: Request[] = [
     type: "Withdrawal",
     amount: 150.00,
     address: "0xAbCdE123456789012345678901234567890AbCdE",
-    level: 2,
-    deposits: 5,
-    withdrawals: 2,
-    referrals: 3,
-    balance: 750.00,
     status: "Pending",
     date: "2024-07-31",
-    upline: "admin@stakinghub.com"
   },
   {
     id: "REQ-002",
@@ -52,14 +48,8 @@ const mockRequests: Request[] = [
     type: "Recharge",
     amount: 500.00,
     address: "0x1234567890AbCdEAbCdE12345678901234567890",
-    level: 1,
-    deposits: 1,
-    withdrawals: 0,
-    referrals: 0,
-    balance: 120.50,
     status: "Approved",
     date: "2024-07-30",
-    upline: "user1@example.com"
   },
    {
     id: "REQ-003",
@@ -67,14 +57,8 @@ const mockRequests: Request[] = [
     type: "Withdrawal",
     amount: 300.00,
     address: "0xEfGhI987654321098765432109876543210EfGhI",
-    level: 3,
-    deposits: 10,
-    withdrawals: 5,
-    referrals: 10,
-    balance: 2100.00,
     status: "Declined",
     date: "2024-07-29",
-    upline: null
   },
 ];
 
@@ -135,17 +119,6 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
         return;
     }
     
-    // We get wallet data from localStorage directly to avoid context dependency issues
-    const mainBalance = parseFloat(localStorage.getItem(`${currentUser.email}_mainBalance`) || '0');
-    const currentLevel = JSON.parse(localStorage.getItem(`${currentUser.email}_level`) || '0');
-    const deposits = parseInt(localStorage.getItem(`${currentUser.email}_deposits`) || '0');
-    const withdrawals = parseInt(localStorage.getItem(`${currentUser.email}_withdrawals`) || '0');
-    const purchasedReferrals = parseInt(localStorage.getItem(`${currentUser.email}_purchased_referrals`) || '0');
-    
-    const directReferralsCount = purchasedReferrals; // Simplified for this context
-
-    const upline = users.find(u => u.referralCode === currentUser.referredBy);
-
     const newRequest: Request = {
         id: `REQ-${Date.now()}`,
         date: new Date().toISOString(),
@@ -154,12 +127,6 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
         type: requestData.type!,
         amount: requestData.amount!,
         address: requestData.address ?? null,
-        balance: mainBalance,
-        level: currentLevel,
-        deposits: deposits,
-        withdrawals: withdrawals,
-        referrals: directReferralsCount,
-        upline: upline ? upline.email : null,
     };
 
     setRequests(prev => [newRequest, ...prev]);

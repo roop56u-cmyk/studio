@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo, useCallback } from "react";
@@ -17,6 +18,7 @@ import { useRequests } from "@/contexts/RequestContext";
 import { Skeleton } from "../ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { levels as defaultLevels, Level } from "./level-tiers";
 
 type RequestStatus = 'Pending' | 'Approved' | 'Declined' | 'On Hold';
 type RequestType = 'Finance' | 'Rewards';
@@ -36,6 +38,45 @@ export function AdminProfile() {
         updateRequestStatus(requestId, action);
     };
 
+    const getLiveUserData = useCallback((userEmail: string) => {
+        const user = users.find(u => u.email === userEmail);
+        if (!user) return null;
+
+        const mainBalance = parseFloat(localStorage.getItem(`${userEmail}_mainBalance`) || '0');
+        const taskRewardsBalance = parseFloat(localStorage.getItem(`${userEmail}_taskRewardsBalance`) || '0');
+        const interestEarningsBalance = parseFloat(localStorage.getItem(`${userEmail}_interestEarningsBalance`) || '0');
+        const committedBalance = taskRewardsBalance + interestEarningsBalance;
+        
+        const platformLevels: Level[] = JSON.parse(localStorage.getItem('platform_levels') || JSON.stringify(defaultLevels));
+        const purchasedReferrals = parseInt(localStorage.getItem(`${userEmail}_purchased_referrals`) || '0', 10);
+        const directReferralsCount = users.filter(u => u.referredBy === user.referralCode).length + purchasedReferrals;
+        
+        const currentLevel = user.overrideLevel ?? platformLevels.slice().reverse().find(l => {
+            if (l.level === 0) return false;
+            return committedBalance >= l.minAmount && directReferralsCount >= l.referrals;
+        })?.level ?? 0;
+
+        const deposits = parseInt(localStorage.getItem(`${userEmail}_deposits`) || '0');
+        const withdrawals = parseInt(localStorage.getItem(`${userEmail}_withdrawals`) || '0');
+
+        const level1 = users.filter(u => u.referredBy === user.referralCode);
+        const level2 = level1.flatMap(l1 => users.filter(u => u.referredBy === l1.referralCode));
+        const level3 = level2.flatMap(l2 => users.filter(u => u.referredBy === l2.referralCode));
+        const teamSize = level1.length + level2.length + level3.length;
+        const upline = users.find(u => u.referralCode === user.referredBy);
+
+        return {
+            balance: mainBalance,
+            level: currentLevel,
+            deposits,
+            withdrawals,
+            referrals: directReferralsCount,
+            teamSize,
+            upline: upline?.email || null,
+            activatedAt: user.activatedAt ? new Date(user.activatedAt).toLocaleDateString() : 'N/A'
+        };
+    }, [users]);
+    
     const getSavedWithdrawalAddress = useCallback((userEmail: string) => {
         if (!isClient) return null;
         const storedAddresses = localStorage.getItem(`${userEmail}_withdrawalAddresses`);
@@ -49,14 +90,12 @@ export function AdminProfile() {
         } catch(e) {
             return null;
         }
-
         return null;
     }, [isClient]);
 
     const filteredRequests = useMemo(() => {
         const financeTypes = ['Recharge', 'Withdrawal'];
         const rewardTypes = ['Team Reward', 'Team Size Reward', 'Sign-up Bonus', 'Referral Bonus', 'Salary Claim'];
-
         const typeFilter = activeTab === 'Finance' ? financeTypes : rewardTypes;
         
         return requests.filter(req => {
@@ -65,22 +104,6 @@ export function AdminProfile() {
             return isTypeMatch && isStatusMatch;
         });
     }, [requests, activeTab, activeStatus]);
-
-    const getUserActivationDate = useCallback((email: string) => {
-        const user = users.find(u => u.email === email);
-        return user?.activatedAt ? new Date(user.activatedAt).toLocaleDateString() : 'N/A';
-    }, [users]);
-    
-    const getTeamSize = useCallback((userEmail: string) => {
-        const user = users.find(u => u.email === userEmail);
-        if(!user) return 0;
-        
-        const level1 = users.filter(u => u.referredBy === user.referralCode);
-        const level2 = level1.flatMap(l1 => users.filter(u => u.referredBy === l1.referralCode));
-        const level3 = level2.flatMap(l2 => users.filter(u => u.referredBy === l2.referralCode));
-
-        return level1.length + level2.length + level3.length;
-    }, [users]);
 
   return (
     <Card>
@@ -117,9 +140,10 @@ export function AdminProfile() {
           <div className="space-y-4 mt-4">
              {filteredRequests.length > 0 ? (
                 filteredRequests.map((request) => {
+                  const liveData = getLiveUserData(request.user);
+                  if (!liveData) return null; // Skip if user data can't be found
+                  
                   const userWithdrawalAddress = getSavedWithdrawalAddress(request.user);
-                  const userActivationDate = getUserActivationDate(request.user);
-                  const teamSize = getTeamSize(request.user);
                   const isFinanceRequest = activeTab === 'Finance';
 
                   const getIcon = () => {
@@ -161,12 +185,12 @@ export function AdminProfile() {
                         </div>
                          <div className="flex items-center gap-2 text-foreground">
                             <Calendar className="h-4 w-4 text-muted-foreground"/>
-                            <span>Activated: {userActivationDate}</span>
+                            <span>Activated: {liveData.activatedAt}</span>
                         </div>
-                        {request.upline && (
+                        {liveData.upline && (
                            <div className="flex items-center gap-2 text-foreground">
                                <UserCheck className="h-4 w-4 text-muted-foreground"/>
-                               <span>Sponsor: {request.upline}</span>
+                               <span>Sponsor: {liveData.upline}</span>
                            </div>
                         )}
                         {userWithdrawalAddress && isFinanceRequest && (
@@ -175,7 +199,7 @@ export function AdminProfile() {
                                 <span className="font-mono text-xs">{userWithdrawalAddress}</span>
                             </div>
                         )}
-                        {(request.type === 'Team Reward' || request.type === 'Team Size Reward' || request.type === 'Referral Bonus' || request.type === 'Salary Claim') && (
+                         {(request.type !== 'Recharge' && request.type !== 'Withdrawal') && request.address && (
                              <div className="flex items-center gap-2 text-foreground">
                                 <UsersIcon className="h-4 w-4 text-muted-foreground"/>
                                 <span className="font-mono text-xs">{request.address}</span>
@@ -191,27 +215,27 @@ export function AdminProfile() {
                         </div>
                          <div>
                             <p className="text-muted-foreground">User Level</p>
-                            <p className="font-bold text-base text-foreground">Level {request.level}</p>
+                            <p className="font-bold text-base text-foreground">Level {liveData.level}</p>
                         </div>
                          <div>
                             <p className="text-muted-foreground">User Deposits</p>
-                            <p className="font-bold text-base text-foreground">{request.deposits}</p>
+                            <p className="font-bold text-base text-foreground">{liveData.deposits}</p>
                         </div>
                          <div>
                             <p className="text-muted-foreground">User Withdrawals</p>
-                            <p className="font-bold text-base text-foreground">{request.withdrawals}</p>
+                            <p className="font-bold text-base text-foreground">{liveData.withdrawals}</p>
                         </div>
                         <div>
                             <p className="text-muted-foreground">Direct Referrals</p>
-                            <p className="font-bold text-base text-foreground">{request.referrals}</p>
+                            <p className="font-bold text-base text-foreground">{liveData.referrals}</p>
                         </div>
                         <div>
                             <p className="text-muted-foreground">Team Size</p>
-                            <p className="font-bold text-base text-foreground">{teamSize}</p>
+                            <p className="font-bold text-base text-foreground">{liveData.teamSize}</p>
                         </div>
                          <div>
                             <p className="text-muted-foreground">User Main Balance</p>
-                            <p className="font-bold text-base text-foreground">${(request.balance ?? 0).toFixed(2)}</p>
+                            <p className="font-bold text-base text-foreground">${(liveData.balance ?? 0).toFixed(2)}</p>
                         </div>
                     </div>
 
