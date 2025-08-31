@@ -259,24 +259,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const updateUserStatus = (email: string, status: User['status']) => {
         setUsers(prev => prev.map(u => {
             if (u.email === email) {
-                const updatedUser = { ...u, status };
+                const updatedUser: User = { ...u, status };
                 if (status === 'inactive') {
+                    updatedUser.isAccountActive = false;
                     updatedUser.activatedAt = null;
+                } else if (status === 'active' && !u.isAccountActive) {
+                    updatedUser.isAccountActive = true;
+                    updatedUser.activatedAt = u.activatedAt || new Date().toISOString();
                 }
                 return updatedUser;
             }
             return u;
         }));
         if (currentUser?.email === email) {
-            setCurrentUser(prev => prev ? { ...prev, status, ...(status === 'inactive' && { activatedAt: null }) } : null);
+             setCurrentUser(prev => prev ? { ...prev, status, ...(status === 'inactive' && { isAccountActive: false, activatedAt: null }) } : null);
         }
     }
     
     const activateUserAccount = (email: string) => {
         const newUsers = users.map(u => {
             if (u.email === email) {
-                // Only set activatedAt if it's not already set
-                return { ...u, status: 'active', activatedAt: u.activatedAt || new Date().toISOString() };
+                return { ...u, status: 'active', isAccountActive: true, activatedAt: u.activatedAt || new Date().toISOString() };
             }
             return u;
         });
@@ -284,7 +287,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem('users', JSON.stringify(newUsers));
 
         if (currentUser?.email === email) {
-            setCurrentUser(prev => prev ? { ...prev, status: 'active', activatedAt: prev.activatedAt || new Date().toISOString() } : null);
+            setCurrentUser(prev => prev ? { ...prev, status: 'active', isAccountActive: true, activatedAt: prev.activatedAt || new Date().toISOString() } : null);
         }
     }
 

@@ -25,6 +25,7 @@ export type Request = {
     balance: number;
     status: 'Pending' | 'Approved' | 'Declined' | 'On Hold';
     date: string;
+    upline?: string | null;
 };
 
 
@@ -444,24 +445,26 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     if (!currentUser) return false;
     const signupBonusEnabled = getGlobalSetting('system_signup_bonus_enabled', true, true);
     if (!signupBonusEnabled || currentUser.isBonusDisabled) return false;
-
-    const firstDeposit = getInitialState('firstDepositAmount', 0);
-    return firstDeposit > 0;
-  }, [currentUser, getInitialState]);
+    
+    // Eligibility is now based on active account status
+    return currentUser.isAccountActive;
+  }, [currentUser]);
 
 
   const signupBonusAmount = useMemo(() => {
-    if (!currentUser) return 0;
+    if (!currentUser || !isEligibleForSignUpBonus) return 0;
     
-    const firstDeposit = getInitialState('firstDepositAmount', 0);
-    if (firstDeposit === 0) return 0;
+    // We base the bonus on the minimum amount required for the user's current level,
+    // assuming activation implies meeting this threshold.
+    const minAmount = minRequiredBalanceForLevel(currentLevel);
+    if (minAmount === 0) return 0;
 
     const applicableTiers = signupBonuses
-      .filter(tier => firstDeposit >= tier.minDeposit)
+      .filter(tier => minAmount >= tier.minDeposit)
       .sort((a, b) => b.bonusAmount - a.bonusAmount);
 
     return applicableTiers.length > 0 ? applicableTiers[0].bonusAmount : 0;
-  }, [currentUser, signupBonuses, getInitialState]);
+  }, [currentUser, isEligibleForSignUpBonus, signupBonuses, currentLevel, minRequiredBalanceForLevel]);
 
 
   useEffect(() => { if (!isLoading) setPersistentState('mainBalance', mainBalance)}, [mainBalance, isLoading, setPersistentState]);
@@ -543,7 +546,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     
     // Check for Activation
     const minBalanceForL1 = minRequiredBalanceForLevel(1);
-    if (!fromAccount && originalCommittedBalance < minBalanceForL1 && newCommittedBalance >= minBalanceForL1) {
+    if (originalCommittedBalance < minBalanceForL1 && newCommittedBalance >= minBalanceForL1) {
       activateUserAccount(currentUser.email);
     }
     
@@ -572,13 +575,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       const depositsKey = `${userEmail}_deposits`;
       const depositCount = parseInt(localStorage.getItem(depositsKey) || '0');
       localStorage.setItem(depositsKey, (depositCount + 1).toString());
-      
-      // Check for first deposit
-      const firstDepositKey = `${userEmail}_firstDepositAmount`;
-      const firstDepositAmount = parseFloat(localStorage.getItem(firstDepositKey) || '0');
-      if (firstDepositAmount === 0) {
-          localStorage.setItem(firstDepositKey, rechargeAmount.toString());
-      }
       
       if(currentUser?.email === userEmail) {
           setMainBalance(prev => prev + rechargeAmount);
@@ -885,7 +881,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setMainBalance(prev => prev + bonus);
         addTransaction(currentUser.email, {
             type: "Sign-up Bonus",
-            description: `Sign-up bonus claimed for $${getInitialState('firstDepositAmount')} deposit.`,
+            description: `Sign-up bonus claimed`,
             amount: bonus,
             date: new Date().toISOString()
         });
@@ -898,28 +894,22 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   };
   
   const referralBonusFor = useCallback((referralEmail: string): number => {
-    const getReferralInitialState = (key: string, defaultValue: any) => {
-        if (typeof window === 'undefined') return defaultValue;
-        try {
-            const storedValue = localStorage.getItem(`${referralEmail}_${key}`);
-            return storedValue ? JSON.parse(storedValue) : defaultValue;
-        } catch (error) {
-            return defaultValue;
-        }
-    };
-    const firstDeposit = parseFloat(getReferralInitialState('firstDepositAmount', 0));
-
-    if (firstDeposit === 0) return 0;
+    const referralUser = users.find(u => u.email === referralEmail);
+    if (!referralUser || !referralUser.isAccountActive) return 0;
     
     const referralBonusEnabled = getGlobalSetting('system_referral_bonus_enabled', true, true);
     if (!referralBonusEnabled) return 0;
 
+    // Use the referral's level to determine the minimum deposit amount for bonus calculation
+    const referralLevel = users.find(u => u.email === referralEmail)?.overrideLevel ?? defaultLevels.find(l => l.level === getInitialState('level', 0))?.level ?? 0;
+    const minAmountForBonus = minRequiredBalanceForLevel(referralLevel);
+
     const applicableTiers = referralBonuses
-        .filter(tier => firstDeposit >= tier.minDeposit)
+        .filter(tier => minAmountForBonus >= tier.minDeposit)
         .sort((a, b) => b.bonusAmount - a.bonusAmount);
 
     return applicableTiers.length > 0 ? applicableTiers[0].bonusAmount : 0;
-  }, [referralBonuses]);
+  }, [referralBonuses, users, minRequiredBalanceForLevel, getInitialState]);
   
   const claimReferralBonus = (referralEmail: string) => {
     if (!currentUser || claimedReferralIds.includes(referralEmail) || userRequests.some(req => req.type === 'Referral Bonus' && req.address === referralEmail && req.status === 'Pending')) return;

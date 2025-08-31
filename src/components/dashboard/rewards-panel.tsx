@@ -62,13 +62,7 @@ export function RewardsPanel() {
                 description: `Your claim for $${signupBonusAmount.toFixed(2)} is pending admin approval.`
             });
         } else {
-            const success = claimSignUpBonus();
-            if (success) {
-                toast({
-                    title: "Sign-up Bonus Claimed!",
-                    description: `The reward of $${signupBonusAmount.toFixed(2)} has been added to your main wallet.`,
-                });
-            }
+            claimSignUpBonus();
         }
     };
     
@@ -83,13 +77,7 @@ export function RewardsPanel() {
                 description: `Your claim for referring ${referralEmail} is pending admin approval.`
             });
         } else {
-            const claimedAmount = claimReferralBonus(referralEmail);
-             if (claimedAmount) {
-                toast({
-                    title: "Referral Bonus Claimed!",
-                    description: `Reward of $${claimedAmount.toFixed(2)} for referring ${referralEmail} has been credited.`,
-                });
-            }
+            claimReferralBonus(referralEmail);
         }
     }
 
@@ -111,7 +99,7 @@ export function RewardsPanel() {
                 </CardHeader>
                 <CardContent>
                     <p className="text-sm">
-                        Welcome! As a new active member, you're eligible for a one-time bonus based on your first deposit.
+                        Welcome! As a new active member, you're eligible for a one-time bonus.
                     </p>
                 </CardContent>
                 <CardFooter className="flex justify-between items-center">
