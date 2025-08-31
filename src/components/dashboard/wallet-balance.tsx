@@ -16,6 +16,15 @@ import { Input } from "../ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useWallet } from "@/contexts/WalletContext";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface WalletBalanceProps {
     title: string;
@@ -30,41 +39,43 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
   const [moveAmount, setMoveAmount] = useState("");
   const { toast } = useToast();
   const { handleMoveFunds, isFundMovementLocked } = useWallet();
+  const [isWarningOpen, setIsWarningOpen] = useState(false);
+  
   const canMove = parseFloat(balance) > 0;
   
-  const isLocked = isFundMovementLocked(title === "Task Rewards" ? 'task' : 'interest');
+  const isInterestLockActive = isFundMovementLocked('interest');
 
-  const handleMoveClick = () => {
-    if (!onMoveToMain) return;
-
-    const numericAmount = parseFloat(moveAmount);
-    if (isNaN(numericAmount) || numericAmount <= 0) {
-      toast({
-        variant: "destructive",
-        title: "Invalid Amount",
-        description: "Please enter a valid positive amount to move.",
-      });
+  const handleFundMovement = (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', fromAccount?: 'Task Rewards' | 'Interest Earnings') => {
+    if (destination === 'Interest Earnings' && isInterestLockActive) {
+      setIsWarningOpen(true);
       return;
     }
-    
-    if (numericAmount > parseFloat(balance)) {
-      toast({
-        variant: "destructive",
-        title: "Insufficient Funds",
-        description: `You cannot move more than the available balance of $${balance}.`,
-      });
+     if (fromAccount === 'Interest Earnings' && isInterestLockActive) {
+      setIsWarningOpen(true);
       return;
     }
-    
-    onMoveToMain(numericAmount);
-    setMoveAmount("");
-  };
 
-  const handleMoveToOther = () => {
-      const numericAmount = parseFloat(moveAmount);
-       if (isNaN(numericAmount) || numericAmount <= 0) {
-          toast({ variant: "destructive", title: "Invalid Amount", description: "Please enter a valid amount." });
+    if (destination === 'Main Wallet') {
+       if (!onMoveToMain) return;
+
+        const numericAmount = parseFloat(moveAmount);
+        if (isNaN(numericAmount) || numericAmount <= 0) {
+          toast({ variant: "destructive", title: "Invalid Amount", description: "Please enter a valid positive amount to move." });
           return;
+        }
+        
+        if (numericAmount > parseFloat(balance)) {
+          toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than the available balance of $${balance}.` });
+          return;
+        }
+        
+        onMoveToMain(numericAmount);
+        setMoveAmount("");
+    } else {
+        const numericAmount = parseFloat(moveAmount);
+        if (isNaN(numericAmount) || numericAmount <= 0) {
+            toast({ variant: "destructive", title: "Invalid Amount", description: "Please enter a valid amount." });
+            return;
         }
 
         if (numericAmount > parseFloat(balance)) {
@@ -72,15 +83,14 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
             return;
         }
 
-        if (title === "Task Rewards") {
-            handleMoveFunds("Interest Earnings", numericAmount, "Task Rewards");
-        } else {
-            handleMoveFunds("Task Rewards", numericAmount, "Interest Earnings");
-        }
+        handleMoveFunds(destination, numericAmount, fromAccount);
         setMoveAmount("");
+    }
   };
 
+
   return (
+    <>
     <Card className="relative overflow-hidden flex flex-col">
       <div className={cn("absolute top-0 left-0 h-1 w-full", accentColor)} />
       <CardHeader className="p-3">
@@ -96,6 +106,9 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
         <p className="text-xs text-muted-foreground leading-tight">
           {description}
         </p>
+         {title === 'Interest Earnings' && isInterestLockActive && (
+            <p className="text-xs text-destructive mt-1">Cannot move funds while timer is active.</p>
+        )}
       </CardContent>
        {(onMoveToMain || showMoveToOther) && (
         <CardFooter className="pt-2 flex-col items-start gap-1 mt-auto p-3">
@@ -106,7 +119,7 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
               className="h-7 text-xs"
               value={moveAmount}
               onChange={(e) => setMoveAmount(e.target.value)}
-              disabled={!canMove || isLocked}
+              disabled={!canMove}
             />
             <div className="flex items-center gap-1 w-full">
             {onMoveToMain && (
@@ -114,8 +127,8 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
                 variant="outline" 
                 size="sm" 
                 className="h-7 text-xs flex-1 px-2"
-                onClick={handleMoveClick}
-                disabled={!canMove || isLocked}
+                onClick={() => handleFundMovement('Main Wallet', title === 'Task Rewards' ? 'Task Rewards' : 'Interest Earnings')}
+                disabled={!canMove}
                 >
                 <ArrowLeftRight className="mr-1 h-3 w-3" />
                 To Main
@@ -126,18 +139,31 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
               variant="outline" 
               size="sm" 
               className="h-7 text-xs flex-1 px-2"
-              onClick={handleMoveToOther}
-              disabled={!canMove || isLocked}
+              onClick={() => handleFundMovement(title === "Task Rewards" ? "Interest Earnings" : "Task Rewards", title === 'Task Rewards' ? 'Task Rewards' : 'Interest Earnings')}
+              disabled={!canMove}
             >
               <ArrowRight className="mr-1 h-3 w-3" />
               To {title === "Task Rewards" ? "Interest" : "Tasks"}
             </Button>
            )}
            </div>
-           {isLocked && <p className="text-xs text-destructive mt-1">Cannot move funds while timer is active.</p>}
           </div>
         </CardFooter>
       )}
     </Card>
+    <AlertDialog open={isWarningOpen} onOpenChange={setIsWarningOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Action Locked</AlertDialogTitle>
+                <AlertDialogDescription>
+                    You cannot move funds to or from the Interest Earnings wallet while the 24-hour interest timer is active. Please wait for the timer to complete.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogAction onClick={() => setIsWarningOpen(false)}>OK</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
