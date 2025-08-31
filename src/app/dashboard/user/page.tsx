@@ -8,7 +8,7 @@ import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { useWallet } from "@/contexts/WalletContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Lock, CalendarCheck } from "lucide-react";
+import { Lock, CalendarCheck, PieChart, Trophy } from "lucide-react";
 import { TaskDialog } from "@/components/dashboard/task-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -235,4 +235,3 @@ export default function UserDashboardPage() {
     </div>
   );
 }
-

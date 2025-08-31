@@ -88,7 +88,8 @@ import {
   Trophy,
   CalendarDays,
   ArrowUp,
-  Briefcase
+  Briefcase,
+  PieChart
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -107,6 +108,8 @@ import { QuestPanel } from "@/components/dashboard/quest-panel";
 import { RewardsPanel } from "@/components/dashboard/rewards-panel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { WalletOverviewPanel } from "@/components/dashboard/wallet-overview-panel";
+import { AchievementsPanel } from "@/components/dashboard/achievements-panel";
 
 // Admin Panel Imports
 import UserManagementPage from "./admin/users/page";
@@ -177,7 +180,7 @@ const adminPanelTitles: Record<PanelType, { title: string; description: string }
     salaryManagement: { title: "Manage Salary", description: "Create and configure salary packages for users." },
 };
 
-function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransactionHistoryClick, onTaskHistoryClick, onReferralClick, onInboxClick, onBoosterStoreClick, onQuestPanelClick, onRewardsPanelClick, onAdminPanelClick }: { onRechargeClick: () => void, onWithdrawalClick: () => void, onTransactionHistoryClick: () => void, onTaskHistoryClick: () => void, onReferralClick: () => void, onInboxClick: () => void, onBoosterStoreClick: () => void, onQuestPanelClick: () => void, onRewardsPanelClick: () => void, onAdminPanelClick: (panel: PanelType) => void }) {
+function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransactionHistoryClick, onTaskHistoryClick, onReferralClick, onInboxClick, onBoosterStoreClick, onQuestPanelClick, onRewardsPanelClick, onAdminPanelClick, onWalletOverviewClick, onAchievementsClick }: { onRechargeClick: () => void, onWithdrawalClick: () => void, onTransactionHistoryClick: () => void, onTaskHistoryClick: () => void, onReferralClick: () => void, onInboxClick: () => void, onBoosterStoreClick: () => void, onQuestPanelClick: () => void, onRewardsPanelClick: () => void, onAdminPanelClick: (panel: PanelType) => void, onWalletOverviewClick: () => void, onAchievementsClick: () => void }) {
   const pathname = usePathname();
   const { logout, currentUser } = useAuth();
   const { 
@@ -366,6 +369,24 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
                     <span>Home</span>
                     </Link>
                 </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton
+                        onClick={onAchievementsClick}
+                        tooltip={{ children: "Achievements" }}
+                    >
+                        <Trophy />
+                        <span>Achievements</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton
+                        onClick={onWalletOverviewClick}
+                        tooltip={{ children: "Wallet Overview" }}
+                    >
+                        <PieChart />
+                        <span>Wallet Overview</span>
+                    </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                     <SidebarMenuButton
@@ -645,6 +666,9 @@ export default function DashboardLayout({
     const [isBoosterStoreOpen, setIsBoosterStoreOpen] = React.useState(false);
     const [isQuestPanelOpen, setIsQuestPanelOpen] = React.useState(false);
     const [isRewardsPanelOpen, setIsRewardsPanelOpen] = React.useState(false);
+    const [isWalletOverviewOpen, setIsWalletOverviewOpen] = React.useState(false);
+    const [isAchievementsOpen, setIsAchievementsOpen] = React.useState(false);
+
 
     // Admin panel states
     const [isAdminPanelOpen, setIsAdminPanelOpen] = React.useState(false);
@@ -706,6 +730,8 @@ export default function DashboardLayout({
                 onQuestPanelClick={() => setIsQuestPanelOpen(true)}
                 onRewardsPanelClick={() => setIsRewardsPanelOpen(true)}
                 onAdminPanelClick={handleAdminPanelClick}
+                onWalletOverviewClick={() => setIsWalletOverviewOpen(true)}
+                onAchievementsClick={() => setIsAchievementsOpen(true)}
             />
           </Sidebar>
           <div className="flex flex-1 flex-col">
@@ -857,6 +883,30 @@ export default function DashboardLayout({
                 </SheetHeader>
                 <div className="mt-4">
                     <RewardsPanel />
+                </div>
+                 <SheetClose />
+            </SheetContent>
+        </Sheet>
+        <Sheet open={isWalletOverviewOpen} onOpenChange={setIsWalletOverviewOpen}>
+             <SheetContent className="w-full sm:max-w-lg">
+                <SheetHeader>
+                    <SheetTitle>Wallet Overview</SheetTitle>
+                    <SheetDescription>Visualize your earnings and financial distribution.</SheetDescription>
+                </SheetHeader>
+                <div className="mt-4">
+                    <WalletOverviewPanel />
+                </div>
+                 <SheetClose />
+            </SheetContent>
+        </Sheet>
+        <Sheet open={isAchievementsOpen} onOpenChange={setIsAchievementsOpen}>
+            <SheetContent className="w-full sm:max-w-lg">
+                <SheetHeader>
+                    <SheetTitle>My Achievements</SheetTitle>
+                    <SheetDescription>View your unlocked milestones and badges.</SheetDescription>
+                </SheetHeader>
+                 <div className="mt-4">
+                    <AchievementsPanel />
                 </div>
                  <SheetClose />
             </SheetContent>

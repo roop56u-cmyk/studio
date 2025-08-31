@@ -1,7 +1,7 @@
 
 "use client";
 
-import React from "react";
+import React, { useState, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -24,12 +24,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, UserCog } from "lucide-react";
+import { MoreHorizontal, UserCog, Search, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@/contexts/AuthContext";
 import { EditUserDialog } from "@/components/dashboard/edit-user-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+
+type StatusFilter = 'All' | 'active' | 'inactive' | 'disabled';
 
 export default function UserManagementPage() {
     const { users, deleteUser } = useAuth();
@@ -37,10 +41,20 @@ export default function UserManagementPage() {
     const [isClient, setIsClient] = React.useState(false);
     const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>("All");
 
     React.useEffect(() => {
         setIsClient(true);
     }, []);
+
+    const filteredUsers = useMemo(() => {
+        return users.filter(user => {
+            const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesFilter = statusFilter === 'All' || user.status === statusFilter;
+            return matchesSearch && matchesFilter;
+        });
+    }, [users, searchTerm, statusFilter]);
 
     const handleEdit = (user: User) => {
         setSelectedUser(user);
@@ -83,12 +97,29 @@ export default function UserManagementPage() {
     <div className="grid gap-8">
       <Card>
         <CardHeader>
-          <CardTitle>All Users ({users.length})</CardTitle>
+          <CardTitle>All Users ({filteredUsers.length})</CardTitle>
           <CardDescription>
             A list of all users registered on the platform.
           </CardDescription>
         </CardHeader>
         <CardContent>
+            <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                 <div className="relative flex-1">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Search by email..."
+                        className="pl-8"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                 <div className="flex items-center gap-2">
+                    <Button variant={statusFilter === 'All' ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter('All')}>All</Button>
+                    <Button variant={statusFilter === 'active' ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter('active')}>Active</Button>
+                    <Button variant={statusFilter === 'inactive' ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter('inactive')}>Inactive</Button>
+                    <Button variant={statusFilter === 'disabled' ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter('disabled')}>Disabled</Button>
+                </div>
+            </div>
           <Table>
             <TableHeader>
               <TableRow>
@@ -100,11 +131,11 @@ export default function UserManagementPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user) => (
+              {filteredUsers.map((user) => (
                 <TableRow key={user.email}>
                   <TableCell className="font-medium">{user.email}{user.isAdmin && <span className="ml-2 text-xs text-primary">(Admin)</span>}</TableCell>
                    <TableCell>
-                        <Badge variant={user.status === 'active' ? 'default' : 'destructive'} className={user.status === 'active' ? 'bg-green-500/20 text-green-700 border-green-500/20' : ''}>
+                        <Badge variant={user.status === 'active' ? 'default' : user.status === 'inactive' ? 'secondary' : 'destructive'} className={cn(user.status === 'active' ? 'bg-green-500/20 text-green-700 border-green-500/20' : '', 'capitalize')}>
                           {user.status}
                         </Badge>
                    </TableCell>
