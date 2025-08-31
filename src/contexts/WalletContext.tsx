@@ -125,7 +125,7 @@ interface WalletContextType {
   activeBoosters: ActiveBooster[];
   purchasedBoosterIds: string[];
   getReferralCommissionBoost: () => number;
-  isFundMovementLocked: (type: 'task' | 'interest') => boolean;
+  isFundMovementLocked: (type: 'interest' | 'task') => boolean;
   addTransaction: (userEmail: string, transaction: Omit<Transaction, 'id'>) => void;
   transactionHistory: Transaction[];
   multipleAddressesEnabled: boolean;
@@ -665,7 +665,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
      addTransaction(userEmail, {
         type: 'Referral Bonus',
-        description: `Referral bonus for ${referredUser} approved`,
+        description: `Bonus for referral ${referredUser} approved`,
         amount: amount,
         date: new Date().toISOString()
     });
@@ -724,13 +724,13 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       }
   };
   
-  const isFundMovementLocked = (type: 'task' | 'interest') => {
+  const isFundMovementLocked = (type: 'interest' | 'task') => {
       if (type === 'interest') {
         return interestCounter.isRunning;
       }
       if (type === 'task') {
-        // A user can always move funds to the task wallet, even if tasks are in progress.
-        return false;
+        const tasksInProgress = tasksCompletedToday > 0 && tasksCompletedToday < dailyTaskQuota;
+        return tasksInProgress;
       }
       return false;
   }

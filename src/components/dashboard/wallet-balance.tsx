@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState } from "react";
@@ -39,19 +40,24 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
   const [moveAmount, setMoveAmount] = useState("");
   const { toast } = useToast();
   const { handleMoveFunds, isFundMovementLocked } = useWallet();
-  const [isWarningOpen, setIsWarningOpen] = useState(false);
+  const [isInterestWarningOpen, setIsInterestWarningOpen] = useState(false);
+  const [isTaskWarningOpen, setIsTaskWarningOpen] = useState(false);
   
   const canMove = parseFloat(balance) > 0;
   
   const isInterestLockActive = isFundMovementLocked('interest');
+  const isTaskLockActive = isFundMovementLocked('task');
 
   const handleFundMovement = (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', fromAccount?: 'Task Rewards' | 'Interest Earnings') => {
-    if (destination === 'Interest Earnings' && isInterestLockActive) {
-      setIsWarningOpen(true);
+    // Check interest lock
+    if ((destination === 'Interest Earnings' || fromAccount === 'Interest Earnings') && isInterestLockActive) {
+      setIsInterestWarningOpen(true);
       return;
     }
-     if (fromAccount === 'Interest Earnings' && isInterestLockActive) {
-      setIsWarningOpen(true);
+    
+    // Check task lock
+    if ((destination === 'Task Rewards' || fromAccount === 'Task Rewards') && isTaskLockActive) {
+      setIsTaskWarningOpen(true);
       return;
     }
 
@@ -109,6 +115,9 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
          {title === 'Interest Earnings' && isInterestLockActive && (
             <p className="text-xs text-destructive mt-1">Cannot move funds while timer is active.</p>
         )}
+         {title === 'Task Rewards' && isTaskLockActive && (
+            <p className="text-xs text-destructive mt-1">Cannot move funds while tasks are active.</p>
+        )}
       </CardContent>
        {(onMoveToMain || showMoveToOther) && (
         <CardFooter className="pt-2 flex-col items-start gap-1 mt-auto p-3">
@@ -151,7 +160,7 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
         </CardFooter>
       )}
     </Card>
-    <AlertDialog open={isWarningOpen} onOpenChange={setIsWarningOpen}>
+    <AlertDialog open={isInterestWarningOpen} onOpenChange={setIsInterestWarningOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>Action Locked</AlertDialogTitle>
@@ -160,7 +169,20 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-                <AlertDialogAction onClick={() => setIsWarningOpen(false)}>OK</AlertDialogAction>
+                <AlertDialogAction onClick={() => setIsInterestWarningOpen(false)}>OK</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+     <AlertDialog open={isTaskWarningOpen} onOpenChange={setIsTaskWarningOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Action Locked</AlertDialogTitle>
+                <AlertDialogDescription>
+                   You cannot move funds while your daily tasks are in progress. Please complete all tasks for today to unlock fund movements for your Task Rewards wallet.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogAction onClick={() => setIsTaskWarningOpen(false)}>OK</AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>
