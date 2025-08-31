@@ -23,6 +23,7 @@ export function WelcomeAnimation() {
 
     const currentMount = mountRef.current;
     let renderer: THREE.WebGLRenderer;
+    let animationFrameId: number;
 
     try {
         // Scene
@@ -39,7 +40,7 @@ export function WelcomeAnimation() {
         currentMount.appendChild(renderer.domElement);
 
         // Lighting and Objects based on theme
-        const shapes: (THREE.Mesh | THREE.Points)[] = [];
+        const shapes: (THREE.Mesh | THREE.Points | THREE.GridHelper)[] = [];
         let animationLogic = () => {};
 
         switch (theme) {
@@ -255,7 +256,7 @@ export function WelcomeAnimation() {
 
         // Animation loop
         const animate = () => {
-          requestAnimationFrame(animate);
+          animationFrameId = requestAnimationFrame(animate);
           animationLogic();
           renderer.render(scene, camera);
         };
@@ -263,8 +264,13 @@ export function WelcomeAnimation() {
 
         return () => {
           window.removeEventListener('resize', handleResize);
-          if (currentMount) {
-            currentMount.removeChild(renderer.domElement);
+          cancelAnimationFrame(animationFrameId);
+          if (currentMount && renderer.domElement) {
+              try {
+                currentMount.removeChild(renderer.domElement);
+              } catch (e) {
+                // Ignore errors on cleanup if element is already gone
+              }
           }
           renderer.dispose();
           scene.children.forEach(child => {
@@ -283,12 +289,10 @@ export function WelcomeAnimation() {
         };
     } catch (error) {
         console.error("Failed to initialize WebGL for animation:", error);
-        // If renderer fails, abort the animation setup.
+        // If renderer creation fails, do nothing further to prevent crash.
         return;
     }
-  }, [theme]); // Rerun effect if theme changes
+  }, [theme]);
 
   return <div ref={mountRef} className="absolute inset-0 z-0" />;
 }
-
-    
