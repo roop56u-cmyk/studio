@@ -269,9 +269,14 @@ export function WelcomeAnimation() {
           renderer.dispose();
           scene.children.forEach(child => {
             if (child instanceof THREE.Mesh || child instanceof THREE.Points || child instanceof THREE.GridHelper) {
-              child.geometry.dispose();
+              if (child.geometry) child.geometry.dispose();
               if ((child as THREE.Mesh).material) {
-                ((child as THREE.Mesh).material as THREE.Material).dispose();
+                const material = (child as THREE.Mesh).material;
+                 if (Array.isArray(material)) {
+                    material.forEach(m => m.dispose());
+                } else {
+                    material.dispose();
+                }
               }
             }
           });
@@ -285,3 +290,5 @@ export function WelcomeAnimation() {
 
   return <div ref={mountRef} className="absolute inset-0 z-0" />;
 }
+
+    
