@@ -99,8 +99,6 @@ interface WalletContextType {
   completedTasks: CompletedTask[];
   levelUnlockProgress: Record<number, LevelUnlockStatus>;
   minRequiredBalanceForLevel: (level: number) => number;
-  amount: string;
-  setAmount: (amount: string) => void;
   handleMoveFunds: (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', amountToMove: number, fromAccount?: 'Task Rewards' | 'Interest Earnings') => void;
   approveRecharge: (userEmail: string, rechargeAmount: number) => void;
   addCommissionToMainBalance: (commissionAmount: number) => void;
@@ -163,7 +161,6 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
   const { currentUser, users, activateUserAccount, updateUserStatus } = useAuth();
-  const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   // Global system settings
@@ -447,7 +444,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const signupBonusEnabled = getGlobalSetting('system_signup_bonus_enabled', true, true);
     if (!signupBonusEnabled || currentUser.isBonusDisabled) return false;
     
-    // Eligibility is now based on active account status
     return currentUser.isAccountActive;
   }, [currentUser]);
 
@@ -455,7 +451,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const signupBonusAmount = useMemo(() => {
     if (!currentUser || !isEligibleForSignUpBonus) return 0;
     
-    // We base the bonus on the user's current committed balance.
     if (committedBalance === 0) return 0;
 
     const applicableTiers = signupBonuses
@@ -501,12 +496,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const handleMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', amountToMove: number, fromAccount?: 'Task Rewards' | 'Interest Earnings') => {
     if (!currentUser) return;
 
-    const numericAmount = fromAccount ? amountToMove : parseFloat(amount);
-    if (isNaN(numericAmount) || numericAmount <= 0) {
-      toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid positive number to move.' });
-      return;
-    }
-
     let description = '';
     let tempMainBalance = mainBalance;
     let tempTaskBalance = taskRewardsBalance;
@@ -514,27 +503,23 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     let originalCommittedBalance = taskRewardsBalance + interestEarningsBalance;
 
     if (!fromAccount) { // Moving from Main Wallet
-      if (numericAmount > mainBalance) {
-        toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than your main balance of $${mainBalance.toFixed(2)}.` });
-        return;
-      }
-      tempMainBalance -= numericAmount;
-      if (destination === 'Task Rewards') tempTaskBalance += numericAmount;
-      if (destination === 'Interest Earnings') tempInterestBalance += numericAmount;
-      description = `Moved $${numericAmount.toFixed(2)} to ${destination}`;
+      tempMainBalance -= amountToMove;
+      if (destination === 'Task Rewards') tempTaskBalance += amountToMove;
+      if (destination === 'Interest Earnings') tempInterestBalance += amountToMove;
+      description = `Moved $${amountToMove.toFixed(2)} to ${destination}`;
     } else { // Moving between earning wallets or back to main
         if (fromAccount === 'Task Rewards') {
-            if (numericAmount > taskRewardsBalance) { toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than the available balance of $${taskRewardsBalance.toFixed(2)}.` }); return; }
-            tempTaskBalance -= numericAmount;
+            if (amountToMove > taskRewardsBalance) { toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than the available balance of $${taskRewardsBalance.toFixed(2)}.` }); return; }
+            tempTaskBalance -= amountToMove;
         } else {
-            if (numericAmount > interestEarningsBalance) { toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than the available balance of $${interestEarningsBalance.toFixed(2)}.` }); return; }
-            tempInterestBalance -= numericAmount;
+            if (amountToMove > interestEarningsBalance) { toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than the available balance of $${interestEarningsBalance.toFixed(2)}.` }); return; }
+            tempInterestBalance -= amountToMove;
         }
 
-        if (destination === 'Main Wallet') tempMainBalance += numericAmount;
-        if (destination === 'Interest Earnings') tempInterestBalance += numericAmount;
-        if (destination === 'Task Rewards') tempTaskBalance += numericAmount;
-        description = `Moved $${numericAmount.toFixed(2)} from ${fromAccount} to ${destination}`;
+        if (destination === 'Main Wallet') tempMainBalance += amountToMove;
+        if (destination === 'Interest Earnings') tempInterestBalance += amountToMove;
+        if (destination === 'Task Rewards') tempTaskBalance += amountToMove;
+        description = `Moved $${amountToMove.toFixed(2)} from ${fromAccount} to ${destination}`;
     }
 
     setMainBalance(tempMainBalance);
@@ -561,8 +546,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         amount: 0,
         date: new Date().toISOString()
     })
-    toast({ title: "Funds Moved", description: `${numericAmount.toFixed(2)} USDT transfer complete.` });
-    setAmount("");
+    toast({ title: "Funds Moved", description: `${amountToMove.toFixed(2)} USDT transfer complete.` });
   };
 
   const approveRecharge = (userEmail: string, rechargeAmount: number) => {
@@ -604,8 +588,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const requestWithdrawal = (withdrawalAmount: number, withdrawalAddress: string) => { 
     if (!currentUser) return;
     setMainBalance(prev => prev - withdrawalAmount); 
-    // This function doesn't need to create the request itself anymore,
-    // as RequestContext's `addRequest` handles it.
   }
 
   const approveWithdrawal = (userEmail: string, amount: number) => {
@@ -990,8 +972,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         completedTasks,
         levelUnlockProgress,
         minRequiredBalanceForLevel,
-        amount,
-        setAmount,
         handleMoveFunds,
         approveRecharge,
         addCommissionToMainBalance,
@@ -1020,6 +1000,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         addTransaction,
         transactionHistory,
         multipleAddressesEnabled,
+        // Manual Bonus Claiming
         claimSignUpBonus,
         hasClaimedSignUpBonus,
         isEligibleForSignUpBonus,
@@ -1045,4 +1026,3 @@ export const useWallet = () => {
   }
   return context;
 };
-

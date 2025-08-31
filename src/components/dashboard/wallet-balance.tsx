@@ -49,6 +49,13 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
   const isTaskLockActive = isFundMovementLocked('task');
 
   const handleFundMovement = (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', fromAccount?: 'Task Rewards' | 'Interest Earnings') => {
+    
+    const numericAmount = parseFloat(moveAmount);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      toast({ variant: "destructive", title: "Invalid Amount", description: "Please enter a valid positive amount to move." });
+      return;
+    }
+    
     // Check interest lock
     if ((destination === 'Interest Earnings' || fromAccount === 'Interest Earnings') && isInterestLockActive) {
       setIsInterestWarningOpen(true);
@@ -63,12 +70,6 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
 
     if (destination === 'Main Wallet') {
        if (!onMoveToMain) return;
-
-        const numericAmount = parseFloat(moveAmount);
-        if (isNaN(numericAmount) || numericAmount <= 0) {
-          toast({ variant: "destructive", title: "Invalid Amount", description: "Please enter a valid positive amount to move." });
-          return;
-        }
         
         if (numericAmount > parseFloat(balance)) {
           toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than the available balance of $${balance}.` });
@@ -78,12 +79,6 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
         onMoveToMain(numericAmount);
         setMoveAmount("");
     } else {
-        const numericAmount = parseFloat(moveAmount);
-        if (isNaN(numericAmount) || numericAmount <= 0) {
-            toast({ variant: "destructive", title: "Invalid Amount", description: "Please enter a valid amount." });
-            return;
-        }
-
         if (numericAmount > parseFloat(balance)) {
             toast({ variant: "destructive", title: "Insufficient Funds" });
             return;
@@ -116,7 +111,7 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
             <p className="text-xs text-destructive mt-1">Cannot move funds while timer is active.</p>
         )}
          {title === 'Task Rewards' && isTaskLockActive && (
-            <p className="text-xs text-destructive mt-1">Cannot move funds while tasks are active.</p>
+            <p className="text-xs text-destructive mt-1">Cannot move funds while tasks are in progress.</p>
         )}
       </CardContent>
        {(onMoveToMain || showMoveToOther) && (
@@ -178,7 +173,7 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
             <AlertDialogHeader>
                 <AlertDialogTitle>Action Locked</AlertDialogTitle>
                 <AlertDialogDescription>
-                   You cannot move funds while your daily tasks are in progress. Please complete all tasks for today to unlock fund movements for your Task Rewards wallet.
+                   You cannot move funds to or from the Task Rewards wallet while your daily tasks are in progress. Please complete all tasks for today to unlock fund movements for this wallet.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

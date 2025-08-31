@@ -110,6 +110,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { WalletOverviewPanel } from "@/components/dashboard/wallet-overview-panel";
 import { AchievementsPanel } from "@/components/dashboard/achievements-panel";
+import { useToast } from "@/hooks/use-toast";
 
 // Admin Panel Imports
 import UserManagementPage from "./admin/users/page";
@@ -180,19 +181,49 @@ const adminPanelTitles: Record<PanelType, { title: string; description: string }
     salaryManagement: { title: "Manage Salary", description: "Create and configure salary packages for users." },
 };
 
-function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransactionHistoryClick, onTaskHistoryClick, onReferralClick, onInboxClick, onBoosterStoreClick, onQuestPanelClick, onRewardsPanelClick, onAdminPanelClick, onWalletOverviewClick, onAchievementsClick }: { onRechargeClick: () => void, onWithdrawalClick: () => void, onTransactionHistoryClick: () => void, onTaskHistoryClick: () => void, onReferralClick: () => void, onInboxClick: () => void, onBoosterStoreClick: () => void, onQuestPanelClick: () => void, onRewardsPanelClick: () => void, onAdminPanelClick: (panel: PanelType) => void, onWalletOverviewClick: () => void, onAchievementsClick: () => void }) {
+function SidebarContentComponent({ 
+    onRechargeClick, 
+    onWithdrawalClick, 
+    onTransactionHistoryClick, 
+    onTaskHistoryClick, 
+    onReferralClick, 
+    onInboxClick, 
+    onBoosterStoreClick, 
+    onQuestPanelClick, 
+    onRewardsPanelClick, 
+    onAdminPanelClick, 
+    onWalletOverviewClick, 
+    onAchievementsClick,
+    onShowInterestWarning,
+    onShowTaskWarning
+}: { 
+    onRechargeClick: () => void, 
+    onWithdrawalClick: () => void, 
+    onTransactionHistoryClick: () => void, 
+    onTaskHistoryClick: () => void, 
+    onReferralClick: () => void, 
+    onInboxClick: () => void, 
+    onBoosterStoreClick: () => void, 
+    onQuestPanelClick: () => void, 
+    onRewardsPanelClick: () => void, 
+    onAdminPanelClick: (panel: PanelType) => void, 
+    onWalletOverviewClick: () => void, 
+    onAchievementsClick: () => void,
+    onShowInterestWarning: () => void,
+    onShowTaskWarning: () => void
+}) {
   const pathname = usePathname();
   const { logout, currentUser } = useAuth();
+  const { toast } = useToast();
   const { 
     mainBalance,
-    amount, 
-    setAmount, 
     handleMoveFunds,
     isLoading,
     isFundMovementLocked,
     tasksCompletedToday,
     dailyTaskQuota
   } = useWallet();
+  const [amount, setAmount] = React.useState('');
   const [isClient, setIsClient] = React.useState(false);
 
   React.useEffect(() => {
@@ -202,22 +233,30 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
   const isAdmin = currentUser?.isAdmin;
   const isMainAdminPage = pathname === "/dashboard/admin";
   
-  const isMoveToTaskLocked = isFundMovementLocked('task');
-  const isMoveToInterestLocked = isFundMovementLocked('interest');
-  
-  const moveFundsDisabled = isMoveToTaskLocked || isMoveToInterestLocked;
-  
-  const getMoveFundsTooltip = () => {
-    if (isMoveToTaskLocked) {
-      return "Cannot add funds while tasks are active.";
+  const handleLocalMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings') => {
+    if (destination === 'Task Rewards' && isFundMovementLocked('task')) {
+        onShowTaskWarning();
+        return;
     }
-    if (isMoveToInterestLocked) {
-      return "Cannot add funds while interest timer is active.";
+    if (destination === 'Interest Earnings' && isFundMovementLocked('interest')) {
+        onShowInterestWarning();
+        return;
     }
-    return null;
-  }
 
-  const moveFundsTooltipContent = getMoveFundsTooltip();
+    const numericAmount = parseFloat(amount);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid positive number to move.' });
+      return;
+    }
+    if (numericAmount > mainBalance) {
+      toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than your main balance of $${mainBalance.toFixed(2)}.` });
+      return;
+    }
+
+    handleMoveFunds(destination, numericAmount);
+    setAmount('');
+  };
+
 
   return (
     <SidebarContent>
@@ -481,64 +520,24 @@ function SidebarContentComponent({ onRechargeClick, onWithdrawalClick, onTransac
                             )}
                             <div className="space-y-2">
                                 <Label htmlFor="move-amount">Amount (USDT)</Label>
-                                 <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                        <div className="relative">
-                                            <Input 
-                                                id="move-amount"
-                                                type="number"
-                                                placeholder="e.g., 50.00"
-                                                value={amount}
-                                                onChange={(e) => setAmount(e.target.value)}
-                                                disabled={isLoading || moveFundsDisabled}
-                                            />
-                                            {moveFundsDisabled && <div className="absolute inset-0 cursor-not-allowed" />}
-                                        </div>
-                                        </TooltipTrigger>
-                                        {moveFundsTooltipContent && (
-                                            <TooltipContent>
-                                                <p>{moveFundsTooltipContent}</p>
-                                            </TooltipContent>
-                                        )}
-                                    </Tooltip>
-                                </TooltipProvider>
+                                <Input 
+                                    id="move-amount"
+                                    type="number"
+                                    placeholder="e.g., 50.00"
+                                    value={amount}
+                                    onChange={(e) => setAmount(e.target.value)}
+                                    disabled={isLoading}
+                                />
                             </div>
                             <div className="grid grid-cols-1 gap-2">
-                               <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <div>
-                                                <Button variant="outline" size="sm" className="justify-start gap-2 w-full" onClick={() => handleMoveFunds("Task Rewards", 0)} disabled={isLoading || moveFundsDisabled}>
-                                                    <Gift className="h-4 w-4 text-primary" />
-                                                    <span>Move to Task Rewards</span>
-                                                </Button>
-                                            </div>
-                                        </TooltipTrigger>
-                                        {moveFundsTooltipContent && (
-                                            <TooltipContent>
-                                                <p>{moveFundsTooltipContent}</p>
-                                            </TooltipContent>
-                                        )}
-                                    </Tooltip>
-                                </TooltipProvider>
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <div>
-                                                <Button variant="outline" size="sm" className="justify-start gap-2 w-full" onClick={() => handleMoveFunds("Interest Earnings", 0)} disabled={isLoading || moveFundsDisabled}>
-                                                    <TrendingUp className="h-4 w-4 text-accent" />
-                                                    <span>Move to Interest</span>
-                                                </Button>
-                                            </div>
-                                        </TooltipTrigger>
-                                        {moveFundsTooltipContent && (
-                                            <TooltipContent>
-                                                <p>{moveFundsTooltipContent}</p>
-                                            </TooltipContent>
-                                        )}
-                                    </Tooltip>
-                                </TooltipProvider>
+                                <Button variant="outline" size="sm" className="justify-start gap-2 w-full" onClick={() => handleLocalMoveFunds("Task Rewards")} disabled={isLoading}>
+                                    <Gift className="h-4 w-4 text-primary" />
+                                    <span>Move to Task Rewards</span>
+                                </Button>
+                                <Button variant="outline" size="sm" className="justify-start gap-2 w-full" onClick={() => handleLocalMoveFunds("Interest Earnings")} disabled={isLoading}>
+                                    <TrendingUp className="h-4 w-4 text-accent" />
+                                    <span>Move to Interest</span>
+                                </Button>
                             </div>
                         </div>
                     </CollapsibleContent>
@@ -678,6 +677,10 @@ export default function DashboardLayout({
     // Login Popup Notice State
     const [loginNotice, setLoginNotice] = React.useState<Notice | null>(null);
     const [isLoginNoticeOpen, setIsLoginNoticeOpen] = React.useState(false);
+    
+    // Main wallet warning popups
+    const [isInterestMoveWarningOpen, setIsInterestMoveWarningOpen] = React.useState(false);
+    const [isTaskMoveWarningOpen, setIsTaskMoveWarningOpen] = React.useState(false);
 
     useTeamCommission();
 
@@ -732,6 +735,8 @@ export default function DashboardLayout({
                 onAdminPanelClick={handleAdminPanelClick}
                 onWalletOverviewClick={() => setIsWalletOverviewOpen(true)}
                 onAchievementsClick={() => setIsAchievementsOpen(true)}
+                onShowInterestWarning={() => setIsInterestMoveWarningOpen(true)}
+                onShowTaskWarning={() => setIsTaskMoveWarningOpen(true)}
             />
           </Sidebar>
           <div className="flex flex-1 flex-col">
@@ -944,6 +949,32 @@ export default function DashboardLayout({
                 </AlertDialogContent>
             </AlertDialog>
         )}
+        <AlertDialog open={isInterestMoveWarningOpen} onOpenChange={setIsInterestMoveWarningOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Action Locked</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        You cannot move funds to the Interest Earnings wallet while the 24-hour interest timer is active. Please wait for the timer to complete.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogAction onClick={() => setIsInterestMoveWarningOpen(false)}>OK</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        <AlertDialog open={isTaskMoveWarningOpen} onOpenChange={setIsTaskMoveWarningOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Action Locked</AlertDialogTitle>
+                    <AlertDialogDescription>
+                       You cannot move funds to the Task Rewards wallet while your daily tasks are in progress. Please complete all tasks for today to unlock this action.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogAction onClick={() => setIsTaskMoveWarningOpen(false)}>OK</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
       </SidebarProvider>
   );
 }
