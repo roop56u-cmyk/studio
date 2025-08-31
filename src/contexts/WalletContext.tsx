@@ -573,6 +573,13 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       const depositCount = parseInt(localStorage.getItem(depositsKey) || '0');
       localStorage.setItem(depositsKey, (depositCount + 1).toString());
       
+      // Check for first deposit
+      const firstDepositKey = `${userEmail}_firstDepositAmount`;
+      const firstDepositAmount = parseFloat(localStorage.getItem(firstDepositKey) || '0');
+      if (firstDepositAmount === 0) {
+          localStorage.setItem(firstDepositKey, rechargeAmount.toString());
+      }
+      
       if(currentUser?.email === userEmail) {
           setMainBalance(prev => prev + rechargeAmount);
           setDeposits(prev => prev + 1);
