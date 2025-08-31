@@ -26,7 +26,7 @@ type Achievement = {
 };
 
 export function AchievementsPanel() {
-  const { currentUser } = useAuth();
+  const { currentUser, users } = useAuth();
   const { completedTasks, currentLevel } = useWallet();
   const { requests } = useRequests();
 
@@ -87,8 +87,6 @@ export function AchievementsPanel() {
       },
     ];
   }, [currentUser, completedTasks, currentLevel, users]);
-
-  const { users } = useAuth(); // Need to get users for referral count
 
   return (
     <ScrollArea className="h-[calc(100vh-8rem)]">
