@@ -217,17 +217,18 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   
   const committedBalance = taskRewardsBalance + interestEarningsBalance;
   
-  const getInitialState = useCallback((key: string, defaultValue: any) => {
-    if (typeof window === 'undefined' || !currentUser?.email) {
+  const getInitialState = useCallback((key: string, defaultValue: any, userEmail?: string) => {
+    const targetEmail = userEmail || currentUser?.email;
+    if (typeof window === 'undefined' || !targetEmail) {
       return defaultValue;
     }
     try {
-      const storedValue = localStorage.getItem(`${currentUser.email}_${key}`);
+      const storedValue = localStorage.getItem(`${targetEmail}_${key}`);
       if (storedValue) {
         return JSON.parse(storedValue);
       }
     } catch (error) {
-      console.error(`Failed to parse ${key} from localStorage for ${currentUser.email}`, error);
+      console.error(`Failed to parse ${key} from localStorage for ${targetEmail}`, error);
     }
     return defaultValue;
   }, [currentUser?.email]);
@@ -454,17 +455,15 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const signupBonusAmount = useMemo(() => {
     if (!currentUser || !isEligibleForSignUpBonus) return 0;
     
-    // We base the bonus on the minimum amount required for the user's current level,
-    // assuming activation implies meeting this threshold.
-    const minAmount = minRequiredBalanceForLevel(currentLevel);
-    if (minAmount === 0) return 0;
+    // We base the bonus on the user's current committed balance.
+    if (committedBalance === 0) return 0;
 
     const applicableTiers = signupBonuses
-      .filter(tier => minAmount >= tier.minDeposit)
+      .filter(tier => committedBalance >= tier.minDeposit)
       .sort((a, b) => b.bonusAmount - a.bonusAmount);
 
     return applicableTiers.length > 0 ? applicableTiers[0].bonusAmount : 0;
-  }, [currentUser, isEligibleForSignUpBonus, signupBonuses, currentLevel, minRequiredBalanceForLevel]);
+  }, [currentUser, isEligibleForSignUpBonus, signupBonuses, committedBalance]);
 
 
   useEffect(() => { if (!isLoading) setPersistentState('mainBalance', mainBalance)}, [mainBalance, isLoading, setPersistentState]);
@@ -900,16 +899,18 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const referralBonusEnabled = getGlobalSetting('system_referral_bonus_enabled', true, true);
     if (!referralBonusEnabled) return 0;
 
-    // Use the referral's level to determine the minimum deposit amount for bonus calculation
-    const referralLevel = users.find(u => u.email === referralEmail)?.overrideLevel ?? defaultLevels.find(l => l.level === getInitialState('level', 0))?.level ?? 0;
-    const minAmountForBonus = minRequiredBalanceForLevel(referralLevel);
+    const referralTaskBalance = getInitialState('taskRewardsBalance', 0, referralEmail);
+    const referralInterestBalance = getInitialState('interestEarningsBalance', 0, referralEmail);
+    const referralCommittedBalance = referralTaskBalance + referralInterestBalance;
+
+    if (referralCommittedBalance === 0) return 0;
 
     const applicableTiers = referralBonuses
-        .filter(tier => minAmountForBonus >= tier.minDeposit)
+        .filter(tier => referralCommittedBalance >= tier.minDeposit)
         .sort((a, b) => b.bonusAmount - a.bonusAmount);
 
     return applicableTiers.length > 0 ? applicableTiers[0].bonusAmount : 0;
-  }, [referralBonuses, users, minRequiredBalanceForLevel, getInitialState]);
+  }, [referralBonuses, users, getInitialState]);
   
   const claimReferralBonus = (referralEmail: string) => {
     if (!currentUser || claimedReferralIds.includes(referralEmail) || userRequests.some(req => req.type === 'Referral Bonus' && req.address === referralEmail && req.status === 'Pending')) return;
@@ -1044,3 +1045,4 @@ export const useWallet = () => {
   }
   return context;
 };
+
