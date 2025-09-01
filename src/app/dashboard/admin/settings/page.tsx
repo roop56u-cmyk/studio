@@ -129,7 +129,6 @@ const AdvancedRestrictionForm = ({
             .filter(l => l.level > 0)
             .map(l => ({ value: String(l.level), label: `Level ${l.level}` }));
 
-
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         onSave({ 
@@ -161,7 +160,7 @@ const AdvancedRestrictionForm = ({
             </div>
             <div className="space-y-2">
                 <Label>Target Levels</Label>
-                <MultiSelect
+                 <MultiSelect
                     options={levelOptions}
                     selected={selectedLevels}
                     onChange={setSelectedLevels}
@@ -170,7 +169,7 @@ const AdvancedRestrictionForm = ({
             </div>
             <div className="space-y-2">
                 <Label>Target Users</Label>
-                <RadioGroup value={targetType} onValueChange={(v) => setTargetType(v as 'all' | 'specific')}>
+                 <RadioGroup value={targetType} onValueChange={(v) => requestAnimationFrame(() => setTargetType(v as 'all' | 'specific'))}>
                     <div className="flex items-center space-x-2"><RadioGroupItem value="all" id="target-all" /><Label htmlFor="target-all" className="font-normal">All Users in selected levels</Label></div>
                     <div className="flex items-center space-x-2"><RadioGroupItem value="specific" id="target-specific" /><Label htmlFor="target-specific" className="font-normal">Specific User</Label></div>
                 </RadioGroup>
