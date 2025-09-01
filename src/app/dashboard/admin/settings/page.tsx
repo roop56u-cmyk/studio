@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { levels } from "@/components/dashboard/level-tiers";
+import { levels as defaultLevels } from "@/components/dashboard/level-tiers";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWallet } from "@/contexts/WalletContext";
@@ -622,7 +622,7 @@ export default function SystemSettingsPage() {
              <div className="space-y-2">
                 <Label>Apply Restriction to Levels</Label>
                  <div className="flex flex-wrap gap-4 pt-2">
-                    {levels.filter(l => l.level > 0).map(level => (
+                    {defaultLevels.filter(l => l.level > 0).map(level => (
                         <div key={level.level} className="flex items-center space-x-2">
                             <Checkbox
                                 id={`level-${level.level}`}
@@ -673,7 +673,7 @@ export default function SystemSettingsPage() {
                 </Accordion>
                 <Dialog open={isAdvRestrictionFormOpen} onOpenChange={setIsAdvRestrictionFormOpen}>
                      <DialogTrigger asChild>
-                         <Button variant="outline" className="w-full mt-4" onClick={() => handleEditAdvRestriction(null)}>
+                         <Button variant="outline" className="w-full mt-4" onClick={() => { setEditingAdvRestriction(null); setIsAdvRestrictionFormOpen(true); } }>
                             <PlusCircle className="mr-2 h-4 w-4" /> Add New Rule
                          </Button>
                      </DialogTrigger>
