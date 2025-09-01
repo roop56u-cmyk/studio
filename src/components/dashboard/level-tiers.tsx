@@ -113,11 +113,16 @@ export const levels: Level[] = [
 ];
 
 const levelGradients = [
-    "bg-gradient-to-br from-gray-400 to-gray-600",
-    "bg-gradient-to-br from-yellow-600 to-amber-800",
-    "bg-gradient-to-br from-yellow-400 to-yellow-600",
-    "bg-gradient-to-br from-slate-400 to-slate-600",
-    "bg-gradient-to-br from-blue-400 to-cyan-500",
+    "bg-gradient-amber", // Bronze
+    "bg-gradient-slate", // Silver
+    "bg-gradient-yellow", // Gold
+    "bg-gradient-blue",   // Platinum
+    "bg-gradient-cyan",   // Diamond
+    "bg-gradient-lime",   // New Level 6
+    "bg-gradient-rose",   // New Level 7
+    "bg-gradient-fuchsia",// New Level 8
+    "bg-gradient-violet", // New Level 9
+    "bg-gradient-orange", // New Level 10
 ];
 
 interface LevelTiersProps {

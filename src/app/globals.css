@@ -153,4 +153,25 @@ body {
   .bg-gradient-blue {
       @apply bg-gradient-to-br from-blue-500 to-violet-500;
   }
+  .bg-gradient-amber {
+      @apply bg-gradient-to-br from-amber-500 to-orange-600;
+  }
+  .bg-gradient-yellow {
+      @apply bg-gradient-to-br from-yellow-400 to-amber-500;
+  }
+  .bg-gradient-lime {
+      @apply bg-gradient-to-br from-lime-500 to-green-600;
+  }
+  .bg-gradient-cyan {
+      @apply bg-gradient-to-br from-cyan-400 to-blue-500;
+  }
+  .bg-gradient-rose {
+      @apply bg-gradient-to-br from-rose-500 to-red-600;
+  }
+  .bg-gradient-fuchsia {
+      @apply bg-gradient-to-br from-fuchsia-500 to-purple-600;
+  }
+  .bg-gradient-violet {
+      @apply bg-gradient-to-br from-violet-500 to-indigo-600;
+  }
 }
