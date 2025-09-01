@@ -153,6 +153,18 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
             if (type === 'Withdrawal') {
                 refundWithdrawal(userEmail, amount);
             }
+             if (type === 'Salary Claim' && requestToUpdate.address) {
+                // If a salary claim is rejected, we need to remove the last claim date
+                // so the user can claim again after meeting criteria.
+                const userEmail = requestToUpdate.user;
+                const allSalaryPackages: SalaryPackage[] = JSON.parse(localStorage.getItem('platform_salary_packages') || '[]');
+                const pkg = allSalaryPackages.find(p => p.name === requestToUpdate.address);
+                if (pkg) {
+                    localStorage.removeItem(`salary_claimed_${userEmail}_${pkg.id}`);
+                }
+            }
+            // For other reward types, simply declining the request is enough.
+            // The user will be able to claim again because there's no 'Approved' request.
         }
         
         const updatedRequests = requests.map((req) => 
@@ -196,4 +208,9 @@ export type Transaction = {
     description: string,
     amount: number,
     date: string,
+}
+
+type SalaryPackage = {
+    id: string;
+    name: string;
 }

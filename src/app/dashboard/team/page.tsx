@@ -37,18 +37,16 @@ import { SalaryPackage } from "../admin/salary/page";
 
 const TeamRewardCard = ({ reward, totalTeamBusiness }: { reward: TeamReward, totalTeamBusiness: number }) => {
     const { toast } = useToast();
-    const { addRequest } = useRequests();
-    const [isClaimed, setIsClaimed] = useState(false);
+    const { addRequest, userRequests } = useRequests();
 
-    useEffect(() => {
-        const claimedStatus = localStorage.getItem(`team_reward_claimed_${reward.id}`);
-        if (claimedStatus === 'true') {
-            setIsClaimed(true);
-        }
-    }, [reward.id]);
+    const existingRequest = useMemo(() => {
+        return userRequests.find(req => req.type === 'Team Reward' && req.address === reward.title);
+    }, [userRequests, reward.title]);
 
+    const isClaimed = existingRequest?.status === 'Approved';
+    const isPending = existingRequest?.status === 'Pending';
     const progress = Math.min((totalTeamBusiness / reward.requiredAmount) * 100, 100);
-    const canClaim = progress >= 100 && !isClaimed;
+    const canClaim = progress >= 100 && !isClaimed && !isPending;
 
     const handleClaim = () => {
         addRequest({
@@ -56,8 +54,6 @@ const TeamRewardCard = ({ reward, totalTeamBusiness }: { reward: TeamReward, tot
             amount: reward.rewardAmount,
             address: reward.title, // Use title to identify the reward in admin panel
         });
-        localStorage.setItem(`team_reward_claimed_${reward.id}`, 'true');
-        setIsClaimed(true);
         toast({
             title: "Reward Claim Submitted!",
             description: `Your claim for "${reward.title}" is pending admin approval.`
@@ -88,7 +84,7 @@ const TeamRewardCard = ({ reward, totalTeamBusiness }: { reward: TeamReward, tot
             </CardContent>
             <CardFooter>
                 <Button className="w-full" disabled={!canClaim} onClick={handleClaim}>
-                    {isClaimed ? "Claimed" : canClaim ? "Claim Reward" : "In Progress"}
+                    {isClaimed ? "Claimed" : isPending ? "Pending" : canClaim ? "Claim Reward" : "In Progress"}
                 </Button>
             </CardFooter>
         </Card>
@@ -97,18 +93,16 @@ const TeamRewardCard = ({ reward, totalTeamBusiness }: { reward: TeamReward, tot
 
 const TeamSizeRewardCard = ({ reward, totalActiveMembers }: { reward: TeamSizeReward, totalActiveMembers: number }) => {
     const { toast } = useToast();
-    const { addRequest } = useRequests();
-    const [isClaimed, setIsClaimed] = useState(false);
-
-    useEffect(() => {
-        const claimedStatus = localStorage.getItem(`team_size_reward_claimed_${reward.id}`);
-        if (claimedStatus === 'true') {
-            setIsClaimed(true);
-        }
-    }, [reward.id]);
-
+    const { addRequest, userRequests } = useRequests();
+    
+    const existingRequest = useMemo(() => {
+        return userRequests.find(req => req.type === 'Team Size Reward' && req.address === reward.title);
+    }, [userRequests, reward.title]);
+    
+    const isClaimed = existingRequest?.status === 'Approved';
+    const isPending = existingRequest?.status === 'Pending';
     const progress = Math.min((totalActiveMembers / reward.requiredActiveMembers) * 100, 100);
-    const canClaim = progress >= 100 && !isClaimed;
+    const canClaim = progress >= 100 && !isClaimed && !isPending;
 
     const handleClaim = () => {
         addRequest({
@@ -116,8 +110,6 @@ const TeamSizeRewardCard = ({ reward, totalActiveMembers }: { reward: TeamSizeRe
             amount: reward.rewardAmount,
             address: reward.title, // Use title to identify the reward in admin panel
         });
-        localStorage.setItem(`team_size_reward_claimed_${reward.id}`, 'true');
-        setIsClaimed(true);
         toast({
             title: "Reward Claim Submitted!",
             description: `Your claim for "${reward.title}" is pending admin approval.`
@@ -148,7 +140,7 @@ const TeamSizeRewardCard = ({ reward, totalActiveMembers }: { reward: TeamSizeRe
             </CardContent>
             <CardFooter>
                 <Button className="w-full" disabled={!canClaim} onClick={handleClaim}>
-                    {isClaimed ? "Claimed" : canClaim ? "Claim Reward" : "In Progress"}
+                    {isClaimed ? "Claimed" : isPending ? "Pending" : canClaim ? "Claim Reward" : "In Progress"}
                 </Button>
             </CardFooter>
         </Card>
@@ -157,7 +149,7 @@ const TeamSizeRewardCard = ({ reward, totalActiveMembers }: { reward: TeamSizeRe
 
 const SalaryPackageCard = ({ pkg, totalTeamBusiness, activeL1Referrals }: { pkg: SalaryPackage, totalTeamBusiness: number, activeL1Referrals: number }) => {
     const { toast } = useToast();
-    const { addRequest } = useRequests();
+    const { addRequest, userRequests } = useRequests();
     const { currentUser } = useAuth();
     const [lastClaimDate, setLastClaimDate] = useState<Date | null>(null);
     
@@ -177,14 +169,23 @@ const SalaryPackageCard = ({ pkg, totalTeamBusiness, activeL1Referrals }: { pkg:
         }
     }, [pkg.id, currentUser]);
     
+    const existingRequest = useMemo(() => {
+        return userRequests.find(req => req.type === 'Salary Claim' && req.address === pkg.name && req.status !== 'Declined');
+    }, [userRequests, pkg.name]);
+
+    const isPending = existingRequest?.status === 'Pending';
+    
     const isClaimPeriodMet = useMemo(() => {
         if (!lastClaimDate) return true;
+        // If there's a pending or approved request, the period is not met until that one is resolved and the time passes.
+        if (existingRequest) return false;
+
         const now = new Date();
         const nextClaimDate = new Date(lastClaimDate.getTime() + pkg.periodDays * 24 * 60 * 60 * 1000);
         return now >= nextClaimDate;
-    }, [lastClaimDate, pkg.periodDays]);
+    }, [lastClaimDate, pkg.periodDays, existingRequest]);
 
-    const canClaim = businessMet && referralsMet && isClaimPeriodMet;
+    const canClaim = businessMet && referralsMet && isClaimPeriodMet && !isPending;
 
     const handleClaim = () => {
         addRequest({
@@ -192,6 +193,7 @@ const SalaryPackageCard = ({ pkg, totalTeamBusiness, activeL1Referrals }: { pkg:
             amount: pkg.amount,
             address: pkg.name,
         });
+        // We set the claim date here optimistically. If declined, the admin logic will clear it.
         const now = new Date();
         localStorage.setItem(`salary_claimed_${currentUser?.email}_${pkg.id}`, now.toISOString());
         setLastClaimDate(now);
@@ -202,12 +204,18 @@ const SalaryPackageCard = ({ pkg, totalTeamBusiness, activeL1Referrals }: { pkg:
     };
     
     const nextClaimDateFormatted = useMemo(() => {
-        if (lastClaimDate) {
+        if (lastClaimDate && !isClaimPeriodMet) {
             const nextDate = new Date(lastClaimDate.getTime() + pkg.periodDays * 24 * 60 * 60 * 1000);
             return nextDate.toLocaleDateString();
         }
         return '';
-    }, [lastClaimDate, pkg.periodDays]);
+    }, [lastClaimDate, pkg.periodDays, isClaimPeriodMet]);
+
+    const getButtonText = () => {
+        if (isPending) return "Pending Approval";
+        if (!isClaimPeriodMet) return `Claimable on ${nextClaimDateFormatted}`;
+        return "Claim Salary";
+    }
 
     return (
         <Card>
@@ -236,7 +244,7 @@ const SalaryPackageCard = ({ pkg, totalTeamBusiness, activeL1Referrals }: { pkg:
             </CardContent>
             <CardFooter>
                 <Button className="w-full" disabled={!canClaim} onClick={handleClaim}>
-                    {isClaimPeriodMet ? "Claim Salary" : `Claimable on ${nextClaimDateFormatted}`}
+                    {getButtonText()}
                 </Button>
             </CardFooter>
         </Card>
