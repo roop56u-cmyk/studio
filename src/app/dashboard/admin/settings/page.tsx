@@ -131,26 +131,35 @@ const AdvancedRestrictionForm = ({
             .filter(l => l.level > 0)
             .map(l => ({ value: String(l.level), label: `Level ${l.level}` }))
     ];
+
+    const allLevelValues = levelOptions.filter(o => o.value !== 'all').map(o => o.value);
     
+    useEffect(() => {
+      // If 'all' is selected, ensure all individual levels are also selected.
+      if (selectedLevels.includes("all")) {
+        const allSelected = allLevelValues.every(val => selectedLevels.includes(val));
+        if (!allSelected) {
+          setSelectedLevels([...new Set(["all", ...allLevelValues])]);
+        }
+      } else {
+        // If all individual levels are selected, also select 'all'.
+        const allSelected = allLevelValues.every(val => selectedLevels.includes(val));
+        if (allSelected) {
+           setSelectedLevels(["all", ...allLevelValues]);
+        }
+      }
+    }, [selectedLevels, allLevelValues]);
+
     const handleLevelSelect = (newSelection: string[]) => {
-      // If "all" is newly selected, select all options.
+      // If user clicks "all", toggle all levels
       if (newSelection.includes("all") && !selectedLevels.includes("all")) {
-        setSelectedLevels(levelOptions.map((option) => option.value));
-      } 
-      // If "all" is unselected, clear all selections.
-      else if (!newSelection.includes("all") && selectedLevels.includes("all")) {
+        setSelectedLevels(["all", ...allLevelValues]);
+      } else if (!newSelection.includes("all") && selectedLevels.includes("all")) {
         setSelectedLevels([]);
-      }
-      // Handle removing 'all' if an individual item is deselected
-      else if (newSelection.length < levelOptions.length && selectedLevels.includes("all")) {
-        setSelectedLevels(newSelection.filter(item => item !== "all"));
-      }
-      // Otherwise, just update with the new selection.
-      else {
+      } else {
         setSelectedLevels(newSelection);
       }
     };
-
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -442,7 +451,7 @@ export default function SystemSettingsPage() {
     // Advanced restriction management
     const handleSaveAdvRestriction = (rule: Omit<AdvancedWithdrawalRestriction, 'id'>) => {
         if (editingAdvRestriction) {
-            setAdvRestrictions(prev => prev.map(r => r.id === editingAdvRestriction.id ? { ...r, ...rule } : r));
+            setAdvRestrictions(prev => prev.map(r => r.id === editingAdvRestriction.id ? { ...r, ...rule, id: r.id } : r));
         } else {
             setAdvRestrictions(prev => [...prev, { ...rule, id: `adv-restrict-${Date.now()}` }]);
         }
