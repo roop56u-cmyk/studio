@@ -135,30 +135,35 @@ const AdvancedRestrictionForm = ({
     const allLevelValues = levelOptions.filter(o => o.value !== 'all').map(o => o.value);
     
     useEffect(() => {
-      // If 'all' is selected, ensure all individual levels are also selected.
-      if (selectedLevels.includes("all")) {
-        const allSelected = allLevelValues.every(val => selectedLevels.includes(val));
-        if (!allSelected) {
-          setSelectedLevels([...new Set(["all", ...allLevelValues])]);
+        if (selectedLevels.includes("all")) {
+            // If "all" is selected, ensure all individual levels are also selected
+            const allSelected = allLevelValues.every(val => selectedLevels.includes(val));
+            if (!allSelected) {
+                setSelectedLevels([...new Set(["all", ...allLevelValues])]);
+            }
+        } else {
+            // If all individual levels are selected, ensure "all" is also selected
+            const allSelected = allLevelValues.every(val => selectedLevels.includes(val));
+            if (allSelected && allLevelValues.length > 0) {
+                setSelectedLevels(["all", ...allLevelValues]);
+            }
         }
-      } else {
-        // If all individual levels are selected, also select 'all'.
-        const allSelected = allLevelValues.every(val => selectedLevels.includes(val));
-        if (allSelected) {
-           setSelectedLevels(["all", ...allLevelValues]);
-        }
-      }
     }, [selectedLevels, allLevelValues]);
 
+
     const handleLevelSelect = (newSelection: string[]) => {
-      // If user clicks "all", toggle all levels
-      if (newSelection.includes("all") && !selectedLevels.includes("all")) {
-        setSelectedLevels(["all", ...allLevelValues]);
-      } else if (!newSelection.includes("all") && selectedLevels.includes("all")) {
-        setSelectedLevels([]);
-      } else {
-        setSelectedLevels(newSelection);
-      }
+        // If the user selects "all", and it wasn't selected before, select all levels.
+        if (newSelection.includes("all") && !selectedLevels.includes("all")) {
+            setSelectedLevels(["all", ...allLevelValues]);
+        } 
+        // If the user deselects "all"
+        else if (!newSelection.includes("all") && selectedLevels.includes("all")) {
+            setSelectedLevels([]);
+        }
+        // Otherwise, just update with the new selection
+        else {
+            setSelectedLevels(newSelection);
+        }
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -695,7 +700,7 @@ export default function SystemSettingsPage() {
                     {advRestrictions.map(rule => (
                         <AccordionItem value={rule.id} key={rule.id} className="border rounded-md px-4">
                             <AccordionTrigger>
-                                <div className="text-left">
+                                <div className="text-left flex-1">
                                     <h4 className={cn("font-semibold", !rule.enabled && "text-muted-foreground")}>
                                         Rule for {rule.targetType === 'all' ? `Levels ${rule.levels.join(', ')}` : rule.targetUser}
                                     </h4>
