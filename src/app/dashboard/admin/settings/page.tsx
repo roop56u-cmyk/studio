@@ -133,9 +133,16 @@ const AdvancedRestrictionForm = ({
     ];
     
     const handleLevelSelect = (newSelection: string[]) => {
-      if (newSelection.includes("all")) {
-        setSelectedLevels(levelOptions.map(opt => opt.value));
-      } else {
+      // If "all" is selected and it wasn't before, select all options.
+      if (newSelection.includes("all") && !selectedLevels.includes("all")) {
+        setSelectedLevels(levelOptions.map((option) => option.value));
+      } 
+      // If "all" is unselected, clear all selections.
+      else if (!newSelection.includes("all") && selectedLevels.includes("all")) {
+        setSelectedLevels([]);
+      } 
+      // Otherwise, just update with the new selection.
+      else {
         setSelectedLevels(newSelection);
       }
     };
