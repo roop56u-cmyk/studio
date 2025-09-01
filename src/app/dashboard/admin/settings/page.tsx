@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -108,11 +107,13 @@ const AdvancedRestrictionForm = ({
     onSave,
     onClose,
     users,
+    defaultLevels,
 }: {
     rule: Partial<AdvancedWithdrawalRestriction> | null;
     onSave: (rule: Omit<AdvancedWithdrawalRestriction, 'id'>) => void;
     onClose: () => void;
     users: User[];
+    defaultLevels: Level[];
 }) => {
     const [enabled, setEnabled] = useState(rule?.enabled ?? true);
     const [days, setDays] = useState(rule?.days || 45);
@@ -679,7 +680,7 @@ export default function SystemSettingsPage() {
                      </DialogTrigger>
                      <DialogContent className="max-h-[90vh] overflow-y-auto">
                         <DialogHeader><DialogTitle>{editingAdvRestriction ? "Edit Rule" : "Create New Rule"}</DialogTitle></DialogHeader>
-                        <AdvancedRestrictionForm rule={editingAdvRestriction} onSave={handleSaveAdvRestriction} onClose={closeAdvRestrictionForm} users={users} />
+                        <AdvancedRestrictionForm rule={editingAdvRestriction} onSave={handleSaveAdvRestriction} onClose={closeAdvRestrictionForm} users={users} defaultLevels={defaultLevels} />
                     </DialogContent>
                 </Dialog>
 
@@ -694,3 +695,5 @@ export default function SystemSettingsPage() {
     </div>
   );
 }
+
+    
