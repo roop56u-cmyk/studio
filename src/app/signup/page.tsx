@@ -86,29 +86,30 @@ export default function SignupPage() {
   };
 
   return (
-    <div className={cn("flex min-h-screen items-center justify-center p-4 transition-all duration-1000", gradient)}>
-      <Card className="mx-auto w-full max-w-sm">
+    <div className="flex min-h-screen items-center justify-center p-4 bg-background">
+      <Card className={cn("mx-auto w-full max-w-sm transition-all duration-1000", gradient)}>
         <CardHeader className="text-center">
-           <Logo className="justify-center mb-4"/>
-          <CardTitle className="text-2xl">Sign Up</CardTitle>
-          <CardDescription>
+           <Logo className="justify-center mb-4 text-white"/>
+          <CardTitle className="text-2xl text-white">Sign Up</CardTitle>
+          <CardDescription className="text-white/80">
             Create your account to get started
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignUp} className="grid gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="full-name">Full Name</Label>
+              <Label htmlFor="full-name" className="text-white">Full Name</Label>
               <Input 
                 id="full-name" 
                 placeholder="John Doe" 
                 required 
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
+                className="bg-white/20 text-white placeholder:text-white/60 border-white/30"
                 />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-white">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -116,10 +117,11 @@ export default function SignupPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className="bg-white/20 text-white placeholder:text-white/60 border-white/30"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-white">Password</Label>
                <div className="relative">
                 <Input 
                   id="password" 
@@ -127,12 +129,13 @@ export default function SignupPage() {
                   required 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  className="bg-white/20 text-white placeholder:text-white/60 border-white/30"
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2"
+                    className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-white/80 hover:text-white hover:bg-white/20"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -141,22 +144,23 @@ export default function SignupPage() {
               </div>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="invitation-code">Invitation Code</Label>
+              <Label htmlFor="invitation-code" className="text-white">Invitation Code</Label>
               <Input
                 id="invitation-code"
                 placeholder="Enter referral code"
                 required
                 value={invitationCode}
                 onChange={(e) => setInvitationCode(e.target.value)}
+                className="bg-white/20 text-white placeholder:text-white/60 border-white/30"
               />
             </div>
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full bg-white/90 text-primary hover:bg-white">
               Create Account
             </Button>
           </form>
-          <div className="mt-4 text-center text-sm">
+          <div className="mt-4 text-center text-sm text-white/80">
             Already have an account?{" "}
-            <Link href="/login" className="underline text-primary">
+            <Link href="/login" className="underline text-white">
               Sign in
             </Link>
           </div>
