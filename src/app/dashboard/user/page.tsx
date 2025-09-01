@@ -153,8 +153,7 @@ export default function UserDashboardPage() {
         <div className="space-y-4">
             {isPanelEnabled("walletBalances") && (
                 <WalletBalance
-                    accentColor="from-orange-500 to-yellow-500"
-                    gradientClass="bg-gradient-to-br"
+                    gradientClass="bg-gradient-to-br from-orange-500 to-yellow-500"
                     title="Task Rewards"
                     balance={taskRewardsBalance.toFixed(2)}
                     description="Balance from completed tasks."
@@ -164,8 +163,7 @@ export default function UserDashboardPage() {
             )}
             {isPanelEnabled("walletBalances") && (
                 <WalletBalance
-                    accentColor="from-teal-500 to-cyan-500"
-                    gradientClass="bg-gradient-to-br"
+                    gradientClass="bg-gradient-to-br from-teal-500 to-cyan-500"
                     title="Interest Earnings"
                     balance={interestEarningsBalance.toFixed(2)}
                     description="Balance from interest."
@@ -175,8 +173,7 @@ export default function UserDashboardPage() {
             )}
             {isPanelEnabled("interestCounter") && (
                 <InterestCounterPanel
-                    accentColor="from-sky-500 to-indigo-500"
-                    gradientClass="bg-gradient-to-br"
+                    gradientClass="bg-gradient-to-br from-sky-500 to-indigo-500"
                     title="Daily Interest"
                     isLocked={isInterestLocked}
                     balance={interestEarningsBalance}

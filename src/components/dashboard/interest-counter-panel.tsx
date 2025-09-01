@@ -23,7 +23,6 @@ interface InterestCounterPanelProps {
   isLocked?: boolean;
   balance: number;
   counterType: CounterType;
-  accentColor?: string;
   gradientClass?: string;
 }
 
@@ -34,7 +33,6 @@ export function InterestCounterPanel({
   isLocked = false,
   balance,
   counterType,
-  accentColor = "bg-primary",
   gradientClass = "",
 }: InterestCounterPanelProps) {
   const {
@@ -106,17 +104,17 @@ export function InterestCounterPanel({
 
   if (isLocked) {
     return (
-        <Card className={cn("h-full relative overflow-hidden flex flex-col justify-between text-white", gradientClass)}>
-             <div className={cn("absolute top-0 left-0 h-1 w-full bg-gradient-to-r", accentColor)} />
+        <Card className={cn("h-full relative overflow-hidden flex flex-col justify-between", gradientClass, gradientClass && "text-white")}>
+             <div className={cn("absolute top-0 left-0 h-1 w-full", gradientClass ? "bg-white/30" : "bg-primary")} />
             <CardHeader className="p-3">
                 <div className="flex flex-row items-center justify-between space-y-0 pb-1">
                     <CardTitle className="text-xs font-medium">{title}</CardTitle>
-                    <Lock className="h-3 w-3 text-white/80" />
+                    <Lock className={cn("h-3 w-3", gradientClass ? "text-white/80" : "text-muted-foreground")} />
                 </div>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center text-center pt-0 p-3">
                 <div className="text-lg font-bold">-.--%</div>
-                <p className="text-xs text-white/80 pt-1">
+                <p className={cn("text-xs pt-1", gradientClass ? "text-white/80" : "text-muted-foreground")}>
                     Unlock by committing at least ${minBalanceForLevel1}.
                 </p>
             </CardContent>
@@ -127,8 +125,8 @@ export function InterestCounterPanel({
   const isClaimable = timeLeft !== null && timeLeft <= 0;
 
   return (
-    <Card className={cn("relative overflow-hidden flex flex-col", gradientClass, gradientClass ? "text-white" : "")}>
-      <div className={cn("absolute top-0 left-0 h-1 w-full bg-gradient-to-r", accentColor)} />
+    <Card className={cn("relative overflow-hidden flex flex-col", gradientClass, gradientClass && "text-white")}>
+      <div className={cn("absolute top-0 left-0 h-1 w-full", gradientClass ? "bg-white/30" : "bg-primary")} />
       <CardHeader className="p-3">
         <div className="flex flex-row items-center justify-between space-y-0 pb-1">
           <CardTitle className="text-sm font-medium">{title}</CardTitle>
@@ -149,7 +147,7 @@ export function InterestCounterPanel({
         
         <div className="text-center">
             <p className={cn("text-xs", gradientClass ? "text-white/80" : "text-muted-foreground")}>Accrued Interest</p>
-            <p className="text-sm font-semibold text-primary">
+            <p className={cn("text-sm font-semibold", gradientClass ? "text-white" : "text-primary")}>
                 {accruedInterest.toFixed(6)} USDT
             </p>
         </div>

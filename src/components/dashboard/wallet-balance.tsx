@@ -32,11 +32,10 @@ interface WalletBalanceProps {
     balance: string;
     onMoveToMain?: (amount: number) => void;
     showMoveToOther?: boolean;
-    accentColor?: string;
     gradientClass?: string;
 }
 
-export function WalletBalance({ title, description, balance = "0.00", onMoveToMain, showMoveToOther = false, accentColor = "bg-primary", gradientClass = "" }: WalletBalanceProps) {
+export function WalletBalance({ title, description, balance = "0.00", onMoveToMain, showMoveToOther = false, gradientClass = "" }: WalletBalanceProps) {
   const [moveAmount, setMoveAmount] = useState("");
   const { toast } = useToast();
   const { handleMoveFunds, isFundMovementLocked } = useWallet();
@@ -92,19 +91,19 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
 
   return (
     <>
-    <Card className={cn("relative overflow-hidden flex flex-col text-white", gradientClass)}>
-      <div className={cn("absolute top-0 left-0 h-1 w-full bg-gradient-to-r", accentColor)} />
+    <Card className={cn("relative overflow-hidden flex flex-col", gradientClass, gradientClass && "text-white")}>
+      <div className={cn("absolute top-0 left-0 h-1 w-full", gradientClass ? "bg-white/30" : "bg-primary")} />
       <CardHeader className="p-3">
         <div className="flex flex-row items-center justify-between space-y-0 pb-1">
           <CardTitle className="text-sm font-medium">
             {title}
           </CardTitle>
-          <Wallet2 className="h-4 w-4 text-white/80" />
+          <Wallet2 className={cn("h-4 w-4", gradientClass ? "text-white/80" : "text-muted-foreground")} />
         </div>
       </CardHeader>
       <CardContent className="pt-0 p-3">
         <div className="text-2xl font-bold">${balance}</div>
-        <p className="text-xs text-white/80 leading-tight">
+        <p className={cn("text-xs leading-tight", gradientClass ? "text-white/80" : "text-muted-foreground")}>
           {description}
         </p>
          {title === 'Interest Earnings' && isInterestLockActive && (
