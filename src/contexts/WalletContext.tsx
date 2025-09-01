@@ -8,7 +8,7 @@ import { useAuth } from './AuthContext';
 import { GenerateTaskSuggestionOutput } from '@/app/actions';
 import { levels as defaultLevels, Level } from '@/components/dashboard/level-tiers';
 import { platformMessages } from '@/lib/platform-messages';
-import type { BonusTier } from '@/app/dashboard/admin/settings/page';
+import type { BonusTier, AdvancedWithdrawalRestriction } from '@/app/dashboard/admin/settings/page';
 import type { DailyReward } from '@/app/dashboard/admin/daily-rewards/page';
 
 
@@ -139,6 +139,7 @@ interface WalletContextType {
   purchasedReferralsCount: number;
   dailyRewardState?: DailyRewardState;
   claimDailyReward: () => void;
+  checkAdvancedWithdrawalRestrictions: (withdrawalAmount: number) => { isBlocked: boolean; message: string; };
 }
 
 export type Transaction = {
@@ -173,6 +174,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [isSignupApprovalRequired, setIsSignupApprovalRequired] = useState(false);
   const [referralBonuses, setReferralBonuses] = useState<BonusTier[]>([]);
   const [isReferralApprovalRequired, setIsReferralApprovalRequired] = useState(false);
+  const [advWithdrawalRestrictions, setAdvWithdrawalRestrictions] = useState<AdvancedWithdrawalRestriction[]>([]);
   
   const getGlobalSetting = (key: string, defaultValue: any, isJson: boolean = false) => {
      if (typeof window === 'undefined') {
@@ -328,6 +330,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setReferralBonuses(getGlobalSetting('system_referral_bonuses', [], true));
     setIsSignupApprovalRequired(getGlobalSetting('system_signup_bonus_approval_required', false, true));
     setIsReferralApprovalRequired(getGlobalSetting('system_referral_bonus_approval_required', false, true));
+    setAdvWithdrawalRestrictions(getGlobalSetting('system_advanced_withdrawal_restrictions', [], true));
+
 
     // User-specific data
     if (currentUser?.email) {
@@ -529,14 +533,13 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const newCommittedBalance = tempTaskBalance + tempInterestBalance;
     
     // Check for Activation
-    const minBalanceForL1 = minRequiredBalanceForLevel(1);
-    if (originalCommittedBalance < minBalanceForL1 && newCommittedBalance >= minBalanceForL1) {
+    if (currentUser && !currentUser.isAccountActive && newCommittedBalance > 0) {
       activateUserAccount(currentUser.email);
     }
     
     // Check for Deactivation
     const minBalanceForCurrentLevel = minRequiredBalanceForLevel(currentLevel);
-    if (newCommittedBalance < minBalanceForCurrentLevel && currentUser.status === 'active') {
+    if (newCommittedBalance < minBalanceForCurrentLevel && currentUser?.status === 'active') {
         updateUserStatus(currentUser.email, 'inactive');
     }
 
@@ -558,6 +561,11 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       const depositsKey = `${userEmail}_deposits`;
       const depositCount = parseInt(localStorage.getItem(depositsKey) || '0');
       localStorage.setItem(depositsKey, (depositCount + 1).toString());
+      
+      const user = users.find(u => u.email === userEmail);
+      if(user && !user.isAccountActive) {
+          activateUserAccount(userEmail);
+      }
       
       if(currentUser?.email === userEmail) {
           setMainBalance(prev => prev + rechargeAmount);
@@ -952,6 +960,29 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       return boost ? boost.value : 0;
   }
 
+  const checkAdvancedWithdrawalRestrictions = (withdrawalAmount: number): { isBlocked: boolean; message: string; } => {
+    if (!currentUser) return { isBlocked: false, message: "" };
+
+    const futureCommittedBalance = committedBalance - withdrawalAmount;
+    const minBalanceForCurrentLevel = minRequiredBalanceForLevel(currentLevel);
+
+    for (const rule of advWithdrawalRestrictions) {
+        if (!rule.enabled) continue;
+
+        const isTargetUser = (rule.targetType === 'all' && rule.levels.includes(currentLevel)) ||
+                             (rule.targetType === 'specific' && rule.targetUser === currentUser.email);
+        
+        if (isTargetUser) {
+            // Check if withdrawal will make user inactive
+            if (futureCommittedBalance < minBalanceForCurrentLevel) {
+                return { isBlocked: true, message: rule.message };
+            }
+        }
+    }
+
+    return { isBlocked: false, message: "" };
+};
+
   return (
     <WalletContext.Provider
       value={{
@@ -1012,6 +1043,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         purchasedReferralsCount,
         dailyRewardState,
         claimDailyReward,
+        checkAdvancedWithdrawalRestrictions
       }}
     >
       {children}
