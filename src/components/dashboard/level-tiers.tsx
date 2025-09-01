@@ -112,6 +112,13 @@ export const levels: Level[] = [
   },
 ];
 
+const levelGradients = [
+    "bg-gradient-to-br from-gray-400 to-gray-600",
+    "bg-gradient-to-br from-yellow-600 to-amber-800",
+    "bg-gradient-to-br from-yellow-400 to-yellow-600",
+    "bg-gradient-to-br from-slate-400 to-slate-600",
+    "bg-gradient-to-br from-blue-400 to-cyan-500",
+];
 
 interface LevelTiersProps {
     onStartTasks: () => void;
@@ -142,14 +149,16 @@ export function LevelTiers({ onStartTasks, isTaskLocked }: LevelTiersProps) {
             className="w-full"
         >
             <CarouselContent className="-ml-2">
-            {displayLevels.map((level) => {
+            {displayLevels.map((level, index) => {
                 const { isUnlocked, isCurrentLevel, referralProgress = 0, currentReferrals = 0 } = levelUnlockProgress[level.level] || {};
+                const gradientClass = levelGradients[index % levelGradients.length];
                 return (
                 <CarouselItem key={level.level} className="basis-full pl-2 pb-4">
                     <div className="h-full">
                         <Card 
                             className={cn(
-                                "h-full flex flex-col speech-bubble", 
+                                "h-full flex flex-col speech-bubble text-primary-foreground",
+                                gradientClass, 
                                 isCurrentLevel && "is-current border-primary ring-2 ring-primary"
                             )}
                         >
@@ -158,45 +167,45 @@ export function LevelTiers({ onStartTasks, isTaskLocked }: LevelTiersProps) {
                                     <CardTitle className="flex items-center justify-between text-base">
                                         <span className="flex items-center gap-1.5">
                                             {level.name}
-                                            {isUnlocked ? <CheckCircle className="h-4 w-4 text-green-500" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
+                                            {isUnlocked ? <CheckCircle className="h-4 w-4 text-green-300" /> : <Lock className="h-4 w-4 text-white/70" />}
                                         </span>
                                     </CardTitle>
-                                    <CardDescription>
-                                         {isCurrentLevel ? <span className="text-primary font-semibold">Current Level</span> : `Level ${level.level}`}
+                                    <CardDescription className={cn(isCurrentLevel ? "text-white font-semibold" : "text-white/80")}>
+                                         {isCurrentLevel ? "Current Level" : `Level ${level.level}`}
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="flex-grow space-y-2 p-3">
                                     <div className="flex items-center text-xs">
-                                        <DollarSign className="h-4 w-4 mr-2 text-muted-foreground" />
+                                        <DollarSign className="h-4 w-4 mr-2 text-white/80" />
                                         <p>Min. <strong className="font-semibold">${level.minAmount.toLocaleString()}</strong></p>
                                     </div>
                                     
                                      <div className="space-y-2">
                                         <div className="flex items-center text-xs">
-                                            <UserPlus className="h-4 w-4 mr-2 text-muted-foreground" />
+                                            <UserPlus className="h-4 w-4 mr-2 text-white/80" />
                                             <p>Min. <strong className="font-semibold">{level.referrals}</strong> Referrals</p>
                                         </div>
                                         {level.referrals > 0 && (
                                             <>
-                                            <Progress value={referralProgress} className="h-1.5"/>
-                                            <p className="text-xs text-muted-foreground text-right">{currentReferrals} / {level.referrals}</p>
+                                            <Progress value={referralProgress} className="h-1.5 bg-white/20"/>
+                                            <p className="text-xs text-white/80 text-right">{currentReferrals} / {level.referrals}</p>
                                             </>
                                         )}
                                     </div>
                                     
                                     <div className="flex items-center text-xs">
-                                        <CheckSquare className="h-4 w-4 mr-2 text-muted-foreground" />
+                                        <CheckSquare className="h-4 w-4 mr-2 text-white/80" />
                                         <p><strong className="font-semibold">{level.dailyTasks}</strong> Tasks / Day</p>
                                     </div>
                                     <div className="flex items-center text-xs">
-                                        <Percent className="h-4 w-4 mr-2 text-muted-foreground" />
+                                        <Percent className="h-4 w-4 mr-2 text-white/80" />
                                         <p><strong className="font-semibold">{level.rate}%</strong> Daily Rate</p>
                                     </div>
                                 </CardContent>
                             </div>
                              {isCurrentLevel && (
                                 <CardFooter className="p-3">
-                                    <Button onClick={onStartTasks} className="w-full" size="sm">
+                                    <Button onClick={onStartTasks} className="w-full bg-white/90 text-primary hover:bg-white" size="sm">
                                         <PlayCircle className="mr-2 h-4 w-4" />
                                         {isTaskLocked ? "Tasks Locked" : "Start Tasks"}
                                     </Button>
@@ -208,8 +217,8 @@ export function LevelTiers({ onStartTasks, isTaskLocked }: LevelTiersProps) {
                 )
             })}
             </CarouselContent>
-            <CarouselPrevious className="absolute left-0 top-1/2 -translate-y-1/2 transform" />
-            <CarouselNext className="absolute right-0 top-1/2 -translate-y-1/2 transform" />
+            <CarouselPrevious className="absolute left-0 top-1/2 -translate-y-1/2 transform text-white bg-black/20 border-white/50 hover:bg-black/40" />
+            <CarouselNext className="absolute right-0 top-1/2 -translate-y-1/2 transform text-white bg-black/20 border-white/50 hover:bg-black/40" />
         </Carousel>
     </div>
   );

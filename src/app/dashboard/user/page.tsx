@@ -153,7 +153,7 @@ export default function UserDashboardPage() {
         <div className="space-y-4">
             {isPanelEnabled("walletBalances") && (
                 <WalletBalance
-                    gradientClass="bg-gradient-to-br from-orange-500 to-yellow-500"
+                    gradientClass="bg-gradient-orange"
                     title="Task Rewards"
                     balance={taskRewardsBalance.toFixed(2)}
                     description="Balance from completed tasks."
@@ -163,7 +163,7 @@ export default function UserDashboardPage() {
             )}
             {isPanelEnabled("walletBalances") && (
                 <WalletBalance
-                    gradientClass="bg-gradient-to-br from-teal-500 to-cyan-500"
+                    gradientClass="bg-gradient-teal"
                     title="Interest Earnings"
                     balance={interestEarningsBalance.toFixed(2)}
                     description="Balance from interest."
@@ -173,7 +173,7 @@ export default function UserDashboardPage() {
             )}
             {isPanelEnabled("interestCounter") && (
                 <InterestCounterPanel
-                    gradientClass="bg-gradient-to-br from-sky-500 to-indigo-500"
+                    gradientClass="bg-gradient-sky"
                     title="Daily Interest"
                     isLocked={isInterestLocked}
                     balance={interestEarningsBalance}
@@ -183,7 +183,7 @@ export default function UserDashboardPage() {
              {isPanelEnabled("featureLock") && (
                 <>
                     {(isTaskLockedByLevel && isInterestLocked) ? (
-                    <Card className="bg-gradient-to-br from-slate-700 to-slate-800 text-slate-100">
+                    <Card className="bg-gradient-slate text-slate-100">
                         <CardHeader>
                             <CardTitle className="flex items-center"><Lock className="mr-2 h-5 w-5" /> Features Locked</CardTitle>
                             <CardDescription className="text-slate-300">Commit funds and invite friends to unlock platform features.</CardDescription>
@@ -201,7 +201,7 @@ export default function UserDashboardPage() {
                         </CardContent>
                     </Card>
                     ) : allTasksCompleted ? (
-                    <Card className="bg-gradient-to-br from-green-500 to-emerald-600 text-white">
+                    <Card className="bg-gradient-green text-white">
                         <CardHeader>
                             <CardTitle>All Tasks Completed!</CardTitle>
                             <CardDescription className="text-green-100">You have reached your daily limit.</CardDescription>
