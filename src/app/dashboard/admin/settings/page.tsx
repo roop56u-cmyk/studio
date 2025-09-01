@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -17,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { levels as defaultLevels } from "@/components/dashboard/level-tiers";
+import { levels as defaultLevels, Level } from "@/components/dashboard/level-tiers";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWallet } from "@/contexts/WalletContext";
@@ -123,9 +124,9 @@ const AdvancedRestrictionForm = ({
     const [targetUser, setTargetUser] = useState(rule?.targetUser || "");
     const [message, setMessage] = useState(rule?.message || "Your withdrawal amount will make your account inactive for your level. Please maintain a sufficient balance.");
 
-    const handleLevelChange = (level: number, checked: boolean) => {
+    const handleLevelChange = (level: number) => {
         setLevels(prev =>
-            checked ? [...prev, level] : prev.filter(l => l !== level)
+            prev.includes(level) ? prev.filter(l => l !== level) : [...prev, level]
         );
     };
 
@@ -155,7 +156,7 @@ const AdvancedRestrictionForm = ({
                 <div className="flex flex-wrap gap-x-4 gap-y-2">
                     {defaultLevels.filter(l => l.level > 0).map(level => (
                         <div key={level.level} className="flex items-center space-x-2">
-                            <Checkbox id={`level-${level.level}`} checked={levels.includes(level.level)} onCheckedChange={(checked) => handleLevelChange(level.level, !!checked)} />
+                            <Checkbox id={`level-${level.level}`} checked={levels.includes(level.level)} onCheckedChange={() => handleLevelChange(level.level)} />
                             <Label htmlFor={`level-${level.level}`} className="font-normal">Level {level.level}</Label>
                         </div>
                     ))}
@@ -309,9 +310,9 @@ export default function SystemSettingsPage() {
         window.location.reload();
     };
 
-    const handleLevelRestrictionChange = (level: number, checked: boolean) => {
+    const handleLevelRestrictionChange = (level: number) => {
         setRestrictedLevels(prev => 
-            checked ? [...prev, level] : prev.filter(l => l !== level)
+            prev.includes(level) ? prev.filter(l => l !== level) : [...prev, level]
         );
     };
 
@@ -628,7 +629,7 @@ export default function SystemSettingsPage() {
                             <Checkbox
                                 id={`level-${level.level}`}
                                 checked={restrictedLevels.includes(level.level)}
-                                onCheckedChange={(checked) => handleLevelRestrictionChange(level.level, !!checked)}
+                                onCheckedChange={() => handleLevelRestrictionChange(level.level)}
                                 disabled={!isWithdrawalRestriction}
                             />
                             <Label htmlFor={`level-${level.level}`} className="font-normal">Level {level.level}</Label>
