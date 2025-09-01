@@ -125,53 +125,17 @@ const AdvancedRestrictionForm = ({
     const [targetUser, setTargetUser] = useState(rule?.targetUser || "");
     const [message, setMessage] = useState(rule?.message || "Your withdrawal amount will make your account inactive for your level. Please maintain a sufficient balance.");
 
-    const levelOptions: OptionType[] = [
-        { value: "all", label: "All Levels" },
-        ...defaultLevels
+    const levelOptions: OptionType[] = defaultLevels
             .filter(l => l.level > 0)
-            .map(l => ({ value: String(l.level), label: `Level ${l.level}` }))
-    ];
+            .map(l => ({ value: String(l.level), label: `Level ${l.level}` }));
 
-    const allLevelValues = levelOptions.filter(o => o.value !== 'all').map(o => o.value);
-    
-    useEffect(() => {
-        if (selectedLevels.includes("all")) {
-            // If "all" is selected, ensure all individual levels are also selected
-            const allSelected = allLevelValues.every(val => selectedLevels.includes(val));
-            if (!allSelected) {
-                setSelectedLevels([...new Set(["all", ...allLevelValues])]);
-            }
-        } else {
-            // If all individual levels are selected, ensure "all" is also selected
-            const allSelected = allLevelValues.every(val => selectedLevels.includes(val));
-            if (allSelected && allLevelValues.length > 0) {
-                setSelectedLevels(["all", ...allLevelValues]);
-            }
-        }
-    }, [selectedLevels, allLevelValues]);
-
-
-    const handleLevelSelect = (newSelection: string[]) => {
-        // If the user selects "all", and it wasn't selected before, select all levels.
-        if (newSelection.includes("all") && !selectedLevels.includes("all")) {
-            setSelectedLevels(["all", ...allLevelValues]);
-        } 
-        // If the user deselects "all"
-        else if (!newSelection.includes("all") && selectedLevels.includes("all")) {
-            setSelectedLevels([]);
-        }
-        // Otherwise, just update with the new selection
-        else {
-            setSelectedLevels(newSelection);
-        }
-    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         onSave({ 
             enabled, 
             days, 
-            levels: selectedLevels.filter(l => l !== 'all').map(Number),
+            levels: selectedLevels.map(Number),
             withdrawalPercentage, 
             targetType, 
             targetUser: targetType === 'specific' ? targetUser : '', 
@@ -200,7 +164,7 @@ const AdvancedRestrictionForm = ({
                 <MultiSelect
                     options={levelOptions}
                     selected={selectedLevels}
-                    onChange={handleLevelSelect}
+                    onChange={setSelectedLevels}
                     placeholder="Select levels..."
                 />
             </div>
