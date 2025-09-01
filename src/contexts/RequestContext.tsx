@@ -15,21 +15,25 @@ export type Request = {
     address: string | null;
     status: 'Pending' | 'Approved' | 'Declined' | 'On Hold';
     date: string;
-    // The following fields are now deprecated from the request object
-    // and will be looked up live in the admin panel.
-    level?: number;
-    deposits?: number;
-    withdrawals?: number;
-    referrals?: number;
-    balance?: number;
-    upline?: string | null;
 };
+
+export type Activity = {
+    id: string;
+    type: string; // e.g., 'Recharge', 'Withdrawal', 'Status Change', 'Profile Update'
+    description: string;
+    amount?: number; // Optional, for financial transactions
+    status?: 'Pending' | 'Approved' | 'Declined' | 'On Hold'; // Optional, for requests
+    date: string;
+};
+
 
 interface RequestContextType {
   requests: Request[];
   addRequest: (requestData: Partial<Omit<Request, 'id' | 'date' | 'status' | 'user'>>) => void;
   updateRequestStatus: (id: string, status: 'Approved' | 'Declined' | 'On Hold') => void;
   userRequests: Request[];
+  activityHistory: Activity[];
+  addActivity: (userEmail: string, activity: Omit<Activity, 'id'>) => void;
 }
 
 const mockRequests: Request[] = [
@@ -65,17 +69,11 @@ const mockRequests: Request[] = [
 const RequestContext = createContext<RequestContextType | undefined>(undefined);
 
 export const RequestProvider = ({ children }: { children: ReactNode }) => {
-  const { currentUser, users } = useAuth();
+  const { currentUser } = useAuth();
   const { toast } = useToast();
-  const { 
-      approveRecharge, 
-      approveWithdrawal,
-      approveSignUpBonus,
-      approveReferralBonus,
-      approveSalary,
-      refundWithdrawal 
-  } = useWallet();
-  
+  // We need wallet functions to process approvals/refunds
+  const walletContext = useWallet();
+
   const [requests, setRequests] = useState<Request[]>(() => {
     if (typeof window === 'undefined') {
         return mockRequests;
@@ -92,6 +90,22 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
   });
 
   const [userRequests, setUserRequests] = useState<Request[]>([]);
+  const [activityHistory, setActivityHistory] = useState<Activity[]>([]);
+
+  // Function to add an activity for a specific user
+  const addActivity = (userEmail: string, activity: Omit<Activity, 'id'>) => {
+    const newActivity: Activity = {
+        ...activity,
+        id: `ACT-${Date.now()}-${Math.random()}`,
+    };
+    const key = `${userEmail}_activityHistory`;
+    const currentHistory = JSON.parse(localStorage.getItem(key) || '[]');
+    localStorage.setItem(key, JSON.stringify([newActivity, ...currentHistory]));
+
+    if (currentUser?.email === userEmail) {
+        setActivityHistory(prev => [newActivity, ...prev]);
+    }
+  };
   
   useEffect(() => {
     try {
@@ -107,8 +121,15 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
             .filter(req => req.user === currentUser.email)
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setUserRequests(sortedUserRequests);
+        
+        // Load activity history for current user
+        const key = `${currentUser.email}_activityHistory`;
+        const storedHistory = localStorage.getItem(key);
+        setActivityHistory(storedHistory ? JSON.parse(storedHistory) : []);
+
     } else {
         setUserRequests([]);
+        setActivityHistory([]);
     }
   }, [currentUser, requests]);
 
@@ -130,12 +151,28 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
     };
 
     setRequests(prev => [newRequest, ...prev]);
+    
+    addActivity(currentUser.email, {
+        type: `${requestData.type} Request`,
+        description: `Submitted ${requestData.type} request for $${requestData.amount?.toFixed(2)}`,
+        amount: requestData.amount,
+        status: 'Pending',
+        date: new Date().toISOString()
+    });
   };
 
   const updateRequestStatus = (id: string, status: 'Approved' | 'Declined' | 'On Hold') => {
         const requestToUpdate = requests.find(r => r.id === id);
-        if (!requestToUpdate) return;
+        if (!requestToUpdate || !walletContext) return;
         const { user: userEmail, type, amount, address } = requestToUpdate;
+        const { 
+            approveRecharge, 
+            approveWithdrawal,
+            approveSignUpBonus,
+            approveReferralBonus,
+            approveSalary,
+            refundWithdrawal 
+        } = walletContext;
 
         if (status === 'Approved') {
             if (type === 'Recharge') {
@@ -154,8 +191,6 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
                 refundWithdrawal(userEmail, amount);
             }
              if (type === 'Salary Claim' && requestToUpdate.address) {
-                // If a salary claim is rejected, we need to remove the last claim date
-                // so the user can claim again after meeting criteria.
                 const userEmail = requestToUpdate.user;
                 const allSalaryPackages: SalaryPackage[] = JSON.parse(localStorage.getItem('platform_salary_packages') || '[]');
                 const pkg = allSalaryPackages.find(p => p.name === requestToUpdate.address);
@@ -163,8 +198,6 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
                     localStorage.removeItem(`salary_claimed_${userEmail}_${pkg.id}`);
                 }
             }
-            // For other reward types, simply declining the request is enough.
-            // The user will be able to claim again because there's no 'Approved' request.
         }
         
         const updatedRequests = requests.map((req) => 
@@ -173,6 +206,14 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
         
         setRequests(updatedRequests);
         
+        addActivity(userEmail, {
+            type: `${type} Request`,
+            description: `Request for $${amount.toFixed(2)} was ${status.toLowerCase()}`,
+            amount: type === 'Withdrawal' ? -amount : amount,
+            status,
+            date: new Date().toISOString()
+        });
+
         toast({
             title: `Request ${status}`,
             description: `Request ID ${id} has been marked as ${status.toLowerCase()}.`,
@@ -187,6 +228,8 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
         addRequest,
         updateRequestStatus,
         userRequests,
+        activityHistory,
+        addActivity
       }}
     >
       {children}
@@ -201,14 +244,6 @@ export const useRequests = () => {
   }
   return context;
 };
-
-export type Transaction = {
-    id: string,
-    type: string,
-    description: string,
-    amount: number,
-    date: string,
-}
 
 type SalaryPackage = {
     id: string;

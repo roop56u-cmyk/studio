@@ -99,7 +99,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { RechargeDialog } from "@/components/dashboard/recharge-dialog";
 import { WithdrawalDialog } from "@/components/dashboard/withdrawal-dialog";
 import { useTeamCommission } from "@/hooks/use-team-commission";
-import { TransactionHistoryPanel } from "@/components/dashboard/transaction-history-panel";
+import { ActivityHistoryPanel } from "@/components/dashboard/activity-history-panel";
 import { TaskHistoryPanel } from "@/components/dashboard/task-history-panel";
 import { ReferralCard } from "@/components/dashboard/referral-card";
 import { InboxPanel } from "@/components/dashboard/inbox-panel";
@@ -566,10 +566,10 @@ function SidebarContentComponent({
                 <SidebarMenuItem>
                     <SidebarMenuButton
                         onClick={onTransactionHistoryClick}
-                        tooltip={{ children: "Transaction History" }}
+                        tooltip={{ children: "Activity History" }}
                     >
                         <History />
-                        <span>Transaction History</span>
+                        <span>Activity History</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
@@ -797,13 +797,13 @@ export default function DashboardLayout({
        <Sheet open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
             <SheetContent className="w-full sm:max-w-lg">
                 <SheetHeader>
-                    <SheetTitle>Transaction History</SheetTitle>
+                    <SheetTitle>Activity History</SheetTitle>
                     <SheetDescription>
-                        A log of your recent recharges and withdrawals.
+                        A log of your recent account activities.
                     </SheetDescription>
                 </SheetHeader>
                 <ScrollArea className="h-[calc(100vh-8rem)] mt-4">
-                    <TransactionHistoryPanel />
+                    <ActivityHistoryPanel />
                 </ScrollArea>
                  <SheetClose />
             </SheetContent>

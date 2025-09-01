@@ -5,6 +5,7 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { platformMessages } from '@/lib/platform-messages';
+import { useRequests } from './RequestContext';
 
 export type User = {
     email: string;
@@ -72,6 +73,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [messages, setMessages] = useState<any>({});
+    const requestContext = useRequests();
 
     useEffect(() => {
         const storedMessages = getGlobalSetting("platform_custom_messages", {}, true);
@@ -173,6 +175,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const signup = (email: string, password: string, fullName: string, referralCode: string) => {
+        if (!requestContext) return { success: false, message: "Initialization error." };
+        const { addActivity } = requestContext;
+
         const referrer = users.find(u => u.referralCode === referralCode);
 
         if (!referrer) {
@@ -196,8 +201,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             activatedAt: null,
         };
         setUsers(prev => [...prev, newUser]);
-        
         setCurrentUser(newUser);
+
+        // Add activity log for the referrer
+        addActivity(referrer.email, {
+            type: 'New Referral',
+            description: `A new member, ${fullName} (${email}), joined your team.`,
+            date: new Date().toISOString()
+        });
 
         return { success: true, message: 'Account created successfully!' };
     };
@@ -208,6 +219,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const updateUser = (email: string, updatedData: Partial<Omit<User, 'status' | 'isAccountActive'>> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; purchasedReferrals?: number; }) => {
+        if (!requestContext) return;
+        const { addActivity } = requestContext;
         const { mainBalance, taskRewardsBalance, interestEarningsBalance, purchasedReferrals, ...userData } = updatedData;
         
         const originalUser = users.find(u => u.email === email);
@@ -247,6 +260,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (currentUser?.email === email) {
             setCurrentUser(prev => prev ? { ...prev, ...userData } : null);
         }
+        addActivity(targetEmail, {
+            type: 'Profile Update',
+            description: 'Your profile details were updated by an admin.',
+            date: new Date().toISOString()
+        });
     };
 
     const deleteUser = (email: string, isSelfDelete: boolean = false) => {
@@ -257,6 +275,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const updateUserStatus = (email: string, status: User['status']) => {
+        if (!requestContext) return;
+        const { addActivity } = requestContext;
+
         setUsers(prev => prev.map(u => {
             if (u.email === email) {
                 const updatedUser: User = { ...u, status };
@@ -285,9 +306,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 setCurrentUser(updatedCurrentUser);
              }
         }
+        addActivity(email, {
+            type: 'Status Change',
+            description: `Your account status changed to: ${status}.`,
+            date: new Date().toISOString()
+        });
     }
     
     const activateUserAccount = (email: string) => {
+        if (!requestContext) return;
+        const { addActivity } = requestContext;
+        
         const newUsers = users.map(u => {
             if (u.email === email && u.status !== 'active') {
                 return { ...u, status: 'active', isAccountActive: true, activatedAt: new Date().toISOString() };
@@ -299,6 +328,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (currentUser?.email === email && currentUser.status !== 'active') {
             setCurrentUser(prev => prev ? { ...prev, status: 'active', isAccountActive: true, activatedAt: new Date().toISOString() } : null);
         }
+         addActivity(email, {
+            type: 'Status Change',
+            description: `Your account has been activated.`,
+            date: new Date().toISOString()
+        });
     }
 
 

@@ -48,11 +48,11 @@ export default function RootLayout({
         <AuthProvider>
           <WalletProvider>
             <RequestProvider>
-              <TeamProvider>
-                  <InboxProvider>
-                      {children}
-                  </InboxProvider>
-              </TeamProvider>
+                <TeamProvider>
+                    <InboxProvider>
+                        {children}
+                    </InboxProvider>
+                </TeamProvider>
             </RequestProvider>
           </WalletProvider>
         </AuthProvider>
