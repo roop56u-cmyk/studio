@@ -125,9 +125,15 @@ const AdvancedRestrictionForm = ({
     const [message, setMessage] = useState(rule?.message || "Your withdrawal amount will make your account inactive for your level. Please maintain a sufficient balance.");
 
     const handleLevelChange = useCallback((level: number, checked: boolean) => {
-        setLevels(prev =>
-            checked ? [...prev, level] : prev.filter(l => l !== level)
-        );
+        setLevels(prev => {
+            const newLevels = new Set(prev);
+            if (checked) {
+                newLevels.add(level);
+            } else {
+                newLevels.delete(level);
+            }
+            return Array.from(newLevels);
+        });
     }, []);
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -193,7 +199,7 @@ const AdvancedRestrictionForm = ({
 export default function SystemSettingsPage() {
     const { toast } = useToast();
     const { users, updateUser } = useAuth();
-    const { addTransaction } = useWallet();
+    const { addActivity } = useWallet();
 
     // Signup Bonus
     const [signupBonusEnabled, setSignupBonusEnabled] = useState(true);
@@ -311,9 +317,15 @@ export default function SystemSettingsPage() {
     };
 
     const handleLevelRestrictionChange = useCallback((level: number, checked: boolean) => {
-        setRestrictedLevels(prev => 
-            checked ? [...prev, level] : prev.filter(l => l !== level)
-        );
+        setRestrictedLevels(prev => {
+            const newLevels = new Set(prev);
+            if (checked) {
+                newLevels.add(level);
+            } else {
+                newLevels.delete(level);
+            }
+            return Array.from(newLevels);
+        });
     }, []);
 
     const handleGrantBonus = () => {
@@ -331,7 +343,7 @@ export default function SystemSettingsPage() {
         const currentBalance = parseFloat(localStorage.getItem(mainBalanceKey) || '0');
         localStorage.setItem(mainBalanceKey, (currentBalance + amount).toString());
 
-        addTransaction(manualBonusUser, {
+        addActivity(manualBonusUser, {
             type: 'Manual Bonus',
             description: `Bonus granted by admin`,
             amount: amount,
