@@ -172,19 +172,18 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
         return;
     }
 
-    const hasPendingWithdrawal = userRequests.some(req => req.type === 'Withdrawal' && req.status === 'Pending');
-    if (hasPendingWithdrawal) {
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+        toast({ variant: "destructive", title: "Invalid Amount", description: "Please enter a valid amount to withdraw." });
+        return;
+    }
+    
+    if (userRequests.some(req => req.type === 'Withdrawal' && req.status === 'Pending')) {
         setIsPendingAlertOpen(true);
         return;
     }
 
     if (monthlyWithdrawalsCount >= monthlyWithdrawalLimit) {
         setIsLimitAlertOpen(true);
-        return;
-    }
-
-    if (isNaN(numericAmount) || numericAmount <= 0) {
-        toast({ variant: "destructive", title: "Invalid Amount", description: "Please enter a valid amount to withdraw." });
         return;
     }
 
@@ -198,22 +197,12 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
         return;
     }
 
-    const advCheck = checkAdvancedWithdrawalRestrictions(numericAmount);
-    if (advCheck.isBlocked) {
-        setAdvRestrictionMessage(advCheck.message);
-        setIsAdvRestrictionAlertOpen(true);
-        return;
-    }
-    
-    // Check for user-specific restriction first
+    // Independent check for basic time restriction
+    let isBasicRestricted = false;
     if (currentUser.withdrawalRestrictionUntil && new Date(currentUser.withdrawalRestrictionUntil) > new Date()) {
+        isBasicRestricted = true;
         setRestrictionStartDate(currentUser.createdAt || new Date().toISOString()); 
-        setIsRestrictionAlertOpen(true);
-        return;
-    }
-    
-    // Fallback to global restriction only if no user-specific restriction is active
-    if (!currentUser.withdrawalRestrictionUntil) {
+    } else if (!currentUser.withdrawalRestrictionUntil) {
       const userIsEligibleForGlobalRestriction = mainBalance > 0 || currentLevel >= 1;
       if (isWithdrawalRestrictionEnabled && userIsEligibleForGlobalRestriction) {
           const key = `${currentUser.email}_firstDepositDate`;
@@ -222,17 +211,28 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
               startDate = new Date().toISOString();
               localStorage.setItem(key, startDate);
           }
-          setRestrictionStartDate(startDate);
-
           const restrictionEndTime = new Date(startDate).getTime() + (withdrawalRestrictionDays * 24 * 60 * 60 * 1000);
-          
           if (Date.now() < restrictionEndTime) {
-              setIsRestrictionAlertOpen(true);
-              return;
+              isBasicRestricted = true;
+              setRestrictionStartDate(startDate);
           }
       }
     }
     
+    if(isBasicRestricted) {
+        setIsRestrictionAlertOpen(true);
+        return;
+    }
+
+    // Independent check for advanced restrictions
+    const advCheck = checkAdvancedWithdrawalRestrictions(numericAmount);
+    if (advCheck.isBlocked) {
+        setAdvRestrictionMessage(advCheck.message);
+        setIsAdvRestrictionAlertOpen(true);
+        return;
+    }
+
+    // If all checks pass
     requestWithdrawal(numericAmount);
     onAddRequest({ amount: numericAmount, address: selectedAddress.address, type: 'Withdrawal' });
     toast({ title: "Withdrawal Request Submitted", description: `Your request to withdraw ${numericAmount.toFixed(2)} USDT is pending approval.` });
@@ -393,7 +393,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
                 <AlertDialogDescription>
                     {messages.withdrawal?.limitReachedDescription
                         ?.replace('[X]', monthlyWithdrawalLimit)
-                        .replace('[Y]', currentLevel)
+                        ?.replace('[Y]', currentLevel)
                     }
                 </AlertDialogDescription>
             </AlertDialogHeader>
