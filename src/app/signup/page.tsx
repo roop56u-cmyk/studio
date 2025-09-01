@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,6 +19,20 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequests } from "@/contexts/RequestContext";
 import { Eye, EyeOff } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const gradients = [
+    "bg-gradient-purple",
+    "bg-gradient-orange",
+    "bg-gradient-teal",
+    "bg-gradient-sky",
+    "bg-gradient-pink",
+    "bg-gradient-blue",
+    "bg-gradient-amber",
+    "bg-gradient-rose",
+    "bg-gradient-fuchsia",
+    "bg-gradient-violet",
+];
 
 export default function SignupPage() {
   const router = useRouter();
@@ -30,6 +44,18 @@ export default function SignupPage() {
   const [fullName, setFullName] = useState("");
   const [invitationCode, setInvitationCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [gradient, setGradient] = useState(gradients[0]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setGradient(prev => {
+        const currentIndex = gradients.indexOf(prev);
+        const nextIndex = (currentIndex + 1) % gradients.length;
+        return gradients[nextIndex];
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSignUp = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,7 +86,7 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+    <div className={cn("flex min-h-screen items-center justify-center p-4 transition-all duration-1000", gradient)}>
       <Card className="mx-auto w-full max-w-sm">
         <CardHeader className="text-center">
            <Logo className="justify-center mb-4"/>
