@@ -124,11 +124,11 @@ const AdvancedRestrictionForm = ({
     const [targetUser, setTargetUser] = useState(rule?.targetUser || "");
     const [message, setMessage] = useState(rule?.message || "Your withdrawal amount will make your account inactive for your level. Please maintain a sufficient balance.");
 
-    const handleLevelChange = (level: number, checked: boolean) => {
+    const handleLevelChange = useCallback((level: number, checked: boolean) => {
         setLevels(prev =>
             checked ? [...prev, level] : prev.filter(l => l !== level)
         );
-    };
+    }, []);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
