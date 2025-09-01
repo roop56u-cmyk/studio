@@ -133,14 +133,18 @@ const AdvancedRestrictionForm = ({
     ];
     
     const handleLevelSelect = (newSelection: string[]) => {
-      // If "all" is selected and it wasn't before, select all options.
+      // If "all" is newly selected, select all options.
       if (newSelection.includes("all") && !selectedLevels.includes("all")) {
         setSelectedLevels(levelOptions.map((option) => option.value));
       } 
       // If "all" is unselected, clear all selections.
       else if (!newSelection.includes("all") && selectedLevels.includes("all")) {
         setSelectedLevels([]);
-      } 
+      }
+      // Handle removing 'all' if an individual item is deselected
+      else if (newSelection.length < levelOptions.length && selectedLevels.includes("all")) {
+        setSelectedLevels(newSelection.filter(item => item !== "all"));
+      }
       // Otherwise, just update with the new selection.
       else {
         setSelectedLevels(newSelection);
@@ -682,20 +686,22 @@ export default function SystemSettingsPage() {
                     {advRestrictions.map(rule => (
                         <AccordionItem value={rule.id} key={rule.id} className="border rounded-md px-4">
                             <AccordionTrigger>
-                                <div className="flex items-center gap-4 text-left">
-                                     <Switch checked={rule.enabled} onCheckedChange={(checked) => { const newRules = [...advRestrictions]; const r = newRules.find(x=>x.id===rule.id); if(r) r.enabled = checked; setAdvRestrictions(newRules); }} onClick={(e) => e.stopPropagation()} />
-                                    <div>
-                                        <h4 className={cn("font-semibold", !rule.enabled && "text-muted-foreground")}>
-                                            Rule for {rule.targetType === 'all' ? `Levels ${rule.levels.join(', ')}` : rule.targetUser}
-                                        </h4>
-                                        <p className="text-xs text-muted-foreground font-normal">
-                                            {rule.message.substring(0, 50)}...
-                                        </p>
-                                    </div>
+                                <div className="text-left">
+                                    <h4 className={cn("font-semibold", !rule.enabled && "text-muted-foreground")}>
+                                        Rule for {rule.targetType === 'all' ? `Levels ${rule.levels.join(', ')}` : rule.targetUser}
+                                    </h4>
+                                    <p className="text-xs text-muted-foreground font-normal">
+                                        {rule.message.substring(0, 50)}...
+                                    </p>
                                 </div>
                             </AccordionTrigger>
                             <AccordionContent className="pt-4">
-                                <div className="flex justify-end gap-2">
+                                <div className="flex justify-end items-center gap-4">
+                                     <div className="flex items-center space-x-2">
+                                        <Switch id={`adv-rule-enable-${rule.id}`} checked={rule.enabled} onCheckedChange={(checked) => { const newRules = [...advRestrictions]; const r = newRules.find(x=>x.id===rule.id); if(r) r.enabled = checked; setAdvRestrictions(newRules); }} />
+                                        <Label htmlFor={`adv-rule-enable-${rule.id}`}>Enabled</Label>
+                                    </div>
+                                     <div className="flex-grow"></div>
                                      <Button variant="outline" size="sm" onClick={() => handleEditAdvRestriction(rule)}><Edit className="mr-2 h-4 w-4"/>Edit</Button>
                                      <Button variant="destructive" size="sm" onClick={() => handleDeleteAdvRestriction(rule.id)}><Trash2 className="mr-2 h-4 w-4"/>Delete</Button>
                                 </div>
@@ -726,5 +732,3 @@ export default function SystemSettingsPage() {
     </div>
   );
 }
-
-    
