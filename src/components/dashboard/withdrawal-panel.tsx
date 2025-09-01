@@ -65,8 +65,6 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
   const { userRequests } = useRequests();
   const { currentUser } = useAuth();
   const [messages, setMessages] = useState<any>({});
-  const [advRestrictionMessage, setAdvRestrictionMessage] = useState("");
-
 
   useEffect(() => {
     const storedMessages = getGlobalSetting("platform_custom_messages", {}, true);
@@ -102,7 +100,6 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
       withdrawalRestrictionDays,
       multipleAddressesEnabled,
       addWithdrawalAddress,
-      checkAdvancedWithdrawalRestrictions
   } = useWallet();
   
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
@@ -110,7 +107,6 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
 
   const [isRestrictionAlertOpen, setIsRestrictionAlertOpen] = useState(false);
-  const [isAdvRestrictionAlertOpen, setIsAdvRestrictionAlertOpen] = useState(false);
   const [isPendingAlertOpen, setIsPendingAlertOpen] = useState(false);
   const [isLimitAlertOpen, setIsLimitAlertOpen] = useState(false);
   const [isMaxAmountAlertOpen, setIsMaxAmountAlertOpen] = useState(false);
@@ -197,7 +193,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
         return;
     }
 
-    // Independent check for basic time restriction
+    // Check for basic time restriction
     let isBasicRestricted = false;
     if (currentUser.withdrawalRestrictionUntil && new Date(currentUser.withdrawalRestrictionUntil) > new Date()) {
         isBasicRestricted = true;
@@ -221,14 +217,6 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
     
     if(isBasicRestricted) {
         setIsRestrictionAlertOpen(true);
-        return;
-    }
-
-    // Independent check for advanced restrictions
-    const advCheck = checkAdvancedWithdrawalRestrictions(numericAmount);
-    if (advCheck.isBlocked) {
-        setAdvRestrictionMessage(advCheck.message);
-        setIsAdvRestrictionAlertOpen(true);
         return;
     }
 
@@ -354,20 +342,6 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
             )}
             <AlertDialogFooter>
                 <AlertDialogAction onClick={() => setIsRestrictionAlertOpen(false)}>OK</AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      
-       <AlertDialog open={isAdvRestrictionAlertOpen} onOpenChange={setIsAdvRestrictionAlertOpen}>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Withdrawal Alert</AlertDialogTitle>
-                <AlertDialogDescription>
-                   {advRestrictionMessage}
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogAction onClick={() => setIsAdvRestrictionAlertOpen(false)}>OK</AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

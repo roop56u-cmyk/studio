@@ -41,26 +41,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { cn } from "@/lib/utils";
-import { MultiSelect, OptionType } from "@/components/ui/multi-select";
 
 
 export type BonusTier = {
     id: string;
     minDeposit: number;
     bonusAmount: number;
-};
-
-export type AdvancedWithdrawalRestriction = {
-    id: string;
-    enabled: boolean;
-    days: number;
-    levels: number[];
-    withdrawalPercentage: number;
-    targetType: 'all' | 'specific';
-    targetUser: string;
-    message: string;
 };
 
 const BonusTierForm = ({
@@ -104,96 +90,6 @@ const BonusTierForm = ({
   );
 };
 
-const AdvancedRestrictionForm = ({
-    rule,
-    onSave,
-    onClose,
-    users,
-    defaultLevels,
-}: {
-    rule: Partial<AdvancedWithdrawalRestriction> | null;
-    onSave: (rule: Omit<AdvancedWithdrawalRestriction, 'id'>) => void;
-    onClose: () => void;
-    users: User[];
-    defaultLevels: Level[];
-}) => {
-    const [enabled, setEnabled] = useState(rule?.enabled ?? true);
-    const [days, setDays] = useState(rule?.days || 45);
-    const [selectedLevels, setSelectedLevels] = useState<string[]>(rule?.levels?.map(String) || []);
-    const [withdrawalPercentage, setWithdrawalPercentage] = useState(rule?.withdrawalPercentage || 100);
-    const [targetType, setTargetType] = useState<'all' | 'specific'>(rule?.targetType || 'all');
-    const [targetUser, setTargetUser] = useState(rule?.targetUser || "");
-    const [message, setMessage] = useState(rule?.message || "Your withdrawal amount will make your account inactive for your level. Please maintain a sufficient balance.");
-
-    const levelOptions: OptionType[] = defaultLevels
-            .filter(l => l.level > 0)
-            .map(l => ({ value: String(l.level), label: `Level ${l.level}` }));
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        onSave({ 
-            enabled, 
-            days, 
-            levels: selectedLevels.map(Number),
-            withdrawalPercentage, 
-            targetType, 
-            targetUser: targetType === 'specific' ? targetUser : '', 
-            message 
-        });
-    };
-
-    return (
-        <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="flex items-center space-x-2">
-                <Switch id="rule-enabled" checked={enabled} onCheckedChange={setEnabled} />
-                <Label htmlFor="rule-enabled">Enable this rule</Label>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-                 <div className="space-y-2">
-                    <Label htmlFor="days">Restriction Days</Label>
-                    <Input id="days" type="number" value={days} onChange={e => setDays(Number(e.target.value))} />
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="withdrawal-percentage">Withdrawal % Limit</Label>
-                    <Input id="withdrawal-percentage" type="number" value={withdrawalPercentage} onChange={e => setWithdrawalPercentage(Number(e.target.value))} />
-                </div>
-            </div>
-            <div className="space-y-2">
-                <Label>Target Levels</Label>
-                 <MultiSelect
-                    options={levelOptions}
-                    selected={selectedLevels}
-                    onChange={setSelectedLevels}
-                    placeholder="Select levels..."
-                />
-            </div>
-            <div className="space-y-2">
-                <Label>Target Users</Label>
-                 <RadioGroup value={targetType} onValueChange={(v) => requestAnimationFrame(() => setTargetType(v as 'all' | 'specific'))}>
-                    <div className="flex items-center space-x-2"><RadioGroupItem value="all" id="target-all" /><Label htmlFor="target-all" className="font-normal">All Users in selected levels</Label></div>
-                    <div className="flex items-center space-x-2"><RadioGroupItem value="specific" id="target-specific" /><Label htmlFor="target-specific" className="font-normal">Specific User</Label></div>
-                </RadioGroup>
-                {targetType === 'specific' && (
-                    <Select value={targetUser} onValueChange={setTargetUser}>
-                        <SelectTrigger><SelectValue placeholder="Select a user..." /></SelectTrigger>
-                        <SelectContent>
-                            {users.map(u => <SelectItem key={u.email} value={u.email}>{u.email}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                )}
-            </div>
-             <div className="space-y-2">
-                <Label htmlFor="message">Popup Message</Label>
-                <Textarea id="message" value={message} onChange={e => setMessage(e.target.value)} rows={4} />
-            </div>
-            <DialogFooter>
-                <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
-                <Button type="submit">Save Rule</Button>
-            </DialogFooter>
-        </form>
-    );
-};
-
 
 export default function SystemSettingsPage() {
     const { toast } = useToast();
@@ -223,12 +119,6 @@ export default function SystemSettingsPage() {
     const [withdrawalRestrictionMessage, setWithdrawalRestrictionMessage] = useState("Please wait for 45 days to initiate withdrawal request.");
     const [restrictedLevels, setRestrictedLevels] = useState<number[]>([1]); // Default to level 1
     const [multipleAddressesEnabled, setMultipleAddressesEnabled] = useState(true);
-
-    // Advanced Withdrawal
-    const [advRestrictions, setAdvRestrictions] = useState<AdvancedWithdrawalRestriction[]>([]);
-    const [isAdvRestrictionFormOpen, setIsAdvRestrictionFormOpen] = useState(false);
-    const [editingAdvRestriction, setEditingAdvRestriction] = useState<AdvancedWithdrawalRestriction | null>(null);
-
 
     // Earning Model
     const [earningModel, setEarningModel] = useState("dynamic"); // 'dynamic' or 'fixed'
@@ -275,10 +165,6 @@ export default function SystemSettingsPage() {
         const savedEarningModel = localStorage.getItem('system_earning_model');
         if (savedEarningModel) setEarningModel(savedEarningModel);
 
-        // Advanced Withdrawal Restrictions
-        const savedAdvRestrictions = localStorage.getItem('system_advanced_withdrawal_restrictions');
-        if (savedAdvRestrictions) setAdvRestrictions(JSON.parse(savedAdvRestrictions));
-        
         setIsClient(true);
     }, []);
 
@@ -304,9 +190,6 @@ export default function SystemSettingsPage() {
         // Earning Model
         localStorage.setItem('system_earning_model', earningModel);
         
-        // Advanced Withdrawal
-        localStorage.setItem('system_advanced_withdrawal_restrictions', JSON.stringify(advRestrictions));
-
         toast({
             title: "Settings Saved",
             description: "Global system settings have been updated.",
@@ -415,31 +298,6 @@ export default function SystemSettingsPage() {
         setEditingReferralBonus(null);
         setIsReferralFormOpen(false);
     }
-    
-    // Advanced restriction management
-    const handleSaveAdvRestriction = (rule: Omit<AdvancedWithdrawalRestriction, 'id'>) => {
-        if (editingAdvRestriction) {
-            setAdvRestrictions(prev => prev.map(r => r.id === editingAdvRestriction.id ? { ...r, ...rule, id: r.id } : r));
-        } else {
-            setAdvRestrictions(prev => [...prev, { ...rule, id: `adv-restrict-${Date.now()}` }]);
-        }
-        closeAdvRestrictionForm();
-    };
-    
-    const handleEditAdvRestriction = (rule: AdvancedWithdrawalRestriction) => {
-        setEditingAdvRestriction(rule);
-        setIsAdvRestrictionFormOpen(true);
-    };
-
-    const handleDeleteAdvRestriction = (id: string) => {
-        setAdvRestrictions(prev => prev.filter(r => r.id !== id));
-    };
-
-    const closeAdvRestrictionForm = () => {
-        setEditingAdvRestriction(null);
-        setIsAdvRestrictionFormOpen(false);
-    };
-
 
     if (!isClient) {
         return null;
@@ -651,57 +509,6 @@ export default function SystemSettingsPage() {
         </CardContent>
       </Card>
       
-       <Card>
-            <CardHeader>
-                <CardTitle>Advanced Withdrawal Restrictions</CardTitle>
-                <CardDescription>
-                    Create specific rules that can block withdrawals to maintain account activity or for other custom scenarios. These rules apply in addition to the basic settings above.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Accordion type="multiple" className="w-full space-y-2">
-                    {advRestrictions.map(rule => (
-                        <AccordionItem value={rule.id} key={rule.id} className="border rounded-md px-4">
-                            <AccordionTrigger>
-                                <div className="text-left flex-1">
-                                    <h4 className={cn("font-semibold", !rule.enabled && "text-muted-foreground")}>
-                                        Rule for {rule.targetType === 'all' ? `Levels ${rule.levels.join(', ')}` : rule.targetUser}
-                                    </h4>
-                                    <p className="text-xs text-muted-foreground font-normal">
-                                        {rule.message.substring(0, 50)}...
-                                    </p>
-                                </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="pt-4">
-                                <div className="flex justify-end items-center gap-4">
-                                     <div className="flex items-center space-x-2">
-                                        <Switch id={`adv-rule-enable-${rule.id}`} checked={rule.enabled} onCheckedChange={(checked) => { const newRules = [...advRestrictions]; const r = newRules.find(x=>x.id===rule.id); if(r) r.enabled = checked; setAdvRestrictions(newRules); }} />
-                                        <Label htmlFor={`adv-rule-enable-${rule.id}`}>Enabled</Label>
-                                    </div>
-                                     <div className="flex-grow"></div>
-                                     <Button variant="outline" size="sm" onClick={() => handleEditAdvRestriction(rule)}><Edit className="mr-2 h-4 w-4"/>Edit</Button>
-                                     <Button variant="destructive" size="sm" onClick={() => handleDeleteAdvRestriction(rule.id)}><Trash2 className="mr-2 h-4 w-4"/>Delete</Button>
-                                </div>
-                            </AccordionContent>
-                        </AccordionItem>
-                    ))}
-                </Accordion>
-                <Dialog open={isAdvRestrictionFormOpen} onOpenChange={setIsAdvRestrictionFormOpen}>
-                     <DialogTrigger asChild>
-                         <Button variant="outline" className="w-full mt-4" onClick={() => { setEditingAdvRestriction(null); setIsAdvRestrictionFormOpen(true); } }>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Add New Rule
-                         </Button>
-                     </DialogTrigger>
-                     <DialogContent className="max-h-[90vh] overflow-y-auto">
-                        <DialogHeader><DialogTitle>{editingAdvRestriction ? "Edit Rule" : "Create New Rule"}</DialogTitle></DialogHeader>
-                        <AdvancedRestrictionForm rule={editingAdvRestriction} onSave={handleSaveAdvRestriction} onClose={closeAdvRestrictionForm} users={users} defaultLevels={defaultLevels} />
-                    </DialogContent>
-                </Dialog>
-
-            </CardContent>
-        </Card>
-
-
       <div className="flex justify-end">
           <Button onClick={handleSaveChanges}>Save All Settings</Button>
       </div>
