@@ -504,7 +504,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     let tempMainBalance = mainBalance;
     let tempTaskBalance = taskRewardsBalance;
     let tempInterestBalance = interestEarningsBalance;
-    let originalCommittedBalance = taskRewardsBalance + interestEarningsBalance;
 
     if (!fromAccount) { // Moving from Main Wallet
       tempMainBalance -= amountToMove;
@@ -531,16 +530,13 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setInterestEarningsBalance(tempInterestBalance);
 
     const newCommittedBalance = tempTaskBalance + tempInterestBalance;
-    
-    // Check for Activation
-    if (currentUser && !currentUser.isAccountActive && newCommittedBalance > 0) {
+    const minBalanceForLevel1 = minRequiredBalanceForLevel(1);
+
+    // Check for Activation/Deactivation
+    if (currentUser.status === 'inactive' && newCommittedBalance >= minBalanceForLevel1) {
       activateUserAccount(currentUser.email);
-    }
-    
-    // Check for Deactivation
-    const minBalanceForCurrentLevel = minRequiredBalanceForLevel(currentLevel);
-    if (newCommittedBalance < minBalanceForCurrentLevel && currentUser?.status === 'active') {
-        updateUserStatus(currentUser.email, 'inactive');
+    } else if (currentUser.status === 'active' && newCommittedBalance < minBalanceForLevel1) {
+      updateUserStatus(currentUser.email, 'inactive');
     }
 
     addTransaction(currentUser.email, {
@@ -561,11 +557,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       const depositsKey = `${userEmail}_deposits`;
       const depositCount = parseInt(localStorage.getItem(depositsKey) || '0');
       localStorage.setItem(depositsKey, (depositCount + 1).toString());
-      
-      const user = users.find(u => u.email === userEmail);
-      if(user && !user.isAccountActive) {
-          activateUserAccount(userEmail);
-      }
       
       if(currentUser?.email === userEmail) {
           setMainBalance(prev => prev + rechargeAmount);

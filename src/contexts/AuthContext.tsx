@@ -272,22 +272,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             return u;
         }));
         if (currentUser?.email === email) {
-             setCurrentUser(prev => prev ? { ...prev, status, ...(status === 'inactive' && { isAccountActive: false, activatedAt: null }) } : null);
+             const userToUpdate = users.find(u => u.email === email);
+             if (userToUpdate) {
+                const updatedCurrentUser: User = { ...currentUser, status };
+                 if (status === 'inactive') {
+                    updatedCurrentUser.isAccountActive = false;
+                    updatedCurrentUser.activatedAt = null;
+                 } else if (status === 'active' && !currentUser.isAccountActive) {
+                    updatedCurrentUser.isAccountActive = true;
+                    updatedCurrentUser.activatedAt = currentUser.activatedAt || new Date().toISOString();
+                 }
+                setCurrentUser(updatedCurrentUser);
+             }
         }
     }
     
     const activateUserAccount = (email: string) => {
         const newUsers = users.map(u => {
-            if (u.email === email) {
-                return { ...u, status: 'active', isAccountActive: true, activatedAt: u.activatedAt || new Date().toISOString() };
+            if (u.email === email && u.status !== 'active') {
+                return { ...u, status: 'active', isAccountActive: true, activatedAt: new Date().toISOString() };
             }
             return u;
         });
         setUsers(newUsers);
-        localStorage.setItem('users', JSON.stringify(newUsers));
 
-        if (currentUser?.email === email) {
-            setCurrentUser(prev => prev ? { ...prev, status: 'active', isAccountActive: true, activatedAt: prev.activatedAt || new Date().toISOString() } : null);
+        if (currentUser?.email === email && currentUser.status !== 'active') {
+            setCurrentUser(prev => prev ? { ...prev, status: 'active', isAccountActive: true, activatedAt: new Date().toISOString() } : null);
         }
     }
 
