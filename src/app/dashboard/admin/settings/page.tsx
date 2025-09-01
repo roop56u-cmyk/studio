@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
+import { MultiSelect, OptionType } from "@/components/ui/multi-select";
 
 
 export type BonusTier = {
@@ -117,27 +118,28 @@ const AdvancedRestrictionForm = ({
 }) => {
     const [enabled, setEnabled] = useState(rule?.enabled ?? true);
     const [days, setDays] = useState(rule?.days || 45);
-    const [levels, setLevels] = useState<number[]>(rule?.levels || []);
+    const [levels, setLevels] = useState<string[]>(rule?.levels?.map(String) || []);
     const [withdrawalPercentage, setWithdrawalPercentage] = useState(rule?.withdrawalPercentage || 100);
     const [targetType, setTargetType] = useState<'all' | 'specific'>(rule?.targetType || 'all');
     const [targetUser, setTargetUser] = useState(rule?.targetUser || "");
     const [message, setMessage] = useState(rule?.message || "Your withdrawal amount will make your account inactive for your level. Please maintain a sufficient balance.");
 
-    const handleLevelChange = useCallback((level: number, checked: boolean) => {
-        setLevels(prev => {
-            const newLevels = new Set(prev);
-            if (checked) {
-                newLevels.add(level);
-            } else {
-                newLevels.delete(level);
-            }
-            return Array.from(newLevels);
-        });
-    }, []);
+    const levelOptions: OptionType[] = defaultLevels
+        .filter(l => l.level > 0)
+        .map(l => ({ value: String(l.level), label: `Level ${l.level}` }));
+
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave({ enabled, days, levels, withdrawalPercentage, targetType, targetUser: targetType === 'specific' ? targetUser : '', message });
+        onSave({ 
+            enabled, 
+            days, 
+            levels: levels.map(Number), 
+            withdrawalPercentage, 
+            targetType, 
+            targetUser: targetType === 'specific' ? targetUser : '', 
+            message 
+        });
     };
 
     return (
@@ -158,14 +160,12 @@ const AdvancedRestrictionForm = ({
             </div>
             <div className="space-y-2">
                 <Label>Target Levels</Label>
-                <div className="flex flex-wrap gap-x-4 gap-y-2">
-                    {defaultLevels.filter(l => l.level > 0).map(level => (
-                        <div key={level.level} className="flex items-center space-x-2">
-                            <Checkbox id={`level-${level.level}`} checked={levels.includes(level.level)} onCheckedChange={(checked) => handleLevelChange(level.level, !!checked)} />
-                            <Label htmlFor={`level-${level.level}`} className="font-normal">Level {level.level}</Label>
-                        </div>
-                    ))}
-                </div>
+                <MultiSelect
+                    options={levelOptions}
+                    selected={levels}
+                    onChange={setLevels}
+                    placeholder="Select levels..."
+                />
             </div>
             <div className="space-y-2">
                 <Label>Target Users</Label>
