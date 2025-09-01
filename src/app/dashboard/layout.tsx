@@ -530,11 +530,11 @@ function SidebarContentComponent({
                                 />
                             </div>
                             <div className="grid grid-cols-1 gap-2">
-                                <Button variant="outline" size="sm" className="justify-start gap-2 w-full" onClick={() => handleLocalMoveFunds("Task Rewards")} disabled={isLoading}>
+                                <Button variant="outline" size="sm" className="justify-start gap-2 w-full" onClick={() => handleLocalMoveFunds("Task Rewards")}>
                                     <Gift className="h-4 w-4 text-primary" />
                                     <span>Move to Task Rewards</span>
                                 </Button>
-                                <Button variant="outline" size="sm" className="justify-start gap-2 w-full" onClick={() => handleLocalMoveFunds("Interest Earnings")} disabled={isLoading}>
+                                <Button variant="outline" size="sm" className="justify-start gap-2 w-full" onClick={() => handleLocalMoveFunds("Interest Earnings")}>
                                     <TrendingUp className="h-4 w-4 text-accent" />
                                     <span>Move to Interest</span>
                                 </Button>
@@ -741,7 +741,7 @@ export default function DashboardLayout({
           </Sidebar>
           <div className="flex flex-1 flex-col">
            <AnimatedDashboardBackground />
-          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-transparent px-4 md:px-6">
               <SidebarTrigger />
               <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
               <div className="ml-auto flex-1 sm:flex-initial">

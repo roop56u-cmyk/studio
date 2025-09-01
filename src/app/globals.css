@@ -90,7 +90,7 @@ body {
     color: #f0f0f0;
   }
   
-  .theme-cosmic-voyage .dashboard-background {
+  .dashboard-background {
     position: fixed;
     top: 0;
     left: 0;
