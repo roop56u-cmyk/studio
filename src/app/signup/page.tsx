@@ -17,12 +17,14 @@ import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/logo";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRequests } from "@/contexts/RequestContext";
 import { Eye, EyeOff } from "lucide-react";
 
 export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { signup } = useAuth();
+  const { addActivity } = useRequests();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -38,6 +40,15 @@ export default function SignupPage() {
         title: "Account Created!",
         description: "Welcome! You are now being redirected to your dashboard.",
       });
+
+      if (result.referrerEmail) {
+        addActivity(result.referrerEmail, {
+          type: 'New Referral',
+          description: `A new member, ${fullName} (${email}), joined your team.`,
+          date: new Date().toISOString()
+        });
+      }
+
       router.push("/dashboard");
     } else {
       toast({
