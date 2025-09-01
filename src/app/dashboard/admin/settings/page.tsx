@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -118,15 +119,26 @@ const AdvancedRestrictionForm = ({
 }) => {
     const [enabled, setEnabled] = useState(rule?.enabled ?? true);
     const [days, setDays] = useState(rule?.days || 45);
-    const [levels, setLevels] = useState<string[]>(rule?.levels?.map(String) || []);
+    const [selectedLevels, setSelectedLevels] = useState<string[]>(rule?.levels?.map(String) || []);
     const [withdrawalPercentage, setWithdrawalPercentage] = useState(rule?.withdrawalPercentage || 100);
     const [targetType, setTargetType] = useState<'all' | 'specific'>(rule?.targetType || 'all');
     const [targetUser, setTargetUser] = useState(rule?.targetUser || "");
     const [message, setMessage] = useState(rule?.message || "Your withdrawal amount will make your account inactive for your level. Please maintain a sufficient balance.");
 
-    const levelOptions: OptionType[] = defaultLevels
-        .filter(l => l.level > 0)
-        .map(l => ({ value: String(l.level), label: `Level ${l.level}` }));
+    const levelOptions: OptionType[] = [
+        { value: "all", label: "All Levels" },
+        ...defaultLevels
+            .filter(l => l.level > 0)
+            .map(l => ({ value: String(l.level), label: `Level ${l.level}` }))
+    ];
+    
+    const handleLevelSelect = (newSelection: string[]) => {
+      if (newSelection.includes("all")) {
+        setSelectedLevels(levelOptions.map(opt => opt.value));
+      } else {
+        setSelectedLevels(newSelection);
+      }
+    };
 
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -134,7 +146,7 @@ const AdvancedRestrictionForm = ({
         onSave({ 
             enabled, 
             days, 
-            levels: levels.map(Number), 
+            levels: selectedLevels.filter(l => l !== 'all').map(Number),
             withdrawalPercentage, 
             targetType, 
             targetUser: targetType === 'specific' ? targetUser : '', 
@@ -162,8 +174,8 @@ const AdvancedRestrictionForm = ({
                 <Label>Target Levels</Label>
                 <MultiSelect
                     options={levelOptions}
-                    selected={levels}
-                    onChange={setLevels}
+                    selected={selectedLevels}
+                    onChange={handleLevelSelect}
                     placeholder="Select levels..."
                 />
             </div>
