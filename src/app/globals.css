@@ -128,4 +128,8 @@ body {
   .review-option-chip[data-state='checked'] {
       @apply bg-primary text-primary-foreground;
   }
+
+  .bg-gradient-purple {
+    @apply bg-gradient-to-br from-purple-500 to-indigo-600;
+  }
 }

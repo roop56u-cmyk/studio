@@ -24,6 +24,7 @@ interface InterestCounterPanelProps {
   balance: number;
   counterType: CounterType;
   accentColor?: string;
+  gradientClass?: string;
 }
 
 const DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -34,6 +35,7 @@ export function InterestCounterPanel({
   balance,
   counterType,
   accentColor = "bg-primary",
+  gradientClass = "",
 }: InterestCounterPanelProps) {
   const {
     currentRate,
@@ -104,17 +106,17 @@ export function InterestCounterPanel({
 
   if (isLocked) {
     return (
-        <Card className="h-full relative overflow-hidden flex flex-col justify-between">
-             <div className={cn("absolute top-0 left-0 h-1 w-full", accentColor)} />
+        <Card className={cn("h-full relative overflow-hidden flex flex-col justify-between text-white", gradientClass)}>
+             <div className={cn("absolute top-0 left-0 h-1 w-full bg-gradient-to-r", accentColor)} />
             <CardHeader className="p-3">
                 <div className="flex flex-row items-center justify-between space-y-0 pb-1">
                     <CardTitle className="text-xs font-medium">{title}</CardTitle>
-                    <Lock className="h-3 w-3 text-muted-foreground" />
+                    <Lock className="h-3 w-3 text-white/80" />
                 </div>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center text-center pt-0 p-3">
                 <div className="text-lg font-bold">-.--%</div>
-                <p className="text-xs text-muted-foreground pt-1">
+                <p className="text-xs text-white/80 pt-1">
                     Unlock by committing at least ${minBalanceForLevel1}.
                 </p>
             </CardContent>
@@ -125,18 +127,18 @@ export function InterestCounterPanel({
   const isClaimable = timeLeft !== null && timeLeft <= 0;
 
   return (
-    <Card className="relative overflow-hidden flex flex-col">
-      <div className={cn("absolute top-0 left-0 h-1 w-full", accentColor)} />
+    <Card className={cn("relative overflow-hidden flex flex-col", gradientClass, gradientClass ? "text-white" : "")}>
+      <div className={cn("absolute top-0 left-0 h-1 w-full bg-gradient-to-r", accentColor)} />
       <CardHeader className="p-3">
         <div className="flex flex-row items-center justify-between space-y-0 pb-1">
           <CardTitle className="text-sm font-medium">{title}</CardTitle>
-          <Percent className="h-4 w-4 text-muted-foreground" />
+          <Percent className={cn("h-4 w-4", gradientClass ? "text-white/80" : "text-muted-foreground")} />
         </div>
-        <CardDescription className="text-xs">Current Daily Rate: {currentRate.toFixed(2)}%</CardDescription>
+        <CardDescription className={cn("text-xs", gradientClass ? "text-white/80" : "")}>Current Daily Rate: {currentRate.toFixed(2)}%</CardDescription>
       </CardHeader>
       <CardContent className="space-y-2 pt-0 flex-grow p-3">
-        <div className="text-center bg-muted p-1 rounded-md">
-            <div className="flex items-center justify-center gap-1.5 text-muted-foreground text-xs">
+        <div className={cn("text-center p-1 rounded-md", gradientClass ? "bg-black/10" : "bg-muted")}>
+            <div className={cn("flex items-center justify-center gap-1.5 text-xs", gradientClass ? "text-white/80" : "text-muted-foreground")}>
                 <Timer className="h-3 w-3" />
                 <span>Time Remaining</span>
             </div>
@@ -146,7 +148,7 @@ export function InterestCounterPanel({
         </div>
         
         <div className="text-center">
-            <p className="text-xs text-muted-foreground">Accrued Interest</p>
+            <p className={cn("text-xs", gradientClass ? "text-white/80" : "text-muted-foreground")}>Accrued Interest</p>
             <p className="text-sm font-semibold text-primary">
                 {accruedInterest.toFixed(6)} USDT
             </p>

@@ -5,7 +5,6 @@ import React from "react";
 import { InterestCounterPanel } from "@/components/dashboard/interest-counter-panel";
 import { LevelTiers, Level, levels } from "@/components/dashboard/level-tiers";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
-import { useWallet } from "@/contexts/WalletContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Lock, CalendarCheck, PieChart, Trophy } from "lucide-react";
@@ -20,6 +19,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 
 
 export type PanelConfig = {
@@ -123,19 +123,19 @@ export default function UserDashboardPage() {
           </p>
         </div>
         {isPanelEnabled("dailyCheckIn") && dailyRewardState && dailyRewardState.isEnabled && (
-            <Card>
+            <Card className="bg-gradient-purple text-primary-foreground">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <CalendarCheck className="h-5 w-5 text-primary" />
+                        <CalendarCheck className="h-5 w-5" />
                         Daily Check-in
                     </CardTitle>
-                    <CardDescription>Claim your daily reward for logging in.</CardDescription>
+                    <CardDescription className="text-primary-foreground/80">Claim your daily reward for logging in.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-sm">You are on a <strong className="text-primary">{dailyRewardState.streak} day</strong> streak. Keep it up!</p>
+                    <p className="text-sm">You are on a <strong className="font-bold">{dailyRewardState.streak} day</strong> streak. Keep it up!</p>
                 </CardContent>
                 <CardFooter>
-                    <Button className="w-full" disabled={!dailyRewardState.canClaim} onClick={claimDailyReward}>
+                    <Button className="w-full bg-primary-foreground text-primary hover:bg-primary-foreground/90" disabled={!dailyRewardState.canClaim} onClick={claimDailyReward}>
                         {dailyRewardState.canClaim ? `Claim Today's Reward ($${dailyRewardState.reward.toFixed(2)})` : "Claimed Today"}
                     </Button>
                 </CardFooter>
@@ -152,7 +152,8 @@ export default function UserDashboardPage() {
         <div className="space-y-4">
             {isPanelEnabled("walletBalances") && (
                 <WalletBalance
-                    accentColor="bg-chart-1"
+                    accentColor="from-orange-500 to-yellow-500"
+                    gradientClass="bg-gradient-to-br"
                     title="Task Rewards"
                     balance={taskRewardsBalance.toFixed(2)}
                     description="Balance from completed tasks."
@@ -162,7 +163,8 @@ export default function UserDashboardPage() {
             )}
             {isPanelEnabled("walletBalances") && (
                 <WalletBalance
-                    accentColor="bg-chart-2"
+                    accentColor="from-teal-500 to-cyan-500"
+                    gradientClass="bg-gradient-to-br"
                     title="Interest Earnings"
                     balance={interestEarningsBalance.toFixed(2)}
                     description="Balance from interest."
@@ -172,7 +174,8 @@ export default function UserDashboardPage() {
             )}
             {isPanelEnabled("interestCounter") && (
                 <InterestCounterPanel
-                    accentColor="bg-chart-3"
+                    accentColor="from-sky-500 to-indigo-500"
+                    gradientClass="bg-gradient-to-br"
                     title="Daily Interest"
                     isLocked={isInterestLocked}
                     balance={interestEarningsBalance}
@@ -182,10 +185,10 @@ export default function UserDashboardPage() {
              {isPanelEnabled("featureLock") && (
                 <>
                     {(isTaskLockedByLevel && isInterestLocked) ? (
-                    <Card>
+                    <Card className="bg-gradient-to-br from-slate-700 to-slate-800 text-slate-100">
                         <CardHeader>
                             <CardTitle className="flex items-center"><Lock className="mr-2 h-5 w-5" /> Features Locked</CardTitle>
-                            <CardDescription>Commit funds and invite friends to unlock platform features.</CardDescription>
+                            <CardDescription className="text-slate-300">Commit funds and invite friends to unlock platform features.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <p className="text-sm mb-2">
@@ -200,10 +203,10 @@ export default function UserDashboardPage() {
                         </CardContent>
                     </Card>
                     ) : allTasksCompleted ? (
-                    <Card>
+                    <Card className="bg-gradient-to-br from-green-500 to-emerald-600 text-white">
                         <CardHeader>
                             <CardTitle>All Tasks Completed!</CardTitle>
-                            <CardDescription>You have reached your daily limit.</CardDescription>
+                            <CardDescription className="text-green-100">You have reached your daily limit.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <p className="text-sm">Please come back tomorrow for more tasks.</p>

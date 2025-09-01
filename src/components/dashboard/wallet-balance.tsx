@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState } from "react";
@@ -34,9 +33,10 @@ interface WalletBalanceProps {
     onMoveToMain?: (amount: number) => void;
     showMoveToOther?: boolean;
     accentColor?: string;
+    gradientClass?: string;
 }
 
-export function WalletBalance({ title, description, balance = "0.00", onMoveToMain, showMoveToOther = false, accentColor = "bg-primary" }: WalletBalanceProps) {
+export function WalletBalance({ title, description, balance = "0.00", onMoveToMain, showMoveToOther = false, accentColor = "bg-primary", gradientClass = "" }: WalletBalanceProps) {
   const [moveAmount, setMoveAmount] = useState("");
   const { toast } = useToast();
   const { handleMoveFunds, isFundMovementLocked } = useWallet();
@@ -92,26 +92,26 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
 
   return (
     <>
-    <Card className="relative overflow-hidden flex flex-col">
-      <div className={cn("absolute top-0 left-0 h-1 w-full", accentColor)} />
+    <Card className={cn("relative overflow-hidden flex flex-col text-white", gradientClass)}>
+      <div className={cn("absolute top-0 left-0 h-1 w-full bg-gradient-to-r", accentColor)} />
       <CardHeader className="p-3">
         <div className="flex flex-row items-center justify-between space-y-0 pb-1">
           <CardTitle className="text-sm font-medium">
             {title}
           </CardTitle>
-          <Wallet2 className="h-4 w-4 text-muted-foreground" />
+          <Wallet2 className="h-4 w-4 text-white/80" />
         </div>
       </CardHeader>
       <CardContent className="pt-0 p-3">
-        <div className="text-lg font-bold">${balance}</div>
-        <p className="text-xs text-muted-foreground leading-tight">
+        <div className="text-2xl font-bold">${balance}</div>
+        <p className="text-xs text-white/80 leading-tight">
           {description}
         </p>
          {title === 'Interest Earnings' && isInterestLockActive && (
-            <p className="text-xs text-destructive mt-1">Cannot move funds while timer is active.</p>
+            <p className="text-xs text-yellow-300 mt-1">Cannot move funds while timer is active.</p>
         )}
          {title === 'Task Rewards' && isTaskLockActive && (
-            <p className="text-xs text-destructive mt-1">Cannot move funds while tasks are in progress.</p>
+            <p className="text-xs text-yellow-300 mt-1">Cannot move funds while tasks are in progress.</p>
         )}
       </CardContent>
        {(onMoveToMain || showMoveToOther) && (
@@ -120,7 +120,7 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
             <Input 
               type="number" 
               placeholder="Amount" 
-              className="h-7 text-xs"
+              className="h-7 text-xs bg-white/20 text-white placeholder:text-white/60 border-white/30 focus:bg-white/30"
               value={moveAmount}
               onChange={(e) => setMoveAmount(e.target.value)}
               disabled={!canMove}
@@ -130,7 +130,7 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
                 <Button 
                 variant="outline" 
                 size="sm" 
-                className="h-7 text-xs flex-1 px-2"
+                className="h-7 text-xs flex-1 px-2 bg-white/10 hover:bg-white/20 border-white/20 text-white"
                 onClick={() => handleFundMovement('Main Wallet', title === 'Task Rewards' ? 'Task Rewards' : 'Interest Earnings')}
                 disabled={!canMove}
                 >
@@ -142,7 +142,7 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
              <Button 
               variant="outline" 
               size="sm" 
-              className="h-7 text-xs flex-1 px-2"
+              className="h-7 text-xs flex-1 px-2 bg-white/10 hover:bg-white/20 border-white/20 text-white"
               onClick={() => handleFundMovement(title === "Task Rewards" ? "Interest Earnings" : "Task Rewards", title === 'Task Rewards' ? 'Task Rewards' : 'Interest Earnings')}
               disabled={!canMove}
             >
