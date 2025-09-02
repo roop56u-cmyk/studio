@@ -148,8 +148,8 @@ export function TeamDataPanel({ user }: { user: User }) {
         </Card>
     );
 
-    const renderEligibilityCheck = (title: string, Icon: React.ElementType, requirement: string, userStat: string, isEligible: boolean) => (
-         <div className="flex items-start gap-3">
+    const renderEligibilityCheck = (key: string, title: string, Icon: React.ElementType, requirement: string, userStat: string, isEligible: boolean) => (
+         <div key={key} className="flex items-start gap-3">
             <div><Icon className={cn("h-5 w-5", isEligible ? "text-green-500" : "text-red-500")} /></div>
             <div className="flex-1">
                 <p className="font-semibold">{title}</p>
@@ -202,6 +202,7 @@ export function TeamDataPanel({ user }: { user: User }) {
                             </div>
                         )}
                         {salaryPackages.map(pkg => renderEligibilityCheck(
+                            `salary-${pkg.id}`,
                             `Salary: ${pkg.name}`,
                             HandCoins,
                             `$${pkg.requiredTeamBusiness.toLocaleString()} business & ${pkg.requiredActiveReferrals} active L1`,
@@ -211,6 +212,7 @@ export function TeamDataPanel({ user }: { user: User }) {
                         {salaryPackages.length > 0 && (teamRewards.length > 0 || teamSizeRewards.length > 0) && <Separator />}
                         
                         {teamRewards.map(reward => renderEligibilityCheck(
+                            `team-${reward.id}`,
                             `Team Reward: ${reward.title}`,
                             Award,
                             `$${reward.requiredAmount.toLocaleString()} in deposits`,
@@ -221,6 +223,7 @@ export function TeamDataPanel({ user }: { user: User }) {
                         {teamRewards.length > 0 && teamSizeRewards.length > 0 && <Separator />}
 
                         {teamSizeRewards.map(reward => renderEligibilityCheck(
+                            `size-${reward.id}`,
                              `Size Reward: ${reward.title}`,
                             Trophy,
                             `${reward.requiredActiveMembers} active members`,
