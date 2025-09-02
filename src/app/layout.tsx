@@ -3,6 +3,7 @@
 "use client";
 
 import './globals.css';
+import 'dotenv/config';
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/contexts/AuthContext';
 import { RequestProvider } from '@/contexts/RequestContext';
