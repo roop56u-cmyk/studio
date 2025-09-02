@@ -17,10 +17,12 @@ import type { Quest } from "@/app/dashboard/admin/quests/page";
 import { useWallet } from "@/contexts/WalletContext";
 import { ScrollArea } from "../ui/scroll-area";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRequests } from "@/contexts/RequestContext";
 
 export function QuestPanel() {
     const { toast } = useToast();
     const { currentUser } = useAuth();
+    const { addActivity } = useRequests();
     const { addRecharge, currentLevel, setIsInactiveWarningOpen } = useWallet();
     const [quests, setQuests] = useState<Quest[]>([]);
     const [completedQuests, setCompletedQuests] = useState<string[]>([]);
@@ -48,23 +50,30 @@ export function QuestPanel() {
         }
     }, [currentLevel, currentUser]);
 
-    const handleClaim = (questId: string, reward: number) => {
+    const handleClaim = (quest: Quest) => {
         if (currentUser?.status !== 'active') {
             setIsInactiveWarningOpen(true);
             return;
         }
 
-        const newCompleted = [...completedQuests, questId];
+        const newCompleted = [...completedQuests, quest.id];
         setCompletedQuests(newCompleted);
 
         const today = new Date().toISOString().split('T')[0];
         localStorage.setItem("completed_quests_today", JSON.stringify({ date: today, quests: newCompleted }));
         
-        addRecharge(reward);
+        addRecharge(quest.reward);
+        
+        addActivity(currentUser.email, {
+            type: "Quest Reward",
+            description: quest.title,
+            amount: quest.reward,
+            date: new Date().toISOString()
+        });
 
         toast({
             title: "Quest Reward Claimed!",
-            description: `You have received $${reward.toFixed(2)} in your main wallet.`
+            description: `You have received $${quest.reward.toFixed(2)} in your main wallet.`
         });
     }
 
@@ -93,7 +102,7 @@ export function QuestPanel() {
                         <div className="text-lg font-bold text-primary">${quest.reward.toFixed(2)}</div>
                         <Button 
                             disabled={isQuestCompleted(quest.id)}
-                            onClick={() => handleClaim(quest.id, quest.reward)}
+                            onClick={() => handleClaim(quest)}
                         >
                             {isQuestCompleted(quest.id) ? (
                                 <>

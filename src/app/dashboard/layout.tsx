@@ -90,7 +90,8 @@ import {
   ArrowUp,
   Briefcase,
   PieChart,
-  ShieldAlert
+  ShieldAlert,
+  ShoppingCart
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -132,10 +133,11 @@ import ManageMessagesPage from "./admin/messages/page";
 import ManageDailyRewardsPage from './admin/daily-rewards/page';
 import UplineCommissionPage from './admin/upline-commission/page';
 import ManageSalaryPage from './admin/salary/page';
+import PurchaseHistoryPage from './admin/purchase-history/page';
 import type { Notice } from './admin/notices/page';
 
 
-type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement';
+type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement' | 'purchaseHistory';
 
 
 const adminPanelComponents: Record<PanelType, React.ComponentType> = {
@@ -158,6 +160,7 @@ const adminPanelComponents: Record<PanelType, React.ComponentType> = {
     messageManagement: ManageMessagesPage,
     dailyRewards: ManageDailyRewardsPage,
     salaryManagement: ManageSalaryPage,
+    purchaseHistory: PurchaseHistoryPage,
 };
 
 const adminPanelTitles: Record<PanelType, { title: string; description: string }> = {
@@ -180,6 +183,7 @@ const adminPanelTitles: Record<PanelType, { title: string; description: string }
     messageManagement: { title: "Manage Messages", description: "Edit platform-wide custom messages and text." },
     dailyRewards: { title: "Daily Login Rewards", description: "Configure rewards for daily check-ins." },
     salaryManagement: { title: "Manage Salary", description: "Create and configure salary packages for users." },
+    purchaseHistory: { title: "Purchase History", description: "View user purchases of boosters and quests." },
 };
 
 function SidebarContentComponent({ 
@@ -309,6 +313,12 @@ function SidebarContentComponent({
                     <SidebarMenuButton onClick={() => onAdminPanelClick('salaryManagement')} tooltip={{ children: "Manage Salary" }}>
                         <Briefcase />
                         <span>Manage Salary</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('purchaseHistory')} tooltip={{ children: "Purchase History" }}>
+                        <ShoppingCart />
+                        <span>Purchase History</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
@@ -911,7 +921,7 @@ export default function DashboardLayout({
                 <SheetHeader>
                     <SheetTitle>My Achievements</SheetTitle>
                     <SheetDescription>View your unlocked milestones and badges.</SheetDescription>
-                </SheetHeader>
+                </Header>
                  <div className="mt-4">
                     <AchievementsPanel />
                 </div>

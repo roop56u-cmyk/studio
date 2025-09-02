@@ -843,17 +843,18 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
     setMainBalance(prev => prev - booster.price);
     
+    addActivity(currentUser.email, {
+        type: 'Booster Purchase',
+        description: `Purchased ${booster.name}`,
+        amount: -booster.price,
+        date: new Date().toISOString()
+    });
+    
     if (booster.type === 'PURCHASE_REFERRAL') {
         const referralCount = booster.value;
         const newReferralCount = purchasedReferralsCount + referralCount;
         setPurchasedReferralsCount(newReferralCount);
         setPurchasedBoosterIds(prev => [...prev, booster.id]);
-        addActivity(currentUser.email, {
-            type: 'Booster Purchase',
-            description: `Purchased ${referralCount} referrals`,
-            amount: -booster.price,
-            date: new Date().toISOString()
-        });
         toast({ title: 'Referrals Purchased!', description: `You have successfully purchased ${referralCount} referrals. Your level may be automatically updated.`});
     } else {
         const newActiveBooster: ActiveBooster = {
@@ -864,12 +865,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         };
         setActiveBoosters(prev => [...prev, newActiveBooster]);
         setPurchasedBoosterIds(prev => [...prev, booster.id]);
-        addActivity(currentUser.email, {
-            type: 'Booster Purchase',
-            description: `Purchased ${booster.name} booster`,
-            amount: -booster.price,
-            date: new Date().toISOString()
-        });
         toast({ title: 'Booster Purchased!', description: `The "${booster.name}" booster is now active!`});
     }
     
