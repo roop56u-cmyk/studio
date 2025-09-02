@@ -119,6 +119,8 @@ export default function SystemSettingsPage() {
     const [withdrawalRestrictionMessage, setWithdrawalRestrictionMessage] = useState("Please wait for 45 days to initiate withdrawal request.");
     const [restrictedLevels, setRestrictedLevels] = useState<number[]>([1]); // Default to level 1
     const [multipleAddressesEnabled, setMultipleAddressesEnabled] = useState(true);
+    const [availableLevels, setAvailableLevels] = useState<Level[]>(defaultLevels.filter(l => l.level > 0));
+
 
     // Earning Model
     const [earningModel, setEarningModel] = useState("dynamic"); // 'dynamic' or 'fixed'
@@ -161,6 +163,11 @@ export default function SystemSettingsPage() {
         const savedMultipleAddresses = localStorage.getItem('system_multiple_addresses_enabled');
         if (savedMultipleAddresses) setMultipleAddressesEnabled(JSON.parse(savedMultipleAddresses));
         
+        const storedLevels = localStorage.getItem("platform_levels");
+        if (storedLevels) {
+            setAvailableLevels(JSON.parse(storedLevels));
+        }
+
         // Earning Model
         const savedEarningModel = localStorage.getItem('system_earning_model');
         if (savedEarningModel) setEarningModel(savedEarningModel);
@@ -493,7 +500,7 @@ export default function SystemSettingsPage() {
              <div className="space-y-2">
                 <Label>Apply Restriction to Levels</Label>
                  <div className="flex flex-wrap gap-4 pt-2">
-                    {defaultLevels.filter(l => l.level > 0).map(level => (
+                    {availableLevels.map(level => (
                         <div key={level.level} className="flex items-center space-x-2">
                             <Checkbox
                                 id={`level-${level.level}`}
