@@ -45,7 +45,36 @@ interface TeamContextType {
   uplineCommissionSettings: UplineCommissionSettings;
   uplineInfo: { name: string; email: string; } | null;
   activeL1Referrals: number;
+  getLevelForUser: (user: User, allUsers: User[]) => number;
 }
+
+export const getLevelForUser = (user: User, allUsers: User[]): number => {
+    if (typeof window === 'undefined' || !user) return 0;
+    
+    const latestUser = allUsers.find(u => u.email === user.email) || user;
+
+    if (latestUser.overrideLevel !== null && latestUser.overrideLevel !== undefined) {
+        return latestUser.overrideLevel;
+    }
+
+    const taskBalance = parseFloat(localStorage.getItem(`${latestUser.email}_taskRewardsBalance`) || '0');
+    const interestBalance = parseFloat(localStorage.getItem(`${latestUser.email}_interestEarningsBalance`) || '0');
+    const committedBalance = taskBalance + interestBalance;
+
+    const purchasedReferrals = parseInt(localStorage.getItem(`${latestUser.email}_purchased_referrals`) || '0');
+    const directReferralsCount = allUsers.filter(u => u.referredBy === latestUser.referralCode).length + purchasedReferrals;
+    
+    const platformLevels = JSON.parse(localStorage.getItem('platform_levels') || JSON.stringify(defaultLevels));
+
+    const finalLevel = platformLevels.slice().reverse().find((l:Level) => {
+        if (l.level === 0) return false;
+        const balanceMet = committedBalance >= l.minAmount;
+        const referralsMet = directReferralsCount >= l.referrals;
+        return balanceMet && referralsMet;
+    })?.level ?? 0;
+
+    return finalLevel;
+};
 
 
 const TeamContext = createContext<TeamContextType | undefined>(undefined);
@@ -92,7 +121,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
             const savedSalaryPackages = localStorage.getItem('platform_salary_packages');
             if (savedSalaryPackages) {
-                const allPackages = JSON.parse(savedSalaryPackages);
+                const allPackages = JSON.parse(savedSalaryPackages).filter((p: SalaryPackage) => p.enabled);
                 setSalaryPackages(allPackages);
             }
         }
@@ -105,34 +134,6 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [currentUser]);
 
-    const getLevelForUser = useCallback((user: User, allUsers: User[]): number => {
-        if (typeof window === 'undefined') return 0;
-        
-        const latestUser = allUsers.find(u => u.email === user.email) || user;
-
-        if (latestUser.overrideLevel !== null && latestUser.overrideLevel !== undefined) {
-            return latestUser.overrideLevel;
-        }
-
-        const taskBalance = parseFloat(localStorage.getItem(`${latestUser.email}_taskRewardsBalance`) || '0');
-        const interestBalance = parseFloat(localStorage.getItem(`${latestUser.email}_interestEarningsBalance`) || '0');
-        const committedBalance = taskBalance + interestBalance;
-
-        const purchasedReferrals = parseInt(localStorage.getItem(`${latestUser.email}_purchased_referrals`) || '0');
-        const directReferralsCount = allUsers.filter(u => u.referredBy === latestUser.referralCode).length + purchasedReferrals;
-        
-        const platformLevels = JSON.parse(localStorage.getItem('platform_levels') || JSON.stringify(defaultLevels));
-
-        const finalLevel = platformLevels.slice().reverse().find((l:Level) => {
-            if (l.level === 0) return false;
-            const balanceMet = committedBalance >= l.minAmount;
-            const referralsMet = directReferralsCount >= l.referrals;
-            return balanceMet && referralsMet;
-        })?.level ?? 0;
-
-        return finalLevel;
-    }, []);
-    
     const getDepositsForUser = useCallback((userEmail: string): number => {
         if (typeof window === 'undefined') return 0;
         const mainBalance = parseFloat(localStorage.getItem(`${userEmail}_mainBalance`) || '0');
@@ -216,7 +217,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
         return { level1, level2, level3 };
 
-    }, [getLevelForUser, getDepositsForUser, getIsNewToday]);
+    }, [getDepositsForUser, getIsNewToday]);
 
 
     useEffect(() => {
@@ -241,9 +242,9 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
     const value = {
         teamData,
-        teamRewards: teamRewards,
-        teamSizeRewards: teamSizeRewards,
-        salaryPackages,
+        teamRewards: teamRewards.filter(r => r.level === 0 || r.level <= currentLevel),
+        teamSizeRewards: teamSizeRewards.filter(r => r.enabled && (r.level === 0 || r.level <= currentLevel)),
+        salaryPackages: salaryPackages.filter(p => p.enabled && (p.level === 0 || p.level <= currentLevel)),
         commissionRates,
         commissionEnabled,
         isLoading,
@@ -253,6 +254,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         uplineCommissionSettings,
         uplineInfo,
         activeL1Referrals,
+        getLevelForUser,
     };
 
     return (

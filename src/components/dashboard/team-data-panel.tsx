@@ -16,7 +16,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Separator } from "../ui/separator";
-import { useTeam } from "@/contexts/TeamContext";
+import { useTeam, getLevelForUser as getTeamLevelForUser } from "@/contexts/TeamContext";
 
 type TeamMember = User & {
     level: number;
@@ -34,25 +34,6 @@ type TeamData = {
     level1: TeamLevelData;
     level2: TeamLevelData;
     level3: TeamLevelData;
-};
-
-const getLevelForUser = (user: User, allUsers: User[]): number => {
-    if (typeof window === 'undefined') return 0;
-    
-    if (user.overrideLevel !== null && user.overrideLevel !== undefined) {
-        return user.overrideLevel;
-    }
-    const taskBalance = parseFloat(localStorage.getItem(`${user.email}_taskRewardsBalance`) || '0');
-    const interestBalance = parseFloat(localStorage.getItem(`${user.email}_interestEarningsBalance`) || '0');
-    const committedBalance = taskBalance + interestBalance;
-    const purchasedReferrals = parseInt(localStorage.getItem(`${user.email}_purchased_referrals`) || '0');
-    const directReferralsCount = allUsers.filter(u => u.referredBy === user.referralCode).length + purchasedReferrals;
-    const platformLevels: Level[] = JSON.parse(localStorage.getItem('platform_levels') || JSON.stringify(defaultLevels));
-
-    return platformLevels.slice().reverse().find((l: Level) => {
-        if (l.level === 0) return false;
-        return committedBalance >= l.minAmount && directReferralsCount >= l.referrals;
-    })?.level ?? 0;
 };
 
 const getDepositsForUser = (userEmail: string): number => {
@@ -75,7 +56,7 @@ export function TeamDataPanel({ user }: { user: User }) {
             const activeMembers = members.filter(m => users.find(u => u.email === m.email)?.status === 'active');
             const enrichedMembers: TeamMember[] = members.map(m => ({
                 ...m,
-                level: getLevelForUser(m, users),
+                level: getTeamLevelForUser(m, users),
                 status: users.find(u => u.email === m.email)?.status || m.status
             }));
             const totalDeposits = enrichedMembers.reduce((sum, m) => sum + getDepositsForUser(m.email), 0);

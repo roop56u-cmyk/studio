@@ -26,31 +26,14 @@ import { Button } from "@/components/ui/button";
 import { Flame, CheckCheck, User, Calendar, Tag, Star } from "lucide-react";
 import { levels as defaultLevels, Level } from "@/components/dashboard/level-tiers";
 import type { User as AuthUser } from "@/contexts/AuthContext";
+import { useTeam } from "@/contexts/TeamContext";
 
 const ITEMS_PER_PAGE = 10;
 
-const getLevelForUser = (user: AuthUser, allUsers: AuthUser[], platformLevels: Level[]): number => {
-    if (typeof window === 'undefined' || !user) return 0;
-
-    if (user.overrideLevel !== null && user.overrideLevel !== undefined) {
-        return user.overrideLevel;
-    }
-    const taskBalance = parseFloat(localStorage.getItem(`${user.email}_taskRewardsBalance`) || '0');
-    const interestBalance = parseFloat(localStorage.getItem(`${user.email}_interestEarningsBalance`) || '0');
-    const committedBalance = taskBalance + interestBalance;
-    const purchasedReferrals = parseInt(localStorage.getItem(`${user.email}_purchased_referrals`) || '0');
-    const directReferralsCount = allUsers.filter(u => u.referredBy === user.referralCode).length + purchasedReferrals;
-
-    return platformLevels.slice().reverse().find((l: Level) => {
-        if (l.level === 0) return false;
-        return committedBalance >= l.minAmount && directReferralsCount >= l.referrals;
-    })?.level ?? 0;
-};
-
 export default function PurchaseHistoryPage() {
   const { users } = useAuth();
+  const { getLevelForUser } = useTeam();
   const [purchaseHistory, setPurchaseHistory] = useState<Activity[]>([]);
-  const [platformLevels, setPlatformLevels] = useState<Level[]>(defaultLevels);
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
@@ -69,11 +52,6 @@ export default function PurchaseHistoryPage() {
         }
         allHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setPurchaseHistory(allHistory);
-
-        const storedLevels = localStorage.getItem("platform_levels");
-        if (storedLevels) {
-            setPlatformLevels(JSON.parse(storedLevels));
-        }
     }
   }, []);
 
@@ -82,10 +60,10 @@ export default function PurchaseHistoryPage() {
           const user = users.find(u => u.email === (item as any).user);
           return {
               ...item,
-              level: user ? getLevelForUser(user, users, platformLevels) : 0
+              level: user ? getLevelForUser(user, users) : 0
           };
       });
-  }, [purchaseHistory, users, platformLevels]);
+  }, [purchaseHistory, users, getLevelForUser]);
 
   const totalPages = Math.ceil(historyWithLevels.length / ITEMS_PER_PAGE);
   const paginatedHistory = historyWithLevels.slice(
