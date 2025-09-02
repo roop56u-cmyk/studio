@@ -55,6 +55,7 @@ export type Booster = {
     value: number; // e.g., 20 for 20%, or 10 for +10 tasks
     price: number;
     duration: number; // in hours
+    level: number; // 0 for all levels
     enabled: boolean;
 };
 

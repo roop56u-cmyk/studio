@@ -44,6 +44,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Booster, BoosterType } from "@/contexts/WalletContext";
+import { levels as defaultLevels, Level } from "@/components/dashboard/level-tiers";
+
 
 const boosterTypeLabels: { [key in BoosterType]: string } = {
     TASK_EARNING: "Task Earning Boost",
@@ -66,10 +68,12 @@ const BoosterForm = ({
   booster,
   onSave,
   onCancel,
+  availableLevels,
 }: {
   booster: Partial<Booster> | null;
   onSave: (booster: Booster) => void;
   onCancel: () => void;
+  availableLevels: Level[];
 }) => {
   const [name, setName] = useState(booster?.name || "");
   const [description, setDescription] = useState(booster?.description || "");
@@ -77,6 +81,8 @@ const BoosterForm = ({
   const [value, setValue] = useState(booster?.value || 0);
   const [price, setPrice] = useState(booster?.price || 0);
   const [duration, setDuration] = useState(booster?.duration || 24);
+  const [level, setLevel] = useState(booster?.level ?? 0);
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,6 +98,7 @@ const BoosterForm = ({
       value,
       price,
       duration,
+      level,
       enabled: booster?.enabled ?? true,
     });
   };
@@ -106,18 +113,34 @@ const BoosterForm = ({
         <Label htmlFor="description" className="text-foreground">Description</Label>
         <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} required />
       </div>
-      <div className="space-y-2">
-          <Label htmlFor="type" className="text-foreground">Booster Type</Label>
-          <Select value={type} onValueChange={(v) => setType(v as BoosterType)}>
-              <SelectTrigger id="type">
-                  <SelectValue placeholder="Select a booster type" />
-              </SelectTrigger>
-              <SelectContent>
-                  {Object.entries(boosterTypeLabels).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>{label}</SelectItem>
-                  ))}
-              </SelectContent>
-          </Select>
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+            <Label htmlFor="type" className="text-foreground">Booster Type</Label>
+            <Select value={type} onValueChange={(v) => setType(v as BoosterType)}>
+                <SelectTrigger id="type">
+                    <SelectValue placeholder="Select a booster type" />
+                </SelectTrigger>
+                <SelectContent>
+                    {Object.entries(boosterTypeLabels).map(([key, label]) => (
+                        <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </div>
+         <div className="space-y-2">
+            <Label htmlFor="level" className="text-foreground">Target Level</Label>
+            <Select value={String(level)} onValueChange={(v) => setLevel(Number(v))}>
+                <SelectTrigger id="level">
+                    <SelectValue placeholder="Select a level" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="0">All Levels</SelectItem>
+                     {availableLevels.filter(l => l.level > 0).map(l => (
+                        <SelectItem key={l.level} value={String(l.level)}>Level {l.level}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
          <div className="space-y-2">
@@ -151,12 +174,18 @@ export default function ManageBoostersPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingBooster, setEditingBooster] = useState<Booster | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [availableLevels, setAvailableLevels] = useState<Level[]>(defaultLevels);
+
 
   useEffect(() => {
     setIsClient(true);
     const storedBoosters = localStorage.getItem("platform_boosters");
     if (storedBoosters) {
       setBoosters(JSON.parse(storedBoosters));
+    }
+    const storedLevels = localStorage.getItem("platform_levels");
+    if (storedLevels) {
+        setAvailableLevels(JSON.parse(storedLevels));
     }
   }, []);
 
@@ -254,6 +283,7 @@ export default function ManageBoostersPage() {
                   <p className="text-sm text-muted-foreground mt-1">{booster.description}</p>
                   <div className="text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 mt-2">
                       <span><strong className="text-foreground">Type:</strong> {boosterTypeLabels[booster.type]}</span>
+                      <span><strong className="text-foreground">Level:</strong> {booster.level === 0 ? 'All' : `Level ${booster.level}+`}</span>
                       <span><strong className="text-foreground">Value:</strong> {booster.value}</span>
                       <span><strong className="text-foreground">Price:</strong> ${booster.price.toFixed(2)}</span>
                       <span><strong className="text-foreground">Duration:</strong> {booster.duration}h</span>
@@ -307,6 +337,7 @@ export default function ManageBoostersPage() {
                 booster={editingBooster}
                 onSave={handleSaveBooster}
                 onCancel={closeForm}
+                availableLevels={availableLevels}
             />
           </DialogContent>
       </Dialog>

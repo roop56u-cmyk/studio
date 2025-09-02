@@ -80,7 +80,8 @@ export function BoosterStorePanel() {
         purchasedBoosterIds,
         isFundMovementLocked,
         tasksCompletedToday,
-        interestCounter
+        interestCounter,
+        currentLevel,
     } = useWallet();
     const [boosters, setBoosters] = useState<Booster[]>([]);
      const [messages, setMessages] = useState<any>({});
@@ -101,9 +102,11 @@ export function BoosterStorePanel() {
     useEffect(() => {
         const storedBoosters = localStorage.getItem("platform_boosters");
         if (storedBoosters) {
-            setBoosters(JSON.parse(storedBoosters).filter((b: Booster) => b.enabled));
+            const allBoosters: Booster[] = JSON.parse(storedBoosters);
+            const availableBoosters = allBoosters.filter(b => b.enabled && (b.level === 0 || b.level <= currentLevel));
+            setBoosters(availableBoosters);
         }
-    }, []);
+    }, [currentLevel]);
 
     const isBoosterTypeActive = (type: Booster['type']) => {
         if (type === 'PURCHASE_REFERRAL') return false; 
@@ -153,6 +156,9 @@ export function BoosterStorePanel() {
                         </div>
                     </CardHeader>
                     <CardContent className="flex-grow">
+                         <p className="text-sm text-muted-foreground">
+                             <span className="font-semibold">Level:</span> {booster.level === 0 ? 'All Levels' : `Level ${booster.level}+`}
+                        </p>
                         <p className="text-sm text-muted-foreground">
                              <span className="font-semibold">Duration:</span> {booster.type === 'PURCHASE_REFERRAL' ? 'Permanent' : `${booster.duration} hours`}
                         </p>
