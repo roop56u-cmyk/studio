@@ -310,12 +310,16 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   
   const earningPerTask = useMemo(() => {
     if (earningModel === 'fixed') {
-        return currentLevelData.earningPerTask;
+        const taskEarningBoost = activeBoosters.find(b => b.type === 'TASK_EARNING')?.value || 0;
+        const baseEarning = currentLevelData.earningPerTask || 0;
+        return baseEarning + (baseEarning * (taskEarningBoost / 100));
     }
     if (dailyTaskQuota === 0 || taskRewardsBalance < minRequiredBalanceForLevel(currentLevel)) return 0;
     const dailyEarningPotential = taskRewardsBalance * (currentRate / 100);
-    return dailyEarningPotential / dailyTaskQuota;
-  }, [taskRewardsBalance, currentRate, dailyTaskQuota, earningModel, currentLevelData, currentLevel, minRequiredBalanceForLevel]);
+    const baseEarning = dailyEarningPotential / dailyTaskQuota;
+    const taskEarningBoost = activeBoosters.find(b => b.type === 'TASK_EARNING')?.value || 0;
+    return baseEarning + (baseEarning * (taskEarningBoost / 100));
+  }, [taskRewardsBalance, currentRate, dailyTaskQuota, earningModel, currentLevelData, currentLevel, minRequiredBalanceForLevel, activeBoosters]);
   
   useEffect(() => {
     setIsLoading(true);
@@ -424,6 +428,21 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
     setIsReady(true);
   }, [currentUser?.email, getInitialState, setPersistentState]);
+
+  useEffect(() => {
+    // Check for expired boosters every minute
+    const interval = setInterval(() => {
+        if (activeBoosters.length > 0) {
+            const now = Date.now();
+            const unexpiredBoosters = activeBoosters.filter(b => b.expiresAt > now);
+            if (unexpiredBoosters.length < activeBoosters.length) {
+                setActiveBoosters(unexpiredBoosters);
+            }
+        }
+    }, 60000); // 60 seconds
+
+    return () => clearInterval(interval);
+  }, [activeBoosters]);
 
   const { requests: userRequests } = useMemo(() => {
     if (typeof window === 'undefined' || !currentUser) {
