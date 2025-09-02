@@ -817,7 +817,6 @@ export default function DashboardLayout({
                 <ScrollArea className="h-[calc(100vh-8rem)] mt-4">
                     <ActivityHistoryPanel />
                 </ScrollArea>
-                 <SheetClose />
             </SheetContent>
         </Sheet>
         <Sheet open={isTaskHistoryOpen} onOpenChange={setIsTaskHistoryOpen}>
@@ -831,7 +830,6 @@ export default function DashboardLayout({
                 <ScrollArea className="h-[calc(100vh-8rem)] mt-4">
                     <TaskHistoryPanel />
                 </ScrollArea>
-                 <SheetClose />
             </SheetContent>
         </Sheet>
          <Sheet open={isReferralOpen} onOpenChange={setIsReferralOpen}>
@@ -845,7 +843,6 @@ export default function DashboardLayout({
                 <div className="mt-4">
                     <ReferralCard />
                 </div>
-                 <SheetClose />
             </SheetContent>
         </Sheet>
         <Sheet open={isInboxOpen} onOpenChange={setIsInboxOpen}>
@@ -859,7 +856,6 @@ export default function DashboardLayout({
                 <div className="mt-4">
                     <InboxPanel />
                 </div>
-                 <SheetClose />
             </SheetContent>
         </Sheet>
          <Sheet open={isBoosterStoreOpen} onOpenChange={setIsBoosterStoreOpen}>
@@ -873,7 +869,6 @@ export default function DashboardLayout({
                 <div className="mt-4">
                     <BoosterStorePanel />
                 </div>
-                 <SheetClose />
             </SheetContent>
         </Sheet>
          <Sheet open={isQuestPanelOpen} onOpenChange={setIsQuestPanelOpen}>
@@ -887,7 +882,6 @@ export default function DashboardLayout({
                 <div className="mt-4">
                     <QuestPanel />
                 </div>
-                 <SheetClose />
             </SheetContent>
         </Sheet>
          <Sheet open={isRewardsPanelOpen} onOpenChange={setIsRewardsPanelOpen}>
@@ -901,7 +895,6 @@ export default function DashboardLayout({
                 <div className="mt-4">
                     <RewardsPanel />
                 </div>
-                 <SheetClose />
             </SheetContent>
         </Sheet>
         <Sheet open={isWalletOverviewOpen} onOpenChange={setIsWalletOverviewOpen}>
@@ -913,7 +906,6 @@ export default function DashboardLayout({
                 <div className="mt-4">
                     <WalletOverviewPanel />
                 </div>
-                 <SheetClose />
             </SheetContent>
         </Sheet>
         <Sheet open={isAchievementsOpen} onOpenChange={setIsAchievementsOpen}>
@@ -921,11 +913,10 @@ export default function DashboardLayout({
                 <SheetHeader>
                     <SheetTitle>My Achievements</SheetTitle>
                     <SheetDescription>View your unlocked milestones and badges.</SheetDescription>
-                </Header>
+                </SheetHeader>
                  <div className="mt-4">
                     <AchievementsPanel />
                 </div>
-                 <SheetClose />
             </SheetContent>
         </Sheet>
         <Sheet open={isAdminPanelOpen} onOpenChange={setIsAdminPanelOpen}>
@@ -943,7 +934,6 @@ export default function DashboardLayout({
                         </div>
                     </>
                 )}
-                 <SheetClose />
             </SheetContent>
         </Sheet>
         {loginNotice && (
