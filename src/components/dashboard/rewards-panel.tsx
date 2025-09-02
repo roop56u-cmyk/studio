@@ -144,7 +144,7 @@ export function RewardsPanel() {
                          const isClaimed = claimedReferralIds.includes(referral.email);
                          const hasPending = userRequests.some(req => req.type === 'Referral Bonus' && req.address === referral.email && req.status === 'Pending');
                          const bonusAmount = referralBonusFor(referral.email);
-                         const isClaimable = referral.isAccountActive && !isClaimed && !hasPending && bonusAmount > 0;
+                         const isClaimable = referral.isAccountActive && !isClaimed && !hasPending && bonusAmount > 0 && currentUser?.status === 'active';
 
                          return (
                             <React.Fragment key={referral.email}>

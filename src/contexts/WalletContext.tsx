@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect, useMemo } from 'react';
@@ -593,7 +592,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const addCommissionToMainBalance = useCallback((commissionAmount: number) => {
-    if (!currentUser) return;
+    if (!currentUser || currentUser.status !== 'active') return;
     setMainBalance(prev => prev + commissionAmount);
     addActivity(currentUser.email, {
         type: 'Team Commission',
