@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo, useCallback } from 'react';
@@ -239,21 +238,12 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         if (!teamData) return 0;
         return teamData.level1.activationsToday + teamData.level2.activationsToday + teamData.level3.activationsToday;
     }, [teamData]);
-    
-     const eligibleSalaryPackages = useMemo(() => {
-        if (!currentUser || currentUser.status !== 'active') return [];
-        return salaryPackages.filter((pkg: SalaryPackage) => {
-            const levelMatch = pkg.level === 0 || currentLevel >= pkg.level;
-            const userMatch = !pkg.userEmail || pkg.userEmail === currentUser.email;
-            return pkg.enabled && levelMatch && userMatch;
-        });
-    }, [salaryPackages, currentUser, currentLevel]);
 
     const value = {
         teamData,
         teamRewards: teamRewards,
         teamSizeRewards: teamSizeRewards,
-        salaryPackages: salaryPackages,
+        salaryPackages,
         commissionRates,
         commissionEnabled,
         isLoading,
@@ -279,4 +269,3 @@ export const useTeam = () => {
     }
     return context;
 };
-
