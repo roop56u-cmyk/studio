@@ -41,7 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { levels } from "@/components/dashboard/level-tiers";
+import { levels as defaultLevels, Level } from "@/components/dashboard/level-tiers";
 
 export type Quest = {
   id: string;
@@ -55,10 +55,12 @@ const QuestForm = ({
   quest,
   onSave,
   onCancel,
+  availableLevels
 }: {
   quest: Partial<Quest> | null;
   onSave: (quest: Quest) => void;
   onCancel: () => void;
+  availableLevels: Level[];
 }) => {
   const [title, setTitle] = useState(quest?.title || "");
   const [description, setDescription] = useState(quest?.description || "");
@@ -103,7 +105,7 @@ const QuestForm = ({
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="0">All Levels</SelectItem>
-                    {levels.filter(l => l.level > 0).map(l => (
+                    {availableLevels.filter(l => l.level > 0).map(l => (
                         <SelectItem key={l.level} value={String(l.level)}>Level {l.level}</SelectItem>
                     ))}
                 </SelectContent>
@@ -129,12 +131,18 @@ export default function ManageQuestsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingQuest, setEditingQuest] = useState<Quest | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [availableLevels, setAvailableLevels] = useState<Level[]>(defaultLevels);
+
 
   useEffect(() => {
     setIsClient(true);
     const storedQuests = localStorage.getItem("platform_quests");
     if (storedQuests) {
       setQuests(JSON.parse(storedQuests));
+    }
+    const storedLevels = localStorage.getItem("platform_levels");
+    if (storedLevels) {
+        setAvailableLevels(JSON.parse(storedLevels));
     }
   }, []);
 
@@ -258,6 +266,7 @@ export default function ManageQuestsPage() {
                     quest={editingQuest}
                     onSave={handleSaveQuest}
                     onCancel={closeForm}
+                    availableLevels={availableLevels}
                 />
             </DialogContent>
         </Dialog>

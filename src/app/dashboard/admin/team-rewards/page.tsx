@@ -41,7 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { levels } from "@/components/dashboard/level-tiers";
+import { levels as defaultLevels, Level } from "@/components/dashboard/level-tiers";
 
 export type TeamReward = {
   id: string;
@@ -57,10 +57,12 @@ const TeamRewardForm = ({
   reward,
   onSave,
   onCancel,
+  availableLevels,
 }: {
   reward: Partial<TeamReward> | null;
   onSave: (reward: TeamReward) => void;
   onCancel: () => void;
+  availableLevels: Level[];
 }) => {
   const [title, setTitle] = useState(reward?.title || "");
   const [description, setDescription] = useState(reward?.description || "");
@@ -105,7 +107,7 @@ const TeamRewardForm = ({
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="0">All Levels</SelectItem>
-                    {levels.filter(l => l.level > 0).map(l => (
+                    {availableLevels.filter(l => l.level > 0).map(l => (
                         <SelectItem key={l.level} value={String(l.level)}>Level {l.level} - {l.name}</SelectItem>
                     ))}
                 </SelectContent>
@@ -145,12 +147,18 @@ export default function ManageTeamRewardsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingReward, setEditingReward] = useState<TeamReward | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [availableLevels, setAvailableLevels] = useState<Level[]>(defaultLevels);
+
 
   useEffect(() => {
     setIsClient(true);
     const storedRewards = localStorage.getItem("platform_team_rewards");
     if (storedRewards) {
       setRewards(JSON.parse(storedRewards));
+    }
+    const storedLevels = localStorage.getItem("platform_levels");
+    if (storedLevels) {
+        setAvailableLevels(JSON.parse(storedLevels));
     }
   }, []);
 
@@ -279,6 +287,7 @@ export default function ManageTeamRewardsPage() {
                     reward={editingReward}
                     onSave={handleSaveReward}
                     onCancel={closeForm}
+                    availableLevels={availableLevels}
                 />
             </DialogContent>
         </Dialog>

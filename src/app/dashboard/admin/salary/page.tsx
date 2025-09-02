@@ -40,7 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { levels } from "@/components/dashboard/level-tiers";
+import { levels as defaultLevels, Level } from "@/components/dashboard/level-tiers";
 import { useAuth } from "@/contexts/AuthContext";
 import { Switch } from "@/components/ui/switch";
 
@@ -60,10 +60,12 @@ const SalaryPackageForm = ({
   pkg,
   onSave,
   onCancel,
+  availableLevels,
 }: {
   pkg: Partial<SalaryPackage> | null;
   onSave: (pkg: Omit<SalaryPackage, 'id'>) => void;
   onCancel: () => void;
+  availableLevels: Level[];
 }) => {
   const { users } = useAuth();
   const [name, setName] = useState(pkg?.name || "");
@@ -117,7 +119,7 @@ const SalaryPackageForm = ({
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="0">All Levels</SelectItem>
-                    {levels.filter(l => l.level > 0).map(l => (
+                    {availableLevels.filter(l => l.level > 0).map(l => (
                         <SelectItem key={l.level} value={String(l.level)}>Level {l.level}</SelectItem>
                     ))}
                 </SelectContent>
@@ -170,12 +172,17 @@ export default function ManageSalaryPage() {
   const [isClient, setIsClient] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPackage, setEditingPackage] = useState<SalaryPackage | null>(null);
+  const [availableLevels, setAvailableLevels] = useState<Level[]>(defaultLevels);
 
   useEffect(() => {
     setIsClient(true);
     const stored = localStorage.getItem("platform_salary_packages");
     if (stored) {
       setPackages(JSON.parse(stored));
+    }
+    const storedLevels = localStorage.getItem("platform_levels");
+    if (storedLevels) {
+        setAvailableLevels(JSON.parse(storedLevels));
     }
   }, []);
 
@@ -286,7 +293,7 @@ export default function ManageSalaryPage() {
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader><DialogTitle>{editingPackage ? 'Edit' : 'Add New'} Salary Package</DialogTitle></DialogHeader>
-          <SalaryPackageForm pkg={editingPackage} onSave={handleSave} onCancel={closeForm} />
+          <SalaryPackageForm pkg={editingPackage} onSave={handleSave} onCancel={closeForm} availableLevels={availableLevels}/>
         </DialogContent>
       </Dialog>
     </>

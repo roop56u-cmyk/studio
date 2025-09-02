@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { levels } from "./level-tiers";
+import { levels as defaultLevels, Level } from "./level-tiers";
 import { AddressDialog } from "./address-dialog";
 import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
@@ -39,6 +39,8 @@ export function EditUserDialog({ open, onOpenChange, user: userProp }: EditUserD
   const { updateUser, users } = useAuth();
   const { toast } = useToast();
   const [currentUserData, setCurrentUserData] = useState<User | null>(userProp);
+  const [availableLevels, setAvailableLevels] = useState<Level[]>(defaultLevels);
+
 
   // State for each editable field
   const [email, setEmail] = useState("");
@@ -76,6 +78,13 @@ export function EditUserDialog({ open, onOpenChange, user: userProp }: EditUserD
   }, [userProp, open]);
 
   useEffect(() => {
+    const storedLevels = localStorage.getItem("platform_levels");
+    if (storedLevels) {
+        setAvailableLevels(JSON.parse(storedLevels));
+    }
+  }, [open]);
+
+  useEffect(() => {
     if (currentUserData && open) {
       const initialMainBalance = getInitialState('mainBalance', 0, currentUserData.email);
       const initialTaskRewardsBalance = getInitialState('taskRewardsBalance', 0, currentUserData.email);
@@ -84,7 +93,9 @@ export function EditUserDialog({ open, onOpenChange, user: userProp }: EditUserD
       const committedBalance = initialTaskRewardsBalance + initialInterestEarningsBalance;
       
       const directReferrals = users.filter(u => u.referredBy === currentUserData.referralCode).length;
-      const autoLevel = levels.slice().reverse().find(l => {
+      
+      const autoLevel = availableLevels.slice().reverse().find(l => {
+          if (l.level === 0) return false;
           const balanceMet = committedBalance >= l.minAmount;
           const referralsMet = directReferrals >= l.referrals;
           return balanceMet && referralsMet;
@@ -101,7 +112,7 @@ export function EditUserDialog({ open, onOpenChange, user: userProp }: EditUserD
       setPurchasedReferrals(String(initialPurchasedReferrals));
 
     }
-  }, [currentUserData, open, users]);
+  }, [currentUserData, open, users, availableLevels]);
   
   const handleSaveCoreInfo = () => {
     if (!currentUserData) return;
@@ -223,7 +234,7 @@ export function EditUserDialog({ open, onOpenChange, user: userProp }: EditUserD
                             <SelectValue placeholder="Select Level" />
                         </SelectTrigger>
                         <SelectContent>
-                            {levels.map(l => <SelectItem key={l.level} value={String(l.level)}>Level {l.level}</SelectItem>)}
+                            {availableLevels.map(l => <SelectItem key={l.level} value={String(l.level)}>Level {l.level}</SelectItem>)}
                         </SelectContent>
                     </Select>
                      <p className="text-xs text-muted-foreground">Allows you to manually set the user's level.</p>
