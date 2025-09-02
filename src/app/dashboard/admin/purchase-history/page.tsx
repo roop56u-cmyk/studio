@@ -8,6 +8,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import {
   Table,
@@ -21,12 +22,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Activity } from "@/contexts/RequestContext";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Flame, CheckCheck, User, Calendar, Tag, Star } from "lucide-react";
 import { levels as defaultLevels, Level } from "@/components/dashboard/level-tiers";
+import type { User as AuthUser } from "@/contexts/AuthContext";
 
-const getLevelForUser = (userEmail: string, users: any[], platformLevels: Level[]): number => {
-    const user = users.find(u => u.email === userEmail);
-    if (!user) return 0;
+const ITEMS_PER_PAGE = 10;
+
+const getLevelForUser = (user: AuthUser, allUsers: AuthUser[], platformLevels: Level[]): number => {
+    if (typeof window === 'undefined' || !user) return 0;
+
     if (user.overrideLevel !== null && user.overrideLevel !== undefined) {
         return user.overrideLevel;
     }
@@ -34,7 +39,7 @@ const getLevelForUser = (userEmail: string, users: any[], platformLevels: Level[
     const interestBalance = parseFloat(localStorage.getItem(`${user.email}_interestEarningsBalance`) || '0');
     const committedBalance = taskBalance + interestBalance;
     const purchasedReferrals = parseInt(localStorage.getItem(`${user.email}_purchased_referrals`) || '0');
-    const directReferralsCount = users.filter(u => u.referredBy === user.referralCode).length + purchasedReferrals;
+    const directReferralsCount = allUsers.filter(u => u.referredBy === user.referralCode).length + purchasedReferrals;
 
     return platformLevels.slice().reverse().find((l: Level) => {
         if (l.level === 0) return false;
@@ -46,6 +51,7 @@ export default function PurchaseHistoryPage() {
   const { users } = useAuth();
   const [purchaseHistory, setPurchaseHistory] = useState<Activity[]>([]);
   const [platformLevels, setPlatformLevels] = useState<Level[]>(defaultLevels);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -72,11 +78,28 @@ export default function PurchaseHistoryPage() {
   }, []);
 
   const historyWithLevels = useMemo(() => {
-      return purchaseHistory.map(item => ({
-          ...item,
-          level: getLevelForUser((item as any).user, users, platformLevels)
-      }));
+      return purchaseHistory.map(item => {
+          const user = users.find(u => u.email === (item as any).user);
+          return {
+              ...item,
+              level: user ? getLevelForUser(user, users, platformLevels) : 0
+          };
+      });
   }, [purchaseHistory, users, platformLevels]);
+
+  const totalPages = Math.ceil(historyWithLevels.length / ITEMS_PER_PAGE);
+  const paginatedHistory = historyWithLevels.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
+
+  const handlePrevPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  };
 
   return (
     <div className="grid gap-8">
@@ -105,8 +128,8 @@ export default function PurchaseHistoryPage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {historyWithLevels.length > 0 ? (
-                        historyWithLevels.map((item) => (
+                    {paginatedHistory.length > 0 ? (
+                        paginatedHistory.map((item) => (
                             <TableRow key={item.id}>
                                 <TableCell className="font-medium">{(item as any).user}</TableCell>
                                 <TableCell>
@@ -133,6 +156,29 @@ export default function PurchaseHistoryPage() {
                 </TableBody>
             </Table>
         </CardContent>
+         {totalPages > 1 && (
+            <CardFooter className="flex items-center justify-between mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrevPage}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
+            </CardFooter>
+          )}
       </Card>
     </div>
   );
