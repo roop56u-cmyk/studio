@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useMemo, useCallback } from "react";
@@ -201,34 +202,46 @@ export function TeamDataPanel({ user }: { user: User }) {
                                 No claimable rewards are configured in the system.
                             </div>
                         )}
-                        {salaryPackages.map(pkg => renderEligibilityCheck(
-                            `salary-${pkg.id}`,
-                            `Salary: ${pkg.name}`,
-                            HandCoins,
-                            `$${pkg.requiredTeamBusiness.toLocaleString()} business & ${pkg.requiredActiveReferrals} active L1`,
-                            `$${totalTeamBusiness.toFixed(2)} & ${teamData.level1.activeCount} L1`,
-                            totalTeamBusiness >= pkg.requiredTeamBusiness && teamData.level1.activeCount >= pkg.requiredActiveReferrals
+                        {salaryPackages.map(pkg => (
+                            <div key={pkg.id}>
+                                {renderEligibilityCheck(
+                                    `salary-${pkg.id}`,
+                                    `Salary: ${pkg.name}`,
+                                    HandCoins,
+                                    `$${pkg.requiredTeamBusiness.toLocaleString()} business & ${pkg.requiredActiveReferrals} active L1`,
+                                    `$${totalTeamBusiness.toFixed(2)} & ${teamData.level1.activeCount} L1`,
+                                    totalTeamBusiness >= pkg.requiredTeamBusiness && teamData.level1.activeCount >= pkg.requiredActiveReferrals
+                                )}
+                            </div>
                         ))}
                         {salaryPackages.length > 0 && (teamRewards.length > 0 || teamSizeRewards.length > 0) && <Separator />}
                         
-                        {teamRewards.map(reward => renderEligibilityCheck(
-                            `team-${reward.id}`,
-                            `Team Reward: ${reward.title}`,
-                            Award,
-                            `$${reward.requiredAmount.toLocaleString()} in deposits`,
-                            `$${totalTeamBusiness.toFixed(2)}`,
-                            totalTeamBusiness >= reward.requiredAmount
+                        {teamRewards.map(reward => (
+                             <div key={reward.id}>
+                                {renderEligibilityCheck(
+                                    `team-${reward.id}`,
+                                    `Team Reward: ${reward.title}`,
+                                    Award,
+                                    `$${reward.requiredAmount.toLocaleString()} in deposits`,
+                                    `$${totalTeamBusiness.toFixed(2)}`,
+                                    totalTeamBusiness >= reward.requiredAmount
+                                )}
+                            </div>
                         ))}
 
                         {teamRewards.length > 0 && teamSizeRewards.length > 0 && <Separator />}
 
-                        {teamSizeRewards.map(reward => renderEligibilityCheck(
-                            `size-${reward.id}`,
-                             `Size Reward: ${reward.title}`,
-                            Trophy,
-                            `${reward.requiredActiveMembers} active members`,
-                            `${totalActiveMembers}`,
-                            totalActiveMembers >= reward.requiredActiveMembers
+                        {teamSizeRewards.map(reward => (
+                            <div key={reward.id}>
+                                {renderEligibilityCheck(
+                                    `size-${reward.id}`,
+                                    `Size Reward: ${reward.title}`,
+                                    Trophy,
+                                    `${reward.requiredActiveMembers} active members`,
+                                    `${totalActiveMembers}`,
+                                    totalActiveMembers >= reward.requiredActiveMembers
+                                )}
+                            </div>
                         ))}
                     </CardContent>
                 </Card>

@@ -251,8 +251,8 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
     const value = {
         teamData,
-        teamRewards,
-        teamSizeRewards,
+        teamRewards: teamRewards,
+        teamSizeRewards: teamSizeRewards,
         salaryPackages: eligibleSalaryPackages,
         commissionRates,
         commissionEnabled,
