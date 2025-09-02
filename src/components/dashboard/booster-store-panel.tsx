@@ -30,6 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "../ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { platformMessages } from "@/lib/platform-messages";
+import { useAuth } from "@/contexts/AuthContext";
 
 const boosterIcons: { [key in Booster['type']]: React.ReactNode } = {
     TASK_EARNING: <Star className="h-6 w-6 text-yellow-500" />,
@@ -73,6 +74,7 @@ const boosterValueFormatter = (type: Booster['type'], value: number) => {
 
 export function BoosterStorePanel() {
     const { toast } = useToast();
+    const { currentUser } = useAuth();
     const { 
         purchaseBooster, 
         mainBalance, 
@@ -82,6 +84,7 @@ export function BoosterStorePanel() {
         tasksCompletedToday,
         interestCounter,
         currentLevel,
+        setIsInactiveWarningOpen
     } = useWallet();
     const [boosters, setBoosters] = useState<Booster[]>([]);
      const [messages, setMessages] = useState<any>({});
@@ -108,13 +111,12 @@ export function BoosterStorePanel() {
         }
     }, [currentLevel]);
 
-    const isBoosterTypeActive = (type: Booster['type']) => {
-        if (type === 'PURCHASE_REFERRAL') return false; 
-        return activeBoosters.some(b => b.type === type);
-    }
-    
-    const isBoosterPurchased = (boosterId: string) => {
-        return purchasedBoosterIds.includes(boosterId);
+    const handlePurchase = (booster: Booster) => {
+        if (currentUser?.status !== 'active') {
+            setIsInactiveWarningOpen(true);
+            return;
+        }
+        purchaseBooster(booster);
     }
     
     const isPurchaseLocked = interestCounter.isRunning || (tasksCompletedToday > 0);
@@ -123,7 +125,7 @@ export function BoosterStorePanel() {
         if (isPurchaseLocked && booster.type !== 'PURCHASE_REFERRAL') {
              return { text: "Purchase", disabled: true, tooltip: "Complete daily activities before purchasing." };
         }
-        if (isBoosterPurchased(booster.id)) {
+        if (purchasedBoosterIds.includes(booster.id)) {
             return { text: "Purchased", disabled: true, tooltip: "You have already purchased this item." };
         }
         return { text: "Purchase", disabled: false, tooltip: null };
@@ -201,7 +203,7 @@ export function BoosterStorePanel() {
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                                     <AlertDialogAction
                                         disabled={mainBalance < booster.price} 
-                                        onClick={() => purchaseBooster(booster)}
+                                        onClick={() => handlePurchase(booster)}
                                     >
                                         Confirm Purchase
                                     </AlertDialogAction>

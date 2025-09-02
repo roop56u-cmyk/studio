@@ -20,8 +20,6 @@ export function useTeamCommission() {
     const lastCreditDate = lastCreditDateStr ? new Date(lastCreditDateStr).getTime() : 0;
 
     const now = new Date();
-    // Using a simple 24-hour check for crediting to avoid timezone issues.
-    // A more robust solution would use a server-side cron job.
     if (now.getTime() - lastCreditDate > 24 * 60 * 60 * 1000) {
       let totalCommission = 0;
       if (commissionEnabled.level1) totalCommission += teamData.level1.commission * (commissionRates.level1 / 100);
@@ -40,11 +38,8 @@ export function useTeamCommission() {
   }, [teamData, commissionRates, commissionEnabled, currentUser, addCommissionToMainBalance, getReferralCommissionBoost]);
   
   useEffect(() => {
-    // Run the check when the component mounts and data is available
     creditCommission();
-
-    // Also run it periodically in case the user leaves the page open
-    const interval = setInterval(creditCommission, 60 * 60 * 1000); // Check every hour
+    const interval = setInterval(creditCommission, 60 * 60 * 1000);
     
     return () => clearInterval(interval);
   }, [creditCommission]);

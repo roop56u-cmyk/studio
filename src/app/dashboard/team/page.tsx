@@ -35,9 +35,10 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { SalaryPackage } from "../admin/salary/page";
 
-const TeamRewardCard = ({ reward, totalTeamBusiness }: { reward: TeamReward, totalTeamBusiness: number }) => {
+const TeamRewardCard = ({ reward, totalTeamBusiness, onInactiveClaim }: { reward: TeamReward, totalTeamBusiness: number, onInactiveClaim: () => void }) => {
     const { toast } = useToast();
     const { addRequest, userRequests } = useRequests();
+    const { currentUser } = useAuth();
 
     const existingRequest = useMemo(() => {
         return userRequests.find(req => req.type === 'Team Reward' && req.address === reward.title);
@@ -49,10 +50,14 @@ const TeamRewardCard = ({ reward, totalTeamBusiness }: { reward: TeamReward, tot
     const canClaim = progress >= 100 && !isClaimed && !isPending;
 
     const handleClaim = () => {
+        if (currentUser?.status !== 'active') {
+            onInactiveClaim();
+            return;
+        }
         addRequest({
             type: 'Team Reward',
             amount: reward.rewardAmount,
-            address: reward.title, // Use title to identify the reward in admin panel
+            address: reward.title,
         });
         toast({
             title: "Reward Claim Submitted!",
@@ -91,9 +96,10 @@ const TeamRewardCard = ({ reward, totalTeamBusiness }: { reward: TeamReward, tot
     )
 }
 
-const TeamSizeRewardCard = ({ reward, totalActiveMembers }: { reward: TeamSizeReward, totalActiveMembers: number }) => {
+const TeamSizeRewardCard = ({ reward, totalActiveMembers, onInactiveClaim }: { reward: TeamSizeReward, totalActiveMembers: number, onInactiveClaim: () => void }) => {
     const { toast } = useToast();
     const { addRequest, userRequests } = useRequests();
+    const { currentUser } = useAuth();
     
     const existingRequest = useMemo(() => {
         return userRequests.find(req => req.type === 'Team Size Reward' && req.address === reward.title);
@@ -105,10 +111,14 @@ const TeamSizeRewardCard = ({ reward, totalActiveMembers }: { reward: TeamSizeRe
     const canClaim = progress >= 100 && !isClaimed && !isPending;
 
     const handleClaim = () => {
+        if (currentUser?.status !== 'active') {
+            onInactiveClaim();
+            return;
+        }
         addRequest({
             type: 'Team Size Reward',
             amount: reward.rewardAmount,
-            address: reward.title, // Use title to identify the reward in admin panel
+            address: reward.title,
         });
         toast({
             title: "Reward Claim Submitted!",
@@ -147,7 +157,7 @@ const TeamSizeRewardCard = ({ reward, totalActiveMembers }: { reward: TeamSizeRe
     )
 }
 
-const SalaryPackageCard = ({ pkg, totalTeamBusiness, activeL1Referrals }: { pkg: SalaryPackage, totalTeamBusiness: number, activeL1Referrals: number }) => {
+const SalaryPackageCard = ({ pkg, totalTeamBusiness, activeL1Referrals, onInactiveClaim }: { pkg: SalaryPackage, totalTeamBusiness: number, activeL1Referrals: number, onInactiveClaim: () => void }) => {
     const { toast } = useToast();
     const { addRequest, userRequests } = useRequests();
     const { currentUser } = useAuth();
@@ -177,7 +187,6 @@ const SalaryPackageCard = ({ pkg, totalTeamBusiness, activeL1Referrals }: { pkg:
     
     const isClaimPeriodMet = useMemo(() => {
         if (!lastClaimDate) return true;
-        // If there's a pending or approved request, the period is not met until that one is resolved and the time passes.
         if (existingRequest) return false;
 
         const now = new Date();
@@ -188,12 +197,15 @@ const SalaryPackageCard = ({ pkg, totalTeamBusiness, activeL1Referrals }: { pkg:
     const canClaim = businessMet && referralsMet && isClaimPeriodMet && !isPending;
 
     const handleClaim = () => {
+        if (currentUser?.status !== 'active') {
+            onInactiveClaim();
+            return;
+        }
         addRequest({
             type: 'Salary Claim',
             amount: pkg.amount,
             address: pkg.name,
         });
-        // We set the claim date here optimistically. If declined, the admin logic will clear it.
         const now = new Date();
         localStorage.setItem(`salary_claimed_${currentUser?.email}_${pkg.id}`, now.toISOString());
         setLastClaimDate(now);
@@ -268,7 +280,7 @@ export default function TeamPage() {
       uplineInfo,
       activeL1Referrals
   } = useTeam();
-  const { currentLevel } = useWallet();
+  const { currentLevel, setIsInactiveWarningOpen } = useWallet();
   const isMobile = useIsMobile();
 
   const totalCommission = useMemo(() => {
@@ -484,7 +496,7 @@ export default function TeamPage() {
                     <h2 className="text-2xl font-bold tracking-tight mb-4">Salary Packages</h2>
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {salaryPackages.map(pkg => (
-                            <SalaryPackageCard key={pkg.id} pkg={pkg} totalTeamBusiness={totalTeamBusiness} activeL1Referrals={activeL1Referrals} />
+                            <SalaryPackageCard key={pkg.id} pkg={pkg} totalTeamBusiness={totalTeamBusiness} activeL1Referrals={activeL1Referrals} onInactiveClaim={() => setIsInactiveWarningOpen(true)} />
                         ))}
                     </div>
                 </div>
@@ -495,7 +507,7 @@ export default function TeamPage() {
                     <h2 className="text-2xl font-bold tracking-tight mb-4">Team Size Rewards</h2>
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {availableTeamSizeRewards.map(reward => (
-                            <TeamSizeRewardCard key={reward.id} reward={reward} totalActiveMembers={totalActiveMembers} />
+                            <TeamSizeRewardCard key={reward.id} reward={reward} totalActiveMembers={totalActiveMembers} onInactiveClaim={() => setIsInactiveWarningOpen(true)} />
                         ))}
                     </div>
                 </div>
@@ -506,7 +518,7 @@ export default function TeamPage() {
                     <h2 className="text-2xl font-bold tracking-tight mb-4">Team Business Rewards</h2>
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {availableTeamRewards.map(reward => (
-                            <TeamRewardCard key={reward.id} reward={reward} totalTeamBusiness={totalTeamBusiness} />
+                            <TeamRewardCard key={reward.id} reward={reward} totalTeamBusiness={totalTeamBusiness} onInactiveClaim={() => setIsInactiveWarningOpen(true)} />
                         ))}
                     </div>
                 </div>

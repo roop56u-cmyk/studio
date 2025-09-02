@@ -79,23 +79,13 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             const savedRewards = localStorage.getItem('platform_team_rewards');
             if (savedRewards) {
               const parsedRewards = JSON.parse(savedRewards);
-              const userIsActive = currentUser?.status === 'active';
-              if (userIsActive) {
-                setTeamRewards(parsedRewards);
-              } else {
-                setTeamRewards([]);
-              }
+              setTeamRewards(parsedRewards);
             }
 
             const savedSizeRewards = localStorage.getItem('platform_team_size_rewards');
              if (savedSizeRewards) {
               const parsedRewards = JSON.parse(savedSizeRewards).filter((r: TeamSizeReward) => r.enabled);
-              const userIsActive = currentUser?.status === 'active';
-              if (userIsActive) {
-                setTeamSizeRewards(parsedRewards);
-              } else {
-                setTeamSizeRewards([]);
-              }
+              setTeamSizeRewards(parsedRewards);
             }
             
             const savedUplineSettings = localStorage.getItem('upline_commission_settings');
@@ -251,7 +241,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     }, [teamData]);
     
      const eligibleSalaryPackages = useMemo(() => {
-        if (!currentUser) return [];
+        if (!currentUser || currentUser.status !== 'active') return [];
         return salaryPackages.filter((pkg: SalaryPackage) => {
             const levelMatch = pkg.level === 0 || currentLevel >= pkg.level;
             const userMatch = !pkg.userEmail || pkg.userEmail === currentUser.email;

@@ -89,7 +89,8 @@ import {
   CalendarDays,
   ArrowUp,
   Briefcase,
-  PieChart
+  PieChart,
+  ShieldAlert
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -655,6 +656,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
     const { logout, currentUser } = useAuth();
+    const { isInactiveWarningOpen, setIsInactiveWarningOpen } = useWallet();
     const [isClient, setIsClient] = React.useState(false);
     const [isRechargeOpen, setIsRechargeOpen] = React.useState(false);
     const [isWithdrawalOpen, setIsWithdrawalOpen] = React.useState(false);
@@ -972,6 +974,22 @@ export default function DashboardLayout({
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogAction onClick={() => setIsTaskMoveWarningOpen(false)}>OK</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        <AlertDialog open={isInactiveWarningOpen} onOpenChange={setIsInactiveWarningOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center gap-2">
+                        <ShieldAlert className="h-6 w-6 text-destructive" />
+                        Account Inactive
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                       Your account is currently inactive. You must make a qualifying deposit to activate your account and access this feature.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogAction onClick={() => setIsInactiveWarningOpen(false)}>OK</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
