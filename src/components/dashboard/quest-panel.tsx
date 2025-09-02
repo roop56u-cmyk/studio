@@ -16,10 +16,12 @@ import { Check, CheckCircle, Gift } from "lucide-react";
 import type { Quest } from "@/app/dashboard/admin/quests/page";
 import { useWallet } from "@/contexts/WalletContext";
 import { ScrollArea } from "../ui/scroll-area";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function QuestPanel() {
     const { toast } = useToast();
-    const { addRecharge, currentLevel } = useWallet();
+    const { currentUser } = useAuth();
+    const { addRecharge, currentLevel, setIsInactiveWarningOpen } = useWallet();
     const [quests, setQuests] = useState<Quest[]>([]);
     const [completedQuests, setCompletedQuests] = useState<string[]>([]);
     
@@ -42,6 +44,11 @@ export function QuestPanel() {
     }, []);
 
     const handleClaim = (questId: string, reward: number) => {
+        if (currentUser?.status !== 'active') {
+            setIsInactiveWarningOpen(true);
+            return;
+        }
+
         const newCompleted = [...completedQuests, questId];
         setCompletedQuests(newCompleted);
 

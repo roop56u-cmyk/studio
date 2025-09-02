@@ -122,6 +122,9 @@ export function BoosterStorePanel() {
     const isPurchaseLocked = interestCounter.isRunning || (tasksCompletedToday > 0);
     
     const getButtonState = (booster: Booster): { text: string; disabled: boolean, tooltip: string | null } => {
+        if (currentUser?.status !== 'active') {
+            return { text: "Purchase", disabled: true, tooltip: "Activate your account to purchase." };
+        }
         if (isPurchaseLocked && booster.type !== 'PURCHASE_REFERRAL') {
              return { text: "Purchase", disabled: true, tooltip: "Complete daily activities before purchasing." };
         }
@@ -138,9 +141,31 @@ export function BoosterStorePanel() {
             boosters.map((booster) => {
                 const buttonState = getButtonState(booster);
                 const purchaseButton = (
-                     <Button disabled={buttonState.disabled}>
+                     <Button 
+                        disabled={buttonState.disabled} 
+                        onClick={
+                            currentUser?.status !== 'active' ? 
+                            () => setIsInactiveWarningOpen(true) : 
+                            undefined // This allows the AlertDialog trigger to work normally
+                        }
+                    >
                         {buttonState.text}
                     </Button>
+                );
+
+                const triggerButton = (
+                    buttonState.tooltip ? (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <span tabIndex={0}>{purchaseButton}</span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>{buttonState.tooltip}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    ) : purchaseButton
                 );
 
                 return (
@@ -169,19 +194,7 @@ export function BoosterStorePanel() {
                         <div className="text-lg font-bold text-primary">${booster.price.toFixed(2)}</div>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                 {buttonState.tooltip ? (
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                 <span tabIndex={0}>{purchaseButton}</span>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>{buttonState.tooltip}</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                ) : purchaseButton }
-
+                                {triggerButton}
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>

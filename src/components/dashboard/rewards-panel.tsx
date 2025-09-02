@@ -31,7 +31,8 @@ export function RewardsPanel() {
         signupBonusAmount,
         referralBonusFor,
         claimReferralBonus,
-        claimedReferralIds
+        claimedReferralIds,
+        setIsInactiveWarningOpen
     } = useWallet();
 
     const [isSignupApprovalRequired, setIsSignupApprovalRequired] = React.useState(false);
@@ -55,6 +56,11 @@ export function RewardsPanel() {
     const hasPendingSignUpBonus = userRequests.some(req => req.type === 'Sign-up Bonus' && req.status === 'Pending');
 
     const handleClaimSignUp = () => {
+        if (currentUser?.status !== 'active') {
+            setIsInactiveWarningOpen(true);
+            return;
+        }
+
         if (isSignupApprovalRequired) {
             addRequest({ type: 'Sign-up Bonus', amount: signupBonusAmount });
             toast({
@@ -67,6 +73,11 @@ export function RewardsPanel() {
     };
     
     const handleClaimReferral = (referralEmail: string) => {
+        if (currentUser?.status !== 'active') {
+            setIsInactiveWarningOpen(true);
+            return;
+        }
+
         const bonusAmount = referralBonusFor(referralEmail);
         if (bonusAmount <= 0) return;
 
