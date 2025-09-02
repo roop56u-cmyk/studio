@@ -28,13 +28,11 @@ export default function ManageLevelsPage() {
         setIsClient(true);
         const storedLevels = localStorage.getItem("platform_levels");
         if (storedLevels) {
-            // Merge with defaults to ensure all properties are present
-            const parsedLevels = JSON.parse(storedLevels);
-            const mergedLevels = defaultLevels.filter(l => l.level > 0).map(defaultLevel => {
-                const storedLevel = parsedLevels.find((p: Level) => p.level === defaultLevel.level);
-                return storedLevel ? { ...defaultLevel, ...storedLevel } : defaultLevel;
-            });
-            setLevels(mergedLevels);
+            // Directly use the stored levels if they exist, as they contain all custom additions.
+            setLevels(JSON.parse(storedLevels));
+        } else {
+            // Fallback to default if nothing is stored.
+            setLevels(defaultLevels.filter(l => l.level > 0));
         }
         
         const storedEarningModel = localStorage.getItem("system_earning_model");
