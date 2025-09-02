@@ -17,6 +17,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Separator } from "../ui/separator";
+import { useTeam } from "@/contexts/TeamContext";
 
 type TeamMember = User & {
     level: number;
@@ -65,25 +66,9 @@ const getDepositsForUser = (userEmail: string): number => {
 
 export function TeamDataPanel({ user }: { user: User }) {
     const { users } = useAuth();
+    const { salaryPackages, teamRewards, teamSizeRewards } = useTeam();
     const [teamData, setTeamData] = React.useState<TeamData | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
-
-    const [salaryPackages, setSalaryPackages] = React.useState<SalaryPackage[]>([]);
-    const [teamRewards, setTeamRewards] = React.useState<TeamReward[]>([]);
-    const [teamSizeRewards, setTeamSizeRewards] = React.useState<TeamSizeReward[]>([]);
-    
-    React.useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const savedSalary = localStorage.getItem('platform_salary_packages');
-            if (savedSalary) setSalaryPackages(JSON.parse(savedSalary));
-
-            const savedTeam = localStorage.getItem('platform_team_rewards');
-            if (savedTeam) setTeamRewards(JSON.parse(savedTeam));
-
-            const savedSize = localStorage.getItem('platform_team_size_rewards');
-            if (savedSize) setTeamSizeRewards(JSON.parse(savedSize));
-        }
-    }, []);
 
     React.useEffect(() => {
         setIsLoading(true);

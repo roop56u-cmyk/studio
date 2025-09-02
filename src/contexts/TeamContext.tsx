@@ -84,7 +84,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
             const savedSizeRewards = localStorage.getItem('platform_team_size_rewards');
              if (savedSizeRewards) {
-              const parsedRewards = JSON.parse(savedSizeRewards).filter((r: TeamSizeReward) => r.enabled);
+              const parsedRewards = JSON.parse(savedSizeRewards);
               setTeamSizeRewards(parsedRewards);
             }
             
@@ -92,12 +92,12 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             if(savedUplineSettings) setUplineCommissionSettings(JSON.parse(savedUplineSettings));
 
             const savedSalaryPackages = localStorage.getItem('platform_salary_packages');
-            if (savedSalaryPackages && currentUser) {
+            if (savedSalaryPackages) {
                 const allPackages = JSON.parse(savedSalaryPackages);
                 setSalaryPackages(allPackages);
             }
         }
-    }, [currentUser]);
+    }, []);
 
     useEffect(() => {
         if (currentUser?.email) {
@@ -253,7 +253,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         teamData,
         teamRewards: teamRewards,
         teamSizeRewards: teamSizeRewards,
-        salaryPackages: eligibleSalaryPackages,
+        salaryPackages: salaryPackages,
         commissionRates,
         commissionEnabled,
         isLoading,
@@ -279,3 +279,4 @@ export const useTeam = () => {
     }
     return context;
 };
+
