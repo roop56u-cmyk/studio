@@ -140,6 +140,8 @@ interface WalletContextType {
   purchasedReferralsCount: number;
   dailyRewardState?: DailyRewardState;
   claimDailyReward: () => void;
+  isInactiveWarningOpen: boolean;
+  setIsInactiveWarningOpen: (isOpen: boolean) => void;
 }
 
 export type Activity = {
@@ -213,6 +215,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [claimedReferralIds, setClaimedReferralIds] = useState<string[]>([]);
   const [dailyRewardState, setDailyRewardState] = useState<DailyRewardState>({ isEnabled: false, canClaim: false, streak: 0, reward: 0 });
   const [isReady, setIsReady] = useState(false);
+  const [isInactiveWarningOpen, setIsInactiveWarningOpen] = useState(false);
   
   const committedBalance = taskRewardsBalance + interestEarningsBalance;
   
@@ -821,6 +824,12 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
   const purchaseBooster = (booster: Booster): boolean => {
     if (!currentUser) return false;
+
+    if (currentUser.status !== 'active') {
+        setIsInactiveWarningOpen(true);
+        return false;
+    }
+
     if (mainBalance < booster.price) {
         toast({ variant: 'destructive', title: 'Insufficient Funds', description: 'You do not have enough funds in your main wallet to purchase this booster.'});
         return false;
@@ -868,6 +877,11 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   
   const claimSignUpBonus = () => {
     if (!currentUser || hasClaimedSignUpBonus || !isEligibleForSignUpBonus || hasPendingSignUpBonus) return;
+    
+    if (currentUser.status !== 'active') {
+        setIsInactiveWarningOpen(true);
+        return;
+    }
 
     const bonus = signupBonusAmount;
     if (bonus <= 0) return;
@@ -912,6 +926,11 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   
   const claimReferralBonus = (referralEmail: string) => {
     if (!currentUser || claimedReferralIds.includes(referralEmail) || userRequests.some(req => req.type === 'Referral Bonus' && req.address === referralEmail && req.status === 'Pending')) return;
+    
+    if (currentUser.status !== 'active') {
+        setIsInactiveWarningOpen(true);
+        return;
+    }
 
     const referral = users.find(u => u.email === referralEmail);
     if (!referral || !referral.isAccountActive) return;
@@ -1027,6 +1046,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         purchasedReferralsCount,
         dailyRewardState,
         claimDailyReward,
+        isInactiveWarningOpen,
+        setIsInactiveWarningOpen,
       }}
     >
       {children}
