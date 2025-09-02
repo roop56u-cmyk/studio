@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { useWallet } from "@/contexts/WalletContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 
 export type PanelConfig = {
@@ -41,6 +42,7 @@ export const defaultPanelConfig: PanelConfig[] = [
 ];
 
 export default function UserDashboardPage() {
+  const { currentUser } = useAuth();
   const { 
     mainBalance, 
     taskRewardsBalance, 
@@ -54,6 +56,7 @@ export default function UserDashboardPage() {
     minRequiredBalanceForLevel,
     dailyRewardState,
     claimDailyReward,
+    setIsInactiveWarningOpen,
   } = useWallet();
   const [panelConfig, setPanelConfig] = React.useState<PanelConfig[]>(defaultPanelConfig);
 
@@ -89,6 +92,14 @@ export default function UserDashboardPage() {
     } else {
         setIsTaskDialogOpen(true);
     }
+  }
+
+  const handleClaimDailyReward = () => {
+    if (currentUser?.status !== 'active') {
+        setIsInactiveWarningOpen(true);
+        return;
+    }
+    claimDailyReward();
   }
 
   const isPanelEnabled = (id: string) => panelConfig.find(p => p.id === id)?.enabled ?? false;
@@ -136,7 +147,7 @@ export default function UserDashboardPage() {
                     <p className="text-sm">You are on a <strong className="font-bold">{dailyRewardState.streak} day</strong> streak. Keep it up!</p>
                 </CardContent>
                 <CardFooter>
-                    <Button className="w-full bg-primary-foreground text-primary hover:bg-primary-foreground/90" disabled={!dailyRewardState.canClaim} onClick={claimDailyReward}>
+                    <Button className="w-full bg-primary-foreground text-primary hover:bg-primary-foreground/90" disabled={!dailyRewardState.canClaim} onClick={handleClaimDailyReward}>
                         {dailyRewardState.canClaim ? `Claim Today's Reward ($${dailyRewardState.reward.toFixed(2)})` : "Claimed Today"}
                     </Button>
                 </CardFooter>
