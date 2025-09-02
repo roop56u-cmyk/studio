@@ -57,6 +57,7 @@ export type Booster = {
     duration: number; // in hours
     level: number; // 0 for all levels
     enabled: boolean;
+    userEmail?: string;
 };
 
 export type ActiveBooster = {

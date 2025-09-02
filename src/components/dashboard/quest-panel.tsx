@@ -28,7 +28,12 @@ export function QuestPanel() {
     useEffect(() => {
         const storedQuests = localStorage.getItem("platform_quests");
         if (storedQuests) {
-            setQuests(JSON.parse(storedQuests));
+            const allQuests: Quest[] = JSON.parse(storedQuests);
+            const availableQuests = allQuests.filter(q => 
+                (q.level === 0 || q.level <= currentLevel) &&
+                (!q.userEmail || q.userEmail === currentUser?.email)
+            );
+            setQuests(availableQuests);
         }
 
         const storedCompleted = localStorage.getItem("completed_quests_today");
@@ -41,7 +46,7 @@ export function QuestPanel() {
                 localStorage.removeItem("completed_quests_today");
             }
         }
-    }, []);
+    }, [currentLevel, currentUser]);
 
     const handleClaim = (questId: string, reward: number) => {
         if (currentUser?.status !== 'active') {
@@ -67,13 +72,11 @@ export function QuestPanel() {
         return completedQuests.includes(questId);
     }
     
-    const availableQuests = quests.filter(q => q.level === 0 || q.level === currentLevel);
-
   return (
     <ScrollArea className="h-[calc(100vh-8rem)]">
         <div className="grid gap-4 pr-6">
-            {availableQuests.length > 0 ? (
-            availableQuests.map((quest) => (
+            {quests.length > 0 ? (
+            quests.map((quest) => (
                 <Card key={quest.id} className="flex flex-col">
                     <CardHeader>
                         <div className="flex justify-between items-start">

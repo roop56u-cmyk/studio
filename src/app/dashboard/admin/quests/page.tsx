@@ -42,6 +42,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { levels as defaultLevels, Level } from "@/components/dashboard/level-tiers";
+import { useAuth } from "@/contexts/AuthContext";
 
 export type Quest = {
   id: string;
@@ -49,6 +50,7 @@ export type Quest = {
   description: string;
   reward: number;
   level: number; // 0 for All Levels
+  userEmail?: string;
 };
 
 const QuestForm = ({
@@ -62,10 +64,12 @@ const QuestForm = ({
   onCancel: () => void;
   availableLevels: Level[];
 }) => {
+  const { users } = useAuth();
   const [title, setTitle] = useState(quest?.title || "");
   const [description, setDescription] = useState(quest?.description || "");
   const [reward, setReward] = useState(quest?.reward || 0);
   const [level, setLevel] = useState(quest?.level ?? 0);
+  const [userEmail, setUserEmail] = useState(quest?.userEmail || "");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,7 +83,16 @@ const QuestForm = ({
       description,
       reward,
       level,
+      userEmail,
     });
+  };
+
+  const handleUserSelectChange = (value: string) => {
+    if (value === "ALL_USERS") {
+      setUserEmail("");
+    } else {
+      setUserEmail(value);
+    }
   };
 
   return (
@@ -111,6 +124,20 @@ const QuestForm = ({
                 </SelectContent>
             </Select>
         </div>
+      </div>
+       <div className="space-y-2">
+        <Label htmlFor="userEmail">Specific User (Optional)</Label>
+        <Select value={userEmail || "ALL_USERS"} onValueChange={handleUserSelectChange}>
+            <SelectTrigger id="userEmail">
+                <SelectValue placeholder="All users at level" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="ALL_USERS">All users at level</SelectItem>
+                {users.map(u => (
+                    <SelectItem key={u.email} value={u.email}>{u.email}</SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
       </div>
       
       <DialogFooter>
@@ -220,6 +247,7 @@ export default function ManageQuestsPage() {
                         <div className="flex items-center gap-4 mt-2">
                             <p className="text-sm font-bold text-primary">Reward: ${quest.reward.toFixed(2)}</p>
                             <p className="text-sm text-muted-foreground"><strong className="text-foreground">Level:</strong> {quest.level === 0 ? "All" : `Level ${quest.level}`}</p>
+                            {quest.userEmail && <p className="text-sm text-muted-foreground"><strong className="text-foreground">User:</strong> {quest.userEmail}</p>}
                         </div>
                         </div>
                         <div className="flex items-center gap-2">

@@ -106,10 +106,14 @@ export function BoosterStorePanel() {
         const storedBoosters = localStorage.getItem("platform_boosters");
         if (storedBoosters) {
             const allBoosters: Booster[] = JSON.parse(storedBoosters);
-            const availableBoosters = allBoosters.filter(b => b.enabled && (b.level === 0 || b.level <= currentLevel));
+            const availableBoosters = allBoosters.filter(b => 
+                b.enabled && 
+                (b.level === 0 || b.level <= currentLevel) &&
+                (!b.userEmail || b.userEmail === currentUser?.email)
+            );
             setBoosters(availableBoosters);
         }
-    }, [currentLevel]);
+    }, [currentLevel, currentUser]);
 
     const handlePurchase = (booster: Booster) => {
         if (currentUser?.status !== 'active') {

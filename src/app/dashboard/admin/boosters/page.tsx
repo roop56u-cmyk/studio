@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, PlusCircle, Edit, Trash2, Flame } from "lucide-react";
+import { Loader2, PlusCircle, Edit, Trash2, Flame, User } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/select";
 import type { Booster, BoosterType } from "@/contexts/WalletContext";
 import { levels as defaultLevels, Level } from "@/components/dashboard/level-tiers";
+import { useAuth } from "@/contexts/AuthContext";
 
 
 const boosterTypeLabels: { [key in BoosterType]: string } = {
@@ -75,6 +76,7 @@ const BoosterForm = ({
   onCancel: () => void;
   availableLevels: Level[];
 }) => {
+  const { users } = useAuth();
   const [name, setName] = useState(booster?.name || "");
   const [description, setDescription] = useState(booster?.description || "");
   const [type, setType] = useState<BoosterType>(booster?.type || "TASK_EARNING");
@@ -82,6 +84,7 @@ const BoosterForm = ({
   const [price, setPrice] = useState(booster?.price || 0);
   const [duration, setDuration] = useState(booster?.duration || 24);
   const [level, setLevel] = useState(booster?.level ?? 0);
+  const [userEmail, setUserEmail] = useState(booster?.userEmail || "");
 
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -99,8 +102,17 @@ const BoosterForm = ({
       price,
       duration,
       level,
+      userEmail,
       enabled: booster?.enabled ?? true,
     });
+  };
+
+  const handleUserSelectChange = (value: string) => {
+    if (value === "ALL_USERS") {
+      setUserEmail("");
+    } else {
+      setUserEmail(value);
+    }
   };
 
   return (
@@ -141,6 +153,20 @@ const BoosterForm = ({
                 </SelectContent>
             </Select>
         </div>
+      </div>
+       <div className="space-y-2">
+        <Label htmlFor="userEmail">Specific User (Optional)</Label>
+        <Select value={userEmail || "ALL_USERS"} onValueChange={handleUserSelectChange}>
+            <SelectTrigger id="userEmail">
+                <SelectValue placeholder="All users at level" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="ALL_USERS">All users at level</SelectItem>
+                {users.map(u => (
+                    <SelectItem key={u.email} value={u.email}>{u.email}</SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
          <div className="space-y-2">
@@ -287,6 +313,7 @@ export default function ManageBoostersPage() {
                       <span><strong className="text-foreground">Value:</strong> {booster.value}</span>
                       <span><strong className="text-foreground">Price:</strong> ${booster.price.toFixed(2)}</span>
                       <span><strong className="text-foreground">Duration:</strong> {booster.duration}h</span>
+                       {booster.userEmail && <span><strong className="text-foreground">User:</strong> {booster.userEmail}</span>}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
