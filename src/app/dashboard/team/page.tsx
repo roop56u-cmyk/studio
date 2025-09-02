@@ -280,17 +280,18 @@ export default function TeamPage() {
       uplineInfo,
       activeL1Referrals
   } = useTeam();
+  const { currentUser } = useAuth();
   const { currentLevel, setIsInactiveWarningOpen } = useWallet();
   const isMobile = useIsMobile();
 
   const totalCommission = useMemo(() => {
-      if (!teamData) return 0;
+      if (!teamData || !currentUser || currentUser.status !== 'active') return 0;
       let total = 0;
       if (commissionEnabled.level1) total += teamData.level1.commission * (commissionRates.level1 / 100);
       if (commissionEnabled.level2) total += teamData.level2.commission * (commissionRates.level2 / 100);
       if (commissionEnabled.level3) total += teamData.level3.commission * (commissionRates.level3 / 100);
       return total;
-  }, [teamData, commissionRates, commissionEnabled]);
+  }, [teamData, commissionRates, commissionEnabled, currentUser]);
   
   const totalActiveMembers = useMemo(() => {
     if (!teamData) return 0;
@@ -460,7 +461,7 @@ export default function TeamPage() {
                             </div>
                             <div className="flex items-center">
                                 <DollarSign className="h-5 w-5 text-muted-foreground mr-3" />
-                                <p className="font-semibold">${(level.data.commission * (level.rate / 100)).toFixed(2)} Commission</p>
+                                <p className="font-semibold">${currentUser?.status === 'active' ? (level.data.commission * (level.rate / 100)).toFixed(2) : '0.00'} Commission</p>
                             </div>
                             <Accordion type="single" collapsible className="w-full">
                                 <AccordionItem value="item-1">

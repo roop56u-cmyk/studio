@@ -778,7 +778,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       
       if (uplineSettings.enabled && currentUser.referredBy) {
           const upline = users.find(u => u.referralCode === currentUser.referredBy);
-          if (upline && upline.status === 'active') {
+          if (upline && upline.status === 'active') { // Check if upline is active
               const uplineL1Count = users.filter(u => u.referredBy === upline.referralCode && u.status === 'active').length;
               if (uplineL1Count >= uplineSettings.requiredReferrals) {
                   const commissionAmount = finalEarning * (uplineSettings.rate / 100);
@@ -956,7 +956,12 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const claimDailyReward = () => {
-    if (!currentUser || currentUser.status !== 'active' || !dailyRewardState?.canClaim || !dailyRewardState.isEnabled) return;
+    if (!currentUser || currentUser.status !== 'active' || !dailyRewardState?.canClaim || !dailyRewardState.isEnabled) {
+      if (currentUser?.status !== 'active') {
+        setIsInactiveWarningOpen(true);
+      }
+      return;
+    }
     
     const rewardAmount = dailyRewardState.reward;
     setMainBalance(prev => prev + rewardAmount);
