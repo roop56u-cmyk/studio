@@ -115,7 +115,7 @@ export function RewardsPanel() {
                 </CardContent>
                 <CardFooter className="flex justify-between items-center">
                     <p className="text-lg font-bold text-primary">${signupBonusAmount.toFixed(2)}</p>
-                    <Button onClick={handleClaimSignUp} disabled={!isEligibleForSignUpBonus || hasClaimedSignUpBonus || hasPendingSignUpBonus || signupBonusAmount === 0}>
+                    <Button onClick={handleClaimSignUp} disabled={!isEligibleForSignUpBonus || hasClaimedSignUpBonus || hasPendingSignUpBonus || signupBonusAmount === 0 || currentUser?.status !== 'active'}>
                         {hasClaimedSignUpBonus ? (
                             <>
                                 <CheckCircle className="mr-2 h-4 w-4" /> Claimed
