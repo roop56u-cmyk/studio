@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useMemo, useCallback } from "react";
@@ -13,7 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Calendar, Wallet, ArrowUpCircle, ArrowDownCircle, Users as UsersIcon, Gift, UserCheck } from "lucide-react";
+import { User, Calendar, Wallet, ArrowUpCircle, ArrowDownCircle, Users as UsersIcon, Gift, UserCheck, HandCoins } from "lucide-react";
 import { useRequests } from "@/contexts/RequestContext";
 import { Skeleton } from "../ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -95,7 +94,7 @@ export function AdminProfile() {
 
     const filteredRequests = useMemo(() => {
         const financeTypes = ['Recharge', 'Withdrawal'];
-        const rewardTypes = ['Team Reward', 'Team Size Reward', 'Sign-up Bonus', 'Referral Bonus', 'Salary Claim'];
+        const rewardTypes = ['Team Reward', 'Team Size Reward', 'Sign-up Bonus', 'Referral Bonus', 'Salary Claim', 'Reimbursement'];
         const typeFilter = activeTab === 'Finance' ? financeTypes : rewardTypes;
         
         return requests.filter(req => {
@@ -150,6 +149,7 @@ export function AdminProfile() {
                       switch (request.type) {
                         case 'Recharge': return <ArrowUpCircle className="h-4 w-4 text-green-600" />;
                         case 'Withdrawal': return <ArrowDownCircle className="h-4 w-4 text-red-600" />;
+                        case 'Reimbursement': return <HandCoins className="h-4 w-4 text-blue-600" />;
                         default: return <Gift className="h-4 w-4 text-yellow-600" />;
                       }
                   }
@@ -158,6 +158,7 @@ export function AdminProfile() {
                       switch (request.type) {
                         case 'Recharge': return 'bg-green-100';
                         case 'Withdrawal': return 'bg-red-100';
+                        case 'Reimbursement': return 'bg-blue-100';
                         default: return 'bg-yellow-100';
                       }
                   }

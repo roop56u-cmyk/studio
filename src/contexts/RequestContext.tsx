@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
@@ -10,7 +9,7 @@ import { useWallet } from './WalletContext';
 export type Request = {
     id: string;
     user: string;
-    type: 'Recharge' | 'Withdrawal' | 'Team Reward' | 'Team Size Reward' | 'Sign-up Bonus' | 'Referral Bonus' | 'Salary Claim';
+    type: 'Recharge' | 'Withdrawal' | 'Team Reward' | 'Team Size Reward' | 'Sign-up Bonus' | 'Referral Bonus' | 'Salary Claim' | 'Reimbursement';
     amount: number;
     address: string | null;
     status: 'Pending' | 'Approved' | 'Declined' | 'On Hold';
@@ -175,7 +174,7 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
         } = walletContext;
 
         if (status === 'Approved') {
-            if (type === 'Recharge') {
+            if (type === 'Recharge' || type === 'Reimbursement') {
                 approveRecharge(userEmail, amount);
             } else if (type === 'Withdrawal') {
                 approveWithdrawal(userEmail, amount);

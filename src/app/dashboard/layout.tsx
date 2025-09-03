@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Link from "next/link";
@@ -91,7 +90,8 @@ import {
   Briefcase,
   PieChart,
   ShieldAlert,
-  ShoppingCart
+  ShoppingCart,
+  HandCoins
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -134,10 +134,11 @@ import ManageDailyRewardsPage from './admin/daily-rewards/page';
 import UplineCommissionPage from './admin/upline-commission/page';
 import ManageSalaryPage from './admin/salary/page';
 import PurchaseHistoryPage from './admin/purchase-history/page';
+import ManageReimbursementsPage from './admin/reimbursements/page';
 import type { Notice } from './admin/notices/page';
 
 
-type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement' | 'purchaseHistory';
+type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement' | 'purchaseHistory' | 'reimbursements';
 
 
 const adminPanelComponents: Record<PanelType, React.ComponentType> = {
@@ -161,6 +162,7 @@ const adminPanelComponents: Record<PanelType, React.ComponentType> = {
     dailyRewards: ManageDailyRewardsPage,
     salaryManagement: ManageSalaryPage,
     purchaseHistory: PurchaseHistoryPage,
+    reimbursements: ManageReimbursementsPage,
 };
 
 const adminPanelTitles: Record<PanelType, { title: string; description: string }> = {
@@ -184,6 +186,7 @@ const adminPanelTitles: Record<PanelType, { title: string; description: string }
     dailyRewards: { title: "Daily Login Rewards", description: "Configure rewards for daily check-ins." },
     salaryManagement: { title: "Manage Salary", description: "Create and configure salary packages for users." },
     purchaseHistory: { title: "Purchase History", description: "View user purchases of boosters and quests." },
+    reimbursements: { title: "Manual Reimbursements", description: "Manage reimbursement packages for user events." },
 };
 
 function SidebarContentComponent({ 
@@ -313,6 +316,12 @@ function SidebarContentComponent({
                     <SidebarMenuButton onClick={() => onAdminPanelClick('salaryManagement')} tooltip={{ children: "Manage Salary" }}>
                         <Briefcase />
                         <span>Manage Salary</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('reimbursements')} tooltip={{ children: "Reimbursements" }}>
+                        <HandCoins />
+                        <span>Reimbursements</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
@@ -817,6 +826,7 @@ export default function DashboardLayout({
                 <ScrollArea className="h-[calc(100vh-8rem)] mt-4">
                     <ActivityHistoryPanel />
                 </ScrollArea>
+                 <SheetClose />
             </SheetContent>
         </Sheet>
         <Sheet open={isTaskHistoryOpen} onOpenChange={setIsTaskHistoryOpen}>
@@ -830,6 +840,7 @@ export default function DashboardLayout({
                 <ScrollArea className="h-[calc(100vh-8rem)] mt-4">
                     <TaskHistoryPanel />
                 </ScrollArea>
+                 <SheetClose />
             </SheetContent>
         </Sheet>
          <Sheet open={isReferralOpen} onOpenChange={setIsReferralOpen}>
@@ -843,6 +854,7 @@ export default function DashboardLayout({
                 <div className="mt-4">
                     <ReferralCard />
                 </div>
+                 <SheetClose />
             </SheetContent>
         </Sheet>
         <Sheet open={isInboxOpen} onOpenChange={setIsInboxOpen}>
@@ -856,6 +868,7 @@ export default function DashboardLayout({
                 <div className="mt-4">
                     <InboxPanel />
                 </div>
+                 <SheetClose />
             </SheetContent>
         </Sheet>
          <Sheet open={isBoosterStoreOpen} onOpenChange={setIsBoosterStoreOpen}>
@@ -869,6 +882,7 @@ export default function DashboardLayout({
                 <div className="mt-4">
                     <BoosterStorePanel />
                 </div>
+                 <SheetClose />
             </SheetContent>
         </Sheet>
          <Sheet open={isQuestPanelOpen} onOpenChange={setIsQuestPanelOpen}>
@@ -882,6 +896,7 @@ export default function DashboardLayout({
                 <div className="mt-4">
                     <QuestPanel />
                 </div>
+                 <SheetClose />
             </SheetContent>
         </Sheet>
          <Sheet open={isRewardsPanelOpen} onOpenChange={setIsRewardsPanelOpen}>
@@ -895,6 +910,7 @@ export default function DashboardLayout({
                 <div className="mt-4">
                     <RewardsPanel />
                 </div>
+                 <SheetClose />
             </SheetContent>
         </Sheet>
         <Sheet open={isWalletOverviewOpen} onOpenChange={setIsWalletOverviewOpen}>
@@ -906,6 +922,7 @@ export default function DashboardLayout({
                 <div className="mt-4">
                     <WalletOverviewPanel />
                 </div>
+                 <SheetClose />
             </SheetContent>
         </Sheet>
         <Sheet open={isAchievementsOpen} onOpenChange={setIsAchievementsOpen}>
@@ -917,6 +934,7 @@ export default function DashboardLayout({
                  <div className="mt-4">
                     <AchievementsPanel />
                 </div>
+                 <SheetClose />
             </SheetContent>
         </Sheet>
         <Sheet open={isAdminPanelOpen} onOpenChange={setIsAdminPanelOpen}>
@@ -934,6 +952,7 @@ export default function DashboardLayout({
                         </div>
                     </>
                 )}
+                 <SheetClose />
             </SheetContent>
         </Sheet>
         {loginNotice && (

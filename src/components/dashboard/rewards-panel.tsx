@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React from "react";
@@ -13,12 +12,13 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, CheckCircle, UserPlus, Users } from "lucide-react";
+import { Gift, CheckCircle, UserPlus, Users, HandCoins } from "lucide-react";
 import { useWallet } from "@/contexts/WalletContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { ScrollArea } from "../ui/scroll-area";
 import { Separator } from "../ui/separator";
 import { useRequests } from "@/contexts/RequestContext";
+import type { Reimbursement } from "@/app/dashboard/admin/reimbursements/page";
 
 export function RewardsPanel() {
     const { toast } = useToast();
@@ -32,11 +32,13 @@ export function RewardsPanel() {
         referralBonusFor,
         claimReferralBonus,
         claimedReferralIds,
-        setIsInactiveWarningOpen
+        setIsInactiveWarningOpen,
+        currentLevel,
     } = useWallet();
 
     const [isSignupApprovalRequired, setIsSignupApprovalRequired] = React.useState(false);
     const [isReferralApprovalRequired, setIsReferralApprovalRequired] = React.useState(false);
+    const [reimbursements, setReimbursements] = React.useState<Reimbursement[]>([]);
     
     React.useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -45,8 +47,19 @@ export function RewardsPanel() {
 
             const referralApproval = localStorage.getItem('system_referral_bonus_approval_required');
             if(referralApproval) setIsReferralApprovalRequired(JSON.parse(referralApproval));
+
+            const storedReimbursements = localStorage.getItem('platform_reimbursements');
+            if (storedReimbursements) {
+                const allItems: Reimbursement[] = JSON.parse(storedReimbursements);
+                const availableItems = allItems.filter(item => 
+                    item.enabled &&
+                    (item.level === 0 || item.level <= currentLevel) &&
+                    (!item.userEmail || item.userEmail === currentUser?.email)
+                );
+                setReimbursements(availableItems);
+            }
         }
-    }, []);
+    }, [currentLevel, currentUser]);
 
     const directReferrals = React.useMemo(() => {
         if (!currentUser) return [];
@@ -92,6 +105,18 @@ export function RewardsPanel() {
         }
     }
 
+    const handleClaimReimbursement = (item: Reimbursement) => {
+        if (currentUser?.status !== 'active') {
+            setIsInactiveWarningOpen(true);
+            return;
+        }
+        addRequest({ type: 'Reimbursement', amount: item.amount, address: item.title });
+        toast({
+            title: "Reimbursement Claim Submitted",
+            description: `Your claim for "${item.title}" is now pending admin approval.`
+        });
+    }
+
   return (
     <ScrollArea className="h-[calc(100vh-8rem)]">
         <div className="grid gap-6 pr-6">
@@ -125,6 +150,45 @@ export function RewardsPanel() {
                     </Button>
                 </CardFooter>
             </Card>
+
+             {/* Reimbursements Card */}
+             {reimbursements.length > 0 && (
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center gap-3">
+                            <div className="flex-shrink-0 bg-green-500/10 text-green-600 p-2 rounded-full">
+                                <HandCoins className="h-6 w-6" />
+                            </div>
+                            <div>
+                                <CardTitle>Event Reimbursements</CardTitle>
+                                <CardDescription>Claim rewards for hosting official events.</CardDescription>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {reimbursements.map((item, index) => {
+                             const hasPending = userRequests.some(req => req.type === 'Reimbursement' && req.address === item.title && req.status === 'Pending');
+                            return (
+                                <React.Fragment key={item.id}>
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <p className="font-semibold text-sm">{item.title}</p>
+                                            <p className="text-xs text-muted-foreground">{item.description}</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-md font-bold text-primary">${item.amount.toFixed(2)}</p>
+                                            <Button size="sm" onClick={() => handleClaimReimbursement(item)} disabled={hasPending}>
+                                                {hasPending ? 'Pending' : 'Claim'}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    {index < reimbursements.length - 1 && <Separator />}
+                                </React.Fragment>
+                            )
+                        })}
+                    </CardContent>
+                </Card>
+             )}
 
             {/* Referral Bonuses Card */}
             <Card>
