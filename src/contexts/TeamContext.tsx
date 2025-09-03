@@ -242,9 +242,9 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
     const value = {
         teamData,
-        teamRewards: teamRewards.filter(r => r.level === 0 || r.level <= currentLevel),
-        teamSizeRewards: teamSizeRewards.filter(r => r.enabled && (r.level === 0 || r.level <= currentLevel)),
-        salaryPackages: salaryPackages.filter(p => p.enabled && (p.level === 0 || p.level <= currentLevel)),
+        teamRewards: teamRewards,
+        teamSizeRewards: teamSizeRewards,
+        salaryPackages,
         commissionRates,
         commissionEnabled,
         isLoading,

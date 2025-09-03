@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useMemo, useState, useEffect } from "react";
@@ -327,8 +326,9 @@ export default function TeamPage() {
       { title: "Level 3", data: teamData.level3, rate: commissionRates.level3, enabled: commissionEnabled.level3 },
   ];
   
-  const availableTeamRewards = teamRewards.filter(r => r.level === 0 || r.level <= currentLevel);
-  const availableTeamSizeRewards = teamSizeRewards.filter(r => r.level === 0 || r.level <= currentLevel);
+  const availableTeamRewards = teamRewards.filter(r => (r.level === 0 || r.level <= currentLevel) && (!r.userEmail || r.userEmail === currentUser?.email));
+  const availableTeamSizeRewards = teamSizeRewards.filter(r => (r.level === 0 || r.level <= currentLevel) && (!r.userEmail || r.userEmail === currentUser?.email));
+  const availableSalaryPackages = salaryPackages.filter(p => (p.level === 0 || p.level <= currentLevel) && (!p.userEmail || p.userEmail === currentUser?.email));
   const uplineReferralProgress = uplineCommissionSettings.requiredReferrals > 0 ? (activeL1Referrals / uplineCommissionSettings.requiredReferrals) * 100 : 100;
 
   return (
@@ -492,11 +492,11 @@ export default function TeamPage() {
                 ))}
             </div>
 
-            {salaryPackages.length > 0 && (
+            {availableSalaryPackages.length > 0 && (
                  <div>
                     <h2 className="text-2xl font-bold tracking-tight mb-4">Salary Packages</h2>
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {salaryPackages.map(pkg => (
+                        {availableSalaryPackages.map(pkg => (
                             <SalaryPackageCard key={pkg.id} pkg={pkg} totalTeamBusiness={totalTeamBusiness} activeL1Referrals={activeL1Referrals} onInactiveClaim={() => setIsInactiveWarningOpen(true)} />
                         ))}
                     </div>

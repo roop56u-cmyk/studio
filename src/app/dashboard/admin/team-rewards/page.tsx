@@ -42,6 +42,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { levels as defaultLevels, Level } from "@/components/dashboard/level-tiers";
+import { useAuth } from "@/contexts/AuthContext";
 
 export type TeamReward = {
   id: string;
@@ -51,6 +52,7 @@ export type TeamReward = {
   requiredAmount: number;
   durationDays: number;
   rewardAmount: number;
+  userEmail?: string;
 };
 
 const TeamRewardForm = ({
@@ -60,16 +62,18 @@ const TeamRewardForm = ({
   availableLevels,
 }: {
   reward: Partial<TeamReward> | null;
-  onSave: (reward: TeamReward) => void;
+  onSave: (reward: Omit<TeamReward, 'id'>) => void;
   onCancel: () => void;
   availableLevels: Level[];
 }) => {
+  const { users } = useAuth();
   const [title, setTitle] = useState(reward?.title || "");
   const [description, setDescription] = useState(reward?.description || "");
   const [level, setLevel] = useState(reward?.level ?? 0);
   const [requiredAmount, setRequiredAmount] = useState(reward?.requiredAmount || 1000);
   const [durationDays, setDurationDays] = useState(reward?.durationDays || 7);
   const [rewardAmount, setRewardAmount] = useState(reward?.rewardAmount || 50);
+  const [userEmail, setUserEmail] = useState(reward?.userEmail || "");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,14 +82,22 @@ const TeamRewardForm = ({
       return;
     }
     onSave({
-      id: reward?.id || `TRWRD-${Date.now()}`,
       title,
       description,
       level,
       requiredAmount,
       durationDays,
       rewardAmount,
+      userEmail,
     });
+  };
+
+  const handleUserSelectChange = (value: string) => {
+    if (value === "ALL_USERS") {
+      setUserEmail("");
+    } else {
+      setUserEmail(value);
+    }
   };
 
   return (
@@ -117,6 +129,20 @@ const TeamRewardForm = ({
             <Label htmlFor="durationDays">Duration (Days)</Label>
             <Input id="durationDays" type="number" value={durationDays} onChange={e => setDurationDays(Number(e.target.value))} required />
         </div>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="userEmail">Specific User (Optional)</Label>
+        <Select value={userEmail || "ALL_USERS"} onValueChange={handleUserSelectChange}>
+            <SelectTrigger id="userEmail">
+                <SelectValue placeholder="All users at level" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="ALL_USERS">All users at level</SelectItem>
+                {users.map(u => (
+                    <SelectItem key={u.email} value={u.email}>{u.email}</SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
       </div>
        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
          <div className="space-y-2">
@@ -168,14 +194,14 @@ export default function ManageTeamRewardsPage() {
     }
   }, [rewards, isClient]);
 
-  const handleSaveReward = (reward: TeamReward) => {
+  const handleSaveReward = (rewardData: Omit<TeamReward, 'id'>) => {
     if (editingIndex !== null) {
       const newRewards = [...rewards];
-      newRewards[editingIndex] = reward;
+      newRewards[editingIndex] = { ...rewards[editingIndex], ...rewardData };
       setRewards(newRewards);
       toast({ title: "Reward Updated" });
     } else {
-      setRewards([reward, ...rewards]);
+      setRewards([{ ...rewardData, id: `TRWRD-${Date.now()}` }, ...rewards]);
       toast({ title: "Reward Added" });
     }
     closeForm();
@@ -241,6 +267,7 @@ export default function ManageTeamRewardsPage() {
                               <span><strong className="text-foreground">Deposits:</strong> ${reward.requiredAmount.toLocaleString()}</span>
                               <span><strong className="text-foreground">Duration:</strong> {reward.durationDays} days</span>
                               <span><strong className="text-foreground">Reward:</strong> ${reward.rewardAmount.toLocaleString()}</span>
+                              {reward.userEmail && <span><strong className="text-foreground">User:</strong> {reward.userEmail}</span>}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">

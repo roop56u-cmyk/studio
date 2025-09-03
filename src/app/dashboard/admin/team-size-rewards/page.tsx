@@ -42,6 +42,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { levels as defaultLevels, Level } from "@/components/dashboard/level-tiers";
+import { useAuth } from "@/contexts/AuthContext";
 
 export type TeamSizeReward = {
   id: string;
@@ -50,6 +51,7 @@ export type TeamSizeReward = {
   rewardAmount: number;
   level: number; // 0 for All Levels
   enabled: boolean;
+  userEmail?: string;
 };
 
 const RewardForm = ({
@@ -63,10 +65,12 @@ const RewardForm = ({
   onCancel: () => void;
   availableLevels: Level[];
 }) => {
+  const { users } = useAuth();
   const [title, setTitle] = useState(reward?.title || "");
   const [requiredActiveMembers, setRequiredActiveMembers] = useState(reward?.requiredActiveMembers || 10);
   const [rewardAmount, setRewardAmount] = useState(reward?.rewardAmount || 100);
   const [level, setLevel] = useState(reward?.level ?? 0);
+  const [userEmail, setUserEmail] = useState(reward?.userEmail || "");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,7 +84,16 @@ const RewardForm = ({
       rewardAmount,
       level,
       enabled: reward?.enabled ?? true,
+      userEmail,
     });
+  };
+
+  const handleUserSelectChange = (value: string) => {
+    if (value === "ALL_USERS") {
+      setUserEmail("");
+    } else {
+      setUserEmail(value);
+    }
   };
 
   return (
@@ -109,6 +122,20 @@ const RewardForm = ({
                 <SelectItem value="0">All Levels</SelectItem>
                 {availableLevels.filter(l => l.level > 0).map(l => (
                     <SelectItem key={l.level} value={String(l.level)}>Level {l.level}</SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="userEmail">Specific User (Optional)</Label>
+        <Select value={userEmail || "ALL_USERS"} onValueChange={handleUserSelectChange}>
+            <SelectTrigger id="userEmail">
+                <SelectValue placeholder="All users at level" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="ALL_USERS">All users at level</SelectItem>
+                {users.map(u => (
+                    <SelectItem key={u.email} value={u.email}>{u.email}</SelectItem>
                 ))}
             </SelectContent>
         </Select>
@@ -222,6 +249,7 @@ export default function ManageTeamSizeRewardsPage() {
                               <span><strong className="text-foreground">Required Members:</strong> {reward.requiredActiveMembers}</span>
                               <span><strong className="text-foreground">Level:</strong> {reward.level === 0 ? 'All' : `${reward.level}+`}</span>
                               <span><strong className="text-foreground">Reward:</strong> ${reward.rewardAmount.toLocaleString()}</span>
+                              {reward.userEmail && <span><strong className="text-foreground">User:</strong> {reward.userEmail}</span>}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
