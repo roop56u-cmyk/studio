@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect, useMemo } from 'react';
@@ -108,7 +107,7 @@ interface WalletContextType {
   approveWithdrawal: (userEmail: string, amount: number) => void;
   approveSignUpBonus: (userEmail: string, amount: number) => void;
   approveReferralBonus: (userEmail: string, referredUser: string, amount: number) => void;
-  approveSalary: (userEmail: string, amount: number) => void;
+  approveSalary: (userEmail: string, amount: number, salaryPackageName: string) => void;
   refundWithdrawal: (userEmail: string, withdrawalAmount: number) => void;
   isLoading: boolean;
   interestCounter: CounterState;
@@ -677,14 +676,14 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
-  const approveSalary = (userEmail: string, amount: number) => {
+  const approveSalary = (userEmail: string, amount: number, salaryPackageName: string) => {
     const key = `${userEmail}_mainBalance`;
     const currentBalance = parseFloat(localStorage.getItem(key) || '0');
     localStorage.setItem(key, (currentBalance + amount).toString());
 
     addActivity(userEmail, {
         type: 'Salary Claim',
-        description: 'Salary claim approved by admin',
+        description: `Salary claim for '${salaryPackageName}' approved`,
         amount: amount,
         date: new Date().toISOString()
     });

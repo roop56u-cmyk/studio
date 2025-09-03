@@ -11,7 +11,7 @@ import {
   CardTitle,
   CardFooter
 } from "@/components/ui/card";
-import { Users, DollarSign, UserPlus, Briefcase, Activity, Award, X, Trophy, ArrowUp, Info, HandCoins, UserCheck } from "lucide-react";
+import { Users, DollarSign, UserPlus, Briefcase, Activity, Award, X, Trophy, ArrowUp, Info, HandCoins, UserCheck, TrendingUp, AlertTriangle } from "lucide-react";
 import { useTeam } from "@/contexts/TeamContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -160,40 +160,40 @@ const SalaryPackageCard = ({ pkg, totalTeamBusiness, activeL1Referrals, onInacti
     const { toast } = useToast();
     const { addRequest, userRequests } = useRequests();
     const { currentUser } = useAuth();
-    const [lastClaimDate, setLastClaimDate] = useState<Date | null>(null);
-    
-    const businessMet = totalTeamBusiness >= pkg.requiredTeamBusiness;
-    const referralsMet = activeL1Referrals >= pkg.requiredActiveReferrals;
-    
-    const businessProgress = Math.min((totalTeamBusiness / pkg.requiredTeamBusiness) * 100, 100);
-    const referralProgress = Math.min((activeL1Referrals / pkg.requiredActiveReferrals) * 100, 100);
-
+    const [lastClaimData, setLastClaimData] = useState<{ claimDate: string; businessAtClaim: number } | null>(null);
 
     useEffect(() => {
         if (currentUser) {
-            const lastClaimStr = localStorage.getItem(`salary_claimed_${currentUser.email}_${pkg.id}`);
+            const lastClaimStr = localStorage.getItem(`salary_claim_${currentUser.email}_${pkg.id}`);
             if (lastClaimStr) {
-                setLastClaimDate(new Date(lastClaimStr));
+                setLastClaimData(JSON.parse(lastClaimStr));
             }
         }
     }, [pkg.id, currentUser]);
-    
+
     const existingRequest = useMemo(() => {
         return userRequests.find(req => req.type === 'Salary Claim' && req.address === pkg.name && req.status !== 'Declined');
     }, [userRequests, pkg.name]);
 
     const isPending = existingRequest?.status === 'Pending';
     
+    // Eligibility Checks
     const isClaimPeriodMet = useMemo(() => {
-        if (!lastClaimDate) return true;
-        if (existingRequest) return false;
+        if (!lastClaimData) return true; // First claim is always eligible time-wise
+        if (isPending) return false;
 
-        const now = new Date();
+        const lastClaimDate = new Date(lastClaimData.claimDate);
         const nextClaimDate = new Date(lastClaimDate.getTime() + pkg.periodDays * 24 * 60 * 60 * 1000);
-        return now >= nextClaimDate;
-    }, [lastClaimDate, pkg.periodDays, existingRequest]);
+        return new Date() >= nextClaimDate;
+    }, [lastClaimData, pkg.periodDays, isPending]);
 
-    const canClaim = businessMet && referralsMet && isClaimPeriodMet && !isPending;
+    const baseBusinessMet = totalTeamBusiness >= pkg.requiredTeamBusiness;
+    const referralsMet = activeL1Referrals >= pkg.requiredActiveReferrals;
+    
+    const growthTarget = lastClaimData ? lastClaimData.businessAtClaim * (1 + pkg.requiredGrowthPercentage / 100) : 0;
+    const growthMet = lastClaimData ? totalTeamBusiness >= growthTarget : true; // First claim doesn't require growth
+
+    const canClaim = baseBusinessMet && referralsMet && growthMet && isClaimPeriodMet && !isPending;
 
     const handleClaim = () => {
         if (currentUser?.status !== 'active') {
@@ -205,28 +205,34 @@ const SalaryPackageCard = ({ pkg, totalTeamBusiness, activeL1Referrals, onInacti
             amount: pkg.amount,
             address: pkg.name,
         });
-        const now = new Date();
-        localStorage.setItem(`salary_claimed_${currentUser?.email}_${pkg.id}`, now.toISOString());
-        setLastClaimDate(now);
+        
+        const claimData = {
+            claimDate: new Date().toISOString(),
+            businessAtClaim: totalTeamBusiness
+        };
+
+        localStorage.setItem(`salary_claim_${currentUser?.email}_${pkg.id}`, JSON.stringify(claimData));
+        setLastClaimData(claimData);
+
         toast({
             title: "Salary Claim Submitted!",
-            description: `Your claim for "${pkg.name}" is pending admin approval.`
+            description: `Your claim for "${pkg.name}" is now pending admin approval.`
         });
     };
     
     const nextClaimDateFormatted = useMemo(() => {
-        if (lastClaimDate && !isClaimPeriodMet) {
-            const nextDate = new Date(lastClaimDate.getTime() + pkg.periodDays * 24 * 60 * 60 * 1000);
+        if (lastClaimData?.claimDate && !isClaimPeriodMet) {
+            const nextDate = new Date(new Date(lastClaimData.claimDate).getTime() + pkg.periodDays * 24 * 60 * 60 * 1000);
             return nextDate.toLocaleDateString();
         }
         return '';
-    }, [lastClaimDate, pkg.periodDays, isClaimPeriodMet]);
+    }, [lastClaimData, pkg.periodDays, isClaimPeriodMet]);
 
     const getButtonText = () => {
         if (isPending) return "Pending Approval";
         if (!isClaimPeriodMet) return `Claimable on ${nextClaimDateFormatted}`;
         return "Claim Salary";
-    }
+    };
 
     return (
         <Card>
@@ -237,21 +243,40 @@ const SalaryPackageCard = ({ pkg, totalTeamBusiness, activeL1Referrals, onInacti
                 </div>
                 <CardDescription>Claim your recurring salary bonus of <strong className="text-foreground">${pkg.amount.toLocaleString()}</strong> every <strong className="text-foreground">{pkg.periodDays} days</strong>.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-                 <div className="space-y-2">
-                    <div className="flex justify-between items-center text-xs text-muted-foreground">
+            <CardContent className="space-y-4 text-xs">
+                <div className="space-y-1">
+                     <div className="flex justify-between items-center text-muted-foreground">
                         <span>Team Business</span>
                         <span>${totalTeamBusiness.toLocaleString()} / ${pkg.requiredTeamBusiness.toLocaleString()}</span>
                     </div>
-                    <Progress value={businessProgress} />
+                    <Progress value={Math.min((totalTeamBusiness / pkg.requiredTeamBusiness) * 100, 100)} />
                 </div>
-                 <div className="space-y-2">
-                    <div className="flex justify-between items-center text-xs text-muted-foreground">
+                 <div className="space-y-1">
+                    <div className="flex justify-between items-center text-muted-foreground">
                         <span>Active L1 Referrals</span>
                         <span>{activeL1Referrals} / {pkg.requiredActiveReferrals}</span>
                     </div>
-                    <Progress value={referralProgress} />
+                    <Progress value={Math.min((activeL1Referrals / pkg.requiredActiveReferrals) * 100, 100)} />
                 </div>
+                {lastClaimData && pkg.requiredGrowthPercentage > 0 && (
+                     <div className="space-y-1 pt-2 border-t">
+                        <div className="flex justify-between items-center text-muted-foreground">
+                            <span>Growth Target</span>
+                            <span className="flex items-center gap-1">
+                                <TrendingUp className="h-3 w-3" />
+                                ${growthTarget.toLocaleString()}
+                            </span>
+                        </div>
+                        <Progress value={Math.min((totalTeamBusiness / growthTarget) * 100, 100)} className="h-1.5"/>
+                        <p className="text-muted-foreground text-right">{pkg.requiredGrowthPercentage}% growth required</p>
+                    </div>
+                )}
+                 {!growthMet && (
+                     <div className="flex items-center gap-2 text-destructive-foreground bg-destructive/80 p-2 rounded-md">
+                         <AlertTriangle className="h-4 w-4"/>
+                         <p>Business growth target not met.</p>
+                     </div>
+                 )}
             </CardContent>
             <CardFooter>
                 <Button className="w-full" disabled={!canClaim} onClick={handleClaim}>

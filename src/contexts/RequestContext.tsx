@@ -5,6 +5,7 @@ import React, { createContext, useState, useContext, ReactNode, useEffect } from
 import { useAuth } from './AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useWallet } from './WalletContext';
+import type { SalaryPackage } from '@/app/dashboard/admin/salary/page';
 
 export type Request = {
     id: string;
@@ -183,7 +184,7 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
             } else if (type === 'Referral Bonus' && address) {
                 approveReferralBonus(userEmail, address, amount);
             } else if (type === 'Salary Claim') {
-                approveSalary(userEmail, amount);
+                approveSalary(userEmail, amount, address || '');
             }
         } else if (status === 'Declined') {
             if (type === 'Withdrawal') {
@@ -194,7 +195,7 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
                 const allSalaryPackages: SalaryPackage[] = JSON.parse(localStorage.getItem('platform_salary_packages') || '[]');
                 const pkg = allSalaryPackages.find(p => p.name === requestToUpdate.address);
                 if (pkg) {
-                    localStorage.removeItem(`salary_claimed_${userEmail}_${pkg.id}`);
+                    localStorage.removeItem(`salary_claim_${userEmail}_${pkg.id}`);
                 }
             }
         }
@@ -243,8 +244,3 @@ export const useRequests = () => {
   }
   return context;
 };
-
-type SalaryPackage = {
-    id: string;
-    name: string;
-}

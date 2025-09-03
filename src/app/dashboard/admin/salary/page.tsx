@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { PlusCircle, Edit, Trash2, DollarSign, CalendarClock, User, Star, Briefcase, UserCheck as UserCheckIcon, HandCoins } from "lucide-react";
+import { PlusCircle, Edit, Trash2, DollarSign, CalendarClock, User, Star, Briefcase, UserCheck as UserCheckIcon, HandCoins, Percent } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,6 +56,7 @@ export type SalaryPackage = {
   periodDays: number;
   requiredTeamBusiness: number;
   requiredActiveReferrals: number;
+  requiredGrowthPercentage: number;
   enabled: boolean;
 };
 
@@ -167,11 +168,12 @@ const SalaryPackageForm = ({
   const [periodDays, setPeriodDays] = useState(pkg?.periodDays || 30);
   const [requiredTeamBusiness, setRequiredTeamBusiness] = useState(pkg?.requiredTeamBusiness || 0);
   const [requiredActiveReferrals, setRequiredActiveReferrals] = useState(pkg?.requiredActiveReferrals || 0);
+  const [requiredGrowthPercentage, setRequiredGrowthPercentage] = useState(pkg?.requiredGrowthPercentage || 0);
 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || amount <= 0 || periodDays <= 0 || requiredTeamBusiness < 0 || requiredActiveReferrals < 0) {
+    if (!name || amount <= 0 || periodDays <= 0 || requiredTeamBusiness < 0 || requiredActiveReferrals < 0 || requiredGrowthPercentage < 0) {
       alert("Please fill all fields with valid values. Amounts cannot be negative.");
       return;
     }
@@ -183,6 +185,7 @@ const SalaryPackageForm = ({
         periodDays, 
         requiredTeamBusiness, 
         requiredActiveReferrals,
+        requiredGrowthPercentage,
         enabled: pkg?.enabled ?? true 
     });
   };
@@ -249,6 +252,13 @@ const SalaryPackageForm = ({
        <div className="space-y-2">
         <Label htmlFor="requiredActiveReferrals">Required Active L1 Referrals</Label>
         <Input id="requiredActiveReferrals" type="number" value={requiredActiveReferrals} onChange={(e) => setRequiredActiveReferrals(Number(e.target.value))} required />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="requiredGrowthPercentage">Required Growth (%) for next claim</Label>
+        <div className="relative">
+          <Input id="requiredGrowthPercentage" type="number" value={requiredGrowthPercentage} onChange={(e) => setRequiredGrowthPercentage(Number(e.target.value))} required className="pr-8" />
+          <Percent className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        </div>
       </div>
       <DialogFooter>
         <DialogClose asChild><Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button></DialogClose>
@@ -347,13 +357,14 @@ export default function ManageSalaryPage() {
                     <div key={pkg.id} className="border p-4 rounded-lg flex justify-between items-start gap-4">
                         <div className="flex-1 space-y-2">
                         <h3 className="font-semibold">{pkg.name}</h3>
-                        <div className="text-xs text-muted-foreground grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+                        <div className="text-xs text-muted-foreground grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                             <div className="flex items-center gap-1.5"><DollarSign className="h-3 w-3"/><span>${pkg.amount.toLocaleString()}</span></div>
                             <div className="flex items-center gap-1.5"><CalendarClock className="h-3 w-3"/><span>Every {pkg.periodDays} days</span></div>
                             <div className="flex items-center gap-1.5"><Star className="h-3 w-3"/><span>Level {pkg.level === 0 ? "All" : `${pkg.level}+`}</span></div>
                             <div className="flex items-center gap-1.5"><Briefcase className="h-3 w-3"/><span>&gt; ${pkg.requiredTeamBusiness.toLocaleString()} business</span></div>
                             <div className="flex items-center gap-1.5"><UserCheckIcon className="h-3 w-3"/><span>&gt; {pkg.requiredActiveReferrals} active L1</span></div>
-                            <div className="flex items-center gap-1.5"><User className="h-3 w-3"/><span>{pkg.userEmail || "All Users"}</span></div>
+                            <div className="flex items-center gap-1.5"><Percent className="h-3 w-3"/><span>{pkg.requiredGrowthPercentage}% growth</span></div>
+                            <div className="flex items-center gap-1.5 col-span-full"><User className="h-3 w-3"/><span>{pkg.userEmail || "All Users"}</span></div>
                         </div>
                         </div>
                         <div className="flex items-center gap-2">
