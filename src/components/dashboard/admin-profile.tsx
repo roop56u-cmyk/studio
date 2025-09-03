@@ -18,6 +18,7 @@ import { Skeleton } from "../ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { levels as defaultLevels, Level } from "./level-tiers";
+import { useTeam } from "@/contexts/TeamContext";
 
 type RequestStatus = 'Pending' | 'Approved' | 'Declined' | 'On Hold';
 type RequestType = 'Finance' | 'Rewards';
@@ -25,6 +26,7 @@ type RequestType = 'Finance' | 'Rewards';
 export function AdminProfile() {
     const { requests, updateRequestStatus } = useRequests();
     const { users } = useAuth();
+    const { getLevelForUser } = useTeam();
     const [isClient, setIsClient] = React.useState(false);
     const [activeTab, setActiveTab] = useState<RequestType>('Finance');
     const [activeStatus, setActiveStatus] = useState<RequestStatus | 'All'>('Pending');
@@ -42,18 +44,7 @@ export function AdminProfile() {
         if (!user) return null;
 
         const mainBalance = parseFloat(localStorage.getItem(`${userEmail}_mainBalance`) || '0');
-        const taskRewardsBalance = parseFloat(localStorage.getItem(`${userEmail}_taskRewardsBalance`) || '0');
-        const interestEarningsBalance = parseFloat(localStorage.getItem(`${userEmail}_interestEarningsBalance`) || '0');
-        const committedBalance = taskRewardsBalance + interestEarningsBalance;
-        
-        const platformLevels: Level[] = JSON.parse(localStorage.getItem('platform_levels') || JSON.stringify(defaultLevels));
-        const purchasedReferrals = parseInt(localStorage.getItem(`${userEmail}_purchased_referrals`) || '0', 10);
-        const directReferralsCount = users.filter(u => u.referredBy === user.referralCode).length + purchasedReferrals;
-        
-        const currentLevel = user.overrideLevel ?? platformLevels.slice().reverse().find(l => {
-            if (l.level === 0) return false;
-            return committedBalance >= l.minAmount && directReferralsCount >= l.referrals;
-        })?.level ?? 0;
+        const level = getLevelForUser(user, users);
 
         const deposits = parseInt(localStorage.getItem(`${userEmail}_deposits`) || '0');
         const withdrawals = parseInt(localStorage.getItem(`${userEmail}_withdrawals`) || '0');
@@ -66,15 +57,15 @@ export function AdminProfile() {
 
         return {
             balance: mainBalance,
-            level: currentLevel,
+            level: level,
             deposits,
             withdrawals,
-            referrals: directReferralsCount,
+            referrals: level1.length,
             teamSize,
             upline: upline?.email || null,
             activatedAt: user.activatedAt ? new Date(user.activatedAt).toLocaleDateString() : 'N/A'
         };
-    }, [users]);
+    }, [users, getLevelForUser]);
     
     const getSavedWithdrawalAddress = useCallback((userEmail: string) => {
         if (!isClient) return null;
