@@ -3,6 +3,7 @@
 "use client";
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { WelcomeAnimation } from '@/components/landing/welcome-animation';
 import { Logo } from '@/components/logo';
@@ -28,6 +29,7 @@ export default function Home() {
   const [subtitle, setSubtitle] = useState("Your central place to rate, review, and analyze tasks and services. Get started by creating an account or signing in.");
   const [customButtons, setCustomButtons] = useState<CustomButton[]>([]);
   const [gradient, setGradient] = useState(gradients[0]);
+  const [mainLogoDataUrl, setMainLogoDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const savedTitle = localStorage.getItem('website_title');
@@ -38,6 +40,11 @@ export default function Home() {
 
     const savedButtons = localStorage.getItem('website_custom_buttons');
     if(savedButtons) setCustomButtons(JSON.parse(savedButtons));
+
+    const savedMainLogo = localStorage.getItem('website_main_logo_data_url');
+    if(savedMainLogo) {
+      setMainLogoDataUrl(savedMainLogo);
+    }
     
     const interval = setInterval(() => {
       setGradient(prev => {
@@ -45,7 +52,7 @@ export default function Home() {
         const nextIndex = (currentIndex + 1) % gradients.length;
         return gradients[nextIndex];
       });
-    }, 7000); // Increased interval to 7 seconds
+    }, 7000); 
 
     return () => clearInterval(interval);
   }, []);
@@ -55,6 +62,9 @@ export default function Home() {
       <WelcomeAnimation />
       <div className="absolute inset-0" />
       <div className="relative z-10 flex flex-col items-center justify-center text-center p-4">
+        {mainLogoDataUrl && (
+          <Image src={mainLogoDataUrl} alt="Main Logo" width={256} height={128} className="max-h-32 w-auto object-contain mb-8" />
+        )}
         <Logo className="mb-8 text-5xl md:text-7xl text-white" />
         <h1 className="text-4xl font-bold tracking-tighter text-white sm:text-5xl md:text-6xl">
           {title}

@@ -1,9 +1,11 @@
 
+
 "use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -45,8 +47,14 @@ export default function SignupPage() {
   const [invitationCode, setInvitationCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [gradient, setGradient] = useState(gradients[0]);
+  const [mainLogoDataUrl, setMainLogoDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
+    const savedMainLogo = localStorage.getItem('website_main_logo_data_url');
+    if(savedMainLogo) {
+      setMainLogoDataUrl(savedMainLogo);
+    }
+    
     const interval = setInterval(() => {
       setGradient(prev => {
         const currentIndex = gradients.indexOf(prev);
@@ -89,6 +97,9 @@ export default function SignupPage() {
     <div className="flex min-h-screen items-center justify-center p-4 bg-background">
       <Card className={cn("mx-auto w-full max-w-sm transition-all duration-1000", gradient)}>
         <CardHeader className="text-center">
+            {mainLogoDataUrl && (
+              <Image src={mainLogoDataUrl} alt="Main Logo" width={128} height={128} className="mx-auto h-32 w-auto object-contain mb-4" />
+            )}
            <Logo className="justify-center mb-4 text-white"/>
           <CardTitle className="text-2xl text-white">Sign Up</CardTitle>
           <CardDescription className="text-white/80">

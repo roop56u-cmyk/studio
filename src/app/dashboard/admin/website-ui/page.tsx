@@ -121,6 +121,7 @@ export default function WebsiteUIPage() {
     // Website content states
     const [websiteName, setWebsiteName] = useState("TaskReview Hub");
     const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
+    const [mainLogoDataUrl, setMainLogoDataUrl] = useState<string | null>(null);
     const [websiteTitle, setWebsiteTitle] = useState("Welcome to TaskReview Hub");
     const [websiteSubtitle, setWebsiteSubtitle] = useState("Your central place to rate, review, and analyze tasks and services. Get started by creating an account or signing in.");
 
@@ -155,6 +156,8 @@ export default function WebsiteUIPage() {
         if (savedWebsiteName) setWebsiteName(savedWebsiteName);
         const savedLogoDataUrl = localStorage.getItem('website_logo_data_url');
         if (savedLogoDataUrl) setLogoDataUrl(savedLogoDataUrl);
+        const savedMainLogoDataUrl = localStorage.getItem('website_main_logo_data_url');
+        if (savedMainLogoDataUrl) setMainLogoDataUrl(savedMainLogoDataUrl);
         const savedWebsiteTitle = localStorage.getItem('website_title');
         if (savedWebsiteTitle) setWebsiteTitle(savedWebsiteTitle);
         const savedWebsiteSubtitle = localStorage.getItem('website_subtitle');
@@ -192,6 +195,11 @@ export default function WebsiteUIPage() {
         } else {
           localStorage.removeItem('website_logo_data_url');
         }
+        if (mainLogoDataUrl) {
+          localStorage.setItem('website_main_logo_data_url', mainLogoDataUrl);
+        } else {
+          localStorage.removeItem('website_main_logo_data_url');
+        }
         localStorage.setItem('website_title', websiteTitle);
         localStorage.setItem('website_subtitle', websiteSubtitle);
         
@@ -216,21 +224,17 @@ export default function WebsiteUIPage() {
         });
     };
 
-    const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = (e: ChangeEvent<HTMLInputElement>, setLogo: (dataUrl: string | null) => void) => {
       const file = e.target.files?.[0];
       if (file) {
         const reader = new FileReader();
         reader.onloadend = () => {
-          setLogoDataUrl(reader.result as string);
+          setLogo(reader.result as string);
         };
         reader.readAsDataURL(file);
       }
     };
-
-    const handleRemoveLogo = () => {
-      setLogoDataUrl(null);
-    };
-
+    
     const handleSaveButton = (buttonData: Omit<CustomButton, 'id'>) => {
       if (editingButton) {
         setCustomButtons(prev => prev.map(b => b.id === editingButton.id ? { ...b, ...buttonData } : b));
@@ -288,26 +292,47 @@ export default function WebsiteUIPage() {
                 <Input id="website-name" value={websiteName} onChange={(e) => setWebsiteName(e.target.value)} />
                 <p className="text-xs text-muted-foreground">This name appears in the browser tab and next to the logo.</p>
             </div>
-            <div className="space-y-2">
-                <Label>Website Logo</Label>
+             <div className="space-y-2">
+                <Label>Main Welcome Logo (Large)</Label>
                 <div className="flex items-center gap-4">
                   <div className="w-24 h-24 border rounded-md flex items-center justify-center bg-muted">
-                    {logoDataUrl ? (
-                      <Image src={logoDataUrl} alt="Logo preview" width={96} height={96} className="object-contain w-full h-full" />
+                    {mainLogoDataUrl ? (
+                      <Image src={mainLogoDataUrl} alt="Main Logo preview" width={96} height={96} className="object-contain w-full h-full" />
                     ) : (
                       <span className="text-xs text-muted-foreground">No Logo</span>
                     )}
                   </div>
                   <div className="flex-1 space-y-2">
-                    <Input id="logo-upload" type="file" accept="image/*" onChange={handleFileChange} className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"/>
-                    {logoDataUrl && (
-                      <Button variant="destructive" size="sm" onClick={handleRemoveLogo}>
+                    <Input id="main-logo-upload" type="file" accept="image/*" onChange={(e) => handleFileChange(e, setMainLogoDataUrl)} className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"/>
+                    {mainLogoDataUrl && (
+                      <Button variant="destructive" size="sm" onClick={() => setMainLogoDataUrl(null)}>
                         <X className="mr-2 h-4 w-4" /> Remove Logo
                       </Button>
                     )}
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground">Upload a logo to replace the default vector icon. Leave blank to use default.</p>
+                <p className="text-xs text-muted-foreground">The main hero logo for welcome/login screens. Max height: 128px.</p>
+            </div>
+            <div className="space-y-2">
+                <Label>Header Logo (Small)</Label>
+                <div className="flex items-center gap-4">
+                  <div className="w-24 h-24 border rounded-md flex items-center justify-center bg-muted">
+                    {logoDataUrl ? (
+                      <Image src={logoDataUrl} alt="Header Logo preview" width={96} height={96} className="object-contain w-full h-full" />
+                    ) : (
+                      <span className="text-xs text-muted-foreground">No Logo</span>
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <Input id="logo-upload" type="file" accept="image/*" onChange={(e) => handleFileChange(e, setLogoDataUrl)} className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"/>
+                    {logoDataUrl && (
+                      <Button variant="destructive" size="sm" onClick={() => setLogoDataUrl(null)}>
+                        <X className="mr-2 h-4 w-4" /> Remove Logo
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">The small logo that appears next to the website name. Leave blank to use the default icon.</p>
             </div>
              <div className="space-y-2">
                 <Label htmlFor="website-title">Welcome Screen Title</Label>
@@ -436,3 +461,4 @@ export default function WebsiteUIPage() {
     </div>
   );
 }
+
