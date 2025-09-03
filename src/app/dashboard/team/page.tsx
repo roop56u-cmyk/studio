@@ -353,7 +353,7 @@ export default function TeamPage() {
   
   const availableTeamRewards = teamRewards.filter(r => (r.level === 0 || r.level <= currentLevel) && (!r.userEmail || r.userEmail === currentUser?.email));
   const availableTeamSizeRewards = teamSizeRewards.filter(r => (r.level === 0 || r.level <= currentLevel) && (!r.userEmail || r.userEmail === currentUser?.email));
-  const availableSalaryPackages = salaryPackages.filter(p => (p.level === 0 || p.level <= currentLevel) && (!p.userEmail || p.userEmail === currentUser?.email));
+  const availableSalaryPackages = salaryPackages.filter(p => (p.level === 0 || p.level === currentLevel) && (!p.userEmail || p.userEmail === currentUser?.email));
   const uplineReferralProgress = uplineCommissionSettings.requiredReferrals > 0 ? (activeL1Referrals / uplineCommissionSettings.requiredReferrals) * 100 : 100;
 
   return (
