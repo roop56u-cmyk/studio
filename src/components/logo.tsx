@@ -3,24 +3,25 @@
 import type { SVGProps } from "react";
 import { cn } from "@/lib/utils";
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 
 export function Logo({ className, ...props }: SVGProps<SVGSVGElement> & { className?: string }) {
   const [name, setName] = useState("TaskReview Hub");
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const savedName = localStorage.getItem('website_name');
     if (savedName) setName(savedName);
     
-    const savedLogoUrl = localStorage.getItem('website_logo_url');
-    if (savedLogoUrl) setLogoUrl(savedLogoUrl);
+    const savedLogoDataUrl = localStorage.getItem('website_logo_data_url');
+    if (savedLogoDataUrl) setLogoDataUrl(savedLogoDataUrl);
   }, []);
 
 
   return (
     <div className={cn("flex items-center gap-2 text-foreground", className)}>
-      {logoUrl ? (
-        <img src={logoUrl} alt={name} className="h-8 w-auto" />
+      {logoDataUrl ? (
+        <Image src={logoDataUrl} alt={name} className="h-8 w-auto" width={100} height={32} />
       ) : (
         <svg
           xmlns="http://www.w3.org/2000/svg"

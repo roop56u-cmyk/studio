@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, ChangeEvent } from "react";
 import {
   Card,
   CardContent,
@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { PlusCircle, Edit, Trash2 } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Upload, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
@@ -28,6 +28,7 @@ import {
   DialogClose,
   DialogTrigger
 } from "@/components/ui/dialog";
+import Image from "next/image";
 
 // Helper to convert hex to HSL string
 const hexToHslString = (hex: string): string => {
@@ -119,7 +120,7 @@ export default function WebsiteUIPage() {
     
     // Website content states
     const [websiteName, setWebsiteName] = useState("TaskReview Hub");
-    const [logoUrl, setLogoUrl] = useState("");
+    const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
     const [websiteTitle, setWebsiteTitle] = useState("Welcome to TaskReview Hub");
     const [websiteSubtitle, setWebsiteSubtitle] = useState("Your central place to rate, review, and analyze tasks and services. Get started by creating an account or signing in.");
 
@@ -152,8 +153,8 @@ export default function WebsiteUIPage() {
         // Content
         const savedWebsiteName = localStorage.getItem('website_name');
         if (savedWebsiteName) setWebsiteName(savedWebsiteName);
-        const savedLogoUrl = localStorage.getItem('website_logo_url');
-        if (savedLogoUrl) setLogoUrl(savedLogoUrl);
+        const savedLogoDataUrl = localStorage.getItem('website_logo_data_url');
+        if (savedLogoDataUrl) setLogoDataUrl(savedLogoDataUrl);
         const savedWebsiteTitle = localStorage.getItem('website_title');
         if (savedWebsiteTitle) setWebsiteTitle(savedWebsiteTitle);
         const savedWebsiteSubtitle = localStorage.getItem('website_subtitle');
@@ -186,7 +187,11 @@ export default function WebsiteUIPage() {
     const handleSaveChanges = () => {
         // Content
         localStorage.setItem('website_name', websiteName);
-        localStorage.setItem('website_logo_url', logoUrl);
+        if (logoDataUrl) {
+          localStorage.setItem('website_logo_data_url', logoDataUrl);
+        } else {
+          localStorage.removeItem('website_logo_data_url');
+        }
         localStorage.setItem('website_title', websiteTitle);
         localStorage.setItem('website_subtitle', websiteSubtitle);
         
@@ -209,6 +214,21 @@ export default function WebsiteUIPage() {
             title: "Settings Saved",
             description: "Website UI settings have been updated.",
         });
+    };
+
+    const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setLogoDataUrl(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+
+    const handleRemoveLogo = () => {
+      setLogoDataUrl(null);
     };
 
     const handleSaveButton = (buttonData: Omit<CustomButton, 'id'>) => {
@@ -269,9 +289,25 @@ export default function WebsiteUIPage() {
                 <p className="text-xs text-muted-foreground">This name appears in the browser tab and next to the logo.</p>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="logo-url">Logo Image URL</Label>
-                <Input id="logo-url" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://example.com/logo.png" />
-                <p className="text-xs text-muted-foreground">Leave blank to use the default vector logo.</p>
+                <Label>Website Logo</Label>
+                <div className="flex items-center gap-4">
+                  <div className="w-24 h-24 border rounded-md flex items-center justify-center bg-muted">
+                    {logoDataUrl ? (
+                      <Image src={logoDataUrl} alt="Logo preview" width={96} height={96} className="object-contain w-full h-full" />
+                    ) : (
+                      <span className="text-xs text-muted-foreground">No Logo</span>
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <Input id="logo-upload" type="file" accept="image/*" onChange={handleFileChange} className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"/>
+                    {logoDataUrl && (
+                      <Button variant="destructive" size="sm" onClick={handleRemoveLogo}>
+                        <X className="mr-2 h-4 w-4" /> Remove Logo
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">Upload a logo to replace the default vector icon. Leave blank to use default.</p>
             </div>
              <div className="space-y-2">
                 <Label htmlFor="website-title">Welcome Screen Title</Label>
