@@ -8,12 +8,13 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { PlusCircle, Edit, Trash2, Trophy, Users } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Trophy, HandCoins } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,6 +44,8 @@ import {
 } from "@/components/ui/select";
 import { levels as defaultLevels, Level } from "@/components/dashboard/level-tiers";
 import { useAuth } from "@/contexts/AuthContext";
+import { grantManualReward } from "@/app/actions";
+import { Loader2 } from "lucide-react";
 
 export type TeamSizeReward = {
   id: string;
@@ -52,6 +55,91 @@ export type TeamSizeReward = {
   level: number; // 0 for All Levels
   enabled: boolean;
   userEmail?: string;
+};
+
+const ManualGrantForm = () => {
+  const { users } = useAuth();
+  const { toast } = useToast();
+  const [selectedUser, setSelectedUser] = useState("");
+  const [amount, setAmount] = useState("");
+  const [reason, setReason] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleGrant = async () => {
+    if (!selectedUser || !amount || !reason) {
+      toast({ variant: "destructive", title: "Missing fields", description: "Please select a user and fill in all fields." });
+      return;
+    }
+    const numericAmount = parseFloat(amount);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      toast({ variant: "destructive", title: "Invalid Amount", description: "Please enter a valid positive number." });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Fake server delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const mainBalanceKey = `${selectedUser}_mainBalance`;
+      const currentBalance = parseFloat(localStorage.getItem(mainBalanceKey) || '0');
+      localStorage.setItem(mainBalanceKey, (currentBalance + numericAmount).toString());
+
+      const activityHistoryKey = `${selectedUser}_activityHistory`;
+      const currentHistory = JSON.parse(localStorage.getItem(activityHistoryKey) || '[]');
+      const newActivity = {
+        id: `ACT-MANUAL-${Date.now()}`,
+        type: "Manual Team Size Reward",
+        description: `Manually granted by admin: ${reason}`,
+        amount: numericAmount,
+        date: new Date().toISOString(),
+      };
+      localStorage.setItem(activityHistoryKey, JSON.stringify([newActivity, ...currentHistory]));
+
+      toast({ title: "Team Size Reward Granted", description: `${selectedUser} has been credited with $${numericAmount}.` });
+      setSelectedUser("");
+      setAmount("");
+      setReason("");
+    } catch (error) {
+       toast({ variant: "destructive", title: "Error", description: "Could not grant reward." });
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Grant Manual Team Size Reward</CardTitle>
+        <CardDescription>Directly credit a team size reward to a user's main wallet.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label>Select User</Label>
+          <Select value={selectedUser} onValueChange={setSelectedUser}>
+            <SelectTrigger><SelectValue placeholder="Select a user..." /></SelectTrigger>
+            <SelectContent>
+              {users.map(u => <SelectItem key={u.email} value={u.email}>{u.email}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Amount (USDT)</Label>
+          <Input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="e.g., 100" />
+        </div>
+        <div className="space-y-2">
+          <Label>Reason</Label>
+          <Input value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g., Reached 50 active members" />
+        </div>
+      </CardContent>
+      <CardFooter>
+        <Button onClick={handleGrant} disabled={isLoading}>
+          {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <HandCoins className="mr-2 h-4 w-4" />}
+          Grant Reward
+        </Button>
+      </CardFooter>
+    </Card>
+  );
 };
 
 const RewardForm = ({
@@ -233,62 +321,69 @@ export default function ManageTeamSizeRewardsPage() {
                 </div>
             </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Current Rewards ({rewards.length})</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {rewards.map((reward) => (
-                    <div key={reward.id} className="border p-4 rounded-lg flex justify-between items-start gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                             <Trophy className="h-5 w-5 text-primary"/>
-                            <h3 className="font-semibold">{reward.title}</h3>
-                          </div>
-                          <div className="text-xs text-muted-foreground grid grid-cols-2 md:flex md:flex-wrap gap-x-4 gap-y-1 mt-2">
-                              <span><strong className="text-foreground">Required Members:</strong> {reward.requiredActiveMembers}</span>
-                              <span><strong className="text-foreground">Level:</strong> {reward.level === 0 ? 'All' : `${reward.level}+`}</span>
-                              <span><strong className="text-foreground">Reward:</strong> ${reward.rewardAmount.toLocaleString()}</span>
-                              {reward.userEmail && <span><strong className="text-foreground">User:</strong> {reward.userEmail}</span>}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Switch 
-                                checked={reward.enabled}
-                                onCheckedChange={(checked) => handleToggle(reward.id, checked)}
-                            />
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(reward)}>
-                                <Edit className="h-4 w-4" />
-                            </Button>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon">
-                                        <Trash2 className="h-4 w-4 text-destructive" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Current Rewards ({rewards.length})</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {rewards.map((reward) => (
+                            <div key={reward.id} className="border p-4 rounded-lg flex justify-between items-start gap-4">
+                                <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                    <Trophy className="h-5 w-5 text-primary"/>
+                                    <h3 className="font-semibold">{reward.title}</h3>
+                                </div>
+                                <div className="text-xs text-muted-foreground grid grid-cols-2 md:flex md:flex-wrap gap-x-4 gap-y-1 mt-2">
+                                    <span><strong className="text-foreground">Required Members:</strong> {reward.requiredActiveMembers}</span>
+                                    <span><strong className="text-foreground">Level:</strong> {reward.level === 0 ? 'All' : `${reward.level}+`}</span>
+                                    <span><strong className="text-foreground">Reward:</strong> ${reward.rewardAmount.toLocaleString()}</span>
+                                    {reward.userEmail && <span><strong className="text-foreground">User:</strong> {reward.userEmail}</span>}
+                                </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Switch 
+                                        checked={reward.enabled}
+                                        onCheckedChange={(checked) => handleToggle(reward.id, checked)}
+                                    />
+                                    <Button variant="ghost" size="icon" onClick={() => handleEdit(reward)}>
+                                        <Edit className="h-4 w-4" />
                                     </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Delete Reward?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Are you sure you want to delete this team size reward? This cannot be undone.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDelete(reward.id)} className="bg-destructive hover:bg-destructive/90">
-                                            Delete
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
-                    </div>
-                    ))}
-                    {rewards.length === 0 && (
-                        <p className="text-muted-foreground text-center py-12">No team size rewards have been configured yet.</p>
-                    )}
-                </CardContent>
-            </Card>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon">
+                                                <Trash2 className="h-4 w-4 text-destructive" />
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Delete Reward?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Are you sure you want to delete this team size reward? This cannot be undone.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleDelete(reward.id)} className="bg-destructive hover:bg-destructive/90">
+                                                    Delete
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </div>
+                            </div>
+                            ))}
+                            {rewards.length === 0 && (
+                                <p className="text-muted-foreground text-center py-12">No team size rewards have been configured yet.</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+                <div>
+                    <ManualGrantForm />
+                </div>
+            </div>
         </div>
         
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>

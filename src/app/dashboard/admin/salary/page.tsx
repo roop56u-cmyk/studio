@@ -8,12 +8,13 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { PlusCircle, Edit, Trash2, DollarSign, CalendarClock, User, Star, Briefcase, UserCheck as UserCheckIcon } from "lucide-react";
+import { PlusCircle, Edit, Trash2, DollarSign, CalendarClock, User, Star, Briefcase, UserCheck as UserCheckIcon, HandCoins } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,6 +44,8 @@ import {
 import { levels as defaultLevels, Level } from "@/components/dashboard/level-tiers";
 import { useAuth } from "@/contexts/AuthContext";
 import { Switch } from "@/components/ui/switch";
+import { grantManualReward } from "@/app/actions";
+import { Loader2 } from "lucide-react";
 
 export type SalaryPackage = {
   id: string;
@@ -55,6 +58,95 @@ export type SalaryPackage = {
   requiredActiveReferrals: number;
   enabled: boolean;
 };
+
+const ManualGrantForm = () => {
+  const { users } = useAuth();
+  const { toast } = useToast();
+  const [selectedUser, setSelectedUser] = useState("");
+  const [amount, setAmount] = useState("");
+  const [reason, setReason] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleGrant = async () => {
+    if (!selectedUser || !amount || !reason) {
+      toast({ variant: "destructive", title: "Missing fields", description: "Please select a user and fill in all fields." });
+      return;
+    }
+    const numericAmount = parseFloat(amount);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      toast({ variant: "destructive", title: "Invalid Amount", description: "Please enter a valid positive number." });
+      return;
+    }
+
+    setIsLoading(true);
+    // This is a server action, it won't have direct access to localStorage.
+    // In a real app, this would update a database.
+    // For this demo, we will log to console and assume success, then update client-side state.
+    try {
+      // Fake server delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const mainBalanceKey = `${selectedUser}_mainBalance`;
+      const currentBalance = parseFloat(localStorage.getItem(mainBalanceKey) || '0');
+      localStorage.setItem(mainBalanceKey, (currentBalance + numericAmount).toString());
+
+      const activityHistoryKey = `${selectedUser}_activityHistory`;
+      const currentHistory = JSON.parse(localStorage.getItem(activityHistoryKey) || '[]');
+      const newActivity = {
+        id: `ACT-MANUAL-${Date.now()}`,
+        type: "Manual Salary",
+        description: `Manually granted by admin: ${reason}`,
+        amount: numericAmount,
+        date: new Date().toISOString(),
+      };
+      localStorage.setItem(activityHistoryKey, JSON.stringify([newActivity, ...currentHistory]));
+
+      toast({ title: "Salary Granted", description: `${selectedUser} has been credited with $${numericAmount}.` });
+      setSelectedUser("");
+      setAmount("");
+      setReason("");
+    } catch (error) {
+       toast({ variant: "destructive", title: "Error", description: "Could not grant salary." });
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Grant Manual Salary</CardTitle>
+        <CardDescription>Directly credit a salary bonus to a user's main wallet.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label>Select User</Label>
+          <Select value={selectedUser} onValueChange={setSelectedUser}>
+            <SelectTrigger><SelectValue placeholder="Select a user..." /></SelectTrigger>
+            <SelectContent>
+              {users.map(u => <SelectItem key={u.email} value={u.email}>{u.email}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Amount (USDT)</Label>
+          <Input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="e.g., 500" />
+        </div>
+        <div className="space-y-2">
+          <Label>Reason</Label>
+          <Input value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g., Top performer award" />
+        </div>
+      </CardContent>
+      <CardFooter>
+        <Button onClick={handleGrant} disabled={isLoading}>
+          {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <HandCoins className="mr-2 h-4 w-4" />}
+          Grant Salary
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+};
+
 
 const SalaryPackageForm = ({
   pkg,
@@ -244,51 +336,58 @@ export default function ManageSalaryPage() {
             </Button>
           </div>
         </div>
-        <Card>
-          <CardHeader>
-            <CardTitle>Current Packages ({packages.length})</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {packages.map((pkg) => (
-              <div key={pkg.id} className="border p-4 rounded-lg flex justify-between items-start gap-4">
-                <div className="flex-1 space-y-2">
-                  <h3 className="font-semibold">{pkg.name}</h3>
-                  <div className="text-xs text-muted-foreground grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
-                    <div className="flex items-center gap-1.5"><DollarSign className="h-3 w-3"/><span>${pkg.amount.toLocaleString()}</span></div>
-                    <div className="flex items-center gap-1.5"><CalendarClock className="h-3 w-3"/><span>Every {pkg.periodDays} days</span></div>
-                    <div className="flex items-center gap-1.5"><Star className="h-3 w-3"/><span>Level {pkg.level === 0 ? "All" : `${pkg.level}+`}</span></div>
-                     <div className="flex items-center gap-1.5"><Briefcase className="h-3 w-3"/><span>&gt; ${pkg.requiredTeamBusiness.toLocaleString()} business</span></div>
-                     <div className="flex items-center gap-1.5"><UserCheckIcon className="h-3 w-3"/><span>&gt; {pkg.requiredActiveReferrals} active L1</span></div>
-                    <div className="flex items-center gap-1.5"><User className="h-3 w-3"/><span>{pkg.userEmail || "All Users"}</span></div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                   <Switch 
-                    checked={pkg.enabled}
-                    onCheckedChange={(checked) => handleToggle(pkg.id, checked)}
-                  />
-                  <Button variant="ghost" size="icon" onClick={() => handleEdit(pkg)}><Edit className="h-4 w-4" /></Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Package?</AlertDialogTitle>
-                        <AlertDialogDescription>This will remove the salary package. This cannot be undone.</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDelete(pkg.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </div>
-            ))}
-            {packages.length === 0 && (
-              <p className="text-muted-foreground text-center py-12">No salary packages configured.</p>
-            )}
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+                <Card>
+                <CardHeader>
+                    <CardTitle>Current Packages ({packages.length})</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {packages.map((pkg) => (
+                    <div key={pkg.id} className="border p-4 rounded-lg flex justify-between items-start gap-4">
+                        <div className="flex-1 space-y-2">
+                        <h3 className="font-semibold">{pkg.name}</h3>
+                        <div className="text-xs text-muted-foreground grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+                            <div className="flex items-center gap-1.5"><DollarSign className="h-3 w-3"/><span>${pkg.amount.toLocaleString()}</span></div>
+                            <div className="flex items-center gap-1.5"><CalendarClock className="h-3 w-3"/><span>Every {pkg.periodDays} days</span></div>
+                            <div className="flex items-center gap-1.5"><Star className="h-3 w-3"/><span>Level {pkg.level === 0 ? "All" : `${pkg.level}+`}</span></div>
+                            <div className="flex items-center gap-1.5"><Briefcase className="h-3 w-3"/><span>&gt; ${pkg.requiredTeamBusiness.toLocaleString()} business</span></div>
+                            <div className="flex items-center gap-1.5"><UserCheckIcon className="h-3 w-3"/><span>&gt; {pkg.requiredActiveReferrals} active L1</span></div>
+                            <div className="flex items-center gap-1.5"><User className="h-3 w-3"/><span>{pkg.userEmail || "All Users"}</span></div>
+                        </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                        <Switch 
+                            checked={pkg.enabled}
+                            onCheckedChange={(checked) => handleToggle(pkg.id, checked)}
+                        />
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(pkg)}><Edit className="h-4 w-4" /></Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
+                            <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Package?</AlertDialogTitle>
+                                <AlertDialogDescription>This will remove the salary package. This cannot be undone.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(pkg.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                        </div>
+                    </div>
+                    ))}
+                    {packages.length === 0 && (
+                    <p className="text-muted-foreground text-center py-12">No salary packages configured.</p>
+                    )}
+                </CardContent>
+                </Card>
+            </div>
+            <div>
+                <ManualGrantForm />
+            </div>
+        </div>
       </div>
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="sm:max-w-lg">
