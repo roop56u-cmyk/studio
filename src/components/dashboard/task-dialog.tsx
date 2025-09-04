@@ -62,15 +62,10 @@ export function TaskDialog({ open, onOpenChange }: TaskDialogProps) {
           <DialogDescription>Submit a review for the current task.</DialogDescription>
         </DialogHeader>
          <div className={cn("p-6 rounded-t-lg transition-colors duration-500", headerBg)}>
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-start mb-4">
                 <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center">
                     <Utensils className="h-6 w-6 text-yellow-500" />
                 </div>
-                 <DialogClose asChild>
-                    <button className="h-8 w-8 rounded-full bg-black/10 flex items-center justify-center text-white">
-                        <X className="h-5 w-5" />
-                    </button>
-                </DialogClose>
             </div>
             <h2 className="text-2xl font-bold text-gray-800">{currentTask?.taskTitle ?? "Loading Task..."}</h2>
             <p className="text-sm text-gray-700">{currentTask?.taskDescription ?? "Please wait while we prepare your next task."}</p>
