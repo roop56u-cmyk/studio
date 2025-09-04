@@ -98,7 +98,7 @@ export default function SignupPage() {
       <Card className={cn("mx-auto w-full max-w-sm transition-all duration-1000", gradient)}>
         <CardHeader className="text-center">
             {mainLogoDataUrl && (
-              <Image src={mainLogoDataUrl} alt="Main Logo" width={128} height={128} className="mx-auto h-32 w-auto object-contain mb-4" />
+              <Image src={mainLogoDataUrl} alt="Main Logo" width={128} height={128} className="mx-auto h-32 w-auto object-contain mb-4" unoptimized />
             )}
            <Logo className="justify-center mb-4 text-white"/>
           <CardTitle className="text-2xl text-white">Sign Up</CardTitle>

@@ -77,7 +77,7 @@ export default function Home() {
       <div className="absolute inset-0" />
       <div className="relative z-10 flex flex-col items-center justify-center text-center p-4">
         {mainLogoDataUrl && (
-          <Image src={mainLogoDataUrl} alt="Main Logo" width={256} height={128} className="max-h-32 w-auto object-contain mb-8" />
+          <Image src={mainLogoDataUrl} alt="Main Logo" width={256} height={128} className="max-h-32 w-auto object-contain mb-8" unoptimized />
         )}
         <Logo className="mb-8 text-5xl md:text-7xl text-white" />
         <h1 className="text-4xl font-bold tracking-tighter text-white sm:text-5xl md:text-6xl">

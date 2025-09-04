@@ -1,4 +1,5 @@
 
+
 "use client";
 import type { SVGProps } from "react";
 import { cn } from "@/lib/utils";
@@ -21,7 +22,7 @@ export function Logo({ className, ...props }: SVGProps<SVGSVGElement> & { classN
   return (
     <div className={cn("flex items-center gap-2 text-foreground", className)}>
       {logoDataUrl ? (
-        <Image src={logoDataUrl} alt={name} className="h-8 w-auto" width={100} height={32} />
+        <Image src={logoDataUrl} alt={name} className="h-8 w-auto" width={100} height={32} unoptimized />
       ) : (
         <svg
           xmlns="http://www.w3.org/2000/svg"
