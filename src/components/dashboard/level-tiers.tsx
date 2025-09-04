@@ -132,7 +132,7 @@ interface LevelTiersProps {
 
 export function LevelTiers({ onStartTasks, isTaskLocked }: LevelTiersProps) {
     
-  const { levelUnlockProgress } = useWallet();
+  const { levelUnlockProgress, taskLevel } = useWallet();
   const [displayLevels, setDisplayLevels] = useState<Level[]>(levels.filter(l => l.level > 0));
 
   useEffect(() => {
@@ -156,6 +156,7 @@ export function LevelTiers({ onStartTasks, isTaskLocked }: LevelTiersProps) {
             <CarouselContent className="-ml-2">
             {displayLevels.map((level, index) => {
                 const { isUnlocked, isCurrentLevel, referralProgress = 0, currentReferrals = 0 } = levelUnlockProgress[level.level] || {};
+                const isTaskLevel = level.level === taskLevel;
                 const gradientClass = levelGradients[index % levelGradients.length];
                 return (
                 <CarouselItem key={level.level} className="basis-full pl-2 pb-4">
@@ -208,7 +209,7 @@ export function LevelTiers({ onStartTasks, isTaskLocked }: LevelTiersProps) {
                                     </div>
                                 </CardContent>
                             </div>
-                             {isCurrentLevel && (
+                             {isTaskLevel && (
                                 <CardFooter className="p-3">
                                     <Button onClick={onStartTasks} className="w-full bg-white/90 text-primary hover:bg-white" size="sm">
                                         <PlayCircle className="mr-2 h-4 w-4" />
