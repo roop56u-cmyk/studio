@@ -307,8 +307,23 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const taskQuotaBoost = useMemo(() => activeBoosters.find(b => b.type === 'TASK_QUOTA')?.value || 0, [activeBoosters]);
   const interestRateBoost = useMemo(() => activeBoosters.find(b => b.type === 'INTEREST_RATE')?.value || 0, [activeBoosters]);
   
-  const { rate: baseRate, dailyTasks: baseDailyTaskQuota, monthlyWithdrawals: monthlyWithdrawalLimit, minWithdrawal: minWithdrawalAmount, maxWithdrawal: maxWithdrawalAmount, withdrawalFee } = currentLevelData;
-  const currentRate = baseRate + interestRateBoost;
+  const { dailyTasks: baseDailyTaskQuota, monthlyWithdrawals: monthlyWithdrawalLimit, minWithdrawal: minWithdrawalAmount, maxWithdrawal: maxWithdrawalAmount, withdrawalFee } = currentLevelData;
+  
+  const currentRate = useMemo(() => {
+    const userAccountLevel = currentLevelData;
+    
+    // Determine the level based *only* on the interest balance
+    const interestLevelData = configuredLevels
+        .slice()
+        .reverse()
+        .find(l => interestEarningsBalance >= l.minAmount) ?? configuredLevels[0];
+
+    // The final rate is the lower of the user's account level rate and their interest balance qualifying rate
+    const finalRate = Math.min(userAccountLevel.rate, interestLevelData.rate);
+
+    return finalRate + interestRateBoost;
+  }, [currentLevelData, interestEarningsBalance, configuredLevels, interestRateBoost]);
+
   const dailyTaskQuota = baseDailyTaskQuota + taskQuotaBoost;
   
   const earningPerTask = useMemo(() => {
@@ -318,11 +333,11 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         return baseEarning + (baseEarning * (taskEarningBoost / 100));
     }
     if (dailyTaskQuota === 0 || taskRewardsBalance < minRequiredBalanceForLevel(currentLevel)) return 0;
-    const dailyEarningPotential = taskRewardsBalance * (currentRate / 100);
+    const dailyEarningPotential = taskRewardsBalance * (currentLevelData.rate / 100);
     const baseEarning = dailyEarningPotential / dailyTaskQuota;
     const taskEarningBoost = activeBoosters.find(b => b.type === 'TASK_EARNING')?.value || 0;
     return baseEarning + (baseEarning * (taskEarningBoost / 100));
-  }, [taskRewardsBalance, currentRate, dailyTaskQuota, earningModel, currentLevelData, currentLevel, minRequiredBalanceForLevel, activeBoosters]);
+  }, [taskRewardsBalance, currentLevelData, dailyTaskQuota, earningModel, currentLevel, minRequiredBalanceForLevel, activeBoosters]);
   
   useEffect(() => {
     setIsLoading(true);
