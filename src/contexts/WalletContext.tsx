@@ -14,7 +14,7 @@ import type { DailyReward } from '@/app/dashboard/admin/daily-rewards/page';
 export type Request = {
     id: string;
     user: string;
-    type: 'Recharge' | 'Withdrawal' | 'Team Reward' | 'Team Size Reward' | 'Sign-up Bonus' | 'Referral Bonus' | 'Salary Claim';
+    type: 'Recharge' | 'Withdrawal' | 'Team Reward' | 'Team Size Reward' | 'Sign-up Bonus' | 'Referral Bonus' | 'Salary Claim' | 'Reimbursement';
     amount: number;
     address: string | null;
     level: number;
@@ -88,6 +88,7 @@ interface WalletContextType {
   interestEarningsBalance: number;
   committedBalance: number;
   currentLevel: number;
+  taskLevel: number;
   currentRate: number;
   dailyTaskQuota: number;
   monthlyWithdrawalLimit: number;
@@ -307,37 +308,44 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const taskQuotaBoost = useMemo(() => activeBoosters.find(b => b.type === 'TASK_QUOTA')?.value || 0, [activeBoosters]);
   const interestRateBoost = useMemo(() => activeBoosters.find(b => b.type === 'INTEREST_RATE')?.value || 0, [activeBoosters]);
   
-  const { dailyTasks: baseDailyTaskQuota, monthlyWithdrawals: monthlyWithdrawalLimit, minWithdrawal: minWithdrawalAmount, maxWithdrawal: maxWithdrawalAmount, withdrawalFee } = currentLevelData;
+  const taskLevel = useMemo(() => {
+    return configuredLevels.slice().reverse().find(l => taskRewardsBalance >= l.minAmount)?.level ?? 0;
+  }, [taskRewardsBalance, configuredLevels]);
+
+  const taskLevelData = useMemo(() => {
+    return configuredLevels.find(l => l.level === taskLevel) ?? configuredLevels[0];
+  }, [configuredLevels, taskLevel]);
+
+  const { monthlyWithdrawalLimit, minWithdrawalAmount, maxWithdrawalAmount, withdrawalFee } = currentLevelData;
+  const dailyTaskQuota = taskLevelData.dailyTasks + taskQuotaBoost;
   
   const currentRate = useMemo(() => {
-    const userAccountLevel = currentLevelData;
+    const userAccountLevelData = currentLevelData;
     
-    // Determine the level based *only* on the interest balance
     const interestLevelData = configuredLevels
         .slice()
         .reverse()
         .find(l => interestEarningsBalance >= l.minAmount) ?? configuredLevels[0];
 
-    // The final rate is the lower of the user's account level rate and their interest balance qualifying rate
-    const finalRate = Math.min(userAccountLevel.rate, interestLevelData.rate);
+    const finalRate = Math.min(userAccountLevelData.rate, interestLevelData.rate);
 
     return finalRate + interestRateBoost;
   }, [currentLevelData, interestEarningsBalance, configuredLevels, interestRateBoost]);
-
-  const dailyTaskQuota = baseDailyTaskQuota + taskQuotaBoost;
   
   const earningPerTask = useMemo(() => {
     if (earningModel === 'fixed') {
         const taskEarningBoost = activeBoosters.find(b => b.type === 'TASK_EARNING')?.value || 0;
-        const baseEarning = currentLevelData.earningPerTask || 0;
+        const baseEarning = taskLevelData.earningPerTask || 0;
         return baseEarning + (baseEarning * (taskEarningBoost / 100));
     }
-    if (dailyTaskQuota === 0 || taskRewardsBalance < minRequiredBalanceForLevel(currentLevel)) return 0;
-    const dailyEarningPotential = taskRewardsBalance * (currentLevelData.rate / 100);
-    const baseEarning = dailyEarningPotential / dailyTaskQuota;
+    if (dailyTaskQuota === 0 || taskRewardsBalance < minRequiredBalanceForLevel(taskLevel)) return 0;
+    
+    const dailyEarningPotential = taskRewardsBalance * (taskLevelData.rate / 100);
+    const baseEarning = dailyTaskQuota > 0 ? dailyEarningPotential / dailyTaskQuota : 0;
+    
     const taskEarningBoost = activeBoosters.find(b => b.type === 'TASK_EARNING')?.value || 0;
     return baseEarning + (baseEarning * (taskEarningBoost / 100));
-  }, [taskRewardsBalance, currentLevelData, dailyTaskQuota, earningModel, currentLevel, minRequiredBalanceForLevel, activeBoosters]);
+  }, [taskRewardsBalance, taskLevelData, dailyTaskQuota, earningModel, taskLevel, minRequiredBalanceForLevel, activeBoosters]);
   
   useEffect(() => {
     setIsLoading(true);
@@ -1010,6 +1018,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         interestEarningsBalance,
         committedBalance,
         currentLevel,
+        taskLevel,
         currentRate,
         dailyTaskQuota,
         monthlyWithdrawalLimit,

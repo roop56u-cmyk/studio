@@ -46,13 +46,13 @@ export function ReviewForm({ onTaskLoaded, onTaskCompleted, onCancel }: ReviewFo
       completeTask, 
       tasksCompletedToday, 
       dailyTaskQuota, 
-      committedBalance, 
-      currentLevel, 
+      taskRewardsBalance,
+      taskLevel,
       minRequiredBalanceForLevel 
   } = useWallet();
 
-  const minBalanceForLevel = minRequiredBalanceForLevel(currentLevel);
-  const hasSufficientBalance = committedBalance >= minBalanceForLevel;
+  const minBalanceForTaskLevel = minRequiredBalanceForLevel(taskLevel);
+  const hasSufficientBalance = taskRewardsBalance >= minBalanceForTaskLevel;
 
   const form = useForm<ReviewFormValues>({
     resolver: zodResolver(reviewSchema),
@@ -147,14 +147,14 @@ export function ReviewForm({ onTaskLoaded, onTaskCompleted, onCancel }: ReviewFo
       )
   }
   
-  if (!hasSufficientBalance && currentLevel > 0) {
+  if (!hasSufficientBalance && taskLevel > 0) {
      return (
         <div className="text-center py-8">
             <ShieldAlert className="mx-auto h-12 w-12 text-destructive mb-4" />
             <h3 className="text-lg font-semibold">Insufficient Balance</h3>
             <p className="text-muted-foreground text-sm mt-1">
-                Your committed balance of ${committedBalance.toFixed(2)} is below the ${minBalanceForLevel.toLocaleString()} minimum required for Level {currentLevel}.
-                Please add more funds to your Task or Interest wallets to continue.
+                Your Task Rewards balance of ${taskRewardsBalance.toFixed(2)} is below the ${minBalanceForTaskLevel.toLocaleString()} minimum required for Level {taskLevel} tasks.
+                Please add more funds to your Task Rewards wallet to continue.
             </p>
             <Button onClick={onCancel} className="mt-4">Close</Button>
         </div>

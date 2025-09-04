@@ -52,6 +52,7 @@ export default function UserDashboardPage() {
     tasksCompletedToday,
     handleMoveFunds,
     currentLevel,
+    taskLevel,
     committedBalance,
     minRequiredBalanceForLevel,
     dailyRewardState,
@@ -71,23 +72,24 @@ export default function UserDashboardPage() {
   const [isBalanceWarningOpen, setIsBalanceWarningOpen] = React.useState(false);
   const [warningMessage, setWarningMessage] = React.useState("");
 
-  const minBalanceForLevel = minRequiredBalanceForLevel(currentLevel);
-  const hasSufficientTotalBalance = committedBalance >= minBalanceForLevel;
-  const hasSufficientTaskBalance = taskRewardsBalance >= minBalanceForLevel;
-
+  const minBalanceForCurrentLevel = minRequiredBalanceForLevel(currentLevel);
+  const minBalanceForTaskLevel = minRequiredBalanceForLevel(taskLevel);
+  const hasSufficientTotalBalance = committedBalance >= minBalanceForCurrentLevel;
+  const hasSufficientTaskBalance = taskRewardsBalance >= minBalanceForTaskLevel;
+  
   const allTasksCompleted = tasksCompletedToday >= dailyTaskQuota;
-  const isTaskLockedByLevel = currentLevel === 0 || !hasSufficientTotalBalance;
-  const isTaskLockedByBalance = !hasSufficientTaskBalance && currentLevel > 0;
+  const isTaskLockedByLevel = taskLevel === 0;
+  const isTaskLockedByBalance = !hasSufficientTaskBalance && taskLevel > 0;
   
   const finalIsTaskLocked = isTaskLockedByLevel || isTaskLockedByBalance || allTasksCompleted;
   const isInterestLocked = currentLevel === 0 || !hasSufficientTotalBalance;
 
   const handleStartTasks = () => {
     if (isTaskLockedByLevel) {
-        setWarningMessage(`Your total committed balance of $${committedBalance.toFixed(2)} is below the $${minBalanceForLevel.toLocaleString()} minimum required for Level ${currentLevel}. Please add more funds to unlock tasks.`);
+        setWarningMessage(`Your Task Rewards balance is $${taskRewardsBalance.toFixed(2)}. You must have at least $${minRequiredBalanceForLevel(1).toLocaleString()} to start tasks.`);
         setIsBalanceWarningOpen(true);
     } else if (isTaskLockedByBalance) {
-         setWarningMessage(`Your Task Rewards balance is $${taskRewardsBalance.toFixed(2)}. You need at least $${minBalanceForLevel.toLocaleString()} in your Task Rewards wallet to start tasks for Level ${currentLevel}.`);
+         setWarningMessage(`Your Task Rewards balance is $${taskRewardsBalance.toFixed(2)}. You need at least $${minBalanceForTaskLevel.toLocaleString()} in your Task Rewards wallet to start tasks for Level ${taskLevel}.`);
         setIsBalanceWarningOpen(true);
     } else {
         setIsTaskDialogOpen(true);
