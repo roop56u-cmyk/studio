@@ -91,6 +91,15 @@ const ButtonForm = ({
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) {
+          if (file.size > 5 * 1024 * 1024) { // 5MB limit
+             toast({
+                title: "File Too Large",
+                description: "The uploaded file exceeds the 5MB limit for this feature.",
+                variant: "destructive",
+            });
+            e.target.value = ''; // Clear the input
+            return;
+          }
           const reader = new FileReader();
           reader.onloadend = () => {
               setFileDataUrl(reader.result as string);
@@ -140,7 +149,7 @@ const ButtonForm = ({
           <Separator className="flex-1" />
       </div>
        <div className="space-y-2">
-        <Label htmlFor="button-file">Upload File (e.g., .apk)</Label>
+        <Label htmlFor="button-file">Upload File (e.g., .apk, max 5MB)</Label>
         <Input id="button-file" type="file" onChange={handleFileChange} />
         {fileName && <p className="text-xs text-muted-foreground mt-1">Selected: {fileName}</p>}
       </div>
@@ -247,19 +256,14 @@ export default function WebsiteUIPage() {
         localStorage.setItem('theme_accent_color', accentColor);
         localStorage.setItem('theme_background_color', backgroundColor);
         
-        // Custom Buttons
-        localStorage.setItem('website_custom_buttons', JSON.stringify(customButtons));
-
-        applyColors();
-        
-        // Force a page reload to apply changes to components that don't re-render automatically
-        // like the logo and title. A more advanced solution would use a global state manager.
-        window.location.reload();
+        // Custom Buttons are saved instantly, so we don't need to save them here again.
 
         toast({
             title: "Settings Saved",
-            description: "Website UI settings have been updated.",
+            description: "Website UI settings have been updated. Reloading to apply all changes.",
         });
+        
+        setTimeout(() => window.location.reload(), 1000);
     };
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>, setLogo: (dataUrl: string | null) => void) => {
@@ -273,14 +277,21 @@ export default function WebsiteUIPage() {
       }
     };
     
+    const persistButtons = (newButtons: CustomButton[]) => {
+      setCustomButtons(newButtons);
+      localStorage.setItem('website_custom_buttons', JSON.stringify(newButtons));
+    }
+
     const handleSaveButton = (buttonData: Omit<CustomButton, 'id' | 'enabled'> & { enabled?: boolean }) => {
+      let newButtons: CustomButton[];
       if (editingButton) {
-        setCustomButtons(prev => prev.map(b => b.id === editingButton.id ? { ...editingButton, ...buttonData } : b));
+        newButtons = customButtons.map(b => b.id === editingButton.id ? { ...editingButton, ...buttonData } : b)
         toast({ title: "Button Updated" });
       } else {
-        setCustomButtons(prev => [...prev, { ...buttonData, id: `BTN-${Date.now()}`, enabled: true }]);
+        newButtons = [...customButtons, { ...buttonData, id: `BTN-${Date.now()}`, enabled: true }];
         toast({ title: "Button Added" });
       }
+      persistButtons(newButtons);
       closeButtonForm();
     };
 
@@ -290,12 +301,14 @@ export default function WebsiteUIPage() {
     }
     
     const handleDeleteButton = (id: string) => {
-        setCustomButtons(prev => prev.filter(b => b.id !== id));
+        const newButtons = customButtons.filter(b => b.id !== id);
+        persistButtons(newButtons);
         toast({ title: "Button Deleted", variant: 'destructive' });
     }
 
     const handleToggleButton = (id: string, enabled: boolean) => {
-        setCustomButtons(prev => prev.map(b => b.id === id ? { ...b, enabled } : b));
+        const newButtons = customButtons.map(b => b.id === id ? { ...b, enabled } : b);
+        persistButtons(newButtons);
         toast({ title: `Button ${enabled ? "Enabled" : "Disabled"}` });
     }
 
@@ -335,7 +348,7 @@ export default function WebsiteUIPage() {
                 <div className="flex items-center gap-4">
                   <div className="w-24 h-24 border rounded-md flex items-center justify-center bg-muted">
                     {mainLogoDataUrl ? (
-                      <Image src={mainLogoDataUrl} alt="Main Logo preview" width={96} height={96} className="object-contain w-full h-full" />
+                      <Image src={mainLogoDataUrl} alt="Main Logo preview" width={96} height={96} className="object-contain w-full h-full" unoptimized />
                     ) : (
                       <span className="text-xs text-muted-foreground">No Logo</span>
                     )}
@@ -356,7 +369,7 @@ export default function WebsiteUIPage() {
                 <div className="flex items-center gap-4">
                   <div className="w-24 h-24 border rounded-md flex items-center justify-center bg-muted">
                     {logoDataUrl ? (
-                      <Image src={logoDataUrl} alt="Header Logo preview" width={96} height={96} className="object-contain w-full h-full" />
+                      <Image src={logoDataUrl} alt="Header Logo preview" width={96} height={96} className="object-contain w-full h-full" unoptimized />
                     ) : (
                       <span className="text-xs text-muted-foreground">No Logo</span>
                     )}
