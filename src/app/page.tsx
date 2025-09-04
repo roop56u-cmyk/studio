@@ -56,6 +56,20 @@ export default function Home() {
 
     return () => clearInterval(interval);
   }, []);
+  
+  const handleButtonClick = (button: CustomButton) => {
+    if (button.url.startsWith('data:')) {
+      const link = document.createElement('a');
+      link.href = button.url;
+      link.download = button.fileName || 'download';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      window.open(button.url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
 
   return (
     <div className={cn("relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden transition-all duration-1000", gradient)}>
@@ -80,8 +94,8 @@ export default function Home() {
             <Link href="/login">Sign In</Link>
           </Button>
            {customButtons.filter(b => b.enabled).map(button => (
-            <Button asChild size="lg" variant="outline" key={button.id} className="bg-transparent text-white border-white/50 hover:bg-white/10 hover:text-white">
-              <Link href={button.url} target="_blank" rel="noopener noreferrer">{button.text}</Link>
+            <Button size="lg" variant="outline" key={button.id} onClick={() => handleButtonClick(button)} className="bg-transparent text-white border-white/50 hover:bg-white/10 hover:text-white">
+              {button.text}
             </Button>
           ))}
         </div>

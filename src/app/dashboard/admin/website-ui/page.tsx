@@ -29,6 +29,7 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog";
 import Image from "next/image";
+import { Separator } from "@/components/ui/separator";
 
 // Helper to convert hex to HSL string
 const hexToHslString = (hex: string): string => {
@@ -67,7 +68,8 @@ const hexToHslString = (hex: string): string => {
 export type CustomButton = {
   id: string;
   text: string;
-  url: string;
+  url: string; // Can be a standard URL or a Data URL for a file
+  fileName?: string; // Original name of the uploaded file
   enabled: boolean;
 };
 
@@ -77,21 +79,47 @@ const ButtonForm = ({
   onClose,
 }: {
   button: Partial<CustomButton> | null;
-  onSave: (button: Omit<CustomButton, 'id'>) => void;
+  onSave: (button: Omit<CustomButton, 'id' | 'enabled'> & { enabled?: boolean }) => void;
   onClose: () => void;
 }) => {
   const [text, setText] = useState(button?.text || 'Download App');
-  const [url, setUrl] = useState(button?.url || '');
+  const [url, setUrl] = useState(button?.url && !button.url.startsWith('data:') ? button.url : '');
+  const [fileDataUrl, setFileDataUrl] = useState(button?.url && button.url.startsWith('data:') ? button.url : null);
+  const [fileName, setFileName] = useState(button?.fileName || '');
+  const { toast } = useToast();
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+              setFileDataUrl(reader.result as string);
+              setFileName(file.name);
+              setUrl(''); // Clear URL if a file is uploaded
+              toast({ title: "File Selected", description: file.name });
+          };
+          reader.readAsDataURL(file);
+      }
+  };
+
+  const handleUrlChange = (e: ChangeEvent<HTMLInputElement>) => {
+      setUrl(e.target.value);
+      if (e.target.value) {
+          setFileDataUrl(null); // Clear file if URL is typed
+          setFileName('');
+      }
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text || !url) {
-      alert("Please fill all fields.");
+    if (!text || (!url && !fileDataUrl)) {
+      alert("Please provide either a URL or upload a file.");
       return;
     }
     onSave({
       text,
-      url,
+      url: fileDataUrl || url,
+      fileName: fileName || undefined,
       enabled: button?.enabled ?? true,
     });
   };
@@ -104,7 +132,17 @@ const ButtonForm = ({
       </div>
       <div className="space-y-2">
         <Label htmlFor="button-url">Button URL</Label>
-        <Input id="button-url" type="url" placeholder="https://example.com/download" value={url} onChange={(e) => setUrl(e.target.value)} required />
+        <Input id="button-url" type="url" placeholder="https://example.com/download" value={url} onChange={handleUrlChange} />
+      </div>
+      <div className="flex items-center gap-2">
+          <Separator className="flex-1" />
+          <span className="text-xs text-muted-foreground">OR</span>
+          <Separator className="flex-1" />
+      </div>
+       <div className="space-y-2">
+        <Label htmlFor="button-file">Upload File (e.g., .apk)</Label>
+        <Input id="button-file" type="file" onChange={handleFileChange} />
+        {fileName && <p className="text-xs text-muted-foreground mt-1">Selected: {fileName}</p>}
       </div>
       <DialogFooter>
         <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
@@ -235,12 +273,12 @@ export default function WebsiteUIPage() {
       }
     };
     
-    const handleSaveButton = (buttonData: Omit<CustomButton, 'id'>) => {
+    const handleSaveButton = (buttonData: Omit<CustomButton, 'id' | 'enabled'> & { enabled?: boolean }) => {
       if (editingButton) {
-        setCustomButtons(prev => prev.map(b => b.id === editingButton.id ? { ...b, ...buttonData } : b));
+        setCustomButtons(prev => prev.map(b => b.id === editingButton.id ? { ...editingButton, ...buttonData } : b));
         toast({ title: "Button Updated" });
       } else {
-        setCustomButtons(prev => [...prev, { ...buttonData, id: `BTN-${Date.now()}` }]);
+        setCustomButtons(prev => [...prev, { ...buttonData, id: `BTN-${Date.now()}`, enabled: true }]);
         toast({ title: "Button Added" });
       }
       closeButtonForm();
@@ -356,7 +394,7 @@ export default function WebsiteUIPage() {
             <div key={button.id} className="border p-3 rounded-lg flex justify-between items-center gap-4">
               <div className="flex-1 overflow-hidden">
                 <p className="font-semibold truncate">{button.text}</p>
-                <p className="text-xs text-muted-foreground truncate">{button.url}</p>
+                <p className="text-xs text-muted-foreground truncate">{button.fileName || button.url}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Switch checked={button.enabled} onCheckedChange={(checked) => handleToggleButton(button.id, checked)} />
@@ -367,7 +405,7 @@ export default function WebsiteUIPage() {
           ))}
            <Dialog open={isButtonFormOpen} onOpenChange={setIsButtonFormOpen}>
                 <DialogTrigger asChild>
-                    <Button variant="outline" className="w-full mt-4" onClick={() => setEditingButton(null)}>
+                    <Button variant="outline" className="w-full mt-4" onClick={() => { setEditingButton(null); setIsButtonFormOpen(true); }}>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Add New Button
                     </Button>
@@ -461,4 +499,3 @@ export default function WebsiteUIPage() {
     </div>
   );
 }
-
