@@ -18,6 +18,7 @@ type Conversation = {
     email: string;
     lastMessage: string;
     lastMessageDate: string;
+    hasUnread: boolean;
 };
 
 interface InboxContextType {
@@ -26,6 +27,8 @@ interface InboxContextType {
   adminSendMessage: (recipientEmail: string, content: string, imageUrl?: string | null) => void;
   isLoading: boolean;
   conversations: Conversation[];
+  unreadConversationsCount: number;
+  markConversationAsRead: (userEmail: string) => void;
 }
 
 const mockMessages: Message[] = [
@@ -77,7 +80,7 @@ export const InboxProvider = ({ children }: { children: ReactNode }) => {
     // Derived state for the current user's messages
     const messages = useMemo(() => {
         if (!currentUser) return [];
-        if (currentUser.isAdmin) return allMessages; // Admin gets all messages
+        if (currentUser.isAdmin) return allMessages; // Admin gets all messages for filtering in the component
         return allMessages
             .filter(m => m.sender === currentUser.email || m.recipient === currentUser.email)
             .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -93,18 +96,29 @@ export const InboxProvider = ({ children }: { children: ReactNode }) => {
             const otherParty = msg.sender === 'admin@stakinghub.com' ? msg.recipient : msg.sender;
             if (otherParty === 'admin@stakinghub.com') return;
 
+            const hasUnread = msg.recipient === 'admin@stakinghub.com' && !msg.read;
+
             if (!convos[otherParty] || new Date(msg.date) > new Date(convos[otherParty].lastMessageDate)) {
                 convos[otherParty] = {
                     email: otherParty,
                     lastMessage: msg.content,
                     lastMessageDate: msg.date,
+                    hasUnread: hasUnread || (convos[otherParty]?.hasUnread ?? false)
                 };
+            } else if(hasUnread) {
+                 convos[otherParty].hasUnread = true;
             }
         });
 
         return Object.values(convos).sort((a,b) => new Date(b.lastMessageDate).getTime() - new Date(a.lastMessageDate).getTime());
 
     }, [currentUser, allMessages]);
+
+     const unreadConversationsCount = useMemo(() => {
+        if (!currentUser?.isAdmin) return 0;
+        return conversations.filter(c => c.hasUnread).length;
+    }, [currentUser, conversations]);
+
 
     useEffect(() => {
         try {
@@ -155,10 +169,23 @@ export const InboxProvider = ({ children }: { children: ReactNode }) => {
         }, 500);
 
     }, [currentUser]);
+    
+    const markConversationAsRead = useCallback((userEmail: string) => {
+        if (!currentUser?.isAdmin) return;
+        
+        const updatedMessages = allMessages.map(msg => {
+            if (msg.sender === userEmail && msg.recipient === currentUser.email) {
+                return { ...msg, read: true };
+            }
+            return msg;
+        });
+        
+        setAllMessages(updatedMessages);
+    }, [currentUser, allMessages]);
 
 
     return (
-        <InboxContext.Provider value={{ messages, sendMessage, adminSendMessage, isLoading, conversations }}>
+        <InboxContext.Provider value={{ messages, sendMessage, adminSendMessage, isLoading, conversations, unreadConversationsCount, markConversationAsRead }}>
             {children}
         </InboxContext.Provider>
     );

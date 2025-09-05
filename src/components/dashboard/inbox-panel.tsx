@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import Image from 'next/image';
 import {
   Card,
@@ -25,7 +25,8 @@ export function InboxPanel() {
     sendMessage, 
     isLoading, 
     conversations, 
-    adminSendMessage 
+    adminSendMessage,
+    markConversationAsRead
   } = useInbox();
   const { currentUser } = useAuth();
   const [newMessage, setNewMessage] = useState("");
@@ -59,6 +60,11 @@ export function InboxPanel() {
     if(fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const handleSelectConversation = (email: string) => {
+    setSelectedConversation(email);
+    markConversationAsRead(email);
+  }
+
   const currentMessages = useMemo(() => {
     if (currentUser?.isAdmin) {
         if (!selectedConversation) return [];
@@ -86,13 +92,14 @@ export function InboxPanel() {
                                 <div 
                                     key={convo.email} 
                                     className={cn(
-                                        "p-2 rounded-md cursor-pointer hover:bg-muted",
+                                        "p-2 rounded-md cursor-pointer hover:bg-muted relative",
                                         selectedConversation === convo.email && "bg-muted"
                                     )}
-                                    onClick={() => setSelectedConversation(convo.email)}
+                                    onClick={() => handleSelectConversation(convo.email)}
                                 >
-                                    <p className="font-semibold text-sm">{convo.email}</p>
-                                    <p className="text-xs text-muted-foreground truncate">{convo.lastMessage}</p>
+                                    {convo.hasUnread && <span className="absolute left-0 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-primary" />}
+                                    <p className="font-semibold text-sm pl-4">{convo.email}</p>
+                                    <p className="text-xs text-muted-foreground truncate pl-4">{convo.lastMessage}</p>
                                 </div>
                              ))}
                         </CardContent>

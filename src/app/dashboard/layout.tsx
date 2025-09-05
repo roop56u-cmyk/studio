@@ -31,7 +31,8 @@ import {
   SidebarInset,
   Collapsible,
   CollapsibleTrigger,
-  CollapsibleContent
+  CollapsibleContent,
+  SidebarMenuBadge,
 } from "@/components/ui/sidebar";
 import {
   Sheet,
@@ -113,6 +114,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { WalletOverviewPanel } from "@/components/dashboard/wallet-overview-panel";
 import { AchievementsPanel } from "@/components/dashboard/achievements-panel";
 import { useToast } from "@/hooks/use-toast";
+import { useInbox } from "@/contexts/InboxContext";
 
 // Admin Panel Imports
 import UserManagementPage from "./admin/users/page";
@@ -223,6 +225,7 @@ function SidebarContentComponent({
   const pathname = usePathname();
   const { logout, currentUser } = useAuth();
   const { toast } = useToast();
+  const { unreadConversationsCount } = useInbox();
   const { 
     mainBalance,
     handleMoveFunds,
@@ -412,6 +415,7 @@ function SidebarContentComponent({
                     <SidebarMenuButton onClick={onInboxClick} tooltip={{ children: "Inbox" }}>
                         <Mail />
                         <span>Inbox</span>
+                         {unreadConversationsCount > 0 && <SidebarMenuBadge>{unreadConversationsCount}</SidebarMenuBadge>}
                     </SidebarMenuButton>
                 </SidebarMenuItem>
             </>
@@ -676,6 +680,7 @@ export default function DashboardLayout({
 }) {
     const { logout, currentUser } = useAuth();
     const { isInactiveWarningOpen, setIsInactiveWarningOpen } = useWallet();
+    const { unreadConversationsCount, markConversationAsRead } = useInbox();
     const [isClient, setIsClient] = React.useState(false);
     const [isRechargeOpen, setIsRechargeOpen] = React.useState(false);
     const [isWithdrawalOpen, setIsWithdrawalOpen] = React.useState(false);
