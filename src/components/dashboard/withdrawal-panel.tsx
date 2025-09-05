@@ -183,7 +183,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
         return;
     }
 
-    if (numericAmount > maxWithdrawalAmount && maxWithdrawalAmount > 0) {
+    if (maxWithdrawalAmount !== undefined && numericAmount > maxWithdrawalAmount && maxWithdrawalAmount > 0) {
       setIsMaxAmountAlertOpen(true);
       return;
     }
@@ -295,7 +295,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 />
-                 <p className="text-xs text-muted-foreground">Max: ${maxWithdrawalAmount.toFixed(2)}</p>
+                 <p className="text-xs text-muted-foreground">Max: ${maxWithdrawalAmount !== undefined ? maxWithdrawalAmount.toFixed(2) : '0.00'}</p>
             </div>
             <div className="rounded-md border p-4 space-y-2 text-sm">
                 <div className="flex justify-between">
@@ -384,7 +384,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
                 <AlertDialogDescription>
                     {messages.withdrawal?.maxAmountDescription
                         ?.replace('[Y]', currentLevel)
-                        ?.replace('[Amount]', maxWithdrawalAmount.toFixed(2))
+                        ?.replace('[Amount]', (maxWithdrawalAmount ?? 0).toFixed(2))
                     }
                 </AlertDialogDescription>
             </AlertDialogHeader>
