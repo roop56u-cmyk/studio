@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import './globals.css';
@@ -18,12 +17,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [websiteName, setWebsiteName] = useState('TaskReview Hub');
+  const [websiteName, setWebsiteName] = useState('Taskify');
   const [theme, setTheme] = useState('');
 
   useEffect(() => {
     // This effect runs on the client and can access localStorage
-    const savedName = localStorage.getItem('website_name') || 'TaskReview Hub';
+    const savedName = localStorage.getItem('website_name') || 'Taskify';
     setWebsiteName(savedName);
     document.title = savedName;
 

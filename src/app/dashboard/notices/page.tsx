@@ -20,12 +20,15 @@ import type { Notice } from "../admin/notices/page";
 
 export default function NoticesPage() {
   const [notices, setNotices] = useState<Notice[]>([]);
+  const [websiteName, setWebsiteName] = useState('Taskify');
 
   useEffect(() => {
     const storedNotices = localStorage.getItem("platform_notices");
     if (storedNotices) {
       setNotices(JSON.parse(storedNotices));
     }
+    const savedName = localStorage.getItem('website_name');
+    if(savedName) setWebsiteName(savedName);
   }, []);
 
   return (
@@ -40,7 +43,7 @@ export default function NoticesPage() {
         <CardHeader>
           <CardTitle>Official Announcements</CardTitle>
           <CardDescription>
-            Important updates and events from the TaskReview Hub team.
+            Important updates and events from the {websiteName} team.
           </CardDescription>
         </CardHeader>
         <CardContent>

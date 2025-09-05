@@ -168,10 +168,10 @@ export default function WebsiteUIPage() {
     const { toast } = useToast();
     
     // Website content states
-    const [websiteName, setWebsiteName] = useState("TaskReview Hub");
+    const [websiteName, setWebsiteName] = useState("Taskify");
     const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
     const [mainLogoDataUrl, setMainLogoDataUrl] = useState<string | null>(null);
-    const [websiteTitle, setWebsiteTitle] = useState("Welcome to TaskReview Hub");
+    const [websiteTitle, setWebsiteTitle] = useState("Welcome to Taskify");
     const [websiteSubtitle, setWebsiteSubtitle] = useState("Your central place to rate, review, and analyze tasks and services. Get started by creating an account or signing in.");
 
     // Theme & Colors
@@ -573,4 +573,3 @@ export default function WebsiteUIPage() {
     </div>
   );
 }
-

@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { gradients } from '@/lib/gradients';
 
 export default function Home() {
-  const [title, setTitle] = useState("Welcome to TaskReview Hub");
+  const [title, setTitle] = useState("Welcome to Taskify");
   const [subtitle, setSubtitle] = useState("Your central place to rate, review, and analyze tasks and services. Get started by creating an account or signing in.");
   const [customButtons, setCustomButtons] = useState<CustomButton[]>([]);
   const [gradient, setGradient] = useState(gradients[0].className);
