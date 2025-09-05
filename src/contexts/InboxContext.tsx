@@ -76,7 +76,8 @@ export const InboxProvider = ({ children }: { children: ReactNode }) => {
     
     // Derived state for the current user's messages
     const messages = useMemo(() => {
-        if (!currentUser || currentUser.isAdmin) return [];
+        if (!currentUser) return [];
+        if (currentUser.isAdmin) return allMessages; // Admin gets all messages
         return allMessages
             .filter(m => m.sender === currentUser.email || m.recipient === currentUser.email)
             .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
