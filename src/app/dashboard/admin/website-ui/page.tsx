@@ -177,7 +177,8 @@ export default function WebsiteUIPage() {
     // Theme & Colors
     const [selectedTheme, setSelectedTheme] = useState("abstract-tech");
     const [authBg, setAuthBg] = useState("random-cycle");
-    const [dashboardBg, setDashboardBg] = useState("default");
+    const [userDashboardBg, setUserDashboardBg] = useState("default");
+    const [adminDashboardBg, setAdminDashboardBg] = useState("default");
     const [primaryColor, setPrimaryColor] = useState("#673ab7");
     const [accentColor, setAccentColor] = useState("#009688");
     const [backgroundColor, setBackgroundColor] = useState("#f5f5f5");
@@ -220,8 +221,10 @@ export default function WebsiteUIPage() {
         if (savedTheme) setSelectedTheme(savedTheme);
         const savedAuthBg = localStorage.getItem('auth_background');
         if(savedAuthBg) setAuthBg(savedAuthBg);
-        const savedDashboardBg = localStorage.getItem('dashboard_background');
-        if(savedDashboardBg) setDashboardBg(savedDashboardBg);
+        const savedUserDashboardBg = localStorage.getItem('user_dashboard_background');
+        if(savedUserDashboardBg) setUserDashboardBg(savedUserDashboardBg);
+        const savedAdminDashboardBg = localStorage.getItem('admin_dashboard_background');
+        if(savedAdminDashboardBg) setAdminDashboardBg(savedAdminDashboardBg);
 
         const savedPrimaryColor = localStorage.getItem('theme_primary_color');
         if (savedPrimaryColor) setPrimaryColor(savedPrimaryColor);
@@ -263,7 +266,8 @@ export default function WebsiteUIPage() {
         // Theme & Colors
         localStorage.setItem('landing_theme', selectedTheme);
         localStorage.setItem('auth_background', authBg);
-        localStorage.setItem('dashboard_background', dashboardBg);
+        localStorage.setItem('user_dashboard_background', userDashboardBg);
+        localStorage.setItem('admin_dashboard_background', adminDashboardBg);
         localStorage.setItem('theme_primary_color', primaryColor);
         localStorage.setItem('theme_accent_color', accentColor);
         localStorage.setItem('theme_background_color', backgroundColor);
@@ -451,8 +455,8 @@ export default function WebsiteUIPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <div className="space-y-2">
+            <div className="space-y-4">
+                <div className="space-y-2">
                     <Label>Auth Screen Background</Label>
                     <Select value={authBg} onValueChange={setAuthBg}>
                         <SelectTrigger><SelectValue placeholder="Select a background..." /></SelectTrigger>
@@ -465,18 +469,35 @@ export default function WebsiteUIPage() {
                     </Select>
                     <p className="text-xs text-muted-foreground">Background for Welcome, Login, and Signup pages.</p>
                 </div>
-                 <div className="space-y-2">
-                    <Label>Dashboard Background</Label>
-                     <Select value={dashboardBg} onValueChange={setDashboardBg}>
-                        <SelectTrigger><SelectValue placeholder="Select a background..." /></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="default">Default (Plain)</SelectItem>
-                             {gradients.map(g => (
-                                <SelectItem key={g.name} value={g.className}>{g.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                     <p className="text-xs text-muted-foreground">Background for the main user and admin dashboard areas.</p>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <Label>User Dashboard Background</Label>
+                        <Select value={userDashboardBg} onValueChange={setUserDashboardBg}>
+                            <SelectTrigger><SelectValue placeholder="Select a background..." /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="default">Default (Plain)</SelectItem>
+                                <SelectItem value="random-cycle">Random Cycle</SelectItem>
+                                {gradients.map(g => (
+                                    <SelectItem key={g.name} value={g.className}>{g.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                         <p className="text-xs text-muted-foreground">Background for the main user dashboard areas.</p>
+                    </div>
+                     <div className="space-y-2">
+                        <Label>Admin Dashboard Background</Label>
+                         <Select value={adminDashboardBg} onValueChange={setAdminDashboardBg}>
+                            <SelectTrigger><SelectValue placeholder="Select a background..." /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="default">Default (Plain)</SelectItem>
+                                <SelectItem value="random-cycle">Random Cycle</SelectItem>
+                                {gradients.map(g => (
+                                    <SelectItem key={g.name} value={g.className}>{g.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                         <p className="text-xs text-muted-foreground">Background for the main admin dashboard areas.</p>
+                    </div>
                 </div>
             </div>
             <Separator />
@@ -552,3 +573,4 @@ export default function WebsiteUIPage() {
     </div>
   );
 }
+

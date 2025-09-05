@@ -117,6 +117,7 @@ import { AchievementsPanel } from "@/components/dashboard/achievements-panel";
 import { useToast } from "@/hooks/use-toast";
 import { useInbox } from "@/contexts/InboxContext";
 import { cn } from "@/lib/utils";
+import { gradients } from "@/lib/gradients";
 
 // Admin Panel Imports
 import UserManagementPage from "./admin/users/page";
@@ -637,6 +638,8 @@ export default function DashboardLayout({
     const [isAchievementsOpen, setIsAchievementsOpen] = React.useState(false);
     const [backgroundClass, setBackgroundClass] = React.useState("bg-background");
 
+    const pathname = usePathname();
+    const isAdminPage = pathname.startsWith('/dashboard/admin');
 
     // Admin panel states
     const [isAdminPanelOpen, setIsAdminPanelOpen] = React.useState(false);
@@ -672,15 +675,34 @@ export default function DashboardLayout({
             }
             sessionStorage.removeItem("show_login_popup");
         }
+    }, []);
+
+     React.useEffect(() => {
+        const bgKey = isAdminPage ? 'admin_dashboard_background' : 'user_dashboard_background';
+        const savedDashboardBg = localStorage.getItem(bgKey) || 'default';
         
-        const savedDashboardBg = localStorage.getItem('dashboard_background') || 'default';
-        if (savedDashboardBg !== 'default') {
+        let intervalId: NodeJS.Timeout;
+
+        if (savedDashboardBg === 'random-cycle') {
+            const setRandomGradient = () => {
+                const randomGradient = gradients[Math.floor(Math.random() * gradients.length)].className;
+                setBackgroundClass(randomGradient);
+            };
+            setRandomGradient();
+            intervalId = setInterval(setRandomGradient, 7000);
+        } else if (savedDashboardBg !== 'default') {
             setBackgroundClass(savedDashboardBg);
         } else {
             setBackgroundClass('bg-background');
         }
+        
+        return () => {
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+        };
 
-    }, []);
+    }, [isAdminPage, pathname]);
     
     const handleAdminPanelClick = (panel: PanelType) => {
         setActiveAdminPanel(panel);
@@ -716,7 +738,7 @@ export default function DashboardLayout({
                 onShowTaskWarning={() => setIsTaskMoveWarningOpen(true)}
             />
           </Sidebar>
-          <div className={cn("flex flex-1 flex-col", backgroundClass)}>
+          <div className={cn("flex flex-1 flex-col transition-colors duration-1000", backgroundClass)}>
           <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-transparent px-4 md:px-6">
               <SidebarTrigger />
               <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
