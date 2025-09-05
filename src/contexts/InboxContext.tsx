@@ -11,6 +11,7 @@ export type Message = {
     content: string;
     date: string;
     read: boolean;
+    imageUrl?: string | null;
 };
 
 type Conversation = {
@@ -21,8 +22,8 @@ type Conversation = {
 
 interface InboxContextType {
   messages: Message[];
-  sendMessage: (content: string) => void;
-  adminSendMessage: (recipientEmail: string, content: string) => void;
+  sendMessage: (content: string, imageUrl?: string | null) => void;
+  adminSendMessage: (recipientEmail: string, content: string, imageUrl?: string | null) => void;
   isLoading: boolean;
   conversations: Conversation[];
 }
@@ -112,7 +113,7 @@ export const InboxProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [allMessages]);
 
-    const sendMessage = useCallback((content: string) => {
+    const sendMessage = useCallback((content: string, imageUrl: string | null = null) => {
         if (!currentUser) return;
         setIsLoading(true);
 
@@ -123,6 +124,7 @@ export const InboxProvider = ({ children }: { children: ReactNode }) => {
             content,
             date: new Date().toISOString(),
             read: false,
+            imageUrl: imageUrl || null,
         };
 
         setTimeout(() => {
@@ -132,7 +134,7 @@ export const InboxProvider = ({ children }: { children: ReactNode }) => {
 
     }, [currentUser]);
 
-    const adminSendMessage = useCallback((recipientEmail: string, content: string) => {
+    const adminSendMessage = useCallback((recipientEmail: string, content: string, imageUrl: string | null = null) => {
         if (!currentUser || !currentUser.isAdmin) return;
         setIsLoading(true);
         
@@ -143,6 +145,7 @@ export const InboxProvider = ({ children }: { children: ReactNode }) => {
             content,
             date: new Date().toISOString(),
             read: false,
+            imageUrl: imageUrl || null,
         };
         
         setTimeout(() => {

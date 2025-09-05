@@ -1,8 +1,8 @@
 
-
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
+import Image from 'next/image';
 import {
   Card,
   CardContent,
@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useInbox } from "@/contexts/InboxContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, Paperclip, X } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
@@ -30,18 +30,33 @@ export function InboxPanel() {
   const { currentUser } = useAuth();
   const [newMessage, setNewMessage] = useState("");
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+  const [attachment, setAttachment] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAttachment(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSend = () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() && !attachment) return;
 
     if (currentUser?.isAdmin) {
         if (!selectedConversation) return;
-        adminSendMessage(selectedConversation, newMessage);
+        adminSendMessage(selectedConversation, newMessage, attachment);
     } else {
-        sendMessage(newMessage);
+        sendMessage(newMessage, attachment);
     }
     
     setNewMessage("");
+    setAttachment(null);
+    if(fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const currentMessages = useMemo(() => {
@@ -111,6 +126,7 @@ export function InboxPanel() {
                                             )}
                                             <div className={`rounded-lg p-3 max-w-[70%] ${!isFromUser ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
                                                 <p className="text-sm font-semibold">{senderName}</p>
+                                                {msg.imageUrl && <Image src={msg.imageUrl} alt="attachment" width={200} height={200} className="rounded-md my-2 w-full h-auto object-contain" />}
                                                 <p className="text-sm mt-1">{msg.content}</p>
                                                 <p className={`text-xs mt-1 ${!isFromUser ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>{new Date(msg.date).toLocaleString()}</p>
                                             </div>
@@ -125,6 +141,14 @@ export function InboxPanel() {
                                 })}
                             </ScrollArea>
                             <div className="p-4 border-t">
+                                {attachment && (
+                                <div className="relative w-24 h-24 mb-2">
+                                    <Image src={attachment} alt="Preview" layout="fill" objectFit="cover" className="rounded" />
+                                    <Button size="icon" variant="destructive" className="absolute -top-2 -right-2 h-6 w-6 rounded-full" onClick={() => {setAttachment(null); if(fileInputRef.current) fileInputRef.current.value = "";}}>
+                                    <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                                )}
                                 <div className="flex items-center gap-2">
                                     <Input 
                                         placeholder="Type your message..." 
@@ -133,6 +157,10 @@ export function InboxPanel() {
                                         onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                                         disabled={isLoading}
                                     />
+                                     <Button variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isLoading}>
+                                        <Paperclip className="h-5 w-5" />
+                                    </Button>
+                                    <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
                                     <Button onClick={handleSend} disabled={isLoading}>
                                         {isLoading ? <Loader2 className="animate-spin" /> : "Send"}
                                     </Button>
@@ -169,6 +197,7 @@ export function InboxPanel() {
                         )}
                         <div className={`rounded-lg p-3 max-w-[70%] ${isCurrentUser ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
                             <p className="text-sm font-semibold">{senderName}</p>
+                             {msg.imageUrl && <Image src={msg.imageUrl} alt="attachment" width={200} height={200} className="rounded-md my-2 w-full h-auto object-contain" />}
                             <p className="text-sm mt-1">{msg.content}</p>
                             <p className={`text-xs mt-1 ${isCurrentUser ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>{new Date(msg.date).toLocaleString()}</p>
                         </div>
@@ -183,6 +212,14 @@ export function InboxPanel() {
             })}
         </ScrollArea>
         <div className="p-4 border-t -mx-6">
+            {attachment && (
+              <div className="relative w-24 h-24 mb-2">
+                <Image src={attachment} alt="Preview" layout="fill" objectFit="cover" className="rounded" />
+                <Button size="icon" variant="destructive" className="absolute -top-2 -right-2 h-6 w-6 rounded-full" onClick={() => {setAttachment(null); if(fileInputRef.current) fileInputRef.current.value = "";}}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
             <div className="flex items-center gap-2">
                 <Input 
                     placeholder="Type your message..." 
@@ -191,6 +228,10 @@ export function InboxPanel() {
                     onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                     disabled={isLoading}
                 />
+                 <Button variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isLoading}>
+                    <Paperclip className="h-5 w-5" />
+                </Button>
+                <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
                 <Button onClick={handleSend} disabled={isLoading}>
                     {isLoading ? <Loader2 className="animate-spin" /> : "Send"}
                 </Button>

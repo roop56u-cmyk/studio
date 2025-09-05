@@ -15,6 +15,7 @@ export type Request = {
     address: string | null;
     status: 'Pending' | 'Approved' | 'Declined' | 'On Hold';
     date: string;
+    imageUrl?: string | null;
 };
 
 export type Activity = {
@@ -148,6 +149,7 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
         type: requestData.type!,
         amount: requestData.amount!,
         address: requestData.address ?? null,
+        imageUrl: requestData.imageUrl ?? null,
     };
 
     setRequests(prev => [newRequest, ...prev]);

@@ -194,7 +194,6 @@ export default function UserManagementPage() {
                     </SheetDescription>
                 </SheetHeader>
                 <TeamDataPanel user={selectedUser} />
-                <SheetClose />
             </SheetContent>
         </Sheet>
     )}

@@ -1,7 +1,8 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -22,7 +23,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, Upload, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useWallet } from "@/contexts/WalletContext";
 import type { Request } from "@/contexts/RequestContext";
@@ -61,6 +62,8 @@ export function RechargePanel({ onAddRequest }: RechargePanelProps) {
   const [rechargeAddresses, setRechargeAddresses] = useState<RechargeAddress[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<RechargeAddress | null>(null);
   const [messages, setMessages] = useState<any>({});
+  const [proofImage, setProofImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
 
   const [isAddressAlertOpen, setIsAddressAlertOpen] = useState(false);
@@ -100,12 +103,24 @@ export function RechargePanel({ onAddRequest }: RechargePanelProps) {
     setTimeout(() => setCopiedAddress(""), 2000);
   };
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProofImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const proceedWithSubmit = () => {
      const numericAmount = parseFloat(amount);
      onAddRequest({
         type: 'Recharge',
         amount: numericAmount,
-        address: null, 
+        address: null,
+        imageUrl: proofImage,
     });
 
     toast({
@@ -113,6 +128,7 @@ export function RechargePanel({ onAddRequest }: RechargePanelProps) {
       description: `Your request to recharge ${numericAmount.toFixed(2)} USDT is pending approval.`,
     });
     setAmount("");
+    setProofImage(null);
   }
 
   const handleSubmitRequest = (e: React.FormEvent) => {
@@ -195,7 +211,20 @@ export function RechargePanel({ onAddRequest }: RechargePanelProps) {
                       onChange={(e) => setAmount(e.target.value)}
                   />
               </div>
-              <Button type="submit" className="w-full">3. Submit Recharge Request</Button>
+              <div className="space-y-2">
+                <Label htmlFor="proof">3. Upload Screenshot (Optional)</Label>
+                <Input id="proof" type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"/>
+                <p className="text-xs text-muted-foreground">Attach a screenshot of your transaction confirmation for faster verification.</p>
+                 {proofImage && (
+                    <div className="relative w-32 h-32 mt-2">
+                        <Image src={proofImage} alt="Proof preview" layout="fill" objectFit="cover" className="rounded-md" />
+                        <Button size="icon" variant="destructive" className="absolute -top-2 -right-2 h-6 w-6 rounded-full" onClick={() => { setProofImage(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}>
+                            <X className="h-4 w-4"/>
+                        </Button>
+                    </div>
+                )}
+              </div>
+              <Button type="submit" className="w-full">4. Submit Recharge Request</Button>
           </form>
         </CardContent>
       </Card>
