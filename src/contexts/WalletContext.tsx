@@ -309,8 +309,11 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const interestRateBoost = useMemo(() => activeBoosters.find(b => b.type === 'INTEREST_RATE')?.value || 0, [activeBoosters]);
   
   const taskLevel = useMemo(() => {
-    return configuredLevels.slice().reverse().find(l => taskRewardsBalance >= l.minAmount)?.level ?? 0;
-  }, [taskRewardsBalance, configuredLevels]);
+    // Determine the highest level achievable based on task balance alone
+    const balanceBasedLevel = configuredLevels.slice().reverse().find(l => taskRewardsBalance >= l.minAmount)?.level ?? 0;
+    // The true task level cannot exceed the user's overall currentLevel (which considers referrals)
+    return Math.min(balanceBasedLevel, currentLevel);
+  }, [taskRewardsBalance, configuredLevels, currentLevel]);
 
   const taskLevelData = useMemo(() => {
     return configuredLevels.find(l => l.level === taskLevel) ?? configuredLevels[0];
