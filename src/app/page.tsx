@@ -10,25 +10,13 @@ import { Logo } from '@/components/logo';
 import { useState, useEffect } from 'react';
 import type { CustomButton } from './dashboard/admin/website-ui/page';
 import { cn } from '@/lib/utils';
-
-const gradients = [
-    "bg-gradient-purple",
-    "bg-gradient-orange",
-    "bg-gradient-teal",
-    "bg-gradient-sky",
-    "bg-gradient-pink",
-    "bg-gradient-blue",
-    "bg-gradient-amber",
-    "bg-gradient-rose",
-    "bg-gradient-fuchsia",
-    "bg-gradient-violet",
-];
+import { gradients } from '@/lib/gradients';
 
 export default function Home() {
   const [title, setTitle] = useState("Welcome to TaskReview Hub");
   const [subtitle, setSubtitle] = useState("Your central place to rate, review, and analyze tasks and services. Get started by creating an account or signing in.");
   const [customButtons, setCustomButtons] = useState<CustomButton[]>([]);
-  const [gradient, setGradient] = useState(gradients[0]);
+  const [gradient, setGradient] = useState(gradients[0].className);
   const [mainLogoDataUrl, setMainLogoDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -45,16 +33,16 @@ export default function Home() {
     if(savedMainLogo) {
       setMainLogoDataUrl(savedMainLogo);
     }
-    
-    const interval = setInterval(() => {
-      setGradient(prev => {
-        const currentIndex = gradients.indexOf(prev);
-        const nextIndex = (currentIndex + 1) % gradients.length;
-        return gradients[nextIndex];
-      });
-    }, 7000); 
 
-    return () => clearInterval(interval);
+    const savedAuthBg = localStorage.getItem('auth_background') || 'random-cycle';
+    if (savedAuthBg === 'random-cycle') {
+        const interval = setInterval(() => {
+            setGradient(gradients[Math.floor(Math.random() * gradients.length)].className);
+        }, 7000); 
+        return () => clearInterval(interval);
+    } else {
+        setGradient(savedAuthBg);
+    }
   }, []);
   
   const handleButtonClick = (button: CustomButton) => {

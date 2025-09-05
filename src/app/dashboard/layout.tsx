@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from "next/link";
@@ -115,6 +116,7 @@ import { WalletOverviewPanel } from "@/components/dashboard/wallet-overview-pane
 import { AchievementsPanel } from "@/components/dashboard/achievements-panel";
 import { useToast } from "@/hooks/use-toast";
 import { useInbox } from "@/contexts/InboxContext";
+import { cn } from "@/lib/utils";
 
 // Admin Panel Imports
 import UserManagementPage from "./admin/users/page";
@@ -612,66 +614,6 @@ function SidebarContentComponent({
   );
 }
 
-const StarParticle = ({ size, style }: { size: number, style: React.CSSProperties }) => (
-    <div style={{
-        position: 'absolute',
-        width: `${size}px`,
-        height: `${size}px`,
-        background: 'white',
-        borderRadius: '50%',
-        boxShadow: '0 0 6px 2px white',
-        ...style
-    }} />
-);
-
-const AnimatedDashboardBackground = () => {
-    const [stars, setStars] = React.useState<React.ReactNode[]>([]);
-    const [isClient, setIsClient] = React.useState(false);
-    const [theme, setTheme] = React.useState('');
-
-    React.useEffect(() => {
-        setIsClient(true);
-        const savedTheme = localStorage.getItem('landing_theme') || '';
-         if (savedTheme === 'cosmic-voyage') {
-            setTheme(savedTheme);
-        }
-    }, []);
-
-    React.useEffect(() => {
-        if (!isClient || theme !== 'cosmic-voyage') return;
-
-        const generatedStars = Array.from({ length: 50 }).map((_, i) => {
-            const size = Math.random() * 2 + 1;
-            const style: React.CSSProperties = {
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                animation: `twinkle ${Math.random() * 5 + 2}s linear infinite`,
-            };
-            return <StarParticle key={i} size={size} style={style} />;
-        });
-        setStars(generatedStars);
-    }, [isClient, theme]);
-    
-    if (!isClient || theme !== 'cosmic-voyage') {
-        return null;
-    }
-
-    return (
-        <>
-            <style>{`
-                @keyframes twinkle {
-                    0% { opacity: 0; }
-                    50% { opacity: 1; }
-                    100% { opacity: 0; }
-                }
-            `}</style>
-            <div className="dashboard-background">
-                {stars}
-            </div>
-        </>
-    );
-}
-
 
 export default function DashboardLayout({
   children,
@@ -693,6 +635,7 @@ export default function DashboardLayout({
     const [isRewardsPanelOpen, setIsRewardsPanelOpen] = React.useState(false);
     const [isWalletOverviewOpen, setIsWalletOverviewOpen] = React.useState(false);
     const [isAchievementsOpen, setIsAchievementsOpen] = React.useState(false);
+    const [backgroundClass, setBackgroundClass] = React.useState("bg-background");
 
 
     // Admin panel states
@@ -729,6 +672,14 @@ export default function DashboardLayout({
             }
             sessionStorage.removeItem("show_login_popup");
         }
+        
+        const savedDashboardBg = localStorage.getItem('dashboard_background') || 'default';
+        if (savedDashboardBg !== 'default') {
+            setBackgroundClass(savedDashboardBg);
+        } else {
+            setBackgroundClass('bg-background');
+        }
+
     }, []);
     
     const handleAdminPanelClick = (panel: PanelType) => {
@@ -765,8 +716,7 @@ export default function DashboardLayout({
                 onShowTaskWarning={() => setIsTaskMoveWarningOpen(true)}
             />
           </Sidebar>
-          <div className="flex flex-1 flex-col">
-           <AnimatedDashboardBackground />
+          <div className={cn("flex flex-1 flex-col", backgroundClass)}>
           <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-transparent px-4 md:px-6">
               <SidebarTrigger />
               <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">

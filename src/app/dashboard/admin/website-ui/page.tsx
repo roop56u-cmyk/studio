@@ -30,6 +30,9 @@ import {
 } from "@/components/ui/dialog";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { gradients } from "@/lib/gradients";
+
 
 // Helper to convert hex to HSL string
 const hexToHslString = (hex: string): string => {
@@ -163,7 +166,6 @@ const ButtonForm = ({
 
 export default function WebsiteUIPage() {
     const { toast } = useToast();
-    const [selectedTheme, setSelectedTheme] = useState("abstract-tech");
     
     // Website content states
     const [websiteName, setWebsiteName] = useState("TaskReview Hub");
@@ -172,7 +174,10 @@ export default function WebsiteUIPage() {
     const [websiteTitle, setWebsiteTitle] = useState("Welcome to TaskReview Hub");
     const [websiteSubtitle, setWebsiteSubtitle] = useState("Your central place to rate, review, and analyze tasks and services. Get started by creating an account or signing in.");
 
-    // Color states with default hex values
+    // Theme & Colors
+    const [selectedTheme, setSelectedTheme] = useState("abstract-tech");
+    const [authBg, setAuthBg] = useState("random-cycle");
+    const [dashboardBg, setDashboardBg] = useState("default");
     const [primaryColor, setPrimaryColor] = useState("#673ab7");
     const [accentColor, setAccentColor] = useState("#009688");
     const [backgroundColor, setBackgroundColor] = useState("#f5f5f5");
@@ -213,6 +218,11 @@ export default function WebsiteUIPage() {
         // Theme & Colors
         const savedTheme = localStorage.getItem('landing_theme');
         if (savedTheme) setSelectedTheme(savedTheme);
+        const savedAuthBg = localStorage.getItem('auth_background');
+        if(savedAuthBg) setAuthBg(savedAuthBg);
+        const savedDashboardBg = localStorage.getItem('dashboard_background');
+        if(savedDashboardBg) setDashboardBg(savedDashboardBg);
+
         const savedPrimaryColor = localStorage.getItem('theme_primary_color');
         if (savedPrimaryColor) setPrimaryColor(savedPrimaryColor);
         const savedAccentColor = localStorage.getItem('theme_accent_color');
@@ -252,12 +262,12 @@ export default function WebsiteUIPage() {
         
         // Theme & Colors
         localStorage.setItem('landing_theme', selectedTheme);
+        localStorage.setItem('auth_background', authBg);
+        localStorage.setItem('dashboard_background', dashboardBg);
         localStorage.setItem('theme_primary_color', primaryColor);
         localStorage.setItem('theme_accent_color', accentColor);
         localStorage.setItem('theme_background_color', backgroundColor);
         
-        // Custom Buttons are saved instantly, so we don't need to save them here again.
-
         toast({
             title: "Settings Saved",
             description: "Website UI settings have been updated. Reloading to apply all changes.",
@@ -435,12 +445,41 @@ export default function WebsiteUIPage() {
       
        <Card>
         <CardHeader>
-          <CardTitle>Theme &amp; Colors</CardTitle>
+          <CardTitle>Theme &amp; Appearance</CardTitle>
           <CardDescription>
-            Customize the global color scheme and landing page appearance.
+            Customize the global color scheme, background, and animations.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="space-y-2">
+                    <Label>Auth Screen Background</Label>
+                    <Select value={authBg} onValueChange={setAuthBg}>
+                        <SelectTrigger><SelectValue placeholder="Select a background..." /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="random-cycle">Random Cycle (Default)</SelectItem>
+                            {gradients.map(g => (
+                                <SelectItem key={g.name} value={g.className}>{g.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">Background for Welcome, Login, and Signup pages.</p>
+                </div>
+                 <div className="space-y-2">
+                    <Label>Dashboard Background</Label>
+                     <Select value={dashboardBg} onValueChange={setDashboardBg}>
+                        <SelectTrigger><SelectValue placeholder="Select a background..." /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="default">Default (Plain)</SelectItem>
+                             {gradients.map(g => (
+                                <SelectItem key={g.name} value={g.className}>{g.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                     <p className="text-xs text-muted-foreground">Background for the main user and admin dashboard areas.</p>
+                </div>
+            </div>
+            <Separator />
           <div className="space-y-2">
             <Label>3D Welcome Animation Theme</Label>
             <RadioGroup value={selectedTheme} onValueChange={setSelectedTheme}>
@@ -478,6 +517,7 @@ export default function WebsiteUIPage() {
               </div>
             </RadioGroup>
           </div>
+           <Separator />
            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="primary-color">Primary Color</Label>

@@ -22,19 +22,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRequests } from "@/contexts/RequestContext";
 import { Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { gradients } from "@/lib/gradients";
 
-const gradients = [
-    "bg-gradient-purple",
-    "bg-gradient-orange",
-    "bg-gradient-teal",
-    "bg-gradient-sky",
-    "bg-gradient-pink",
-    "bg-gradient-blue",
-    "bg-gradient-amber",
-    "bg-gradient-rose",
-    "bg-gradient-fuchsia",
-    "bg-gradient-violet",
-];
 
 export default function SignupPage() {
   const router = useRouter();
@@ -46,7 +35,7 @@ export default function SignupPage() {
   const [fullName, setFullName] = useState("");
   const [invitationCode, setInvitationCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [gradient, setGradient] = useState(gradients[0]);
+  const [gradient, setGradient] = useState(gradients[0].className);
   const [mainLogoDataUrl, setMainLogoDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -55,14 +44,15 @@ export default function SignupPage() {
       setMainLogoDataUrl(savedMainLogo);
     }
     
-    const interval = setInterval(() => {
-      setGradient(prev => {
-        const currentIndex = gradients.indexOf(prev);
-        const nextIndex = (currentIndex + 1) % gradients.length;
-        return gradients[nextIndex];
-      });
-    }, 5000);
-    return () => clearInterval(interval);
+    const savedAuthBg = localStorage.getItem('auth_background') || 'random-cycle';
+    if (savedAuthBg === 'random-cycle') {
+        const interval = setInterval(() => {
+            setGradient(gradients[Math.floor(Math.random() * gradients.length)].className);
+        }, 5000);
+        return () => clearInterval(interval);
+    } else {
+        setGradient(savedAuthBg);
+    }
   }, []);
 
   const handleSignUp = (e: React.FormEvent) => {

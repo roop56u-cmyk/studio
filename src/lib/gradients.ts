@@ -1,0 +1,17 @@
+export const gradients = [
+    { name: "Purple", className: "bg-gradient-purple" },
+    { name: "Orange", className: "bg-gradient-orange" },
+    { name: "Teal", className: "bg-gradient-teal" },
+    { name: "Sky", className: "bg-gradient-sky" },
+    { name: "Pink", className: "bg-gradient-pink" },
+    { name: "Blue", className: "bg-gradient-blue" },
+    { name: "Amber", className: "bg-gradient-amber" },
+    { name: "Rose", className: "bg-gradient-rose" },
+    { name: "Fuchsia", className: "bg-gradient-fuchsia" },
+    { name: "Violet", className: "bg-gradient-violet" },
+    { name: "Yellow", className: "bg-gradient-yellow" },
+    { name: "Lime", className: "bg-gradient-lime" },
+    { name: "Cyan", className: "bg-gradient-cyan" },
+    { name: "Slate", className: "bg-gradient-slate" },
+    { name: "Green", className: "bg-gradient-green" },
+];
