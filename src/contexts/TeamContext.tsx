@@ -10,6 +10,7 @@ import { TeamReward } from '@/app/dashboard/admin/team-rewards/page';
 import { TeamSizeReward } from '@/app/dashboard/admin/team-size-rewards/page';
 import type { UplineCommissionSettings } from '@/app/dashboard/admin/upline-commission/page';
 import type { SalaryPackage } from '@/app/dashboard/admin/salary/page';
+import { useLocalStorageWatcher } from '@/hooks/use-local-storage-watcher';
 
 type TeamMember = User & {
     level: number;
@@ -95,6 +96,14 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const [commissionEnabled, setCommissionEnabled] = useState({ level1: true, level2: true, level3: true });
     const [uplineCommissionSettings, setUplineCommissionSettings] = useState<UplineCommissionSettings>({ enabled: false, rate: 5, requiredReferrals: 3 });
 
+    // Watchers for real-time updates
+    useLocalStorageWatcher('team_commission_rates', setCommissionRates);
+    useLocalStorageWatcher('team_commission_enabled', setCommissionEnabled);
+    useLocalStorageWatcher('platform_team_rewards', setTeamRewards);
+    useLocalStorageWatcher('platform_team_size_rewards', setTeamSizeRewards);
+    useLocalStorageWatcher('platform_salary_packages', (allPackages) => setSalaryPackages(allPackages.filter((p: SalaryPackage) => p.enabled)));
+    useLocalStorageWatcher('upline_commission_settings', setUplineCommissionSettings);
+
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -129,10 +138,14 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
     useEffect(() => {
         if (currentUser?.email) {
-            const storedUplineCommission = localStorage.getItem(`${currentUser.email}_uplineCommission`);
-            setTotalUplineCommission(storedUplineCommission ? JSON.parse(storedUplineCommission) : 0);
+            const key = `${currentUser.email}_uplineCommission`;
+            const interval = setInterval(() => {
+                const storedUplineCommission = localStorage.getItem(key);
+                setTotalUplineCommission(storedUplineCommission ? JSON.parse(storedUplineCommission) : 0);
+            }, 3000);
+            return () => clearInterval(interval);
         }
-    }, [currentUser]);
+    }, [currentUser?.email]);
 
     const getDepositsForUser = useCallback((userEmail: string): number => {
         if (typeof window === 'undefined') return 0;

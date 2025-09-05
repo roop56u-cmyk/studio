@@ -221,7 +221,7 @@ export function WithdrawalPanel({ onAddRequest }: WithdrawalPanelProps) {
     }
 
     // If all checks pass
-    requestWithdrawal(numericAmount);
+    requestWithdrawal(numericAmount, selectedAddress.address);
     onAddRequest({ amount: numericAmount, address: selectedAddress.address, type: 'Withdrawal' });
     toast({ title: "Withdrawal Request Submitted", description: `Your request to withdraw ${numericAmount.toFixed(2)} USDT is pending approval.` });
     setAmount("");

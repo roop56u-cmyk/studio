@@ -6,6 +6,7 @@ import { useAuth } from './AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useWallet } from './WalletContext';
 import type { SalaryPackage } from '@/app/dashboard/admin/salary/page';
+import { useLocalStorageWatcher } from '@/hooks/use-local-storage-watcher';
 
 export type Request = {
     id: string;
@@ -93,6 +94,27 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
   const [userRequests, setUserRequests] = useState<Request[]>([]);
   const [activityHistory, setActivityHistory] = useState<Activity[]>([]);
 
+  // Watch for changes in localStorage to update requests in real-time
+  useLocalStorageWatcher('requests', setRequests);
+  
+  // Watch for changes in the current user's activity history
+  useEffect(() => {
+    if (currentUser?.email) {
+      const key = `${currentUser.email}_activityHistory`;
+      const interval = setInterval(() => {
+        try {
+          const storedHistory = localStorage.getItem(key);
+          const currentHistory = storedHistory ? JSON.parse(storedHistory) : [];
+          setActivityHistory(currentHistory);
+        } catch (error) {
+          console.error(`Error polling ${key}:`, error);
+        }
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [currentUser?.email]);
+
+
   // Function to add an activity for a specific user
   const addActivity = (userEmail: string, activity: Omit<Activity, 'id'>) => {
     const newActivity: Activity = {
@@ -123,7 +145,7 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setUserRequests(sortedUserRequests);
         
-        // Load activity history for current user
+        // Load initial activity history for current user
         const key = `${currentUser.email}_activityHistory`;
         const storedHistory = localStorage.getItem(key);
         setActivityHistory(storedHistory ? JSON.parse(storedHistory) : []);

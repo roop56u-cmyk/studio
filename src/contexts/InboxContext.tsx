@@ -3,6 +3,7 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from './AuthContext';
+import { useLocalStorageWatcher } from '@/hooks/use-local-storage-watcher';
 
 export type Message = {
     id: string;
@@ -76,6 +77,9 @@ export const InboxProvider = ({ children }: { children: ReactNode }) => {
             return mockMessages;
         }
     });
+
+    // Watch for changes to update inbox in real-time
+    useLocalStorageWatcher('inbox_messages', setAllMessages);
     
     // Derived state for the current user's messages
     const messages = useMemo(() => {

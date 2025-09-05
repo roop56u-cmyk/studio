@@ -1,10 +1,10 @@
 
-
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { platformMessages } from '@/lib/platform-messages';
+import { useLocalStorageWatcher } from '@/hooks/use-local-storage-watcher';
 
 export type User = {
     email: string;
@@ -130,6 +130,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         return null;
     });
+    
+    // Watch for changes in localStorage to sync state across tabs
+    useLocalStorageWatcher('users', setUsers);
+    useLocalStorageWatcher('currentUser', setCurrentUser);
 
     const router = useRouter();
 
