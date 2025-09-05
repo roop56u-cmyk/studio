@@ -23,6 +23,8 @@ import { useTeam } from "@/contexts/TeamContext";
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 
@@ -196,6 +198,9 @@ export function AdminProfile() {
                                         </Button>
                                     </DialogTrigger>
                                     <DialogContent className="max-w-xl">
+                                        <DialogHeader>
+                                            <DialogTitle>Recharge Proof</DialogTitle>
+                                        </DialogHeader>
                                         <Image src={request.imageUrl} alt="Recharge Proof" width={800} height={600} className="w-full h-auto rounded-md" />
                                     </DialogContent>
                                 </Dialog>
