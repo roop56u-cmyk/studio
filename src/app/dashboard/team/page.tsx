@@ -326,7 +326,7 @@ export default function TeamPage() {
   const applicableCommunityRule = useMemo(() => {
     if (!communityCommissionRules || communityCommissionRules.length === 0) return null;
     
-    // Filter for rules specific to the user's level
+    // Filter for rules specific to the user's level, sorted from highest to lowest level
     const specificRules = communityCommissionRules
         .filter(rule => rule.requiredLevel > 0 && currentLevel >= rule.requiredLevel)
         .sort((a, b) => b.requiredLevel - a.requiredLevel);
@@ -546,26 +546,24 @@ export default function TeamPage() {
                         </CardContent>
                     </Card>
                 ))}
-            </div>
-
-            {applicableCommunityRule && (
-                 <>
-                    <Card>
-                        <CardHeader>
-                            <div className="flex items-center gap-2">
-                            <Layers className="h-5 w-5 text-primary" />
-                            <CardTitle>Community Commission</CardTitle>
-                            </div>
-                            <CardDescription>
-                                Earn a special commission from your L4+ team members.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">${communityCommission.toFixed(2)}</div>
-                            <p className="text-xs text-muted-foreground">From L4+ active members</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
+                {applicableCommunityRule && (
+                  <>
+                      <Card>
+                          <CardHeader>
+                              <div className="flex items-center gap-2">
+                              <Layers className="h-5 w-5 text-primary" />
+                              <CardTitle>Community Commission</CardTitle>
+                              </div>
+                              <CardDescription>
+                                  Earn a special commission from your L4+ team members.
+                              </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                              <div className="text-2xl font-bold">${communityCommission.toFixed(2)}</div>
+                              <p className="text-xs text-muted-foreground">From L4+ active members</p>
+                          </CardContent>
+                      </Card>
+                      <Card className="md:col-span-2">
                         <CardHeader>
                            <CardTitle>Community Commission Requirements</CardTitle>
                         </CardHeader>
@@ -592,38 +590,42 @@ export default function TeamPage() {
                             )}
                         </CardContent>
                     </Card>
-                     <Card>
-                        <CardHeader>
-                           <CardTitle>L4+ Community</CardTitle>
-                        </CardHeader>
-                         <CardContent>
-                             <Accordion type="single" collapsible className="w-full">
-                                <AccordionItem value="item-1">
-                                    <AccordionTrigger>View L4+ Members ({communityData.members.length})</AccordionTrigger>
-                                    <AccordionContent>
-                                    {communityData.members.length > 0 ? (
-                                        <ul className="space-y-2 text-sm text-muted-foreground max-h-60 overflow-y-auto">
-                                            {communityData.members.map(member => (
-                                                <li key={member.email} className="flex justify-between items-center">
-                                                    <span className="truncate pr-2">{member.email}</span>
-                                                    <div className="flex items-center gap-2 flex-shrink-0">
-                                                        <Badge variant={member.status === 'active' ? 'default' : 'secondary'} className={cn('text-xs py-0.5 px-1.5 h-fit', member.status === 'active' ? 'bg-green-100 text-green-800' : '')}>
-                                                            {member.status}
-                                                        </Badge>
-                                                        <Badge variant="secondary" className="text-xs py-0.5 px-1.5 h-fit">Lvl {member.level}</Badge>
-                                                    </div>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    ) : (
-                                        <p className="text-sm text-center text-muted-foreground py-4">No members in L4 or beyond yet.</p>
-                                    )}
-                                    </AccordionContent>
-                                </AccordionItem>
-                                </Accordion>
-                        </CardContent>
-                    </Card>
-                 </>
+                  </>
+                )}
+            </div>
+
+            {applicableCommunityRule && (
+              <Card>
+                  <CardHeader>
+                     <CardTitle>L4+ Community</CardTitle>
+                  </CardHeader>
+                   <CardContent>
+                       <Accordion type="single" collapsible className="w-full">
+                          <AccordionItem value="item-1">
+                              <AccordionTrigger>View L4+ Members ({communityData.members.length})</AccordionTrigger>
+                              <AccordionContent>
+                              {communityData.members.length > 0 ? (
+                                  <ul className="space-y-2 text-sm text-muted-foreground max-h-60 overflow-y-auto">
+                                      {communityData.members.map(member => (
+                                          <li key={member.email} className="flex justify-between items-center">
+                                              <span className="truncate pr-2">{member.email}</span>
+                                              <div className="flex items-center gap-2 flex-shrink-0">
+                                                  <Badge variant={member.status === 'active' ? 'default' : 'secondary'} className={cn('text-xs py-0.5 px-1.5 h-fit', member.status === 'active' ? 'bg-green-100 text-green-800' : '')}>
+                                                      {member.status}
+                                                  </Badge>
+                                                  <Badge variant="secondary" className="text-xs py-0.5 px-1.5 h-fit">Lvl {member.level}</Badge>
+                                              </div>
+                                          </li>
+                                      ))}
+                                  </ul>
+                              ) : (
+                                  <p className="text-sm text-center text-muted-foreground py-4">No members in L4 or beyond yet.</p>
+                              )}
+                              </AccordionContent>
+                          </AccordionItem>
+                          </Accordion>
+                  </CardContent>
+              </Card>
             )}
 
             {availableSalaryPackages.length > 0 && (
@@ -662,3 +664,4 @@ export default function TeamPage() {
     </div>
   );
 }
+
