@@ -77,11 +77,14 @@ export default function SchedulingPage() {
     setIsLoading(true);
     try {
       const data = await getInternetTime();
-      if (!data) throw new Error("Failed to fetch time");
-      const serverTime = new Date(data.utc_datetime).getTime();
-      const localTime = Date.now();
-      setOffset(serverTime - localTime);
-      toast({ title: "Time Synced", description: "Clocks have been synced with internet time."});
+      if (data) {
+        const serverTime = new Date(data.utc_datetime).getTime();
+        const localTime = Date.now();
+        setOffset(serverTime - localTime);
+        toast({ title: "Time Synced", description: "Clocks have been synced with internet time."});
+      } else {
+         toast({ variant: "destructive", title: "Sync Failed", description: "Could not sync time. Please try again."});
+      }
     } catch (error) {
       console.error(error);
       toast({ variant: "destructive", title: "Sync Failed", description: "Could not sync time. Please try again."});
