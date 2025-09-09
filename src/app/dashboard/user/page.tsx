@@ -132,7 +132,7 @@ export default function UserDashboardPage() {
       <div className="flex flex-col gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Home</h1>
-          <p className="text-muted-foreground">
+          <p className="text-foreground">
             Welcome back! Here's your space to manage reviews.
           </p>
         </div>
