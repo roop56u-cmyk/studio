@@ -202,18 +202,25 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     const calculateCommunityData = useCallback((user: User, allUsers: User[]): CommunityData => {
+        const processedEmails = new Set([user.email]);
         const L4PlusMembers: User[] = [];
-        let parentLayer = allUsers.filter(u => user.referralCode === u.referredBy); // L1
-        parentLayer = parentLayer.flatMap(l1 => allUsers.filter(u => u.referralCode === l1.referralCode)); // L2
-        parentLayer = parentLayer.flatMap(l2 => allUsers.filter(u => u.referralCode === l2.referralCode)); // L3
+
+        // Correctly find L1, L2, L3 members first to establish the starting point
+        const l1 = allUsers.filter(u => u.referredBy === user.referralCode);
+        l1.forEach(u => processedEmails.add(u.email));
+
+        const l2 = l1.flatMap(l1User => allUsers.filter(u => u.referredBy === l1User.referralCode));
+        l2.forEach(u => processedEmails.add(u.email));
         
-        let processedEmails = new Set(allUsers.map(u => u.email)); // Prevent infinite loops in case of bad data
+        let parentLayer = l2.flatMap(l2User => allUsers.filter(u => u.referredBy === l2User.referralCode)); // Start traversal from L3's children (L4)
+        parentLayer.forEach(u => processedEmails.add(u.email));
+        
+        L4PlusMembers.push(...parentLayer);
 
         while (parentLayer.length > 0) {
-            const currentLayer = parentLayer.flatMap(parent => allUsers.filter(u => u.referralCode === parent.referralCode && !processedEmails.has(u.email)));
-            if (currentLayer.length === 0) {
-                break;
-            }
+            const currentLayer = parentLayer.flatMap(parent => allUsers.filter(u => u.referredBy === parent.referralCode && !processedEmails.has(u.email)));
+            if (currentLayer.length === 0) break;
+            
             L4PlusMembers.push(...currentLayer);
             currentLayer.forEach(u => processedEmails.add(u.email));
             parentLayer = currentLayer;
