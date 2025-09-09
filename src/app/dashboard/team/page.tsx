@@ -328,7 +328,7 @@ export default function TeamPage() {
     
     // Prioritize level-specific rules
     const specificRules = communityCommissionRules
-        .filter(rule => rule.requiredLevel > 0 && currentLevel >= rule.requiredLevel)
+        .filter(rule => rule.enabled && rule.requiredLevel > 0 && currentLevel >= rule.requiredLevel)
         .sort((a, b) => b.requiredLevel - a.requiredLevel); // Highest level first
 
     if (specificRules.length > 0) {
@@ -336,7 +336,7 @@ export default function TeamPage() {
     }
 
     // Fallback to an "All Levels" rule if no specific rule matches
-    return communityCommissionRules.find(rule => rule.requiredLevel === 0) || null;
+    return communityCommissionRules.find(rule => rule.enabled && rule.requiredLevel === 0) || null;
   }, [communityCommissionRules, currentLevel]);
 
   const communityCommission = useMemo(() => {
@@ -662,3 +662,4 @@ export default function TeamPage() {
     </div>
   );
 }
+
