@@ -20,11 +20,23 @@ export function useTeamCommission() {
     const lastCreditDate = lastCreditDateStr ? new Date(lastCreditDateStr).getTime() : 0;
 
     const now = new Date();
+    // Check if 24 hours have passed since last credit
     if (now.getTime() - lastCreditDate > 24 * 60 * 60 * 1000) {
       let totalCommission = 0;
-      if (commissionEnabled.level1) totalCommission += teamData.level1.commission * (commissionRates.level1 / 100);
-      if (commissionEnabled.level2) totalCommission += teamData.level2.commission * (commissionRates.level2 / 100);
-      if (commissionEnabled.level3) totalCommission += teamData.level3.commission * (commissionRates.level3 / 100);
+      const activeL1Referrals = teamData.level1.activeCount;
+
+      // Check L1 commission eligibility
+      if (commissionEnabled.level1 && activeL1Referrals >= 1) {
+          totalCommission += teamData.level1.commission * (commissionRates.level1 / 100);
+      }
+      // Check L2 commission eligibility
+      if (commissionEnabled.level2 && activeL1Referrals >= 2) {
+          totalCommission += teamData.level2.commission * (commissionRates.level2 / 100);
+      }
+      // Check L3 commission eligibility
+      if (commissionEnabled.level3 && activeL1Referrals >= 3) {
+          totalCommission += teamData.level3.commission * (commissionRates.level3 / 100);
+      }
 
       const commissionBoostPercent = getReferralCommissionBoost();
       const boostAmount = totalCommission * (commissionBoostPercent / 100);
