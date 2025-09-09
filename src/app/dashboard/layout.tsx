@@ -137,12 +137,13 @@ import ManageSalaryPage from './admin/salary/page';
 import PurchaseHistoryPage from './admin/purchase-history/page';
 import ManageReimbursementsPage from './admin/reimbursements/page';
 import ManageAboutUsPage from './admin/about-us/page';
+import AdminProfilePage from './admin/admin-profile/page';
 import ProfilePage from './profile/page';
 import SettingsPage from './settings/page';
 import type { Notice } from './admin/notices/page';
 
 
-type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement' | 'purchaseHistory' | 'reimbursements' | 'aboutUs';
+type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement' | 'purchaseHistory' | 'reimbursements' | 'aboutUs' | 'adminProfile';
 
 
 const adminPanelComponents: Record<PanelType, React.ComponentType> = {
@@ -168,6 +169,7 @@ const adminPanelComponents: Record<PanelType, React.ComponentType> = {
     purchaseHistory: PurchaseHistoryPage,
     reimbursements: ManageReimbursementsPage,
     aboutUs: ManageAboutUsPage,
+    adminProfile: AdminProfilePage,
 };
 
 const adminPanelTitles: Record<PanelType, { title: string; description: string }> = {
@@ -193,6 +195,7 @@ const adminPanelTitles: Record<PanelType, { title: string; description: string }
     purchaseHistory: { title: "Purchase History", description: "View user purchases of boosters and quests." },
     reimbursements: { title: "Manual Reimbursements", description: "Manage reimbursement packages for user events." },
     aboutUs: { title: "About Us", description: "Manage your company's information page." },
+    adminProfile: { title: "Admin Profile", description: "Manage the primary admin credentials." },
 };
 
 function SidebarContentComponent({ 
@@ -302,6 +305,12 @@ function SidebarContentComponent({
                             <Home />
                             <span>Home</span>
                         </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('adminProfile')} tooltip={{ children: "Admin Profile" }}>
+                        <Shield />
+                        <span>Admin Profile</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>

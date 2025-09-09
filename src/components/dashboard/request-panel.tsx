@@ -40,7 +40,7 @@ const getDepositsForUser = (userEmail: string): number => {
     return mainBalance + taskBalance + interestBalance;
 };
 
-export function AdminProfile() {
+export function RequestPanel() {
     const { requests, updateRequestStatus } = useRequests();
     const { users } = useAuth();
     const { getLevelForUser } = useTeam();
@@ -121,9 +121,9 @@ export function AdminProfile() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Admin Panel</CardTitle>
+        <CardTitle>User Request Panel</CardTitle>
         <CardDescription>
-          Manage all user requests from this panel.
+          Manage all user finance and reward requests from this panel.
         </CardDescription>
       </CardHeader>
       <CardContent>

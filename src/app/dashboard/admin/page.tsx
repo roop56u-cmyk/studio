@@ -1,7 +1,7 @@
 
 "use client";
 
-import { AdminProfile } from "@/components/dashboard/admin-profile";
+import { RequestPanel } from "@/components/dashboard/request-panel";
 import { AdminFeeCalculator } from "@/components/dashboard/admin-fee-calculator";
 import { PlatformStats } from "@/components/dashboard/platform-stats";
 
@@ -12,7 +12,7 @@ export default function AdminDashboardPage() {
             <PlatformStats />
         </div>
         <div className="lg:col-span-2">
-            <AdminProfile />
+            <RequestPanel />
         </div>
         <div>
             <AdminFeeCalculator />
