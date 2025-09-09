@@ -118,6 +118,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useInbox } from "@/contexts/InboxContext";
 import { cn } from "@/lib/utils";
 import { gradients } from "@/lib/gradients";
+import { NoticesPanel } from "@/components/dashboard/notices-panel";
 
 // Admin Panel Imports
 import UserManagementPage from "./admin/users/page";
@@ -207,6 +208,7 @@ function SidebarContentComponent({
     onAdminPanelClick, 
     onWalletOverviewClick, 
     onAchievementsClick,
+    onNoticesClick,
     onShowInterestWarning,
     onShowTaskWarning
 }: { 
@@ -222,6 +224,7 @@ function SidebarContentComponent({
     onAdminPanelClick: (panel: PanelType) => void, 
     onWalletOverviewClick: () => void, 
     onAchievementsClick: () => void,
+    onNoticesClick: () => void,
     onShowInterestWarning: () => void,
     onShowTaskWarning: () => void
 }) {
@@ -504,14 +507,11 @@ function SidebarContentComponent({
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                 <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith("/dashboard/notices")}
+                    onClick={onNoticesClick}
                     tooltip={{ children: "Notices" }}
                 >
-                    <Link href="/dashboard/notices">
                     <Megaphone />
                     <span>Notices</span>
-                    </Link>
                 </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
@@ -636,6 +636,7 @@ export default function DashboardLayout({
     const [isRewardsPanelOpen, setIsRewardsPanelOpen] = React.useState(false);
     const [isWalletOverviewOpen, setIsWalletOverviewOpen] = React.useState(false);
     const [isAchievementsOpen, setIsAchievementsOpen] = React.useState(false);
+    const [isNoticesOpen, setIsNoticesOpen] = React.useState(false);
     const [backgroundClass, setBackgroundClass] = React.useState("bg-background");
 
     const pathname = usePathname();
@@ -734,6 +735,7 @@ export default function DashboardLayout({
                 onAdminPanelClick={handleAdminPanelClick}
                 onWalletOverviewClick={() => setIsWalletOverviewOpen(true)}
                 onAchievementsClick={() => setIsAchievementsOpen(true)}
+                onNoticesClick={() => setIsNoticesOpen(true)}
                 onShowInterestWarning={() => setIsInterestMoveWarningOpen(true)}
                 onShowTaskWarning={() => setIsTaskMoveWarningOpen(true)}
             />
@@ -910,6 +912,20 @@ export default function DashboardLayout({
                 </SheetHeader>
                  <div className="mt-4">
                     <AchievementsPanel />
+                </div>
+                 <SheetClose />
+            </SheetContent>
+        </Sheet>
+        <Sheet open={isNoticesOpen} onOpenChange={setIsNoticesOpen}>
+            <SheetContent className="w-full sm:max-w-lg">
+                <SheetHeader>
+                    <SheetTitle>Notices & Events</SheetTitle>
+                    <SheetDescription>
+                        Stay up-to-date with the latest announcements from the platform.
+                    </SheetDescription>
+                </SheetHeader>
+                 <div className="mt-4">
+                    <NoticesPanel />
                 </div>
                  <SheetClose />
             </SheetContent>
