@@ -12,14 +12,6 @@ import {
 } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   SidebarProvider,
   Sidebar,
   SidebarHeader,
@@ -141,6 +133,8 @@ import UplineCommissionPage from './admin/upline-commission/page';
 import ManageSalaryPage from './admin/salary/page';
 import PurchaseHistoryPage from './admin/purchase-history/page';
 import ManageReimbursementsPage from './admin/reimbursements/page';
+import ProfilePage from './profile/page';
+import SettingsPage from './settings/page';
 import type { Notice } from './admin/notices/page';
 
 
@@ -625,6 +619,8 @@ export default function DashboardLayout({
     const { isInactiveWarningOpen, setIsInactiveWarningOpen } = useWallet();
     const { unreadConversationsCount, markConversationAsRead } = useInbox();
     const [isClient, setIsClient] = React.useState(false);
+
+    // Main popups
     const [isRechargeOpen, setIsRechargeOpen] = React.useState(false);
     const [isWithdrawalOpen, setIsWithdrawalOpen] = React.useState(false);
     const [isHistoryOpen, setIsHistoryOpen] = React.useState(false);
@@ -637,6 +633,12 @@ export default function DashboardLayout({
     const [isWalletOverviewOpen, setIsWalletOverviewOpen] = React.useState(false);
     const [isAchievementsOpen, setIsAchievementsOpen] = React.useState(false);
     const [isNoticesOpen, setIsNoticesOpen] = React.useState(false);
+
+    // User menu popups
+    const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
+    const [isProfileOpen, setIsProfileOpen] = React.useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
+    
     const [backgroundClass, setBackgroundClass] = React.useState("bg-background");
 
     const pathname = usePathname();
@@ -717,6 +719,17 @@ export default function DashboardLayout({
             setIsInboxOpen(true);
         }
     }
+    
+    const handleProfileClick = () => {
+        setIsUserMenuOpen(false);
+        setIsProfileOpen(true);
+    }
+    
+    const handleSettingsClick = () => {
+        setIsUserMenuOpen(false);
+        setIsSettingsOpen(true);
+    }
+
 
   return (
       <SidebarProvider>
@@ -750,40 +763,13 @@ export default function DashboardLayout({
               {!isClient ? (
                 <Skeleton className="h-8 w-8 rounded-full" />
                 ) : (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                    <Button variant="secondary" size="icon" className="rounded-full">
-                        <Avatar>
-                        <AvatarImage src={`https://placehold.co/40x40/${'673ab7'}/${'ffffff'}.png?text=ME`} alt="User Avatar" data-ai-hint="user avatar" />
-                        <AvatarFallback>{currentUser?.email?.[0].toUpperCase() ?? 'U'}</AvatarFallback>
-                        </Avatar>
-                        <span className="sr-only">Toggle user menu</span>
-                    </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                     <DropdownMenuItem asChild>
-                        <Link href="/dashboard/profile">
-                            <User className="mr-2 h-4 w-4" />
-                            <span>Profile</span>
-                        </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                        <Link href="/dashboard/settings">
-                            <Settings className="mr-2 h-4 w-4" />
-                            <span>Settings</span>
-                        </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                        <Link href="/login" onClick={logout}>
-                            <LogOut className="mr-2 h-4 w-4" />
-                            <span>Log out</span>
-                        </Link>
-                    </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                <Button variant="secondary" size="icon" className="rounded-full" onClick={() => setIsUserMenuOpen(true)}>
+                    <Avatar>
+                    <AvatarImage src={`https://placehold.co/40x40/${'673ab7'}/${'ffffff'}.png?text=ME`} alt="User Avatar" data-ai-hint="user avatar" />
+                    <AvatarFallback>{currentUser?.email?.[0].toUpperCase() ?? 'U'}</AvatarFallback>
+                    </Avatar>
+                    <span className="sr-only">Toggle user menu</span>
+                </Button>
               )}
               </div>
           </header>
@@ -948,6 +934,51 @@ export default function DashboardLayout({
                  <SheetClose />
             </SheetContent>
         </Sheet>
+        
+        {/* User Menu Sheet */}
+        <Sheet open={isUserMenuOpen} onOpenChange={setIsUserMenuOpen}>
+            <SheetContent side="right" className="w-full max-w-xs">
+                <SheetHeader>
+                    <SheetTitle>My Account</SheetTitle>
+                    <SheetDescription>
+                        Manage your profile and settings.
+                    </SheetDescription>
+                </SheetHeader>
+                <div className="mt-6 flex flex-col gap-2">
+                    <Button variant="ghost" className="justify-start" onClick={handleProfileClick}>
+                       <User className="mr-2 h-4 w-4" />
+                        <span>Profile</span>
+                    </Button>
+                     <Button variant="ghost" className="justify-start" onClick={handleSettingsClick}>
+                       <Settings className="mr-2 h-4 w-4" />
+                       <span>Settings</span>
+                    </Button>
+                     <Button variant="ghost" className="justify-start" onClick={logout}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Log out</span>
+                    </Button>
+                </div>
+            </SheetContent>
+        </Sheet>
+
+        {/* Profile and Settings Popups */}
+        <Sheet open={isProfileOpen} onOpenChange={setIsProfileOpen}>
+            <SheetContent className="w-full sm:max-w-md">
+                <ScrollArea className="h-full">
+                    <ProfilePage />
+                </ScrollArea>
+                 <SheetClose />
+            </SheetContent>
+        </Sheet>
+        <Sheet open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+            <SheetContent className="w-full sm:max-w-md">
+                 <ScrollArea className="h-full">
+                    <SettingsPage />
+                </ScrollArea>
+                 <SheetClose />
+            </SheetContent>
+        </Sheet>
+
         {loginNotice && (
             <AlertDialog open={isLoginNoticeOpen} onOpenChange={setIsLoginNoticeOpen}>
                 <AlertDialogContent>
