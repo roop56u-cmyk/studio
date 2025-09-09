@@ -324,7 +324,9 @@ export default function TeamPage() {
   }, [teamData, commissionRates, commissionEnabled, currentUser, activeL1Referrals]);
   
   const applicableCommunityRule = useMemo(() => {
-    return communityCommissionRules.find(rule => currentLevel >= rule.requiredLevel);
+    if (!communityCommissionRules) return null;
+    const sortedRules = [...communityCommissionRules].sort((a, b) => b.requiredLevel - a.requiredLevel);
+    return sortedRules.find(rule => currentLevel >= rule.requiredLevel);
   }, [communityCommissionRules, currentLevel]);
 
   const communityCommission = useMemo(() => {
@@ -534,7 +536,7 @@ export default function TeamPage() {
                 ))}
             </div>
 
-            {communityCommissionRules.length > 0 && (
+            {applicableCommunityRule && (
                  <>
                     <Card>
                         <CardHeader>
