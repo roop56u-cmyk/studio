@@ -66,15 +66,15 @@ const RuleForm = ({
 }) => {
   const [name, setName] = useState(rule?.name || "");
   const [commissionRate, setCommissionRate] = useState(rule?.commissionRate || 0);
-  const [requiredLevel, setRequiredLevel] = useState(rule?.requiredLevel || 1);
+  const [requiredLevel, setRequiredLevel] = useState(rule?.requiredLevel || 0);
   const [requiredDirectReferrals, setRequiredDirectReferrals] = useState(rule?.requiredDirectReferrals || 0);
   const [requiredTeamSize, setRequiredTeamSize] = useState(rule?.requiredTeamSize || 0);
   const [enabled, setEnabled] = useState(rule?.enabled ?? true);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || commissionRate <= 0 || requiredLevel <= 0 || requiredDirectReferrals < 0 || requiredTeamSize < 0) {
-      alert("Please fill all fields with valid, positive values.");
+    if (!name || commissionRate <= 0 || requiredLevel < 0 || requiredDirectReferrals < 0 || requiredTeamSize < 0) {
+      alert("Please fill all fields with valid, non-negative values.");
       return;
     }
     onSave({
@@ -105,6 +105,7 @@ const RuleForm = ({
                     <SelectValue placeholder="Select a level" />
                 </SelectTrigger>
                 <SelectContent>
+                    <SelectItem value="0">All Levels</SelectItem>
                     {availableLevels.filter(l => l.level > 0).map(l => (
                         <SelectItem key={l.level} value={String(l.level)}>Level {l.level}</SelectItem>
                     ))}
@@ -230,7 +231,7 @@ export default function ManageCommunityCommissionPage() {
                             <h3 className="font-semibold">{rule.name}</h3>
                             <div className="text-xs text-muted-foreground grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 mt-2">
                                 <span className="flex items-center gap-1.5"><Percent className="h-3 w-3"/> Rate: {rule.commissionRate}%</span>
-                                <span className="flex items-center gap-1.5"><Star className="h-3 w-3"/> Level: {rule.requiredLevel}+</span>
+                                <span className="flex items-center gap-1.5"><Star className="h-3 w-3"/> Level: {rule.requiredLevel === 0 ? 'All Levels' : rule.requiredLevel + '+'}</span>
                                 <span className="flex items-center gap-1.5"><UserCheck className="h-3 w-3"/> L1 Referrals: {rule.requiredDirectReferrals}+</span>
                                 <span className="flex items-center gap-1.5"><Users className="h-3 w-3"/> L1-L3 Team: {rule.requiredTeamSize}+</span>
                             </div>

@@ -324,9 +324,21 @@ export default function TeamPage() {
   }, [teamData, commissionRates, commissionEnabled, currentUser, activeL1Referrals]);
   
   const applicableCommunityRule = useMemo(() => {
-    if (!communityCommissionRules) return null;
-    const sortedRules = [...communityCommissionRules].sort((a, b) => b.requiredLevel - a.requiredLevel);
-    return sortedRules.find(rule => currentLevel >= rule.requiredLevel);
+    if (!communityCommissionRules || communityCommissionRules.length === 0) return null;
+    
+    // Filter for rules specific to the user's level
+    const specificRules = communityCommissionRules
+        .filter(rule => rule.requiredLevel > 0 && currentLevel >= rule.requiredLevel)
+        .sort((a, b) => b.requiredLevel - a.requiredLevel);
+
+    if (specificRules.length > 0) {
+        return specificRules[0]; // Return the highest-level specific rule they qualify for
+    }
+
+    // If no specific rule, check for an "All Levels" rule
+    const allLevelsRule = communityCommissionRules.find(rule => rule.requiredLevel === 0);
+    
+    return allLevelsRule || null;
   }, [communityCommissionRules, currentLevel]);
 
   const communityCommission = useMemo(() => {
