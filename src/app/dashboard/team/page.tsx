@@ -326,17 +326,11 @@ export default function TeamPage() {
   const applicableCommunityRule = useMemo(() => {
     if (!communityCommissionRules || communityCommissionRules.length === 0) return null;
     
-    // Prioritize level-specific rules
-    const specificRules = communityCommissionRules
-        .filter(rule => rule.enabled && rule.requiredLevel > 0 && currentLevel >= rule.requiredLevel)
-        .sort((a, b) => b.requiredLevel - a.requiredLevel); // Highest level first
-
-    if (specificRules.length > 0) {
-        return specificRules[0]; 
-    }
-
-    // Fallback to an "All Levels" rule if no specific rule matches
-    return communityCommissionRules.find(rule => rule.enabled && rule.requiredLevel === 0) || null;
+    // Sort rules to prioritize higher level requirements first
+    const sortedRules = [...communityCommissionRules].sort((a, b) => b.requiredLevel - a.requiredLevel);
+    
+    // Find the best-matching rule for the user's current level
+    return sortedRules.find(rule => currentLevel >= rule.requiredLevel) || null;
   }, [communityCommissionRules, currentLevel]);
 
   const communityCommission = useMemo(() => {
