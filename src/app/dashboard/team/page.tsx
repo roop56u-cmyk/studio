@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { SalaryPackage } from "../admin/salary/page";
 import { CommunityCommissionRule } from "../admin/community-commission/page";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const TeamRewardCard = ({ reward, totalTeamBusiness, onInactiveClaim }: { reward: TeamReward, totalTeamBusiness: number, onInactiveClaim: () => void }) => {
     const { toast } = useToast();
@@ -326,11 +327,15 @@ export default function TeamPage() {
   const applicableCommunityRule = useMemo(() => {
     if (!communityCommissionRules || communityCommissionRules.length === 0) return null;
     
-    // Sort rules to prioritize higher level requirements first
-    const sortedRules = [...communityCommissionRules].sort((a, b) => b.requiredLevel - a.requiredLevel);
+    // Sort rules to prioritize higher level requirements first, but put "All Levels" (level 0) last.
+    const sortedRules = [...communityCommissionRules].sort((a, b) => {
+        if (a.requiredLevel === 0) return 1;
+        if (b.requiredLevel === 0) return -1;
+        return b.requiredLevel - a.requiredLevel;
+    });
     
     // Find the best-matching rule for the user's current level
-    return sortedRules.find(rule => currentLevel >= rule.requiredLevel) || null;
+    return sortedRules.find(rule => rule.requiredLevel === 0 || currentLevel >= rule.requiredLevel) || null;
   }, [communityCommissionRules, currentLevel]);
 
   const communityCommission = useMemo(() => {
@@ -388,271 +393,273 @@ export default function TeamPage() {
   const uplineReferralProgress = uplineCommissionSettings.requiredReferrals > 0 ? (activeL1Referrals / uplineCommissionSettings.requiredReferrals) * 100 : 100;
 
   return (
-    <div className="max-w-md mx-auto">
-      <div className="flex justify-between items-center mb-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">My Team</h1>
-          <p className="text-muted-foreground">
-            View your team's structure and performance.
-          </p>
+    <ScrollArea className="h-full">
+        <div className="max-w-md mx-auto p-1">
+        <div className="flex justify-between items-center mb-4">
+            <div>
+            <h1 className="text-3xl font-bold tracking-tight">My Team</h1>
+            <p className="text-muted-foreground">
+                View your team's structure and performance.
+            </p>
+            </div>
         </div>
-      </div>
 
-       <div className="grid gap-8">
-            <div className="grid grid-cols-2 gap-4">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Team Commission</CardTitle>
-                            <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">${totalCommission.toFixed(2)}</div>
-                            <p className="text-xs text-muted-foreground">From active members</p>
-                        </CardContent>
-                    </Card>
-                    {uplineCommissionSettings.enabled && (
+        <div className="grid gap-8">
+                <div className="grid grid-cols-2 gap-4">
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Upline Commission</CardTitle>
-                                <ArrowUp className="h-4 w-4 text-muted-foreground" />
+                                <CardTitle className="text-sm font-medium">Team Commission</CardTitle>
+                                <DollarSign className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">${totalUplineCommission.toFixed(2)}</div>
-                                <p className="text-xs text-muted-foreground">From your sponsor</p>
+                                <div className="text-2xl font-bold">${totalCommission.toFixed(2)}</div>
+                                <p className="text-xs text-muted-foreground">From active members</p>
+                            </CardContent>
+                        </Card>
+                        {uplineCommissionSettings.enabled && (
+                            <Card>
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                    <CardTitle className="text-sm font-medium">Upline Commission</CardTitle>
+                                    <ArrowUp className="h-4 w-4 text-muted-foreground" />
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-2xl font-bold">${totalUplineCommission.toFixed(2)}</div>
+                                    <p className="text-xs text-muted-foreground">From your sponsor</p>
+                                </CardContent>
+                            </Card>
+                        )}
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Active Team Members</CardTitle>
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{totalActiveMembers}</div>
+                                <p className="text-xs text-muted-foreground">Across all 3 layers</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Total Team Business</CardTitle>
+                                <Briefcase className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">${totalTeamBusiness.toFixed(2)}</div>
+                                <p className="text-xs text-muted-foreground">Total deposits from all members</p>
+                            </CardContent>
+                        </Card>
+                        <Card className="col-span-2">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Today's Activations</CardTitle>
+                                <Activity className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">+{totalActivationsToday}</div>
+                                <p className="text-xs text-muted-foreground">New active members today</p>
+                            </CardContent>
+                        </Card>
+                </div>
+
+                {uplineCommissionSettings.enabled && (
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center gap-2">
+                            <ArrowUp className="h-5 w-5 text-primary" />
+                            <CardTitle>Upline Sponsor Details</CardTitle>
+                            </div>
+                            {uplineInfo ? (
+                                <CardDescription>
+                                    Earn {uplineCommissionSettings.rate}% from your sponsor: <strong className="text-foreground">{uplineInfo.name}</strong> ({uplineInfo.email})
+                                </CardDescription>
+                            ) : (
+                                <CardDescription>Your sponsor information is not available.</CardDescription>
+                            )}
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                    <span>Unlock Progress (Active L1 Referrals)</span>
+                                    <span>{activeL1Referrals} / {uplineCommissionSettings.requiredReferrals}</span>
+                                </div>
+                                <Progress value={uplineReferralProgress} />
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+                
+                <div className="grid md:grid-cols-2 gap-4">
+                    {teamLevels.map(level => (
+                        <Card key={level.title}>
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <CardTitle className="text-lg">{level.title}</CardTitle>
+                                    {level.enabled ? (
+                                        <span className="text-sm font-bold text-primary">{level.rate}%</span>
+                                    ) : (
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger>
+                                                    <span className="text-sm font-bold text-muted-foreground line-through">{level.rate}%</span>
+                                                </TooltipTrigger>
+                                                <TooltipContent><p>Commission for this level is disabled.</p></TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    )}
+                                </div>
+                                <CardDescription>Direct Referrals</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="flex items-center">
+                                    <UserPlus className="h-5 w-5 text-muted-foreground mr-3" />
+                                    <p className="font-semibold">{level.data.count} Members ({level.data.activeCount} Active)</p>
+                                </div>
+                                <div className="flex items-center">
+                                    <DollarSign className="h-5 w-5 text-muted-foreground mr-3" />
+                                    <p className="font-semibold">${currentUser?.status === 'active' ? (level.data.commission * (level.rate / 100)).toFixed(2) : '0.00'} Commission</p>
+                                </div>
+                                <Accordion type="single" collapsible className="w-full">
+                                    <AccordionItem value="item-1">
+                                        <AccordionTrigger>View Members</AccordionTrigger>
+                                        <AccordionContent>
+                                        {level.data.members.length > 0 ? (
+                                            <ul className="space-y-2 text-sm text-muted-foreground max-h-48 overflow-y-auto">
+                                                {level.data.members.map(member => (
+                                                    <li key={member.email} className="flex justify-between items-center">
+                                                        <span className="truncate pr-2">{member.email}</span>
+                                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                                            <Badge variant={member.status === 'active' ? 'default' : 'secondary'} className={cn('text-xs py-0.5 px-1.5 h-fit', member.status === 'active' ? 'bg-green-100 text-green-800' : '')}>
+                                                                {member.status}
+                                                            </Badge>
+                                                            <Badge variant="secondary" className="text-xs py-0.5 px-1.5 h-fit">Lvl {member.level}</Badge>
+                                                        </div>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            <p className="text-sm text-center text-muted-foreground py-4">No members in this layer yet.</p>
+                                        )}
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                    </Accordion>
+                            </CardContent>
+                        </Card>
+                    ))}
+                    {applicableCommunityRule && (
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center gap-2">
+                                <Layers className="h-5 w-5 text-primary" />
+                                <CardTitle>Community Commission</CardTitle>
+                            </div>
+                            <CardDescription>
+                                Earn a special commission from your L4+ team members.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">${communityCommission.toFixed(2)}</div>
+                            <p className="text-xs text-muted-foreground">From L4+ active members</p>
+                        </CardContent>
+                    </Card>
+                    )}
+                    {applicableCommunityRule && (
+                        <Card>
+                            <CardHeader>
+                            <CardTitle>Community Commission Requirements</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {applicableCommunityRule ? (
+                                    <>
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                            <span>Active L1 Referrals</span>
+                                            <span>{activeL1Referrals} / {applicableCommunityRule.requiredDirectReferrals}</span>
+                                        </div>
+                                        <Progress value={Math.min(100, (activeL1Referrals/applicableCommunityRule.requiredDirectReferrals)*100)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                            <span>L1-L3 Team Size</span>
+                                            <span>{teamData.level1.count + teamData.level2.count + teamData.level3.count} / {applicableCommunityRule.requiredTeamSize}</span>
+                                        </div>
+                                        <Progress value={Math.min(100, ((teamData.level1.count + teamData.level2.count + teamData.level3.count)/applicableCommunityRule.requiredTeamSize)*100)} />
+                                    </div>
+                                    </>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground text-center">No community commission rule is currently applicable for your level.</p>
+                                )}
                             </CardContent>
                         </Card>
                     )}
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Active Team Members</CardTitle>
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{totalActiveMembers}</div>
-                            <p className="text-xs text-muted-foreground">Across all 3 layers</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Team Business</CardTitle>
-                            <Briefcase className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">${totalTeamBusiness.toFixed(2)}</div>
-                            <p className="text-xs text-muted-foreground">Total deposits from all members</p>
-                        </CardContent>
-                    </Card>
-                    <Card className="col-span-2">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Today's Activations</CardTitle>
-                            <Activity className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">+{totalActivationsToday}</div>
-                            <p className="text-xs text-muted-foreground">New active members today</p>
-                        </CardContent>
-                    </Card>
-            </div>
+                </div>
 
-            {uplineCommissionSettings.enabled && (
+                {communityData.members.length > 0 && applicableCommunityRule && (
                 <Card>
                     <CardHeader>
-                        <div className="flex items-center gap-2">
-                           <ArrowUp className="h-5 w-5 text-primary" />
-                           <CardTitle>Upline Sponsor Details</CardTitle>
-                        </div>
-                        {uplineInfo ? (
-                             <CardDescription>
-                                Earn {uplineCommissionSettings.rate}% from your sponsor: <strong className="text-foreground">{uplineInfo.name}</strong> ({uplineInfo.email})
-                            </CardDescription>
-                        ) : (
-                             <CardDescription>Your sponsor information is not available.</CardDescription>
-                        )}
+                        <CardTitle>L4+ Community Members</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-center text-xs text-muted-foreground">
-                                <span>Unlock Progress (Active L1 Referrals)</span>
-                                <span>{activeL1Referrals} / {uplineCommissionSettings.requiredReferrals}</span>
-                            </div>
-                            <Progress value={uplineReferralProgress} />
-                        </div>
+                        <Accordion type="single" collapsible className="w-full">
+                            <AccordionItem value="item-1">
+                                <AccordionTrigger>View L4+ Members ({communityData.members.length})</AccordionTrigger>
+                                <AccordionContent>
+                                {communityData.members.length > 0 ? (
+                                    <ul className="space-y-2 text-sm text-muted-foreground max-h-60 overflow-y-auto">
+                                        {communityData.members.map(member => (
+                                            <li key={member.email} className="flex justify-between items-center">
+                                                <span className="truncate pr-2">{member.email}</span>
+                                                <div className="flex items-center gap-2 flex-shrink-0">
+                                                    <Badge variant={member.status === 'active' ? 'default' : 'secondary'} className={cn('text-xs py-0.5 px-1.5 h-fit', member.status === 'active' ? 'bg-green-100 text-green-800' : '')}>
+                                                        {member.status}
+                                                    </Badge>
+                                                    <Badge variant="secondary" className="text-xs py-0.5 px-1.5 h-fit">Lvl {member.level}</Badge>
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <p className="text-sm text-center text-muted-foreground py-4">No members in L4 or beyond yet.</p>
+                                )}
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
                     </CardContent>
                 </Card>
-            )}
-            
-            <div className="grid md:grid-cols-2 gap-4">
-                {teamLevels.map(level => (
-                    <Card key={level.title}>
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <CardTitle className="text-lg">{level.title}</CardTitle>
-                                {level.enabled ? (
-                                    <span className="text-sm font-bold text-primary">{level.rate}%</span>
-                                ) : (
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger>
-                                                <span className="text-sm font-bold text-muted-foreground line-through">{level.rate}%</span>
-                                            </TooltipTrigger>
-                                            <TooltipContent><p>Commission for this level is disabled.</p></TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                )}
-                            </div>
-                            <CardDescription>Direct Referrals</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex items-center">
-                                <UserPlus className="h-5 w-5 text-muted-foreground mr-3" />
-                                <p className="font-semibold">{level.data.count} Members ({level.data.activeCount} Active)</p>
-                            </div>
-                            <div className="flex items-center">
-                                <DollarSign className="h-5 w-5 text-muted-foreground mr-3" />
-                                <p className="font-semibold">${currentUser?.status === 'active' ? (level.data.commission * (level.rate / 100)).toFixed(2) : '0.00'} Commission</p>
-                            </div>
-                            <Accordion type="single" collapsible className="w-full">
-                                <AccordionItem value="item-1">
-                                    <AccordionTrigger>View Members</AccordionTrigger>
-                                    <AccordionContent>
-                                    {level.data.members.length > 0 ? (
-                                        <ul className="space-y-2 text-sm text-muted-foreground max-h-48 overflow-y-auto">
-                                            {level.data.members.map(member => (
-                                                <li key={member.email} className="flex justify-between items-center">
-                                                    <span className="truncate pr-2">{member.email}</span>
-                                                    <div className="flex items-center gap-2 flex-shrink-0">
-                                                        <Badge variant={member.status === 'active' ? 'default' : 'secondary'} className={cn('text-xs py-0.5 px-1.5 h-fit', member.status === 'active' ? 'bg-green-100 text-green-800' : '')}>
-                                                            {member.status}
-                                                        </Badge>
-                                                        <Badge variant="secondary" className="text-xs py-0.5 px-1.5 h-fit">Lvl {member.level}</Badge>
-                                                    </div>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    ) : (
-                                        <p className="text-sm text-center text-muted-foreground py-4">No members in this layer yet.</p>
-                                    )}
-                                    </AccordionContent>
-                                </AccordionItem>
-                                </Accordion>
-                        </CardContent>
-                    </Card>
-                ))}
-                {applicableCommunityRule && (
-                  <Card>
-                      <CardHeader>
-                          <div className="flex items-center gap-2">
-                          <Layers className="h-5 w-5 text-primary" />
-                          <CardTitle>Community Commission</CardTitle>
-                          </div>
-                          <CardDescription>
-                              Earn a special commission from your L4+ team members.
-                          </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                          <div className="text-2xl font-bold">${communityCommission.toFixed(2)}</div>
-                          <p className="text-xs text-muted-foreground">From L4+ active members</p>
-                      </CardContent>
-                  </Card>
                 )}
-                {applicableCommunityRule && (
-                    <Card>
-                        <CardHeader>
-                           <CardTitle>Community Commission Requirements</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {applicableCommunityRule ? (
-                                <>
-                                 <div className="space-y-2">
-                                    <div className="flex justify-between items-center text-xs text-muted-foreground">
-                                        <span>Active L1 Referrals</span>
-                                        <span>{activeL1Referrals} / {applicableCommunityRule.requiredDirectReferrals}</span>
-                                    </div>
-                                    <Progress value={Math.min(100, (activeL1Referrals/applicableCommunityRule.requiredDirectReferrals)*100)} />
-                                </div>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between items-center text-xs text-muted-foreground">
-                                        <span>L1-L3 Team Size</span>
-                                        <span>{teamData.level1.count + teamData.level2.count + teamData.level3.count} / {applicableCommunityRule.requiredTeamSize}</span>
-                                    </div>
-                                    <Progress value={Math.min(100, ((teamData.level1.count + teamData.level2.count + teamData.level3.count)/applicableCommunityRule.requiredTeamSize)*100)} />
-                                </div>
-                                </>
-                            ) : (
-                                <p className="text-sm text-muted-foreground text-center">No community commission rule is currently applicable for your level.</p>
-                            )}
-                        </CardContent>
-                    </Card>
+
+                {availableSalaryPackages.length > 0 && (
+                    <div>
+                        <h2 className="text-2xl font-bold tracking-tight mb-4">Salary Packages</h2>
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {availableSalaryPackages.map(pkg => (
+                                <SalaryPackageCard key={pkg.id} pkg={pkg} totalTeamBusiness={totalTeamBusiness} activeL1Referrals={activeL1Referrals} onInactiveClaim={() => setIsInactiveWarningOpen(true)} />
+                            ))}
+                        </div>
+                    </div>
                 )}
-            </div>
-
-            {communityData.members.length > 0 && applicableCommunityRule && (
-              <Card>
-                  <CardHeader>
-                     <CardTitle>L4+ Community</CardTitle>
-                  </CardHeader>
-                   <CardContent>
-                       <Accordion type="single" collapsible className="w-full">
-                          <AccordionItem value="item-1">
-                              <AccordionTrigger>View L4+ Members ({communityData.members.length})</AccordionTrigger>
-                              <AccordionContent>
-                              {communityData.members.length > 0 ? (
-                                  <ul className="space-y-2 text-sm text-muted-foreground max-h-60 overflow-y-auto">
-                                      {communityData.members.map(member => (
-                                          <li key={member.email} className="flex justify-between items-center">
-                                              <span className="truncate pr-2">{member.email}</span>
-                                              <div className="flex items-center gap-2 flex-shrink-0">
-                                                  <Badge variant={member.status === 'active' ? 'default' : 'secondary'} className={cn('text-xs py-0.5 px-1.5 h-fit', member.status === 'active' ? 'bg-green-100 text-green-800' : '')}>
-                                                      {member.status}
-                                                  </Badge>
-                                                  <Badge variant="secondary" className="text-xs py-0.5 px-1.5 h-fit">Lvl {member.level}</Badge>
-                                              </div>
-                                          </li>
-                                      ))}
-                                  </ul>
-                              ) : (
-                                  <p className="text-sm text-center text-muted-foreground py-4">No members in L4 or beyond yet.</p>
-                              )}
-                              </AccordionContent>
-                          </AccordionItem>
-                          </Accordion>
-                  </CardContent>
-              </Card>
-            )}
-
-            {availableSalaryPackages.length > 0 && (
-                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight mb-4">Salary Packages</h2>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {availableSalaryPackages.map(pkg => (
-                            <SalaryPackageCard key={pkg.id} pkg={pkg} totalTeamBusiness={totalTeamBusiness} activeL1Referrals={activeL1Referrals} onInactiveClaim={() => setIsInactiveWarningOpen(true)} />
-                        ))}
+                
+                {availableTeamSizeRewards.length > 0 && (
+                    <div>
+                        <h2 className="text-2xl font-bold tracking-tight mb-4">Team Size Rewards</h2>
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {availableTeamSizeRewards.map(reward => (
+                                <TeamSizeRewardCard key={reward.id} reward={reward} totalActiveMembers={totalActiveMembers} onInactiveClaim={() => setIsInactiveWarningOpen(true)} />
+                            ))}
+                        </div>
                     </div>
-                </div>
-            )}
-            
-            {availableTeamSizeRewards.length > 0 && (
-                <div>
-                    <h2 className="text-2xl font-bold tracking-tight mb-4">Team Size Rewards</h2>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {availableTeamSizeRewards.map(reward => (
-                            <TeamSizeRewardCard key={reward.id} reward={reward} totalActiveMembers={totalActiveMembers} onInactiveClaim={() => setIsInactiveWarningOpen(true)} />
-                        ))}
-                    </div>
-                </div>
-            )}
+                )}
 
-            {availableTeamRewards.length > 0 && (
-                <div>
-                    <h2 className="text-2xl font-bold tracking-tight mb-4">Team Business Rewards</h2>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {availableTeamRewards.map(reward => (
-                            <TeamRewardCard key={reward.id} reward={reward} totalTeamBusiness={totalTeamBusiness} onInactiveClaim={() => setIsInactiveWarningOpen(true)} />
-                        ))}
+                {availableTeamRewards.length > 0 && (
+                    <div>
+                        <h2 className="text-2xl font-bold tracking-tight mb-4">Team Business Rewards</h2>
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {availableTeamRewards.map(reward => (
+                                <TeamRewardCard key={reward.id} reward={reward} totalTeamBusiness={totalTeamBusiness} onInactiveClaim={() => setIsInactiveWarningOpen(true)} />
+                            ))}
+                        </div>
                     </div>
-                </div>
-            )}
-       </div>
-    </div>
+                )}
+        </div>
+        </div>
+    </ScrollArea>
   );
 }
