@@ -164,6 +164,67 @@ const ButtonForm = ({
   );
 };
 
+const BackgroundSelector = ({
+  title,
+  description,
+  gradientValue,
+  onGradientChange,
+  customBgValue,
+  onCustomBgChange,
+}: {
+  title: string;
+  description: string;
+  gradientValue: string;
+  onGradientChange: (value: string) => void;
+  customBgValue: string | null;
+  onCustomBgChange: (value: string | null) => void;
+}) => {
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit for backgrounds
+        alert("File size exceeds the 10MB limit.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        onCustomBgChange(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  return (
+    <div className="space-y-4 p-4 border rounded-lg">
+      <h4 className="font-semibold">{title}</h4>
+      <p className="text-sm text-muted-foreground -mt-2">{description}</p>
+      <div className="space-y-2">
+        <Label>Gradient (Fallback)</Label>
+        <Select value={gradientValue} onValueChange={onGradientChange}>
+          <SelectTrigger><SelectValue placeholder="Select a background..." /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="random-cycle">Random Cycle</SelectItem>
+            {gradients.map(g => (
+              <SelectItem key={g.name} value={g.className}>{g.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-2">
+        <Label>Custom Image/GIF</Label>
+        {customBgValue ? (
+            <div className="flex items-center gap-4">
+                <Image src={customBgValue} alt="Background preview" width={64} height={64} className="object-cover w-16 h-16 rounded-md" unoptimized/>
+                <Button variant="destructive" onClick={() => onCustomBgChange(null)}>Remove Image</Button>
+            </div>
+        ) : (
+            <Input type="file" accept="image/*,image/gif" onChange={handleFileChange} />
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default function WebsiteUIPage() {
     const { toast } = useToast();
     
@@ -176,9 +237,16 @@ export default function WebsiteUIPage() {
 
     // Theme & Colors
     const [selectedTheme, setSelectedTheme] = useState("abstract-tech");
-    const [authBg, setAuthBg] = useState("random-cycle");
-    const [userDashboardBg, setUserDashboardBg] = useState("default");
-    const [adminDashboardBg, setAdminDashboardBg] = useState("default");
+    const [welcomeGradient, setWelcomeGradient] = useState("random-cycle");
+    const [authGradient, setAuthGradient] = useState("random-cycle");
+    const [userDashboardGradient, setUserDashboardGradient] = useState("default");
+    const [adminDashboardGradient, setAdminDashboardGradient] = useState("default");
+    
+    const [welcomeCustomBg, setWelcomeCustomBg] = useState<string | null>(null);
+    const [authCustomBg, setAuthCustomBg] = useState<string | null>(null);
+    const [userDashboardCustomBg, setUserDashboardCustomBg] = useState<string | null>(null);
+    const [adminDashboardCustomBg, setAdminDashboardCustomBg] = useState<string | null>(null);
+
     const [primaryColor, setPrimaryColor] = useState("#673ab7");
     const [accentColor, setAccentColor] = useState("#009688");
     const [backgroundColor, setBackgroundColor] = useState("#f5f5f5");
@@ -219,12 +287,17 @@ export default function WebsiteUIPage() {
         // Theme & Colors
         const savedTheme = localStorage.getItem('landing_theme');
         if (savedTheme) setSelectedTheme(savedTheme);
-        const savedAuthBg = localStorage.getItem('auth_background');
-        if(savedAuthBg) setAuthBg(savedAuthBg);
-        const savedUserDashboardBg = localStorage.getItem('user_dashboard_background');
-        if(savedUserDashboardBg) setUserDashboardBg(savedUserDashboardBg);
-        const savedAdminDashboardBg = localStorage.getItem('admin_dashboard_background');
-        if(savedAdminDashboardBg) setAdminDashboardBg(savedAdminDashboardBg);
+        
+        // Backgrounds
+        setWelcomeGradient(localStorage.getItem('welcome_background_gradient') || 'random-cycle');
+        setAuthGradient(localStorage.getItem('auth_background_gradient') || 'random-cycle');
+        setUserDashboardGradient(localStorage.getItem('user_dashboard_background_gradient') || 'default');
+        setAdminDashboardGradient(localStorage.getItem('admin_dashboard_background_gradient') || 'default');
+        setWelcomeCustomBg(localStorage.getItem('welcome_background_custom'));
+        setAuthCustomBg(localStorage.getItem('auth_background_custom'));
+        setUserDashboardCustomBg(localStorage.getItem('user_dashboard_background_custom'));
+        setAdminDashboardCustomBg(localStorage.getItem('admin_dashboard_background_custom'));
+
 
         const savedPrimaryColor = localStorage.getItem('theme_primary_color');
         if (savedPrimaryColor) setPrimaryColor(savedPrimaryColor);
@@ -265,9 +338,16 @@ export default function WebsiteUIPage() {
         
         // Theme & Colors
         localStorage.setItem('landing_theme', selectedTheme);
-        localStorage.setItem('auth_background', authBg);
-        localStorage.setItem('user_dashboard_background', userDashboardBg);
-        localStorage.setItem('admin_dashboard_background', adminDashboardBg);
+        localStorage.setItem('welcome_background_gradient', welcomeGradient);
+        localStorage.setItem('auth_background_gradient', authGradient);
+        localStorage.setItem('user_dashboard_background_gradient', userDashboardGradient);
+        localStorage.setItem('admin_dashboard_background_gradient', adminDashboardGradient);
+
+        welcomeCustomBg ? localStorage.setItem('welcome_background_custom', welcomeCustomBg) : localStorage.removeItem('welcome_background_custom');
+        authCustomBg ? localStorage.setItem('auth_background_custom', authCustomBg) : localStorage.removeItem('auth_background_custom');
+        userDashboardCustomBg ? localStorage.setItem('user_dashboard_background_custom', userDashboardCustomBg) : localStorage.removeItem('user_dashboard_background_custom');
+        adminDashboardCustomBg ? localStorage.setItem('admin_dashboard_background_custom', adminDashboardCustomBg) : localStorage.removeItem('admin_dashboard_background_custom');
+
         localStorage.setItem('theme_primary_color', primaryColor);
         localStorage.setItem('theme_accent_color', accentColor);
         localStorage.setItem('theme_background_color', backgroundColor);
@@ -451,54 +531,43 @@ export default function WebsiteUIPage() {
         <CardHeader>
           <CardTitle>Theme &amp; Appearance</CardTitle>
           <CardDescription>
-            Customize the global color scheme, background, and animations.
+            Customize backgrounds, color schemes, and animations.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-            <div className="space-y-4">
-                <div className="space-y-2">
-                    <Label>Auth Screen Background</Label>
-                    <Select value={authBg} onValueChange={setAuthBg}>
-                        <SelectTrigger><SelectValue placeholder="Select a background..." /></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="random-cycle">Random Cycle (Default)</SelectItem>
-                            {gradients.map(g => (
-                                <SelectItem key={g.name} value={g.className}>{g.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">Background for Welcome, Login, and Signup pages.</p>
-                </div>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                        <Label>User Dashboard Background</Label>
-                        <Select value={userDashboardBg} onValueChange={setUserDashboardBg}>
-                            <SelectTrigger><SelectValue placeholder="Select a background..." /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="default">Default (Plain)</SelectItem>
-                                <SelectItem value="random-cycle">Random Cycle</SelectItem>
-                                {gradients.map(g => (
-                                    <SelectItem key={g.name} value={g.className}>{g.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                         <p className="text-xs text-muted-foreground">Background for the main user dashboard areas.</p>
-                    </div>
-                     <div className="space-y-2">
-                        <Label>Admin Dashboard Background</Label>
-                         <Select value={adminDashboardBg} onValueChange={setAdminDashboardBg}>
-                            <SelectTrigger><SelectValue placeholder="Select a background..." /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="default">Default (Plain)</SelectItem>
-                                <SelectItem value="random-cycle">Random Cycle</SelectItem>
-                                {gradients.map(g => (
-                                    <SelectItem key={g.name} value={g.className}>{g.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                         <p className="text-xs text-muted-foreground">Background for the main admin dashboard areas.</p>
-                    </div>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <BackgroundSelector
+                    title="Welcome Screen Background"
+                    description="Background for the main landing page."
+                    gradientValue={welcomeGradient}
+                    onGradientChange={setWelcomeGradient}
+                    customBgValue={welcomeCustomBg}
+                    onCustomBgChange={setWelcomeCustomBg}
+                />
+                <BackgroundSelector
+                    title="Login & Signup Screen Background"
+                    description="Background for authentication pages."
+                    gradientValue={authGradient}
+                    onGradientChange={setAuthGradient}
+                    customBgValue={authCustomBg}
+                    onCustomBgChange={setAuthCustomBg}
+                />
+                <BackgroundSelector
+                    title="User Dashboard Background"
+                    description="Background for user dashboard areas."
+                    gradientValue={userDashboardGradient}
+                    onGradientChange={setUserDashboardGradient}
+                    customBgValue={userDashboardCustomBg}
+                    onCustomBgChange={setUserDashboardCustomBg}
+                />
+                 <BackgroundSelector
+                    title="Admin Dashboard Background"
+                    description="Background for admin dashboard areas."
+                    gradientValue={adminDashboardGradient}
+                    onGradientChange={setAdminDashboardGradient}
+                    customBgValue={adminDashboardCustomBg}
+                    onCustomBgChange={setAdminDashboardCustomBg}
+                />
             </div>
             <Separator />
           <div className="space-y-2">

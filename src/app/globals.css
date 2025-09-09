@@ -41,6 +41,22 @@ body {
     --sidebar-accent-foreground: hsl(var(--accent-foreground));
     --sidebar-border: hsl(var(--border));
     --sidebar-ring: hsl(var(--ring));
+
+    --gradient-bg-gradient-purple: linear-gradient(to bottom right, #8a2be2, #4b0082);
+    --gradient-bg-gradient-orange: linear-gradient(to bottom right, #ff8c00, #ff4500);
+    --gradient-bg-gradient-teal: linear-gradient(to bottom right, #20b2aa, #008080);
+    --gradient-bg-gradient-sky: linear-gradient(to bottom right, #87ceeb, #4682b4);
+    --gradient-bg-gradient-pink: linear-gradient(to bottom right, #ff69b4, #ff1493);
+    --gradient-bg-gradient-blue: linear-gradient(to bottom right, #4169e1, #0000cd);
+    --gradient-bg-gradient-amber: linear-gradient(to bottom right, #ffc107, #ff9800);
+    --gradient-bg-gradient-rose: linear-gradient(to bottom right, #f43f5e, #be123c);
+    --gradient-bg-gradient-fuchsia: linear-gradient(to bottom right, #d946ef, #a21caf);
+    --gradient-bg-gradient-violet: linear-gradient(to bottom right, #8b5cf6, #6d28d9);
+    --gradient-bg-gradient-yellow: linear-gradient(to bottom right, #facc15, #eab308);
+    --gradient-bg-gradient-lime: linear-gradient(to bottom right, #84cc16, #4d7c0f);
+    --gradient-bg-gradient-cyan: linear-gradient(to bottom right, #22d3ee, #0891b2);
+    --gradient-bg-gradient-slate: linear-gradient(to bottom right, #64748b, #334155);
+    --gradient-bg-gradient-green: linear-gradient(to bottom right, #22c55e, #15803d);
   }
   .dark {
     --background: 240 10% 3.9%;
@@ -130,48 +146,48 @@ body {
   }
 
   .bg-gradient-purple {
-    @apply bg-gradient-to-br from-purple-500 to-indigo-600;
+    background: var(--gradient-bg-gradient-purple);
   }
   .bg-gradient-orange {
-    @apply bg-gradient-to-br from-orange-500 to-yellow-500;
+    background: var(--gradient-bg-gradient-orange);
   }
   .bg-gradient-teal {
-    @apply bg-gradient-to-br from-teal-500 to-cyan-500;
+    background: var(--gradient-bg-gradient-teal);
   }
   .bg-gradient-sky {
-      @apply bg-gradient-to-br from-sky-500 to-indigo-500;
+    background: var(--gradient-bg-gradient-sky);
   }
   .bg-gradient-slate {
-      @apply bg-gradient-to-br from-slate-700 to-slate-800;
+    background: var(--gradient-bg-gradient-slate);
   }
   .bg-gradient-green {
-      @apply bg-gradient-to-br from-green-500 to-emerald-600;
+    background: var(--gradient-bg-gradient-green);
   }
   .bg-gradient-pink {
-      @apply bg-gradient-to-br from-pink-500 to-rose-500;
+    background: var(--gradient-bg-gradient-pink);
   }
   .bg-gradient-blue {
-      @apply bg-gradient-to-br from-blue-500 to-violet-500;
+    background: var(--gradient-bg-gradient-blue);
   }
   .bg-gradient-amber {
-      @apply bg-gradient-to-br from-amber-500 to-orange-600;
+    background: var(--gradient-bg-gradient-amber);
   }
   .bg-gradient-yellow {
-      @apply bg-gradient-to-br from-yellow-400 to-amber-500;
+    background: var(--gradient-bg-gradient-yellow);
   }
   .bg-gradient-lime {
-      @apply bg-gradient-to-br from-lime-500 to-green-600;
+    background: var(--gradient-bg-gradient-lime);
   }
   .bg-gradient-cyan {
-      @apply bg-gradient-to-br from-cyan-400 to-blue-500;
+    background: var(--gradient-bg-gradient-cyan);
   }
   .bg-gradient-rose {
-      @apply bg-gradient-to-br from-rose-500 to-red-600;
+    background: var(--gradient-bg-gradient-rose);
   }
   .bg-gradient-fuchsia {
-      @apply bg-gradient-to-br from-fuchsia-500 to-purple-600;
+    background: var(--gradient-bg-gradient-fuchsia);
   }
   .bg-gradient-violet {
-      @apply bg-gradient-to-br from-violet-500 to-indigo-600;
+    background: var(--gradient-bg-gradient-violet);
   }
 }

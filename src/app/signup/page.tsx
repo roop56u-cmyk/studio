@@ -35,7 +35,8 @@ export default function SignupPage() {
   const [fullName, setFullName] = useState("");
   const [invitationCode, setInvitationCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [gradient, setGradient] = useState(gradients[0].className);
+  const [backgroundClass, setBackgroundClass] = useState("bg-background");
+  const [backgroundStyle, setBackgroundStyle] = useState<React.CSSProperties>({});
   const [mainLogoDataUrl, setMainLogoDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -44,14 +45,20 @@ export default function SignupPage() {
       setMainLogoDataUrl(savedMainLogo);
     }
     
-    const savedAuthBg = localStorage.getItem('auth_background') || 'random-cycle';
-    if (savedAuthBg === 'random-cycle') {
-        const interval = setInterval(() => {
-            setGradient(gradients[Math.floor(Math.random() * gradients.length)].className);
-        }, 5000);
-        return () => clearInterval(interval);
+    const customBg = localStorage.getItem('auth_background_custom');
+    if (customBg) {
+        setBackgroundStyle({ backgroundImage: `url(${customBg})`, backgroundSize: 'cover', backgroundPosition: 'center' });
+        setBackgroundClass('');
     } else {
-        setGradient(savedAuthBg);
+        const savedAuthBg = localStorage.getItem('auth_background_gradient') || 'random-cycle';
+        if (savedAuthBg === 'random-cycle') {
+            const interval = setInterval(() => {
+                setBackgroundClass(gradients[Math.floor(Math.random() * gradients.length)].className);
+            }, 5000);
+            return () => clearInterval(interval);
+        } else {
+            setBackgroundClass(savedAuthBg);
+        }
     }
   }, []);
 
@@ -84,8 +91,8 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 bg-background">
-      <Card className={cn("mx-auto w-full max-w-sm transition-all duration-1000", gradient)}>
+    <div className="flex min-h-screen items-center justify-center p-4" style={backgroundStyle}>
+      <Card className={cn("mx-auto w-full max-w-sm transition-all duration-1000", backgroundClass, backgroundStyle.backgroundImage ? 'bg-black/50 backdrop-blur-sm border-white/20' : '')}>
         <CardHeader className="text-center">
             {mainLogoDataUrl && (
               <Image src={mainLogoDataUrl} alt="Main Logo" width={128} height={128} className="mx-auto h-32 w-auto object-contain mb-4" unoptimized />

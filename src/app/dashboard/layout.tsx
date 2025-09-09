@@ -669,6 +669,7 @@ export default function DashboardLayout({
     const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
     
     const [backgroundClass, setBackgroundClass] = React.useState("bg-background");
+    const [backgroundStyle, setBackgroundStyle] = React.useState<React.CSSProperties>({});
 
     const pathname = usePathname();
     const isAdminPage = pathname.startsWith('/dashboard/admin');
@@ -710,8 +711,17 @@ export default function DashboardLayout({
     }, []);
 
      React.useEffect(() => {
-        const bgKey = isAdminPage ? 'admin_dashboard_background' : 'user_dashboard_background';
-        const savedDashboardBg = localStorage.getItem(bgKey) || 'default';
+        const bgKey = isAdminPage ? 'admin_dashboard' : 'user_dashboard';
+        const customBg = localStorage.getItem(`${bgKey}_background_custom`);
+        
+        if (customBg) {
+            setBackgroundStyle({ backgroundImage: `url(${customBg})`, backgroundSize: 'cover', backgroundPosition: 'center' });
+            setBackgroundClass('');
+            return;
+        }
+
+        setBackgroundStyle({});
+        const savedDashboardBg = localStorage.getItem(`${bgKey}_background_gradient`) || 'default';
         
         let intervalId: NodeJS.Timeout;
 
@@ -784,7 +794,8 @@ export default function DashboardLayout({
                 onShowTaskWarning={() => setIsTaskMoveWarningOpen(true)}
             />
           </Sidebar>
-          <div className={cn("flex flex-1 flex-col transition-colors duration-1000", backgroundClass)}>
+          <div className={cn("flex flex-1 flex-col transition-colors duration-1000", backgroundClass)} style={backgroundStyle}>
+          <div className={cn(backgroundStyle.backgroundImage ? 'bg-black/10 backdrop-blur-sm' : '', 'h-full w-full')}>
           <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-transparent px-4 md:px-6">
               <SidebarTrigger />
               <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
@@ -807,6 +818,7 @@ export default function DashboardLayout({
           <main className="flex-1 px-2 md:p-4 lg:p-6">
               {children}
           </main>
+          </div>
           </div>
       </div>
        <RechargeDialog open={isRechargeOpen} onOpenChange={setIsRechargeOpen} />

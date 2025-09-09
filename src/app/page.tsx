@@ -16,7 +16,7 @@ export default function Home() {
   const [title, setTitle] = useState("Welcome to Taskify");
   const [subtitle, setSubtitle] = useState("Your central place to rate, review, and analyze tasks and services. Get started by creating an account or signing in.");
   const [customButtons, setCustomButtons] = useState<CustomButton[]>([]);
-  const [gradient, setGradient] = useState(gradients[0].className);
+  const [backgroundStyle, setBackgroundStyle] = useState<React.CSSProperties>({});
   const [mainLogoDataUrl, setMainLogoDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -34,14 +34,22 @@ export default function Home() {
       setMainLogoDataUrl(savedMainLogo);
     }
 
-    const savedAuthBg = localStorage.getItem('auth_background') || 'random-cycle';
-    if (savedAuthBg === 'random-cycle') {
-        const interval = setInterval(() => {
-            setGradient(gradients[Math.floor(Math.random() * gradients.length)].className);
-        }, 7000); 
-        return () => clearInterval(interval);
+    const customBg = localStorage.getItem('welcome_background_custom');
+    if (customBg) {
+        setBackgroundStyle({ backgroundImage: `url(${customBg})`, backgroundSize: 'cover', backgroundPosition: 'center' });
     } else {
-        setGradient(savedAuthBg);
+        const savedAuthBg = localStorage.getItem('welcome_background_gradient') || 'random-cycle';
+        if (savedAuthBg === 'random-cycle') {
+            const setRandomGradient = () => {
+                const randomGradient = gradients[Math.floor(Math.random() * gradients.length)].className;
+                setBackgroundStyle({ background: `var(--gradient-${randomGradient})`}); // Use CSS variables for gradients
+            };
+            setRandomGradient();
+            const interval = setInterval(setRandomGradient, 7000); 
+            return () => clearInterval(interval);
+        } else {
+            setBackgroundStyle({ background: `var(--gradient-${savedAuthBg})` });
+        }
     }
   }, []);
   
@@ -60,9 +68,9 @@ export default function Home() {
 
 
   return (
-    <div className={cn("relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden transition-all duration-1000", gradient)}>
+    <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden transition-all duration-1000" style={backgroundStyle}>
       <WelcomeAnimation />
-      <div className="absolute inset-0" />
+      <div className="absolute inset-0 bg-black/30" />
       <div className="relative z-10 flex flex-col items-center justify-center text-center p-4">
         {mainLogoDataUrl && (
           <Image src={mainLogoDataUrl} alt="Main Logo" width={256} height={128} className="max-h-32 w-auto object-contain mb-8" unoptimized />
