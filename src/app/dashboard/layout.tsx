@@ -964,6 +964,9 @@ export default function DashboardLayout({
         {/* Profile and Settings Popups */}
         <Sheet open={isProfileOpen} onOpenChange={setIsProfileOpen}>
             <SheetContent className="w-full sm:max-w-md">
+                 <SheetHeader>
+                    <SheetTitle className="sr-only">Profile</SheetTitle>
+                </SheetHeader>
                 <ScrollArea className="h-full">
                     <ProfilePage />
                 </ScrollArea>
@@ -972,6 +975,9 @@ export default function DashboardLayout({
         </Sheet>
         <Sheet open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
             <SheetContent className="w-full sm:max-w-md">
+                <SheetHeader>
+                    <SheetTitle className="sr-only">Settings</SheetTitle>
+                </SheetHeader>
                  <ScrollArea className="h-full">
                     <SettingsPage />
                 </ScrollArea>
