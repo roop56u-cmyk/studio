@@ -86,7 +86,8 @@ import {
   ShieldAlert,
   ShoppingCart,
   HandCoins,
-  Info
+  Info,
+  CalendarClock
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -138,12 +139,13 @@ import PurchaseHistoryPage from './admin/purchase-history/page';
 import ManageReimbursementsPage from './admin/reimbursements/page';
 import ManageAboutUsPage from './admin/about-us/page';
 import AdminProfilePage from './admin/admin-profile/page';
+import SchedulingPage from './admin/scheduling/page';
 import ProfilePage from './profile/page';
 import SettingsPage from './settings/page';
 import type { Notice } from './admin/notices/page';
 
 
-type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement' | 'purchaseHistory' | 'reimbursements' | 'aboutUs' | 'adminProfile';
+type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement' | 'purchaseHistory' | 'reimbursements' | 'aboutUs' | 'adminProfile' | 'scheduling';
 
 
 const adminPanelComponents: Record<PanelType, React.ComponentType> = {
@@ -170,6 +172,7 @@ const adminPanelComponents: Record<PanelType, React.ComponentType> = {
     reimbursements: ManageReimbursementsPage,
     aboutUs: ManageAboutUsPage,
     adminProfile: AdminProfilePage,
+    scheduling: SchedulingPage,
 };
 
 const adminPanelTitles: Record<PanelType, { title: string; description: string }> = {
@@ -196,6 +199,7 @@ const adminPanelTitles: Record<PanelType, { title: string; description: string }
     reimbursements: { title: "Manual Reimbursements", description: "Manage reimbursement packages for user events." },
     aboutUs: { title: "About Us", description: "Manage your company's information page." },
     adminProfile: { title: "Admin Profile", description: "Manage the primary admin credentials." },
+    scheduling: { title: "Scheduling", description: "View and manage platform time settings." },
 };
 
 function SidebarContentComponent({ 
@@ -413,6 +417,12 @@ function SidebarContentComponent({
                     <SidebarMenuButton onClick={() => onAdminPanelClick('aboutUs')} tooltip={{ children: "About Us Page" }}>
                         <Info />
                         <span>About Us Page</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('scheduling')} tooltip={{ children: "Scheduling" }}>
+                        <CalendarClock />
+                        <span>Scheduling</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
@@ -843,7 +853,7 @@ export default function DashboardLayout({
                 <ScrollArea className="h-[calc(100vh-8rem)] mt-4">
                     <ActivityHistoryPanel />
                 </ScrollArea>
-                 <SheetClose />
+                 <SheetClose asChild><Button variant="outline" className="sr-only">Close</Button></SheetClose>
             </SheetContent>
         </Sheet>
         <Sheet open={isTaskHistoryOpen} onOpenChange={setIsTaskHistoryOpen}>
@@ -857,7 +867,7 @@ export default function DashboardLayout({
                 <ScrollArea className="h-[calc(100vh-8rem)] mt-4">
                     <TaskHistoryPanel />
                 </ScrollArea>
-                 <SheetClose />
+                 <SheetClose asChild><Button variant="outline" className="sr-only">Close</Button></SheetClose>
             </SheetContent>
         </Sheet>
          <Sheet open={isReferralOpen} onOpenChange={setIsReferralOpen}>
@@ -871,7 +881,7 @@ export default function DashboardLayout({
                 <div className="mt-4">
                     <ReferralCard />
                 </div>
-                 <SheetClose />
+                 <SheetClose asChild><Button variant="outline" className="sr-only">Close</Button></SheetClose>
             </SheetContent>
         </Sheet>
         <Sheet open={isInboxOpen} onOpenChange={setIsInboxOpen}>
@@ -885,7 +895,7 @@ export default function DashboardLayout({
                 <div className="mt-4">
                     <InboxPanel />
                 </div>
-                 <SheetClose />
+                 <SheetClose asChild><Button variant="outline" className="sr-only">Close</Button></SheetClose>
             </SheetContent>
         </Sheet>
          <Sheet open={isBoosterStoreOpen} onOpenChange={setIsBoosterStoreOpen}>
@@ -899,7 +909,7 @@ export default function DashboardLayout({
                 <div className="mt-4">
                     <BoosterStorePanel />
                 </div>
-                 <SheetClose />
+                 <SheetClose asChild><Button variant="outline" className="sr-only">Close</Button></SheetClose>
             </SheetContent>
         </Sheet>
          <Sheet open={isQuestPanelOpen} onOpenChange={setIsQuestPanelOpen}>
@@ -913,7 +923,7 @@ export default function DashboardLayout({
                 <div className="mt-4">
                     <QuestPanel />
                 </div>
-                 <SheetClose />
+                 <SheetClose asChild><Button variant="outline" className="sr-only">Close</Button></SheetClose>
             </SheetContent>
         </Sheet>
          <Sheet open={isRewardsPanelOpen} onOpenChange={setIsRewardsPanelOpen}>
@@ -927,7 +937,7 @@ export default function DashboardLayout({
                 <div className="mt-4">
                     <RewardsPanel />
                 </div>
-                 <SheetClose />
+                 <SheetClose asChild><Button variant="outline" className="sr-only">Close</Button></SheetClose>
             </SheetContent>
         </Sheet>
         <Sheet open={isWalletOverviewOpen} onOpenChange={setIsWalletOverviewOpen}>
@@ -939,7 +949,7 @@ export default function DashboardLayout({
                 <div className="mt-4">
                     <WalletOverviewPanel />
                 </div>
-                 <SheetClose />
+                 <SheetClose asChild><Button variant="outline" className="sr-only">Close</Button></SheetClose>
             </SheetContent>
         </Sheet>
         <Sheet open={isAchievementsOpen} onOpenChange={setIsAchievementsOpen}>
@@ -951,7 +961,7 @@ export default function DashboardLayout({
                  <div className="mt-4">
                     <AchievementsPanel />
                 </div>
-                 <SheetClose />
+                 <SheetClose asChild><Button variant="outline" className="sr-only">Close</Button></SheetClose>
             </SheetContent>
         </Sheet>
         <Sheet open={isNoticesOpen} onOpenChange={setIsNoticesOpen}>
@@ -965,7 +975,7 @@ export default function DashboardLayout({
                  <div className="mt-4">
                     <NoticesPanel />
                 </div>
-                 <SheetClose />
+                 <SheetClose asChild><Button variant="outline" className="sr-only">Close</Button></SheetClose>
             </SheetContent>
         </Sheet>
         <Sheet open={isTeamPanelOpen} onOpenChange={setIsTeamPanelOpen}>
@@ -976,7 +986,7 @@ export default function DashboardLayout({
                 <ScrollArea className="h-full">
                     <TeamPage />
                 </ScrollArea>
-                 <SheetClose />
+                 <SheetClose asChild><Button variant="outline" className="sr-only">Close</Button></SheetClose>
             </SheetContent>
         </Sheet>
         <Sheet open={isAboutUsOpen} onOpenChange={setIsAboutUsOpen}>
@@ -987,7 +997,7 @@ export default function DashboardLayout({
                 <ScrollArea className="h-full">
                    <AboutUsPanel />
                 </ScrollArea>
-                 <SheetClose />
+                 <SheetClose asChild><Button variant="outline" className="sr-only">Close</Button></SheetClose>
             </SheetContent>
         </Sheet>
         <Sheet open={isAdminPanelOpen} onOpenChange={setIsAdminPanelOpen}>
@@ -1005,7 +1015,7 @@ export default function DashboardLayout({
                         </div>
                     </>
                 )}
-                 <SheetClose />
+                 <SheetClose asChild><Button variant="outline" className="sr-only">Close</Button></SheetClose>
             </SheetContent>
         </Sheet>
         
@@ -1044,7 +1054,7 @@ export default function DashboardLayout({
                 <ScrollArea className="h-full">
                     <ProfilePage />
                 </ScrollArea>
-                 <SheetClose />
+                 <SheetClose asChild><Button variant="outline" className="sr-only">Close</Button></SheetClose>
             </SheetContent>
         </Sheet>
         <Sheet open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
@@ -1055,7 +1065,7 @@ export default function DashboardLayout({
                  <ScrollArea className="h-full">
                     <SettingsPage />
                 </ScrollArea>
-                 <SheetClose />
+                 <SheetClose asChild><Button variant="outline" className="sr-only">Close</Button></SheetClose>
             </SheetContent>
         </Sheet>
 
