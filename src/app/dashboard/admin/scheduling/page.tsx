@@ -15,6 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, RefreshCw } from "lucide-react";
+import { getInternetTime } from "@/app/actions";
 
 type TimeFormat = "12h" | "24h";
 
@@ -75,9 +76,8 @@ export default function SchedulingPage() {
   const fetchTime = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('https://worldtimeapi.org/api/ip');
-      if (!response.ok) throw new Error("Failed to fetch time");
-      const data = await response.json();
+      const data = await getInternetTime();
+      if (!data) throw new Error("Failed to fetch time");
       const serverTime = new Date(data.utc_datetime).getTime();
       const localTime = Date.now();
       setOffset(serverTime - localTime);

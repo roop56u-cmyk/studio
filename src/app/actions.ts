@@ -99,3 +99,18 @@ export async function grantManualReward({ userEmail, amount, rewardType, reason 
     return { success: false };
   }
 }
+
+export async function getInternetTime(): Promise<{ utc_datetime: string } | null> {
+  try {
+    const response = await fetch('https://worldtimeapi.org/api/ip', { cache: 'no-store' });
+    if (!response.ok) {
+        console.error("Failed to fetch time from API:", response.statusText);
+        return null;
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Network error fetching time:", error);
+    return null;
+  }
+}
