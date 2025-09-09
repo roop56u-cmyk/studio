@@ -1,8 +1,8 @@
 
+
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -27,8 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Eye, EyeOff, X } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -42,7 +41,6 @@ export default function SettingsPage() {
 
   const [deletePassword, setDeletePassword] = useState("");
   const [showDeletePassword, setShowDeletePassword] = useState(false);
-  const isMobile = useIsMobile();
 
 
   const handleChangePassword = (e: React.FormEvent) => {
@@ -106,14 +104,6 @@ export default function SettingsPage() {
             Manage your account settings.
           </p>
         </div>
-        {isMobile && (
-          <Button asChild variant="ghost" size="icon">
-            <Link href="/dashboard/user">
-              <X className="h-5 w-5" />
-              <span className="sr-only">Close</span>
-            </Link>
-          </Button>
-        )}
       </div>
 
       <div className="grid gap-8">

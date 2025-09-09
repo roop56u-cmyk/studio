@@ -12,19 +12,17 @@ import {
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { User, Mail, ShieldCheck, CalendarCheck, X } from "lucide-react";
+import { User, Mail, ShieldCheck, CalendarCheck } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { format } from 'date-fns';
 import { useEffect, useState } from "react";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function ProfilePage() {
   const { currentUser } = useAuth();
   const [isClient, setIsClient] = useState(false);
-  const isMobile = useIsMobile();
 
   useEffect(() => {
     setIsClient(true);
@@ -65,14 +63,6 @@ export default function ProfilePage() {
             View your account details.
           </p>
         </div>
-        {isMobile && (
-          <Button asChild variant="ghost" size="icon">
-            <Link href="/dashboard/user">
-              <X className="h-5 w-5" />
-              <span className="sr-only">Close</span>
-            </Link>
-          </Button>
-        )}
       </div>
       <Card>
         <CardHeader className="items-center text-center">
