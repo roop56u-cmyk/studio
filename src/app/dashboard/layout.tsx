@@ -85,7 +85,8 @@ import {
   PieChart,
   ShieldAlert,
   ShoppingCart,
-  HandCoins
+  HandCoins,
+  Info
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -112,6 +113,7 @@ import { cn } from "@/lib/utils";
 import { gradients } from "@/lib/gradients";
 import { NoticesPanel } from "@/components/dashboard/notices-panel";
 import TeamPage from "./team/page";
+import { AboutUsPanel } from '@/components/dashboard/about-us-panel';
 
 // Admin Panel Imports
 import UserManagementPage from "./admin/users/page";
@@ -134,12 +136,13 @@ import UplineCommissionPage from './admin/upline-commission/page';
 import ManageSalaryPage from './admin/salary/page';
 import PurchaseHistoryPage from './admin/purchase-history/page';
 import ManageReimbursementsPage from './admin/reimbursements/page';
+import ManageAboutUsPage from './admin/about-us/page';
 import ProfilePage from './profile/page';
 import SettingsPage from './settings/page';
 import type { Notice } from './admin/notices/page';
 
 
-type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement' | 'purchaseHistory' | 'reimbursements';
+type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement' | 'purchaseHistory' | 'reimbursements' | 'aboutUs';
 
 
 const adminPanelComponents: Record<PanelType, React.ComponentType> = {
@@ -164,6 +167,7 @@ const adminPanelComponents: Record<PanelType, React.ComponentType> = {
     salaryManagement: ManageSalaryPage,
     purchaseHistory: PurchaseHistoryPage,
     reimbursements: ManageReimbursementsPage,
+    aboutUs: ManageAboutUsPage,
 };
 
 const adminPanelTitles: Record<PanelType, { title: string; description: string }> = {
@@ -188,6 +192,7 @@ const adminPanelTitles: Record<PanelType, { title: string; description: string }
     salaryManagement: { title: "Manage Salary", description: "Create and configure salary packages for users." },
     purchaseHistory: { title: "Purchase History", description: "View user purchases of boosters and quests." },
     reimbursements: { title: "Manual Reimbursements", description: "Manage reimbursement packages for user events." },
+    aboutUs: { title: "About Us", description: "Manage your company's information page." },
 };
 
 function SidebarContentComponent({ 
@@ -205,6 +210,7 @@ function SidebarContentComponent({
     onAchievementsClick,
     onNoticesClick,
     onTeamClick,
+    onAboutUsClick,
     onShowInterestWarning,
     onShowTaskWarning
 }: { 
@@ -222,6 +228,7 @@ function SidebarContentComponent({
     onAchievementsClick: () => void,
     onNoticesClick: () => void,
     onTeamClick: () => void,
+    onAboutUsClick: () => void,
     onShowInterestWarning: () => void,
     onShowTaskWarning: () => void
 }) {
@@ -239,9 +246,12 @@ function SidebarContentComponent({
   } = useWallet();
   const [amount, setAmount] = React.useState('');
   const [isClient, setIsClient] = React.useState(false);
+  const [isAboutUsEnabled, setIsAboutUsEnabled] = React.useState(false);
 
   React.useEffect(() => {
     setIsClient(true);
+    const aboutUsEnabled = localStorage.getItem("about_us_enabled") === 'true';
+    setIsAboutUsEnabled(aboutUsEnabled);
   }, []);
   
   const isAdmin = currentUser?.isAdmin;
@@ -388,6 +398,12 @@ function SidebarContentComponent({
                     <SidebarMenuButton onClick={() => onAdminPanelClick('rechargeAddresses')} tooltip={{ children: "Recharge Addresses" }}>
                         <Network />
                         <span>Recharge Addresses</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('aboutUs')} tooltip={{ children: "About Us Page" }}>
+                        <Info />
+                        <span>About Us Page</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
@@ -602,6 +618,17 @@ function SidebarContentComponent({
                         <span>Task History</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
+                 {isAboutUsEnabled && (
+                    <SidebarMenuItem>
+                        <SidebarMenuButton
+                            onClick={onAboutUsClick}
+                            tooltip={{ children: "About Us" }}
+                        >
+                            <Info />
+                            <span>About Us</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                 )}
             </>
         )}
       </SidebarMenu>
@@ -634,6 +661,7 @@ export default function DashboardLayout({
     const [isAchievementsOpen, setIsAchievementsOpen] = React.useState(false);
     const [isNoticesOpen, setIsNoticesOpen] = React.useState(false);
     const [isTeamPanelOpen, setIsTeamPanelOpen] = React.useState(false);
+    const [isAboutUsOpen, setIsAboutUsOpen] = React.useState(false);
 
     // User menu popups
     const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
@@ -751,6 +779,7 @@ export default function DashboardLayout({
                 onAchievementsClick={() => setIsAchievementsOpen(true)}
                 onNoticesClick={() => setIsNoticesOpen(true)}
                 onTeamClick={() => setIsTeamPanelOpen(true)}
+                onAboutUsClick={() => setIsAboutUsOpen(true)}
                 onShowInterestWarning={() => setIsInterestMoveWarningOpen(true)}
                 onShowTaskWarning={() => setIsTaskMoveWarningOpen(true)}
             />
@@ -921,10 +950,21 @@ export default function DashboardLayout({
         <Sheet open={isTeamPanelOpen} onOpenChange={setIsTeamPanelOpen}>
             <SheetContent className="w-full sm:max-w-md">
                 <SheetHeader>
-                    <SheetTitle className="sr-only">Team</SheetTitle>
+                    <SheetTitle>My Team</SheetTitle>
                 </SheetHeader>
                 <ScrollArea className="h-full">
                     <TeamPage />
+                </ScrollArea>
+                 <SheetClose />
+            </SheetContent>
+        </Sheet>
+        <Sheet open={isAboutUsOpen} onOpenChange={setIsAboutUsOpen}>
+            <SheetContent className="w-full sm:max-w-md">
+                 <SheetHeader>
+                    <SheetTitle>About Us</SheetTitle>
+                 </SheetHeader>
+                <ScrollArea className="h-full">
+                   <AboutUsPanel />
                 </ScrollArea>
                  <SheetClose />
             </SheetContent>
@@ -978,7 +1018,7 @@ export default function DashboardLayout({
         <Sheet open={isProfileOpen} onOpenChange={setIsProfileOpen}>
             <SheetContent className="w-full sm:max-w-md">
                  <SheetHeader>
-                    <SheetTitle className="sr-only">Profile</SheetTitle>
+                    <SheetTitle>My Profile</SheetTitle>
                 </SheetHeader>
                 <ScrollArea className="h-full">
                     <ProfilePage />
@@ -989,7 +1029,7 @@ export default function DashboardLayout({
         <Sheet open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
             <SheetContent className="w-full sm:max-w-md">
                 <SheetHeader>
-                    <SheetTitle className="sr-only">Settings</SheetTitle>
+                    <SheetTitle>My Settings</SheetTitle>
                 </SheetHeader>
                  <ScrollArea className="h-full">
                     <SettingsPage />
