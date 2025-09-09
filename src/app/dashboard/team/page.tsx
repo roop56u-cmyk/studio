@@ -12,7 +12,7 @@ import {
   CardTitle,
   CardFooter
 } from "@/components/ui/card";
-import { Users, DollarSign, UserPlus, Briefcase, Activity, Award, X, Trophy, ArrowUp, Info, HandCoins, UserCheck, TrendingUp, AlertTriangle } from "lucide-react";
+import { Users, DollarSign, UserPlus, Briefcase, Activity, Award, X, Trophy, ArrowUp, Info, HandCoins, UserCheck, TrendingUp, AlertTriangle, Layers } from "lucide-react";
 import { useTeam } from "@/contexts/TeamContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -33,6 +33,7 @@ import { useWallet } from "@/contexts/WalletContext";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { SalaryPackage } from "../admin/salary/page";
+import { CommunityCommissionRule } from "../admin/community-commission/page";
 
 const TeamRewardCard = ({ reward, totalTeamBusiness, onInactiveClaim }: { reward: TeamReward, totalTeamBusiness: number, onInactiveClaim: () => void }) => {
     const { toast } = useToast();
@@ -291,6 +292,8 @@ const SalaryPackageCard = ({ pkg, totalTeamBusiness, activeL1Referrals, onInacti
 export default function TeamPage() {
   const { 
       teamData, 
+      communityData,
+      communityCommissionRules,
       commissionRates, 
       commissionEnabled, 
       isLoading, 
@@ -310,18 +313,41 @@ export default function TeamPage() {
   const totalCommission = useMemo(() => {
       if (!teamData || !currentUser || currentUser.status !== 'active') return 0;
       let total = 0;
-      if (commissionEnabled.level1) total += teamData.level1.commission * (commissionRates.level1 / 100);
-      if (commissionEnabled.level2) total += teamData.level2.commission * (commissionRates.level2 / 100);
-      if (commissionEnabled.level3) total += teamData.level3.commission * (commissionRates.level3 / 100);
+      // L1
+      if (commissionEnabled.level1 && activeL1Referrals >= 1) total += teamData.level1.commission * (commissionRates.level1 / 100);
+      // L2
+      if (commissionEnabled.level2 && activeL1Referrals >= 2) total += teamData.level2.commission * (commissionRates.level2 / 100);
+      // L3
+      if (commissionEnabled.level3 && activeL1Referrals >= 3) total += teamData.level3.commission * (commissionRates.level3 / 100);
+
       return total;
-  }, [teamData, commissionRates, commissionEnabled, currentUser]);
+  }, [teamData, commissionRates, commissionEnabled, currentUser, activeL1Referrals]);
+  
+  const applicableCommunityRule = useMemo(() => {
+    return communityCommissionRules.find(rule => currentLevel >= rule.requiredLevel);
+  }, [communityCommissionRules, currentLevel]);
+
+  const communityCommission = useMemo(() => {
+    if (!communityData || !applicableCommunityRule || !currentUser || currentUser.status !== 'active') return 0;
+    
+    const l1to3size = teamData ? teamData.level1.count + teamData.level2.count + teamData.level3.count : 0;
+    
+    const referralsMet = activeL1Referrals >= applicableCommunityRule.requiredDirectReferrals;
+    const teamSizeMet = l1to3size >= applicableCommunityRule.requiredTeamSize;
+
+    if (referralsMet && teamSizeMet) {
+        return communityData.totalEarnings * (applicableCommunityRule.commissionRate / 100);
+    }
+    
+    return 0;
+  }, [communityData, applicableCommunityRule, currentUser, teamData, activeL1Referrals]);
   
   const totalActiveMembers = useMemo(() => {
     if (!teamData) return 0;
     return teamData.level1.activeCount + teamData.level2.activeCount + teamData.level3.activeCount;
   }, [teamData]);
 
-  if (isLoading || !teamData) {
+  if (isLoading || !teamData || !communityData) {
       return (
            <div className="max-w-md mx-auto grid gap-8">
                 <div>
@@ -507,6 +533,84 @@ export default function TeamPage() {
                     </Card>
                 ))}
             </div>
+
+            {communityCommissionRules.length > 0 && (
+                 <>
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center gap-2">
+                            <Layers className="h-5 w-5 text-primary" />
+                            <CardTitle>Community Commission</CardTitle>
+                            </div>
+                            <CardDescription>
+                                Earn a special commission from your L4+ team members.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">${communityCommission.toFixed(2)}</div>
+                            <p className="text-xs text-muted-foreground">From L4+ active members</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                           <CardTitle>Community Commission Requirements</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {applicableCommunityRule ? (
+                                <>
+                                 <div className="space-y-2">
+                                    <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                        <span>Active L1 Referrals</span>
+                                        <span>{activeL1Referrals} / {applicableCommunityRule.requiredDirectReferrals}</span>
+                                    </div>
+                                    <Progress value={Math.min(100, (activeL1Referrals/applicableCommunityRule.requiredDirectReferrals)*100)} />
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                        <span>L1-L3 Team Size</span>
+                                        <span>{teamData.level1.count + teamData.level2.count + teamData.level3.count} / {applicableCommunityRule.requiredTeamSize}</span>
+                                    </div>
+                                    <Progress value={Math.min(100, ((teamData.level1.count + teamData.level2.count + teamData.level3.count)/applicableCommunityRule.requiredTeamSize)*100)} />
+                                </div>
+                                </>
+                            ) : (
+                                <p className="text-sm text-muted-foreground text-center">No community commission rule is currently applicable for your level.</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader>
+                           <CardTitle>L4+ Community</CardTitle>
+                        </CardHeader>
+                         <CardContent>
+                             <Accordion type="single" collapsible className="w-full">
+                                <AccordionItem value="item-1">
+                                    <AccordionTrigger>View L4+ Members ({communityData.members.length})</AccordionTrigger>
+                                    <AccordionContent>
+                                    {communityData.members.length > 0 ? (
+                                        <ul className="space-y-2 text-sm text-muted-foreground max-h-60 overflow-y-auto">
+                                            {communityData.members.map(member => (
+                                                <li key={member.email} className="flex justify-between items-center">
+                                                    <span className="truncate pr-2">{member.email}</span>
+                                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                                        <Badge variant={member.status === 'active' ? 'default' : 'secondary'} className={cn('text-xs py-0.5 px-1.5 h-fit', member.status === 'active' ? 'bg-green-100 text-green-800' : '')}>
+                                                            {member.status}
+                                                        </Badge>
+                                                        <Badge variant="secondary" className="text-xs py-0.5 px-1.5 h-fit">Lvl {member.level}</Badge>
+                                                    </div>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <p className="text-sm text-center text-muted-foreground py-4">No members in L4 or beyond yet.</p>
+                                    )}
+                                    </AccordionContent>
+                                </AccordionItem>
+                                </Accordion>
+                        </CardContent>
+                    </Card>
+                 </>
+            )}
 
             {availableSalaryPackages.length > 0 && (
                  <div>

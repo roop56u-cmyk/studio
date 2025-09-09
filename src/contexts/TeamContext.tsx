@@ -11,6 +11,7 @@ import { TeamSizeReward } from '@/app/dashboard/admin/team-size-rewards/page';
 import type { UplineCommissionSettings } from '@/app/dashboard/admin/upline-commission/page';
 import type { SalaryPackage } from '@/app/dashboard/admin/salary/page';
 import { useLocalStorageWatcher } from '@/hooks/use-local-storage-watcher';
+import type { CommunityCommissionRule } from '@/app/dashboard/admin/community-commission/page';
 
 type TeamMember = User & {
     level: number;
@@ -32,8 +33,16 @@ type TeamData = {
     level3: TeamLevelData;
 };
 
+type CommunityData = {
+    members: TeamMember[];
+    totalEarnings: number;
+    activeCount: number;
+}
+
 interface TeamContextType {
   teamData: TeamData | null;
+  communityData: CommunityData | null;
+  communityCommissionRules: CommunityCommissionRule[];
   teamRewards: TeamReward[];
   teamSizeRewards: TeamSizeReward[];
   salaryPackages: SalaryPackage[];
@@ -83,6 +92,8 @@ const TeamContext = createContext<TeamContextType | undefined>(undefined);
 export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const { currentUser, users } = useAuth();
     const [teamData, setTeamData] = useState<TeamData | null>(null);
+    const [communityData, setCommunityData] = useState<CommunityData | null>(null);
+    const [communityCommissionRules, setCommunityCommissionRules] = useState<CommunityCommissionRule[]>([]);
     const [teamRewards, setTeamRewards] = useState<TeamReward[]>([]);
     const [teamSizeRewards, setTeamSizeRewards] = useState<TeamSizeReward[]>([]);
     const [salaryPackages, setSalaryPackages] = useState<SalaryPackage[]>([]);
@@ -103,7 +114,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     useLocalStorageWatcher('platform_team_size_rewards', setTeamSizeRewards);
     useLocalStorageWatcher('platform_salary_packages', (allPackages) => setSalaryPackages(allPackages.filter((p: SalaryPackage) => p.enabled)));
     useLocalStorageWatcher('upline_commission_settings', setUplineCommissionSettings);
-
+    useLocalStorageWatcher('community_commission_rules', (rules) => setCommunityCommissionRules(rules.filter((r: CommunityCommissionRule) => r.enabled)));
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -132,6 +143,12 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             if (savedSalaryPackages) {
                 const allPackages = JSON.parse(savedSalaryPackages).filter((p: SalaryPackage) => p.enabled);
                 setSalaryPackages(allPackages);
+            }
+            
+            const savedCommunityRules = localStorage.getItem('community_commission_rules');
+            if (savedCommunityRules) {
+                const allRules = JSON.parse(savedCommunityRules);
+                setCommunityCommissionRules(allRules.filter((r: CommunityCommissionRule) => r.enabled));
             }
         }
     }, []);
@@ -168,6 +185,48 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
                 activationDate.getDate() === today.getDate();
     }, []);
 
+    const getDailyTaskEarnings = useCallback((user: User, allUsers: User[]) => {
+        const platformLevels = JSON.parse(localStorage.getItem('platform_levels') || JSON.stringify(defaultLevels));
+        const earningModel = localStorage.getItem('system_earning_model') || 'dynamic';
+        const userLevel = getLevelForUser(user, allUsers);
+        const memberLevelData = platformLevels.find((l:Level) => l.level === userLevel);
+        
+        if (!memberLevelData) return 0;
+
+        if (earningModel === 'fixed') {
+            return memberLevelData.earningPerTask * memberLevelData.dailyTasks;
+        } else { // dynamic
+            const taskBalance = parseFloat(localStorage.getItem(`${user.email}_taskRewardsBalance`) || '0');
+            return taskBalance * (memberLevelData.rate / 100);
+        }
+    }, []);
+
+    const calculateCommunityData = useCallback((user: User, allUsers: User[]): CommunityData => {
+        let L4PlusMembers: User[] = [];
+        let lastLayer = allUsers.filter(u => user.referralCode === u.referredBy); // L1
+        lastLayer = lastLayer.flatMap(l1 => allUsers.filter(u => u.referralCode === l1.referralCode)); // L2
+        lastLayer = lastLayer.flatMap(l2 => allUsers.filter(u => u.referralCode === l2.referralCode)); // L3
+
+        // Recursively find all deeper layers
+        let currentLayer = lastLayer.flatMap(l3 => allUsers.filter(u => u.referralCode === l3.referralCode)); // Start with L4
+        while(currentLayer.length > 0) {
+            L4PlusMembers.push(...currentLayer);
+            currentLayer = currentLayer.flatMap(member => allUsers.filter(u => u.referralCode === member.referralCode));
+        }
+
+        const activeMembers = L4PlusMembers.filter(m => allUsers.find(u => u.email === m.email)?.status === 'active');
+        const totalEarnings = activeMembers.reduce((sum, m) => sum + getDailyTaskEarnings(m, allUsers), 0);
+
+        const enrichedMembers: TeamMember[] = L4PlusMembers.map(m => ({ ...m, level: getLevelForUser(m, allUsers), status: allUsers.find(u => u.email === m.email)?.status || m.status }));
+
+        return {
+            members: enrichedMembers,
+            totalEarnings,
+            activeCount: activeMembers.length,
+        };
+    }, [getDailyTaskEarnings]);
+
+
     const calculateTeamData = useCallback((user: User, allUsers: User[]): TeamData => {
         const platformLevels = JSON.parse(localStorage.getItem('platform_levels') || JSON.stringify(defaultLevels));
         const earningModel = localStorage.getItem('system_earning_model') || 'dynamic';
@@ -180,17 +239,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             const enrichedMembers: TeamMember[] = members.map(m => ({ ...m, level: getLevelForUser(m, allUsers), status: allUsers.find(u => u.email === m.email)?.status || m.status }));
             const totalDeposits = enrichedMembers.reduce((sum, m) => sum + getDepositsForUser(m.email), 0);
             
-            const dailyTaskEarnings = activeMembers.reduce((sum, m) => {
-                 const memberLevelData = platformLevels.find((l:Level) => l.level === getLevelForUser(m, allUsers));
-                 if (!memberLevelData) return sum;
-
-                 if (earningModel === 'fixed') {
-                    return sum + (memberLevelData.earningPerTask * memberLevelData.dailyTasks);
-                 } else { // dynamic
-                    const taskBalance = parseFloat(localStorage.getItem(`${m.email}_taskRewardsBalance`) || '0');
-                    return sum + (taskBalance * (memberLevelData.rate / 100));
-                 }
-            }, 0);
+            const dailyTaskEarnings = activeMembers.reduce((sum, m) => sum + getDailyTaskEarnings(m, allUsers), 0);
 
             const activationsToday = allUsers.filter(u => members.some(m => m.email === u.email) && getIsNewToday(u)).length;
             
@@ -230,17 +279,19 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
         return { level1, level2, level3 };
 
-    }, [getDepositsForUser, getIsNewToday]);
+    }, [getDepositsForUser, getIsNewToday, getDailyTaskEarnings]);
 
 
     useEffect(() => {
         if (currentUser) {
             setIsLoading(true);
             const data = calculateTeamData(currentUser, users);
+            const communityData = calculateCommunityData(currentUser, users);
             setTeamData(data);
+            setCommunityData(communityData);
             setIsLoading(false);
         }
-    }, [currentUser, users, calculateTeamData]);
+    }, [currentUser, users, calculateTeamData, calculateCommunityData]);
 
 
     const totalTeamBusiness = useMemo(() => {
@@ -255,8 +306,10 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
     const value = {
         teamData,
-        teamRewards: teamRewards,
-        teamSizeRewards: teamSizeRewards,
+        communityData,
+        communityCommissionRules,
+        teamRewards,
+        teamSizeRewards,
         salaryPackages,
         commissionRates,
         commissionEnabled,

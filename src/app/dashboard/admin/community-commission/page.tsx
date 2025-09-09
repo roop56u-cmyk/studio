@@ -69,6 +69,7 @@ const RuleForm = ({
   const [requiredLevel, setRequiredLevel] = useState(rule?.requiredLevel || 1);
   const [requiredDirectReferrals, setRequiredDirectReferrals] = useState(rule?.requiredDirectReferrals || 0);
   const [requiredTeamSize, setRequiredTeamSize] = useState(rule?.requiredTeamSize || 0);
+  const [enabled, setEnabled] = useState(rule?.enabled ?? true);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,7 +83,7 @@ const RuleForm = ({
       requiredLevel,
       requiredDirectReferrals,
       requiredTeamSize,
-      enabled: rule?.enabled ?? true,
+      enabled,
     });
   };
 
@@ -120,6 +121,10 @@ const RuleForm = ({
             <Label htmlFor="requiredTeamSize">Required L1-L3 Team Size</Label>
             <Input id="requiredTeamSize" type="number" value={requiredTeamSize} onChange={(e) => setRequiredTeamSize(Number(e.target.value))} required />
         </div>
+      </div>
+      <div className="flex items-center space-x-2">
+        <Switch id="enabled" checked={enabled} onCheckedChange={setEnabled} />
+        <Label htmlFor="enabled">Enable this rule</Label>
       </div>
       
       <DialogFooter>
