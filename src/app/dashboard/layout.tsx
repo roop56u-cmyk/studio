@@ -87,7 +87,8 @@ import {
   ShoppingCart,
   HandCoins,
   Info,
-  CalendarClock
+  CalendarClock,
+  Layers
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -140,12 +141,13 @@ import ManageReimbursementsPage from './admin/reimbursements/page';
 import ManageAboutUsPage from './admin/about-us/page';
 import AdminProfilePage from './admin/admin-profile/page';
 import SchedulingPage from './admin/scheduling/page';
+import ManageCommunityCommissionPage from './admin/community-commission/page';
 import ProfilePage from './profile/page';
 import SettingsPage from './settings/page';
 import type { Notice } from './admin/notices/page';
 
 
-type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement' | 'purchaseHistory' | 'reimbursements' | 'aboutUs' | 'adminProfile' | 'scheduling';
+type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement' | 'purchaseHistory' | 'reimbursements' | 'aboutUs' | 'adminProfile' | 'scheduling' | 'communityCommission';
 
 
 const adminPanelComponents: Record<PanelType, React.ComponentType> = {
@@ -173,6 +175,7 @@ const adminPanelComponents: Record<PanelType, React.ComponentType> = {
     aboutUs: ManageAboutUsPage,
     adminProfile: AdminProfilePage,
     scheduling: SchedulingPage,
+    communityCommission: ManageCommunityCommissionPage,
 };
 
 const adminPanelTitles: Record<PanelType, { title: string; description: string }> = {
@@ -200,6 +203,7 @@ const adminPanelTitles: Record<PanelType, { title: string; description: string }
     aboutUs: { title: "About Us", description: "Manage your company's information page." },
     adminProfile: { title: "Admin Profile", description: "Manage the primary admin credentials." },
     scheduling: { title: "Scheduling", description: "View and manage platform time settings." },
+    communityCommission: { title: "Community Commission", description: "Define rules for L4+ community commissions." },
 };
 
 function SidebarContentComponent({ 
@@ -375,6 +379,12 @@ function SidebarContentComponent({
                     <SidebarMenuButton onClick={() => onAdminPanelClick('uplineCommission')} tooltip={{ children: "Upline Commission" }}>
                         <ArrowUp />
                         <span>Upline Commission</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('communityCommission')} tooltip={{ children: "Community Commission" }}>
+                        <Layers />
+                        <span>Community Commission</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                  <SidebarMenuItem>
