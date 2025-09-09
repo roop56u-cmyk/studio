@@ -8,12 +8,13 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { PlusCircle, Edit, Trash2, HandCoins } from "lucide-react";
+import { PlusCircle, Edit, Trash2, HandCoins, Loader2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,6 +54,95 @@ export type Reimbursement = {
   level: number; // 0 for All Levels
   userEmail?: string;
   enabled: boolean;
+};
+
+const ManualGrantForm = () => {
+    const { users } = useAuth();
+    const { toast } = useToast();
+    const [selectedUser, setSelectedUser] = useState("");
+    const [title, setTitle] = useState("");
+    const [description, setDescription] = useState("");
+    const [amount, setAmount] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleGrant = async () => {
+        if (!selectedUser || !title || !description || !amount) {
+            toast({ variant: "destructive", title: "Missing Fields", description: "Please fill in all fields." });
+            return;
+        }
+        const numericAmount = parseFloat(amount);
+        if (isNaN(numericAmount) || numericAmount <= 0) {
+            toast({ variant: "destructive", title: "Invalid Amount", description: "Please enter a valid positive number." });
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            const mainBalanceKey = `${selectedUser}_mainBalance`;
+            const currentBalance = parseFloat(localStorage.getItem(mainBalanceKey) || '0');
+            localStorage.setItem(mainBalanceKey, (currentBalance + numericAmount).toString());
+
+            const activityHistoryKey = `${selectedUser}_activityHistory`;
+            const currentHistory = JSON.parse(localStorage.getItem(activityHistoryKey) || '[]');
+            const newActivity = {
+                id: `ACT-MANUAL-${Date.now()}`,
+                type: 'Manual Reimbursement',
+                description: `${title}: ${description}`,
+                amount: numericAmount,
+                date: new Date().toISOString(),
+            };
+            localStorage.setItem(activityHistoryKey, JSON.stringify([newActivity, ...currentHistory]));
+
+            toast({ title: "Reimbursement Granted", description: `${selectedUser} has been credited with $${numericAmount}.` });
+            setSelectedUser("");
+            setTitle("");
+            setDescription("");
+            setAmount("");
+        } catch (error) {
+            toast({ variant: "destructive", title: "Error", description: "Could not grant reimbursement." });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Grant Manual Reimbursement</CardTitle>
+                <CardDescription>Directly credit a reimbursement to a user's main wallet.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="space-y-2">
+                    <Label>Select User</Label>
+                    <Select value={selectedUser} onValueChange={setSelectedUser}>
+                        <SelectTrigger><SelectValue placeholder="Select a user..." /></SelectTrigger>
+                        <SelectContent>
+                            {users.map(u => <SelectItem key={u.email} value={u.email}>{u.email}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
+                 <div className="space-y-2">
+                    <Label>Title</Label>
+                    <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g., Event Prize" />
+                </div>
+                 <div className="space-y-2">
+                    <Label>Description</Label>
+                    <Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="e.g., Prize for winning the weekly team challenge." />
+                </div>
+                <div className="space-y-2">
+                    <Label>Amount (USDT)</Label>
+                    <Input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="e.g., 50" />
+                </div>
+            </CardContent>
+            <CardFooter>
+                 <Button onClick={handleGrant} disabled={isLoading}>
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <HandCoins className="mr-2 h-4 w-4" />}
+                    Grant Reimbursement
+                </Button>
+            </CardFooter>
+        </Card>
+    );
 };
 
 const ReimbursementForm = ({
@@ -230,57 +320,64 @@ export default function ManageReimbursementsPage() {
                     </Button>
                 </div>
             </div>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Current Reimbursements ({reimbursements.length})</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {reimbursements.map((item) => (
-                    <div key={item.id} className="border p-4 rounded-lg flex justify-between items-start gap-4">
-                        <div className="flex-1">
-                            <h3 className="font-semibold">{item.title}</h3>
-                            <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
-                            <div className="flex items-center gap-4 mt-2 text-xs">
-                                <span className="font-bold text-primary">${item.amount.toFixed(2)}</span>
-                                <span className="text-muted-foreground">Level: {item.level === 0 ? "All" : `Level ${item.level}`}</span>
-                                {item.userEmail && <span className="text-muted-foreground">User: {item.userEmail}</span>}
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Switch checked={item.enabled} onCheckedChange={(checked) => handleToggle(item.id, checked)} />
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
-                                <Edit className="h-4 w-4" />
-                            </Button>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon">
-                                        <Trash2 className="h-4 w-4 text-destructive" />
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Claimable Reimbursements ({reimbursements.length})</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {reimbursements.map((item) => (
+                            <div key={item.id} className="border p-4 rounded-lg flex justify-between items-start gap-4">
+                                <div className="flex-1">
+                                    <h3 className="font-semibold">{item.title}</h3>
+                                    <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+                                    <div className="flex items-center gap-4 mt-2 text-xs">
+                                        <span className="font-bold text-primary">${item.amount.toFixed(2)}</span>
+                                        <span className="text-muted-foreground">Level: {item.level === 0 ? "All" : `Level ${item.level}`}</span>
+                                        {item.userEmail && <span className="text-muted-foreground">User: {item.userEmail}</span>}
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Switch checked={item.enabled} onCheckedChange={(checked) => handleToggle(item.id, checked)} />
+                                    <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
+                                        <Edit className="h-4 w-4" />
                                     </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Delete Reimbursement?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            This cannot be undone.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDelete(item.id)} className="bg-destructive hover:bg-destructive/90">
-                                            Delete
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
-                    </div>
-                    ))}
-                    {reimbursements.length === 0 && (
-                        <p className="text-muted-foreground text-center py-12">No reimbursement packages have been configured yet.</p>
-                    )}
-                </CardContent>
-            </Card>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon">
+                                                <Trash2 className="h-4 w-4 text-destructive" />
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Delete Reimbursement?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    This cannot be undone.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleDelete(item.id)} className="bg-destructive hover:bg-destructive/90">
+                                                    Delete
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </div>
+                            </div>
+                            ))}
+                            {reimbursements.length === 0 && (
+                                <p className="text-muted-foreground text-center py-12">No reimbursement packages have been configured yet.</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+                <div>
+                    <ManualGrantForm />
+                </div>
+            </div>
         </div>
         
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
