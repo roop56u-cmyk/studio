@@ -202,21 +202,26 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     const calculateCommunityData = useCallback((user: User, allUsers: User[]): CommunityData => {
-        let L4PlusMembers: User[] = [];
-        let lastLayer = allUsers.filter(u => user.referralCode === u.referredBy); // L1
-        lastLayer = lastLayer.flatMap(l1 => allUsers.filter(u => u.referralCode === l1.referralCode)); // L2
-        lastLayer = lastLayer.flatMap(l2 => allUsers.filter(u => u.referralCode === l2.referralCode)); // L3
+        const L4PlusMembers: User[] = [];
+        let parentLayer = allUsers.filter(u => user.referralCode === u.referredBy); // L1
+        parentLayer = parentLayer.flatMap(l1 => allUsers.filter(u => u.referralCode === l1.referralCode)); // L2
+        parentLayer = parentLayer.flatMap(l2 => allUsers.filter(u => u.referralCode === l2.referralCode)); // L3
+        
+        let processedEmails = new Set(allUsers.map(u => u.email)); // Prevent infinite loops in case of bad data
 
-        // Recursively find all deeper layers
-        let currentLayer = lastLayer.flatMap(l3 => allUsers.filter(u => u.referralCode === l3.referralCode)); // Start with L4
-        while(currentLayer.length > 0) {
+        while (parentLayer.length > 0) {
+            const currentLayer = parentLayer.flatMap(parent => allUsers.filter(u => u.referralCode === parent.referralCode && !processedEmails.has(u.email)));
+            if (currentLayer.length === 0) {
+                break;
+            }
             L4PlusMembers.push(...currentLayer);
-            currentLayer = currentLayer.flatMap(member => allUsers.filter(u => u.referralCode === member.referralCode));
+            currentLayer.forEach(u => processedEmails.add(u.email));
+            parentLayer = currentLayer;
         }
 
         const activeMembers = L4PlusMembers.filter(m => allUsers.find(u => u.email === m.email)?.status === 'active');
         const totalEarnings = activeMembers.reduce((sum, m) => sum + getDailyTaskEarnings(m, allUsers), 0);
-
+        
         const enrichedMembers: TeamMember[] = L4PlusMembers.map(m => ({ ...m, level: getLevelForUser(m, allUsers), status: allUsers.find(u => u.email === m.email)?.status || m.status }));
 
         return {
