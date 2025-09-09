@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useMemo, useState, useEffect } from "react";
@@ -27,7 +28,6 @@ import { TeamReward } from "../admin/team-rewards/page";
 import { TeamSizeReward } from "../admin/team-size-rewards/page";
 import { useToast } from "@/hooks/use-toast";
 import { useRequests } from "@/contexts/RequestContext";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWallet } from "@/contexts/WalletContext";
 import { cn } from "@/lib/utils";
@@ -306,7 +306,6 @@ export default function TeamPage() {
   } = useTeam();
   const { currentUser } = useAuth();
   const { currentLevel, setIsInactiveWarningOpen } = useWallet();
-  const isMobile = useIsMobile();
 
   const totalCommission = useMemo(() => {
       if (!teamData || !currentUser || currentUser.status !== 'active') return 0;
@@ -365,14 +364,6 @@ export default function TeamPage() {
             View your team's structure and performance.
           </p>
         </div>
-        {isMobile && (
-          <Button asChild variant="ghost" size="icon">
-            <Link href="/dashboard/user">
-              <X className="h-5 w-5" />
-              <span className="sr-only">Close</span>
-            </Link>
-          </Button>
-        )}
       </div>
 
        <div className="grid gap-8">

@@ -111,6 +111,7 @@ import { useInbox } from "@/contexts/InboxContext";
 import { cn } from "@/lib/utils";
 import { gradients } from "@/lib/gradients";
 import { NoticesPanel } from "@/components/dashboard/notices-panel";
+import TeamPage from "./team/page";
 
 // Admin Panel Imports
 import UserManagementPage from "./admin/users/page";
@@ -203,6 +204,7 @@ function SidebarContentComponent({
     onWalletOverviewClick, 
     onAchievementsClick,
     onNoticesClick,
+    onTeamClick,
     onShowInterestWarning,
     onShowTaskWarning
 }: { 
@@ -219,6 +221,7 @@ function SidebarContentComponent({
     onWalletOverviewClick: () => void, 
     onAchievementsClick: () => void,
     onNoticesClick: () => void,
+    onTeamClick: () => void,
     onShowInterestWarning: () => void,
     onShowTaskWarning: () => void
 }) {
@@ -480,14 +483,11 @@ function SidebarContentComponent({
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                 <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith("/dashboard/team")}
+                    onClick={onTeamClick}
                     tooltip={{ children: "Team" }}
                 >
-                    <Link href="/dashboard/team">
                     <Users />
                     <span>Team</span>
-                    </Link>
                 </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
@@ -633,6 +633,7 @@ export default function DashboardLayout({
     const [isWalletOverviewOpen, setIsWalletOverviewOpen] = React.useState(false);
     const [isAchievementsOpen, setIsAchievementsOpen] = React.useState(false);
     const [isNoticesOpen, setIsNoticesOpen] = React.useState(false);
+    const [isTeamPanelOpen, setIsTeamPanelOpen] = React.useState(false);
 
     // User menu popups
     const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
@@ -749,6 +750,7 @@ export default function DashboardLayout({
                 onWalletOverviewClick={() => setIsWalletOverviewOpen(true)}
                 onAchievementsClick={() => setIsAchievementsOpen(true)}
                 onNoticesClick={() => setIsNoticesOpen(true)}
+                onTeamClick={() => setIsTeamPanelOpen(true)}
                 onShowInterestWarning={() => setIsInterestMoveWarningOpen(true)}
                 onShowTaskWarning={() => setIsTaskMoveWarningOpen(true)}
             />
@@ -913,6 +915,17 @@ export default function DashboardLayout({
                  <div className="mt-4">
                     <NoticesPanel />
                 </div>
+                 <SheetClose />
+            </SheetContent>
+        </Sheet>
+        <Sheet open={isTeamPanelOpen} onOpenChange={setIsTeamPanelOpen}>
+            <SheetContent className="w-full sm:max-w-md">
+                <SheetHeader>
+                    <SheetTitle className="sr-only">Team</SheetTitle>
+                </SheetHeader>
+                <ScrollArea className="h-full">
+                    <TeamPage />
+                </ScrollArea>
                  <SheetClose />
             </SheetContent>
         </Sheet>
