@@ -326,19 +326,17 @@ export default function TeamPage() {
   const applicableCommunityRule = useMemo(() => {
     if (!communityCommissionRules || communityCommissionRules.length === 0) return null;
     
-    // Filter for rules specific to the user's level, sorted from highest to lowest level
+    // Prioritize level-specific rules
     const specificRules = communityCommissionRules
         .filter(rule => rule.requiredLevel > 0 && currentLevel >= rule.requiredLevel)
-        .sort((a, b) => b.requiredLevel - a.requiredLevel);
+        .sort((a, b) => b.requiredLevel - a.requiredLevel); // Highest level first
 
     if (specificRules.length > 0) {
-        return specificRules[0]; // Return the highest-level specific rule they qualify for
+        return specificRules[0]; 
     }
 
-    // If no specific rule, check for an "All Levels" rule
-    const allLevelsRule = communityCommissionRules.find(rule => rule.requiredLevel === 0);
-    
-    return allLevelsRule || null;
+    // Fallback to an "All Levels" rule if no specific rule matches
+    return communityCommissionRules.find(rule => rule.requiredLevel === 0) || null;
   }, [communityCommissionRules, currentLevel]);
 
   const communityCommission = useMemo(() => {
@@ -489,7 +487,7 @@ export default function TeamPage() {
                 </Card>
             )}
             
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid md:grid-cols-2 gap-4">
                 {teamLevels.map(level => (
                     <Card key={level.title}>
                         <CardHeader>
@@ -563,7 +561,8 @@ export default function TeamPage() {
                               <p className="text-xs text-muted-foreground">From L4+ active members</p>
                           </CardContent>
                       </Card>
-                      <Card className="md:col-span-2">
+                      
+                    <Card>
                         <CardHeader>
                            <CardTitle>Community Commission Requirements</CardTitle>
                         </CardHeader>
@@ -594,7 +593,7 @@ export default function TeamPage() {
                 )}
             </div>
 
-            {applicableCommunityRule && (
+            {communityData.members.length > 0 && applicableCommunityRule && (
               <Card>
                   <CardHeader>
                      <CardTitle>L4+ Community</CardTitle>
@@ -664,4 +663,3 @@ export default function TeamPage() {
     </div>
   );
 }
-
