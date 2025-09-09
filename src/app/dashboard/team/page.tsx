@@ -545,23 +545,23 @@ export default function TeamPage() {
                     </Card>
                 ))}
                 {applicableCommunityRule && (
-                  <>
-                      <Card>
-                          <CardHeader>
-                              <div className="flex items-center gap-2">
-                              <Layers className="h-5 w-5 text-primary" />
-                              <CardTitle>Community Commission</CardTitle>
-                              </div>
-                              <CardDescription>
-                                  Earn a special commission from your L4+ team members.
-                              </CardDescription>
-                          </CardHeader>
-                          <CardContent>
-                              <div className="text-2xl font-bold">${communityCommission.toFixed(2)}</div>
-                              <p className="text-xs text-muted-foreground">From L4+ active members</p>
-                          </CardContent>
-                      </Card>
-                      
+                  <Card>
+                      <CardHeader>
+                          <div className="flex items-center gap-2">
+                          <Layers className="h-5 w-5 text-primary" />
+                          <CardTitle>Community Commission</CardTitle>
+                          </div>
+                          <CardDescription>
+                              Earn a special commission from your L4+ team members.
+                          </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                          <div className="text-2xl font-bold">${communityCommission.toFixed(2)}</div>
+                          <p className="text-xs text-muted-foreground">From L4+ active members</p>
+                      </CardContent>
+                  </Card>
+                )}
+                {applicableCommunityRule && (
                     <Card>
                         <CardHeader>
                            <CardTitle>Community Commission Requirements</CardTitle>
@@ -589,7 +589,6 @@ export default function TeamPage() {
                             )}
                         </CardContent>
                     </Card>
-                  </>
                 )}
             </div>
 
