@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import {
   Card,
   CardContent,
@@ -15,9 +16,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Percent, Info, AlertTriangle, ListChecks, Users, BarChart4 } from "lucide-react";
+import { Percent, Info, AlertTriangle, ListChecks, Users, BarChart4, PlusCircle, Wand2, Loader2, Trash2 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { generateNftLibraryArtwork, saveNftToLibrary } from "@/app/actions";
+import { nftLibrary, NftLibraryItem } from "@/lib/nft-library";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
 
 // A simplified list of achievements for the admin panel
 const availableAchievements = [
@@ -41,6 +56,11 @@ export default function NftSettingsPage() {
     const [failedAttemptCooldown, setFailedAttemptCooldown] = useState(60); // Total minutes
     const [successfulSaleCooldown, setSuccessfulSaleCooldown] = useState(24 * 60); // Total minutes
     const [mintableAchievementIds, setMintableAchievementIds] = useState<string[]>([]);
+    
+    // State for AI generation
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [prompt, setPrompt] = useState("");
+    const [currentLibrary, setCurrentLibrary] = useState<NftLibraryItem[]>(nftLibrary);
 
 
     useEffect(() => {
@@ -73,6 +93,30 @@ export default function NftSettingsPage() {
             title: "NFT Settings Saved",
             description: "The NFT circulation market settings have been updated.",
         });
+    };
+    
+    const handleGenerate = async () => {
+        if (!prompt.trim()) {
+            toast({ variant: 'destructive', title: 'Prompt is empty', description: 'Please enter a prompt to generate artwork.' });
+            return;
+        }
+        setIsGenerating(true);
+        try {
+            const { imageUrl } = await generateNftLibraryArtwork(prompt);
+            const result = await saveNftToLibrary({ imageUrl, aiHint: prompt });
+            if (result.success && result.newItem) {
+                setCurrentLibrary(prev => [...prev, result.newItem!]);
+                toast({ title: 'Artwork Added!', description: 'The new NFT artwork has been added to your library.' });
+                setPrompt("");
+            } else {
+                 throw new Error(result.error || "Failed to save the new artwork to the library file.");
+            }
+        } catch (error) {
+            console.error("AI Generation Error:", error);
+            toast({ variant: 'destructive', title: 'Generation Failed', description: 'Could not generate or save the artwork.' });
+        } finally {
+            setIsGenerating(false);
+        }
     };
     
     // Helper to get hours and minutes from total minutes
@@ -265,6 +309,54 @@ export default function NftSettingsPage() {
                  <CardFooter>
                     <Button onClick={handleSave} disabled={!isClient}>Save All Changes</Button>
                 </CardFooter>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>NFT Artwork Library</CardTitle>
+                    <CardDescription>Manage the collection of artwork available for NFTs. Add new art using AI.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                     <Dialog>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" className="w-full">
+                                <PlusCircle className="mr-2 h-4 w-4" /> Add New Artwork with AI
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Generate New NFT Artwork</DialogTitle>
+                                <DialogDescription>Describe the artwork you want to create. Be specific for best results.</DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="prompt">AI Prompt</Label>
+                                    <Input id="prompt" value={prompt} onChange={e => setPrompt(e.target.value)} placeholder="e.g., golden trophy with diamond inlays" />
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <DialogClose asChild>
+                                    <Button type="button" variant="secondary">Cancel</Button>
+                                </DialogClose>
+                                <Button onClick={handleGenerate} disabled={isGenerating}>
+                                    {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                                    Generate
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                    <Separator className="my-4"/>
+                    <ScrollArea className="h-72">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pr-4">
+                            {currentLibrary.map(item => (
+                                <div key={item.achievementId} className="space-y-2 group relative">
+                                    <Image src={item.imageUrl} alt={item.aiHint} width={150} height={150} className="rounded-lg object-cover aspect-square" unoptimized/>
+                                    <p className="text-xs text-muted-foreground truncate" title={item.aiHint}>{item.aiHint}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </ScrollArea>
+                </CardContent>
             </Card>
         </div>
     );

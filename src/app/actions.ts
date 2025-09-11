@@ -3,6 +3,11 @@
 
 import { taskLibrary as defaultTasks, Task } from "@/lib/tasks";
 import { generateNewTaskLibrary as generateNewTaskLibraryFlow } from "@/ai/flows/generate-task-library-flow";
+import { generateNftLibraryArtwork as generateNftLibraryArtworkFlow } from "@/ai/flows/generate-nft-artwork-flow";
+import { NftLibraryItem, nftLibrary } from "@/lib/nft-library";
+import fs from "fs/promises";
+import path from "path";
+
 
 // This type should align with the structure in your task library
 export type GenerateTaskSuggestionOutput = Task;
@@ -46,6 +51,41 @@ export async function generateTaskSuggestion(): Promise<GenerateTaskSuggestionOu
 export async function generateNewTaskLibrary(count: number) {
     return await generateNewTaskLibraryFlow({ count });
 }
+
+export async function generateNftLibraryArtwork(prompt: string) {
+    return await generateNftLibraryArtworkFlow({ prompt });
+}
+
+export async function saveNftToLibrary(newItem: Omit<NftLibraryItem, 'achievementId'> & { achievementId?: string }) {
+    const libraryPath = path.join(process.cwd(), 'src', 'lib', 'nft-library.ts');
+    
+    const newEntry: NftLibraryItem = {
+        achievementId: newItem.achievementId || `custom-${Date.now()}`,
+        imageUrl: newItem.imageUrl,
+        aiHint: newItem.aiHint,
+    };
+
+    const newLibrary = [...nftLibrary, newEntry];
+
+    const fileContent = `
+export type NftLibraryItem = {
+    achievementId: string;
+    imageUrl: string;
+    aiHint: string;
+};
+
+export const nftLibrary: NftLibraryItem[] = ${JSON.stringify(newLibrary, null, 4)};
+`.trim();
+
+    try {
+        await fs.writeFile(libraryPath, fileContent, 'utf-8');
+        return { success: true, newItem: newEntry };
+    } catch (error) {
+        console.error("Failed to write to nft-library.ts", error);
+        return { success: false, error: "Failed to update library file." };
+    }
+}
+
 
 export async function grantManualReward({ userEmail, amount, rewardType, reason }: { userEmail: string; amount: number; rewardType: string; reason: string; }): Promise<{success: boolean}> {
   if (typeof window !== 'undefined') {
