@@ -15,8 +15,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Percent, Info, AlertTriangle } from "lucide-react";
+import { Percent, Info, AlertTriangle, ListChecks, Users, BarChart4 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import { Separator } from "@/components/ui/separator";
+
+// A simplified list of achievements for the admin panel
+const availableAchievements = [
+  { id: 'task-10', title: 'Task Novice', icon: <ListChecks className="h-5 w-5 text-blue-500" /> },
+  { id: 'task-100', title: 'Task Apprentice', icon: <ListChecks className="h-5 w-5 text-blue-500" /> },
+  { id: 'task-500', title: 'Task Master', icon: <ListChecks className="h-5 w-5 text-blue-500" /> },
+  { id: 'referral-1', title: 'Team Builder', icon: <Users className="h-5 w-5 text-green-500" /> },
+  { id: 'referral-10', title: 'Team Leader', icon: <Users className="h-5 w-5 text-green-500" /> },
+  { id: 'level-3', title: 'Gold Tier', icon: <BarChart4 className="h-5 w-5 text-yellow-500" /> },
+  { id: 'level-5', title: 'Diamond Tier', icon: <BarChart4 className="h-5 w-5 text-yellow-500" /> },
+];
 
 export default function NftSettingsPage() {
     const { toast } = useToast();
@@ -28,6 +40,8 @@ export default function NftSettingsPage() {
     const [marketSuccessRate, setMarketSuccessRate] = useState(80);
     const [failedAttemptCooldown, setFailedAttemptCooldown] = useState(60); // Total minutes
     const [successfulSaleCooldown, setSuccessfulSaleCooldown] = useState(24 * 60); // Total minutes
+    const [mintableAchievementIds, setMintableAchievementIds] = useState<string[]>([]);
+
 
     useEffect(() => {
         setIsClient(true);
@@ -40,6 +54,7 @@ export default function NftSettingsPage() {
             setMarketSuccessRate(parsed.marketSuccessRate ?? 80);
             setFailedAttemptCooldown(parsed.failedAttemptCooldown ?? 60);
             setSuccessfulSaleCooldown(parsed.successfulSaleCooldown ?? 24 * 60);
+            setMintableAchievementIds(parsed.mintableAchievementIds ?? []);
         }
     }, []);
 
@@ -51,6 +66,7 @@ export default function NftSettingsPage() {
             marketSuccessRate,
             failedAttemptCooldown,
             successfulSaleCooldown,
+            mintableAchievementIds,
         };
         localStorage.setItem("nft_market_settings", JSON.stringify(settings));
         toast({
@@ -85,6 +101,16 @@ export default function NftSettingsPage() {
         }
     };
     
+    const handleMintableToggle = (achievementId: string, checked: boolean) => {
+        setMintableAchievementIds(prev => {
+            if (checked) {
+                return [...prev, achievementId];
+            } else {
+                return prev.filter(id => id !== achievementId);
+            }
+        });
+    };
+    
     if (!isClient) return null;
 
     return (
@@ -92,7 +118,7 @@ export default function NftSettingsPage() {
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">NFT Circulation Settings</h1>
                 <p className="text-muted-foreground">
-                    Configure the economics of the internal NFT marketplace.
+                    Configure the economics and rules of the internal NFT marketplace.
                 </p>
             </div>
 
@@ -114,98 +140,127 @@ export default function NftSettingsPage() {
                         <AlertTriangle className="h-5 w-5"/>
                         <p>Changes here have a major impact on the platform's economy. Adjust with caution.</p>
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="minting-fee">Minting Fee (USDT)</Label>
-                        <Input
-                            id="minting-fee"
-                            type="number"
-                            value={mintingFee}
-                            onChange={(e) => setMintingFee(Number(e.target.value))}
-                            disabled={!isNftEnabled}
-                        />
-                        <p className="text-xs text-muted-foreground">The cost for a user to create a new NFT from an achievement.</p>
-                    </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="platform-commission">Platform Commission (%)</Label>
-                         <div className="relative">
+                    <div className="space-y-4">
+                        <h4 className="text-lg font-semibold tracking-tight">Minting Rules</h4>
+                        <div className="space-y-2">
+                            <Label htmlFor="minting-fee">Minting Fee (USDT)</Label>
                             <Input
-                                id="platform-commission"
+                                id="minting-fee"
                                 type="number"
-                                value={platformCommission}
-                                onChange={(e) => setPlatformCommission(Number(e.target.value))}
+                                value={mintingFee}
+                                onChange={(e) => setMintingFee(Number(e.target.value))}
                                 disabled={!isNftEnabled}
-                                className="pr-8"
                             />
-                            <Percent className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <p className="text-xs text-muted-foreground">The cost for a user to create a new NFT from an achievement.</p>
                         </div>
-                        <p className="text-xs text-muted-foreground">The percentage the platform takes from every successful NFT sale.</p>
+                        <div className="space-y-2">
+                           <Label>Mintable Achievements</Label>
+                           <p className="text-xs text-muted-foreground">Select which achievements can be turned into NFTs by users.</p>
+                           <div className="space-y-2 rounded-md border p-4">
+                             {availableAchievements.map(ach => (
+                               <div key={ach.id} className="flex items-center justify-between">
+                                 <Label htmlFor={`ach-${ach.id}`} className="flex items-center gap-3 font-normal">
+                                   {ach.icon}
+                                   {ach.title}
+                                 </Label>
+                                 <Switch
+                                   id={`ach-${ach.id}`}
+                                   checked={mintableAchievementIds.includes(ach.id)}
+                                   onCheckedChange={(checked) => handleMintableToggle(ach.id, checked)}
+                                   disabled={!isNftEnabled}
+                                 />
+                               </div>
+                             ))}
+                           </div>
+                        </div>
                     </div>
+                    
+                    <Separator />
+
                      <div className="space-y-4">
-                        <Label htmlFor="market-success-rate">Market Success Rate: {marketSuccessRate}%</Label>
-                        <Slider
-                            id="market-success-rate"
-                            min={0}
-                            max={100}
-                            step={1}
-                            value={[marketSuccessRate]}
-                            onValueChange={(value) => setMarketSuccessRate(value[0])}
-                            disabled={!isNftEnabled}
-                        />
-                        <p className="text-xs text-muted-foreground">The chance of a user's sale attempt being successful. A lower rate reduces the payout velocity.</p>
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Failed Sale Cooldown</Label>
-                        <div className="flex items-center gap-4">
-                            <div className="flex-1 space-y-1">
+                        <h4 className="text-lg font-semibold tracking-tight">Market Rules</h4>
+                        <div className="space-y-2">
+                            <Label htmlFor="platform-commission">Platform Commission (%)</Label>
+                             <div className="relative">
                                 <Input
-                                    id="failed-cooldown-hours"
+                                    id="platform-commission"
                                     type="number"
-                                    value={getTimeParts(failedAttemptCooldown).hours}
-                                    onChange={(e) => handleTimeChange(setFailedAttemptCooldown, failedAttemptCooldown, 'hours', e.target.value)}
+                                    value={platformCommission}
+                                    onChange={(e) => setPlatformCommission(Number(e.target.value))}
                                     disabled={!isNftEnabled}
+                                    className="pr-8"
                                 />
-                                 <p className="text-xs text-muted-foreground">Hours</p>
+                                <Percent className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                             </div>
-                           <div className="flex-1 space-y-1">
-                                <Input
-                                    id="failed-cooldown-minutes"
-                                    type="number"
-                                    value={getTimeParts(failedAttemptCooldown).minutes}
-                                    onChange={(e) => handleTimeChange(setFailedAttemptCooldown, failedAttemptCooldown, 'minutes', e.target.value)}
-                                    disabled={!isNftEnabled}
-                                />
-                                 <p className="text-xs text-muted-foreground">Minutes</p>
-                            </div>
+                            <p className="text-xs text-muted-foreground">The percentage the platform takes from every successful NFT sale.</p>
                         </div>
-                        <p className="text-xs text-muted-foreground">How long a user must wait to try again after a failed sale attempt.</p>
-                    </div>
-                     <div className="space-y-2">
-                        <Label>Successful Sale Cooldown</Label>
-                        <div className="flex items-center gap-4">
-                           <div className="flex-1 space-y-1">
-                                <Input
-                                    id="successful-cooldown-hours"
-                                    type="number"
-                                    value={getTimeParts(successfulSaleCooldown).hours}
-                                    onChange={(e) => handleTimeChange(setSuccessfulSaleCooldown, successfulSaleCooldown, 'hours', e.target.value)}
-                                    disabled={!isNftEnabled}
-                                />
-                                <p className="text-xs text-muted-foreground">Hours</p>
-                            </div>
-                            <div className="flex-1 space-y-1">
-                                <Input
-                                    id="successful-cooldown-minutes"
-                                    type="number"
-                                    value={getTimeParts(successfulSaleCooldown).minutes}
-                                    onChange={(e) => handleTimeChange(setSuccessfulSaleCooldown, successfulSaleCooldown, 'minutes', e.target.value)}
-                                    disabled={!isNftEnabled}
-                                />
-                                 <p className="text-xs text-muted-foreground">Minutes</p>
-                            </div>
+                         <div className="space-y-4">
+                            <Label htmlFor="market-success-rate">Market Success Rate: {marketSuccessRate}%</Label>
+                            <Slider
+                                id="market-success-rate"
+                                min={0}
+                                max={100}
+                                step={1}
+                                value={[marketSuccessRate]}
+                                onValueChange={(value) => setMarketSuccessRate(value[0])}
+                                disabled={!isNftEnabled}
+                            />
+                            <p className="text-xs text-muted-foreground">The chance of a user's sale attempt being successful. A lower rate reduces the payout velocity.</p>
                         </div>
-                        <p className="text-xs text-muted-foreground">How long a user must wait before they can sell another NFT after a successful sale.</p>
-                    </div>
+                        <div className="space-y-2">
+                            <Label>Failed Sale Cooldown</Label>
+                            <div className="flex items-center gap-4">
+                                <div className="flex-1 space-y-1">
+                                    <Input
+                                        id="failed-cooldown-hours"
+                                        type="number"
+                                        value={getTimeParts(failedAttemptCooldown).hours}
+                                        onChange={(e) => handleTimeChange(setFailedAttemptCooldown, failedAttemptCooldown, 'hours', e.target.value)}
+                                        disabled={!isNftEnabled}
+                                    />
+                                     <p className="text-xs text-muted-foreground">Hours</p>
+                                </div>
+                               <div className="flex-1 space-y-1">
+                                    <Input
+                                        id="failed-cooldown-minutes"
+                                        type="number"
+                                        value={getTimeParts(failedAttemptCooldown).minutes}
+                                        onChange={(e) => handleTimeChange(setFailedAttemptCooldown, failedAttemptCooldown, 'minutes', e.target.value)}
+                                        disabled={!isNftEnabled}
+                                    />
+                                     <p className="text-xs text-muted-foreground">Minutes</p>
+                                </div>
+                            </div>
+                            <p className="text-xs text-muted-foreground">How long a user must wait to try again after a failed sale attempt.</p>
+                        </div>
+                         <div className="space-y-2">
+                            <Label>Successful Sale Cooldown</Label>
+                            <div className="flex items-center gap-4">
+                               <div className="flex-1 space-y-1">
+                                    <Input
+                                        id="successful-cooldown-hours"
+                                        type="number"
+                                        value={getTimeParts(successfulSaleCooldown).hours}
+                                        onChange={(e) => handleTimeChange(setSuccessfulSaleCooldown, successfulSaleCooldown, 'hours', e.target.value)}
+                                        disabled={!isNftEnabled}
+                                    />
+                                    <p className="text-xs text-muted-foreground">Hours</p>
+                                </div>
+                                <div className="flex-1 space-y-1">
+                                    <Input
+                                        id="successful-cooldown-minutes"
+                                        type="number"
+                                        value={getTimeParts(successfulSaleCooldown).minutes}
+                                        onChange={(e) => handleTimeChange(setSuccessfulSaleCooldown, successfulSaleCooldown, 'minutes', e.target.value)}
+                                        disabled={!isNftEnabled}
+                                    />
+                                     <p className="text-xs text-muted-foreground">Minutes</p>
+                                </div>
+                            </div>
+                            <p className="text-xs text-muted-foreground">How long a user must wait before they can sell another NFT after a successful sale.</p>
+                        </div>
+                     </div>
                  </CardContent>
                  <CardFooter>
                     <Button onClick={handleSave} disabled={!isClient}>Save All Changes</Button>

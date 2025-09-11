@@ -27,16 +27,29 @@ type Achievement = {
 
 export function AchievementsPanel() {
   const { currentUser, users } = useAuth();
-  const { completedTasks, currentLevel, mintNft } = useWallet();
+  const { completedTasks, currentLevel, mintNft, nftCollection } = useWallet();
   const [isMinting, setIsMinting] = useState<string | null>(null);
   const [isNftFeatureEnabled, setIsNftFeatureEnabled] = useState(false);
+  const [mintableAchievementIds, setMintableAchievementIds] = useState<string[]>([]);
+  const [mintedAchievementIds, setMintedAchievementIds] = useState<string[]>([]);
 
   useEffect(() => {
     const settings = localStorage.getItem("nft_market_settings");
     if (settings) {
-        setIsNftFeatureEnabled(JSON.parse(settings).isNftEnabled ?? false);
+        const parsed = JSON.parse(settings);
+        setIsNftFeatureEnabled(parsed.isNftEnabled ?? false);
+        setMintableAchievementIds(parsed.mintableAchievementIds ?? []);
     }
   }, []);
+  
+  useEffect(() => {
+    // Determine which achievements have already been minted into NFTs by this user
+    const mintedIds = nftCollection.map(nft => {
+      const achievement = achievements.find(a => a.title === nft.title);
+      return achievement ? achievement.id : '';
+    }).filter(id => id);
+    setMintedAchievementIds(mintedIds);
+  }, [nftCollection, isNftFeatureEnabled]); // Rerun when nftCollection changes
 
   const achievements = useMemo((): Achievement[] => {
     if (!currentUser) return [];
@@ -105,41 +118,46 @@ export function AchievementsPanel() {
   return (
     <ScrollArea className="h-[calc(100vh-8rem)]">
       <div className="grid gap-4 pr-6">
-        {achievements.map((achievement) => (
-          <Card key={achievement.id} className={cn("transition-all", achievement.isUnlocked ? "bg-card" : "bg-muted")}>
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className={cn("p-3 rounded-full", achievement.isUnlocked ? "bg-primary/10" : "bg-foreground/10")}>
-                {achievement.icon}
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-foreground">{achievement.title}</h3>
-                <p className="text-sm text-muted-foreground">{achievement.description}</p>
-              </div>
-              {achievement.isUnlocked ? (
-                <CheckCircle className="h-6 w-6 text-green-500 flex-shrink-0" />
-              ) : (
-                <Lock className="h-6 w-6 text-muted-foreground flex-shrink-0" />
+        {achievements.map((achievement) => {
+          const isMintable = mintableAchievementIds.includes(achievement.id);
+          const isAlreadyMinted = mintedAchievementIds.includes(achievement.id);
+
+          return (
+            <Card key={achievement.id} className={cn("transition-all", achievement.isUnlocked ? "bg-card" : "bg-muted")}>
+              <CardContent className="p-4 flex items-center gap-4">
+                <div className={cn("p-3 rounded-full", achievement.isUnlocked ? "bg-primary/10" : "bg-foreground/10")}>
+                  {achievement.icon}
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-foreground">{achievement.title}</h3>
+                  <p className="text-sm text-muted-foreground">{achievement.description}</p>
+                </div>
+                {achievement.isUnlocked ? (
+                  <CheckCircle className="h-6 w-6 text-green-500 flex-shrink-0" />
+                ) : (
+                  <Lock className="h-6 w-6 text-muted-foreground flex-shrink-0" />
+                )}
+              </CardContent>
+              {isNftFeatureEnabled && achievement.isUnlocked && isMintable && (
+                <CardFooter className="p-2 pt-0">
+                    <Button
+                      variant={isAlreadyMinted ? "secondary" : "outline"}
+                      className="w-full"
+                      onClick={() => handleMint(achievement)}
+                      disabled={isMinting === achievement.id || isAlreadyMinted}
+                     >
+                       {isAlreadyMinted ? "Minted" : isMinting === achievement.id ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="mr-2 h-4 w-4" />
+                        )}
+                      {isAlreadyMinted ? "View in Collection" : "Mint NFT"}
+                    </Button>
+                </CardFooter>
               )}
-            </CardContent>
-            {isNftFeatureEnabled && achievement.isUnlocked && (
-              <CardFooter className="p-2 pt-0">
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => handleMint(achievement)}
-                    disabled={isMinting === achievement.id}
-                   >
-                     {isMinting === achievement.id ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Sparkles className="mr-2 h-4 w-4" />
-                      )}
-                    Mint NFT
-                  </Button>
-              </CardFooter>
-            )}
-          </Card>
-        ))}
+            </Card>
+          );
+        })}
       </div>
     </ScrollArea>
   );
