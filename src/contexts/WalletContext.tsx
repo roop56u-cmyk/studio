@@ -112,7 +112,7 @@ interface WalletContextType {
   refundWithdrawal: (userEmail: string, withdrawalAmount: number) => void;
   isLoading: boolean;
   interestCounter: CounterState;
-  startCounter: (type: 'task' | 'interest') => void;
+  startCounter: (type: 'task' | 'interest', durationDays?: number) => void;
   claimAndRestartCounter: (type: 'task' | 'interest') => void;
   completeTask: (task: GenerateTaskSuggestionOutput) => void;
   withdrawalAddresses: WithdrawalAddress[];
@@ -143,6 +143,9 @@ interface WalletContextType {
   claimDailyReward: () => void;
   isInactiveWarningOpen: boolean;
   setIsInactiveWarningOpen: (isOpen: boolean) => void;
+  isInterestFeatureEnabled: boolean;
+  interestEarningModel: 'flexible' | 'fixed';
+  fixedTermDays: string;
 }
 
 export type Activity = {
@@ -159,6 +162,7 @@ export type CounterType = 'task' | 'interest';
 export interface CounterState {
     isRunning: boolean;
     startTime: number | null;
+    durationDays?: number;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -178,6 +182,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [isSignupApprovalRequired, setIsSignupApprovalRequired] = useState(false);
   const [referralBonuses, setReferralBonuses] = useState<BonusTier[]>([]);
   const [isReferralApprovalRequired, setIsReferralApprovalRequired] = useState(false);
+  const [isInterestFeatureEnabled, setIsInterestFeatureEnabled] = useState(true);
+  const [interestEarningModel, setInterestEarningModel] = useState<'flexible' | 'fixed'>('flexible');
+  const [fixedTermDays, setFixedTermDays] = useState("10, 30, 60");
   
   const getGlobalSetting = (key: string, defaultValue: any, isJson: boolean = false) => {
      if (typeof window === 'undefined') {
@@ -203,7 +210,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [deposits, setDeposits] = useState(0);
   const [withdrawals, setWithdrawals] = useState(0);
   const [activityHistory, setActivityHistory] = useState<Activity[]>([]);
-  const [interestCounter, setInterestCounter] = useState<CounterState>({ isRunning: false, startTime: null });
+  const [interestCounter, setInterestCounter] = useState<CounterState>({ isRunning: false, startTime: null, durationDays: 1 });
   const [tasksCompletedToday, setTasksCompletedToday] = useState(0);
   const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>([]);
   const [withdrawalAddresses, setWithdrawalAddresses] = useState<WithdrawalAddress[]>([]);
@@ -365,6 +372,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setReferralBonuses(getGlobalSetting('system_referral_bonuses', [], true));
         setIsSignupApprovalRequired(getGlobalSetting('system_signup_bonus_approval_required', false, true));
         setIsReferralApprovalRequired(getGlobalSetting('system_referral_bonus_approval_required', false, true));
+        setIsInterestFeatureEnabled(getGlobalSetting('system_interest_enabled', true, true));
+        setInterestEarningModel(getGlobalSetting('system_interest_model', 'flexible'));
+        setFixedTermDays(getGlobalSetting('system_interest_fixed_term_days', "10, 30, 60"));
 
         // User-specific data
         if (currentUser?.email) {
@@ -374,7 +384,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             setDeposits(getInitialState('deposits', 0));
             setWithdrawals(getInitialState('withdrawals', 0));
             setActivityHistory(getInitialState('activityHistory', []));
-            setInterestCounter(getInitialState('interestCounter', { isRunning: false, startTime: null }));
+            setInterestCounter(getInitialState('interestCounter', { isRunning: false, startTime: null, durationDays: 1 }));
             setTasksCompletedToday(getInitialState('tasksCompletedToday', 0));
             setCompletedTasks(getInitialState('completedTasks', []));
             setWithdrawalAddresses(getInitialState('withdrawalAddresses', []));
@@ -441,7 +451,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             // Reset state if no user is logged in
             setMainBalance(0); setTaskRewardsBalance(0); setInterestEarningsBalance(0);
             setDeposits(0); setWithdrawals(0); setActivityHistory([]);
-            setInterestCounter({ isRunning: false, startTime: null });
+            setInterestCounter({ isRunning: false, startTime: null, durationDays: 1 });
             setTasksCompletedToday(0); setCompletedTasks([]); setWithdrawalAddresses([]);
             setMonthlyWithdrawalsCount(0); setLastWithdrawalMonth(-1);
             setActiveBoosters([]); setPurchasedBoosterIds([]); setPurchasedReferralsCount(0);
@@ -737,7 +747,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     }
   }
   
-  const startCounter = (type: CounterType) => {
+  const startCounter = (type: CounterType, durationDays = 1) => {
       const now = Date.now();
       if (type === 'interest') {
           const minBalanceForLevel1 = configuredLevels.find(l => l.level === 1)?.minAmount ?? 100;
@@ -745,8 +755,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
                 toast({ variant: "destructive", title: "Insufficient Funds", description: `A minimum of $${minBalanceForLevel1} is required in the interest wallet.` });
                 return;
            }
-          setInterestCounter({ isRunning: true, startTime: now });
-          toast({ title: "Daily Interest Started", description: "Your 24-hour earning cycle has begun." });
+          setInterestCounter({ isRunning: true, startTime: now, durationDays });
+          toast({ title: `Interest Earning Started`, description: `Your ${durationDays}-day earning cycle has begun.` });
       }
   };
   
@@ -765,16 +775,17 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       if(!currentUser) return;
       const dailyRate = currentRate / 100;
       if (type === 'interest') {
-          const earnings = interestEarningsBalance * dailyRate;
+          const lockedDuration = interestCounter.durationDays || 1;
+          const earnings = interestEarningsBalance * dailyRate * lockedDuration;
           setInterestEarningsBalance(prev => prev + earnings);
           addActivity(currentUser.email, {
             type: 'Interest Claim',
-            description: `Claimed daily interest`,
+            description: `Claimed ${lockedDuration}-day interest`,
             amount: earnings,
             date: new Date().toISOString()
           });
-          setInterestCounter({ isRunning: false, startTime: null }); 
-          toast({ title: "Daily Interest Claimed!", description: `You earned ${earnings.toFixed(4)} USDT. You can now move funds and restart the timer when ready.`});
+          setInterestCounter({ isRunning: false, startTime: null, durationDays: 1 }); 
+          toast({ title: "Interest Claimed!", description: `You earned ${earnings.toFixed(4)} USDT. You can now move funds and restart the timer when ready.`});
       }
   };
 
@@ -1081,6 +1092,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         claimDailyReward,
         isInactiveWarningOpen,
         setIsInactiveWarningOpen,
+        isInterestFeatureEnabled,
+        interestEarningModel,
+        fixedTermDays,
       }}
     >
       {children}
