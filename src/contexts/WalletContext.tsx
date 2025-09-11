@@ -90,6 +90,11 @@ type DailyRewardState = {
   reward: number;
 };
 
+type NftCooldowns = {
+  failedSale: number | null; // timestamp
+  successfulSale: number | null; // timestamp
+}
+
 interface WalletContextType {
   mainBalance: number;
   taskRewardsBalance: number;
@@ -156,6 +161,8 @@ interface WalletContextType {
   fixedTermDays: string;
   nftCollection: Nft[];
   mintNft: (achievementId: string, achievementTitle: string) => Promise<void>;
+  sellNft: (nftId: string) => Promise<void>;
+  nftCooldowns: NftCooldowns;
 }
 
 export type Activity = {
@@ -235,6 +242,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [isReady, setIsReady] = useState(false);
   const [isInactiveWarningOpen, setIsInactiveWarningOpen] = useState(false);
   const [nftCollection, setNftCollection] = useState<Nft[]>([]);
+  const [nftCooldowns, setNftCooldowns] = useState<NftCooldowns>({ failedSale: null, successfulSale: null });
   
   const committedBalance = taskRewardsBalance + interestEarningsBalance;
   
@@ -405,6 +413,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             setHasClaimedSignUpBonus(getInitialState('hasClaimedSignUpBonus', false));
             setClaimedReferralIds(getInitialState('claimedReferralIds', []));
             setNftCollection(getInitialState('nftCollection', []));
+            setNftCooldowns(getInitialState('nftCooldowns', { failedSale: null, successfulSale: null }));
 
             // Reset daily task count based on admin-defined time
             const now = new Date();
@@ -470,6 +479,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             setHasClaimedSignUpBonus(false); setClaimedReferralIds([]);
             setDailyRewardState({ isEnabled: false, canClaim: false, streak: 0, reward: 0 });
             setNftCollection([]);
+            setNftCooldowns({ failedSale: null, successfulSale: null });
         }
         setIsLoading(false);
         setIsReady(true);
@@ -552,6 +562,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => { if (!isLoading) setPersistentState('hasClaimedSignUpBonus', hasClaimedSignUpBonus)}, [hasClaimedSignUpBonus, isLoading, setPersistentState]);
   useEffect(() => { if (!isLoading) setPersistentState('claimedReferralIds', claimedReferralIds)}, [claimedReferralIds, isLoading, setPersistentState]);
   useEffect(() => { if (!isLoading) setPersistentState('nftCollection', nftCollection)}, [nftCollection, isLoading, setPersistentState]);
+  useEffect(() => { if (!isLoading) setPersistentState('nftCooldowns', nftCooldowns)}, [nftCooldowns, isLoading, setPersistentState]);
 
  const addActivity = useCallback((userEmail: string, activity: Omit<Activity, 'id'>) => {
     const newActivity: Activity = {
@@ -1085,6 +1096,62 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         toast({ variant: 'destructive', title: 'Minting Failed', description: 'Could not create NFT from the library. Please contact support.' });
     }
   };
+  
+  const sellNft = async (nftId: string) => {
+    if (!currentUser) return;
+
+    // Check cooldowns
+    const now = Date.now();
+    if ((nftCooldowns.failedSale && now < nftCooldowns.failedSale) || (nftCooldowns.successfulSale && now < nftCooldowns.successfulSale)) {
+        toast({ variant: 'destructive', title: 'Action Cooldown', description: 'You cannot sell an NFT at this time.' });
+        return;
+    }
+
+    const nftToSell = nftCollection.find(n => n.id === nftId);
+    if (!nftToSell) return;
+
+    const nftSettings = getGlobalSetting('nft_market_settings', {
+        marketSuccessRate: 80,
+        platformCommission: 2.5,
+        failedAttemptCooldown: 60,
+        successfulSaleCooldown: 1440,
+    }, true);
+
+    // Simulate sale success
+    const isSuccessful = Math.random() * 100 < nftSettings.marketSuccessRate;
+
+    if (isSuccessful) {
+        const profit = nftToSell.currentValue * (Math.random() * 0.10 + 1.05); // 5-15% profit
+        const commission = profit * (nftSettings.platformCommission / 100);
+        const netProfit = profit - commission;
+
+        setMainBalance(prev => prev + netProfit);
+        setNftCollection(prev => prev.filter(n => n.id !== nftId));
+
+        addActivity(currentUser.email, {
+            type: 'NFT Sale (Success)',
+            description: `Sold "${nftToSell.title}" NFT`,
+            amount: netProfit,
+            date: new Date().toISOString(),
+        });
+        
+        const newCooldownEnd = Date.now() + nftSettings.successfulSaleCooldown * 60 * 1000;
+        setNftCooldowns(prev => ({ ...prev, successfulSale: newCooldownEnd }));
+
+        toast({ title: 'Sale Successful!', description: `You earned $${netProfit.toFixed(2)} from the sale of your NFT.` });
+    } else {
+         addActivity(currentUser.email, {
+            type: 'NFT Sale (Failed)',
+            description: `Failed to sell "${nftToSell.title}" NFT`,
+            date: new Date().toISOString(),
+        });
+
+        const newCooldownEnd = Date.now() + nftSettings.failedAttemptCooldown * 60 * 1000;
+        setNftCooldowns(prev => ({ ...prev, failedSale: newCooldownEnd }));
+
+        toast({ variant: 'destructive', title: 'Sale Failed', description: 'Your NFT did not find a buyer this time. Please try again later.' });
+    }
+  }
 
 
   return (
@@ -1154,6 +1221,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         fixedTermDays,
         nftCollection,
         mintNft,
+        sellNft,
+        nftCooldowns,
       }}
     >
       {children}

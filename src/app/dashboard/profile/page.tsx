@@ -9,9 +9,10 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Mail, ShieldCheck, CalendarCheck, Sparkles } from "lucide-react";
+import { User, Mail, ShieldCheck, CalendarCheck, Sparkles, Loader2, Clock } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -72,15 +73,48 @@ function ProfileInfoCard() {
 }
 
 function NftCollectionTab() {
-    const { nftCollection } = useWallet();
+    const { nftCollection, sellNft, nftCooldowns } = useWallet();
+    const [sellingId, setSellingId] = useState<string | null>(null);
+
+    const handleSell = async (nftId: string) => {
+        setSellingId(nftId);
+        await sellNft(nftId);
+        setSellingId(null);
+    }
+    
+    const formatCooldown = (endsAt: number) => {
+        const now = Date.now();
+        const secondsLeft = Math.floor((endsAt - now) / 1000);
+        if (secondsLeft <= 0) return 'Ready';
+        const hours = Math.floor(secondsLeft / 3600);
+        const minutes = Math.floor((secondsLeft % 3600) / 60);
+        const seconds = secondsLeft % 60;
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    };
+
+    const failedCooldownActive = nftCooldowns.failedSale && nftCooldowns.failedSale > Date.now();
+    const successfulCooldownActive = nftCooldowns.successfulSale && nftCooldowns.successfulSale > Date.now();
 
     return (
         <Card>
             <CardHeader>
                 <CardTitle>My NFT Collection</CardTitle>
-                <CardDescription>A gallery of your unique, minted achievements.</CardDescription>
+                <CardDescription>A gallery of your unique, minted achievements. Click "Sell" to circulate an NFT.</CardDescription>
             </CardHeader>
             <CardContent>
+                {(failedCooldownActive || successfulCooldownActive) && (
+                    <Card className="mb-4 bg-muted">
+                        <CardContent className="p-3 flex items-center gap-3 text-sm">
+                            <Clock className="h-5 w-5 text-primary" />
+                            <div>
+                                <p className="font-semibold">{failedCooldownActive ? 'Failed Sale Cooldown' : 'Successful Sale Cooldown'}</p>
+                                <p className="text-xs text-muted-foreground">
+                                    Time until next sale: {formatCooldown(nftCooldowns.failedSale! || nftCooldowns.successfulSale!)}
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
                 {nftCollection.length > 0 ? (
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                         {nftCollection.map(nft => (
@@ -92,11 +126,21 @@ function NftCollectionTab() {
                                         width={200}
                                         height={200}
                                         className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                                        unoptimized
                                     />
                                 </div>
                                 <div className="text-center">
                                     <p className="text-sm font-semibold truncate">{nft.title}</p>
-                                    <p className="text-xs text-muted-foreground">Minted: {format(new Date(nft.mintedAt), 'MMM d, yyyy')}</p>
+                                    <p className="text-xs text-muted-foreground">Value: ${nft.currentValue.toFixed(2)}</p>
+                                    <Button
+                                        variant="default"
+                                        size="sm"
+                                        className="w-full mt-2 h-8"
+                                        disabled={sellingId === nft.id || failedCooldownActive || successfulCooldownActive}
+                                        onClick={() => handleSell(nft.id)}
+                                    >
+                                        {sellingId === nft.id ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sell NFT"}
+                                    </Button>
                                 </div>
                             </div>
                         ))}
