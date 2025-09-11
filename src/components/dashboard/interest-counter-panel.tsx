@@ -10,6 +10,14 @@ import {
   CardDescription,
   CardFooter
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Timer, Zap, Lock, Percent } from "lucide-react";
 import { useWallet } from "@/contexts/WalletContext";
@@ -26,7 +34,7 @@ interface InterestCounterPanelProps {
   gradientClass?: string;
 }
 
-const DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
+const DURATION_MS_24H = 24 * 60 * 60 * 1000; // 24 hours
 
 export function InterestCounterPanel({
   title,
@@ -41,12 +49,17 @@ export function InterestCounterPanel({
     claimAndRestartCounter,
     interestCounter,
     isLoading,
+    interestEarningModel,
+    fixedTermDays,
   } = useWallet();
   
-  const counter = interestCounter; // Only using interest counter now
-  const { isRunning, startTime } = counter;
+  const [isDurationDialogOpen, setIsDurationDialogOpen] = useState(false);
+  const counter = interestCounter;
+  const { isRunning, startTime, durationDays } = counter;
 
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+
+  const totalDuration = (durationDays || 1) * DURATION_MS_24H;
 
   useEffect(() => {
     if (!isRunning || !startTime) {
@@ -57,7 +70,7 @@ export function InterestCounterPanel({
     const intervalId = setInterval(() => {
       const now = Date.now();
       const elapsed = now - startTime;
-      const remaining = DURATION_MS - elapsed;
+      const remaining = totalDuration - elapsed;
 
       if (remaining <= 0) {
         setTimeLeft(0);
@@ -68,32 +81,45 @@ export function InterestCounterPanel({
     }, 1000);
 
     return () => clearInterval(intervalId);
-  }, [isRunning, startTime]);
+  }, [isRunning, startTime, totalDuration]);
 
-  const dailyRate = currentRate / 100; // This is now a daily rate
-  const dailyEarningPotential = balance * dailyRate;
+  const dailyRate = currentRate / 100;
   
-  const accruedInterest = (() => {
+  const accruedInterest = useMemo(() => {
     if (!isRunning || !startTime || timeLeft === null) return 0;
-    const elapsed = DURATION_MS - timeLeft;
-    return (elapsed / DURATION_MS) * dailyEarningPotential;
-  })();
+    const elapsed = totalDuration - timeLeft;
+    const elapsedDays = elapsed / DURATION_MS_24H;
+    return balance * dailyRate * elapsedDays;
+  }, [isRunning, startTime, timeLeft, totalDuration, balance, dailyRate]);
 
   const formatTime = (ms: number | null) => {
-    if (ms === null) return "00:00:00";
+    if (ms === null || ms < 0) return "00:00:00:00";
     const totalSeconds = Math.floor(ms / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
+    const days = Math.floor(totalSeconds / (3600 * 24));
+    const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
+    return `${String(days).padStart(2, "0")}:${String(hours).padStart(
       2,
       "0"
-    )}:${String(seconds).padStart(2, "0")}`;
+    )}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
+      2,
+      "0"
+    )}`;
   };
 
-  const handleStart = () => {
-    startCounter(counterType);
+  const handleStartClick = () => {
+    if (interestEarningModel === 'fixed') {
+        setIsDurationDialogOpen(true);
+    } else {
+        startCounter(counterType); // Flexible mode
+    }
   };
+
+  const handleDurationSelect = (days: number) => {
+    startCounter(counterType, days);
+    setIsDurationDialogOpen(false);
+  }
 
   const handleClaim = () => {
     claimAndRestartCounter(counterType);
@@ -125,6 +151,7 @@ export function InterestCounterPanel({
   const isClaimable = timeLeft !== null && timeLeft <= 0;
 
   return (
+    <>
     <Card className={cn("relative overflow-hidden flex flex-col", gradientClass, gradientClass && "text-white")}>
       <div className={cn("absolute top-0 left-0 h-1 w-full", gradientClass ? "bg-white/30" : "bg-primary")} />
       <CardHeader className="p-3">
@@ -141,7 +168,7 @@ export function InterestCounterPanel({
                 <span>Time Remaining</span>
             </div>
             <div className="text-base font-bold font-mono tracking-tight">
-                {isRunning ? formatTime(timeLeft) : "24:00:00"}
+                {isRunning ? formatTime(timeLeft) : formatTime(totalDuration)}
             </div>
         </div>
         
@@ -154,7 +181,7 @@ export function InterestCounterPanel({
       </CardContent>
        <CardFooter className="p-3">
           {!isRunning ? (
-            <Button size="sm" onClick={handleStart} className="h-7 text-xs w-full" disabled={!canStart}>
+            <Button size="sm" onClick={handleStartClick} className="h-7 text-xs w-full" disabled={!canStart}>
                 <Zap className="mr-1 h-4 w-4" /> Start Earning
             </Button>
             ) : (
@@ -169,5 +196,28 @@ export function InterestCounterPanel({
             )}
        </CardFooter>
     </Card>
+
+    <Dialog open={isDurationDialogOpen} onOpenChange={setIsDurationDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Select Lock-in Duration</DialogTitle>
+                <DialogDescription>
+                    Choose how long you want to lock your funds for to earn interest. Your funds will be locked for the entire period.
+                </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="grid grid-cols-2 gap-2 sm:justify-start">
+                 {fixedTermDays.split(',').map(dayStr => {
+                     const day = parseInt(dayStr.trim());
+                     if (isNaN(day) || day <= 0) return null;
+                     return (
+                        <Button key={day} onClick={() => handleDurationSelect(day)}>
+                           {day} Days
+                        </Button>
+                     )
+                 })}
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+    </>
   );
 }
