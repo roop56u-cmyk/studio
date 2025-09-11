@@ -26,8 +26,8 @@ export default function NftSettingsPage() {
     const [mintingFee, setMintingFee] = useState(10);
     const [platformCommission, setPlatformCommission] = useState(2.5);
     const [marketSuccessRate, setMarketSuccessRate] = useState(80);
-    const [failedAttemptCooldown, setFailedAttemptCooldown] = useState(60);
-    const [successfulSaleCooldown, setSuccessfulSaleCooldown] = useState(24);
+    const [failedAttemptCooldown, setFailedAttemptCooldown] = useState(60); // Total minutes
+    const [successfulSaleCooldown, setSuccessfulSaleCooldown] = useState(24 * 60); // Total minutes
 
     useEffect(() => {
         setIsClient(true);
@@ -39,7 +39,7 @@ export default function NftSettingsPage() {
             setPlatformCommission(parsed.platformCommission ?? 2.5);
             setMarketSuccessRate(parsed.marketSuccessRate ?? 80);
             setFailedAttemptCooldown(parsed.failedAttemptCooldown ?? 60);
-            setSuccessfulSaleCooldown(parsed.successfulSaleCooldown ?? 24);
+            setSuccessfulSaleCooldown(parsed.successfulSaleCooldown ?? 24 * 60);
         }
     }, []);
 
@@ -57,6 +57,32 @@ export default function NftSettingsPage() {
             title: "NFT Settings Saved",
             description: "The NFT circulation market settings have been updated.",
         });
+    };
+    
+    // Helper to get hours and minutes from total minutes
+    const getTimeParts = (totalMinutes: number) => {
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        return { hours, minutes };
+    };
+
+    // Helper to update total minutes from hours or minutes input
+    const handleTimeChange = (
+        setter: React.Dispatch<React.SetStateAction<number>>,
+        currentTotalMinutes: number,
+        part: 'hours' | 'minutes',
+        value: string
+    ) => {
+        const numericValue = parseInt(value, 10);
+        if (isNaN(numericValue) || numericValue < 0) return;
+
+        const { hours, minutes } = getTimeParts(currentTotalMinutes);
+
+        if (part === 'hours') {
+            setter(numericValue * 60 + minutes);
+        } else {
+            setter(hours * 60 + numericValue);
+        }
     };
     
     if (!isClient) return null;
@@ -128,26 +154,56 @@ export default function NftSettingsPage() {
                         />
                         <p className="text-xs text-muted-foreground">The chance of a user's sale attempt being successful. A lower rate reduces the payout velocity.</p>
                     </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="failed-cooldown">Failed Sale Cooldown (Minutes)</Label>
-                        <Input
-                            id="failed-cooldown"
-                            type="number"
-                            value={failedAttemptCooldown}
-                            onChange={(e) => setFailedAttemptCooldown(Number(e.target.value))}
-                            disabled={!isNftEnabled}
-                        />
+                    <div className="space-y-2">
+                        <Label>Failed Sale Cooldown</Label>
+                        <div className="flex items-center gap-4">
+                            <div className="flex-1 space-y-1">
+                                <Input
+                                    id="failed-cooldown-hours"
+                                    type="number"
+                                    value={getTimeParts(failedAttemptCooldown).hours}
+                                    onChange={(e) => handleTimeChange(setFailedAttemptCooldown, failedAttemptCooldown, 'hours', e.target.value)}
+                                    disabled={!isNftEnabled}
+                                />
+                                 <p className="text-xs text-muted-foreground">Hours</p>
+                            </div>
+                           <div className="flex-1 space-y-1">
+                                <Input
+                                    id="failed-cooldown-minutes"
+                                    type="number"
+                                    value={getTimeParts(failedAttemptCooldown).minutes}
+                                    onChange={(e) => handleTimeChange(setFailedAttemptCooldown, failedAttemptCooldown, 'minutes', e.target.value)}
+                                    disabled={!isNftEnabled}
+                                />
+                                 <p className="text-xs text-muted-foreground">Minutes</p>
+                            </div>
+                        </div>
                         <p className="text-xs text-muted-foreground">How long a user must wait to try again after a failed sale attempt.</p>
                     </div>
                      <div className="space-y-2">
-                        <Label htmlFor="successful-cooldown">Successful Sale Cooldown (Hours)</Label>
-                        <Input
-                            id="successful-cooldown"
-                            type="number"
-                            value={successfulSaleCooldown}
-                            onChange={(e) => setSuccessfulSaleCooldown(Number(e.target.value))}
-                            disabled={!isNftEnabled}
-                        />
+                        <Label>Successful Sale Cooldown</Label>
+                        <div className="flex items-center gap-4">
+                           <div className="flex-1 space-y-1">
+                                <Input
+                                    id="successful-cooldown-hours"
+                                    type="number"
+                                    value={getTimeParts(successfulSaleCooldown).hours}
+                                    onChange={(e) => handleTimeChange(setSuccessfulSaleCooldown, successfulSaleCooldown, 'hours', e.target.value)}
+                                    disabled={!isNftEnabled}
+                                />
+                                <p className="text-xs text-muted-foreground">Hours</p>
+                            </div>
+                            <div className="flex-1 space-y-1">
+                                <Input
+                                    id="successful-cooldown-minutes"
+                                    type="number"
+                                    value={getTimeParts(successfulSaleCooldown).minutes}
+                                    onChange={(e) => handleTimeChange(setSuccessfulSaleCooldown, successfulSaleCooldown, 'minutes', e.target.value)}
+                                    disabled={!isNftEnabled}
+                                />
+                                 <p className="text-xs text-muted-foreground">Minutes</p>
+                            </div>
+                        </div>
                         <p className="text-xs text-muted-foreground">How long a user must wait before they can sell another NFT after a successful sale.</p>
                     </div>
                  </CardContent>
