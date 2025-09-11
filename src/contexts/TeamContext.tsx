@@ -12,6 +12,7 @@ import type { UplineCommissionSettings } from '@/app/dashboard/admin/upline-comm
 import type { SalaryPackage } from '@/app/dashboard/admin/salary/page';
 import { useLocalStorageWatcher } from '@/hooks/use-local-storage-watcher';
 import type { CommunityCommissionRule } from '@/app/dashboard/admin/community-commission/page';
+import { useRequests } from './RequestContext';
 
 type TeamMember = User & {
     level: number;
@@ -91,6 +92,7 @@ const TeamContext = createContext<TeamContextType | undefined>(undefined);
 
 export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const { currentUser, users } = useAuth();
+    const { activityHistory } = useRequests();
     const [teamData, setTeamData] = useState<TeamData | null>(null);
     const [communityData, setCommunityData] = useState<CommunityData | null>(null);
     const [communityCommissionRules, setCommunityCommissionRules] = useState<CommunityCommissionRule[]>([]);
@@ -98,7 +100,6 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const [teamSizeRewards, setTeamSizeRewards] = useState<TeamSizeReward[]>([]);
     const [salaryPackages, setSalaryPackages] = useState<SalaryPackage[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [totalUplineCommission, setTotalUplineCommission] = useState(0);
     const [uplineInfo, setUplineInfo] = useState<{ name: string; email: string; } | null>(null);
     const [activeL1Referrals, setActiveL1Referrals] = useState(0);
     const { currentLevel } = useWallet();
@@ -153,16 +154,12 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         }
     }, []);
 
-    useEffect(() => {
-        if (currentUser?.email) {
-            const key = `${currentUser.email}_uplineCommission`;
-            const interval = setInterval(() => {
-                const storedUplineCommission = localStorage.getItem(key);
-                setTotalUplineCommission(storedUplineCommission ? JSON.parse(storedUplineCommission) : 0);
-            }, 3000);
-            return () => clearInterval(interval);
-        }
-    }, [currentUser?.email]);
+    const totalUplineCommission = useMemo(() => {
+        return activityHistory
+            .filter(activity => activity.type === 'Upline Commission' && activity.amount)
+            .reduce((sum, activity) => sum + (activity.amount || 0), 0);
+    }, [activityHistory]);
+
 
     const getDepositsForUser = useCallback((userEmail: string): number => {
         if (typeof window === 'undefined') return 0;
@@ -203,9 +200,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
     const calculateCommunityData = useCallback((user: User, allUsers: User[]): CommunityData => {
         const processedEmails = new Set<string>([user.email]);
-        const L4PlusMembers: User[] = [];
-
-        // Find L1, L2, L3 and add them to processedEmails to exclude them
+        
         const l1 = allUsers.filter(u => u.referredBy === user.referralCode);
         l1.forEach(u => processedEmails.add(u.email));
 
@@ -215,7 +210,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         const l3 = l2.flatMap(l2User => allUsers.filter(u => u.referredBy === l2User.referralCode));
         l3.forEach(u => processedEmails.add(u.email));
 
-        // Start traversal from L3's children (which are L4)
+        const L4PlusMembers: User[] = [];
         let parentLayer = l3;
 
         while (parentLayer.length > 0) {
