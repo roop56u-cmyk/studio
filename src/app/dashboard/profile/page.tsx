@@ -170,7 +170,10 @@ export default function ProfilePage() {
         </div>
       </div>
        <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className={cn(
+          "grid w-full",
+          isNftFeatureEnabled ? "grid-cols-2" : "grid-cols-1"
+        )}>
             <TabsTrigger value="profile">
                 <User className="mr-2 h-4 w-4" /> Profile
             </TabsTrigger>
@@ -192,4 +195,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
 
