@@ -306,7 +306,8 @@ export default function TeamPage() {
       totalUplineCommission, 
       uplineCommissionSettings,
       uplineInfo,
-      activeL1Referrals
+      activeL1Referrals,
+      getLevelForUser
   } = useTeam();
   const { currentUser } = useAuth();
   const { currentLevel, setIsInactiveWarningOpen } = useWallet();
@@ -389,6 +390,7 @@ export default function TeamPage() {
   const availableTeamSizeRewards = teamSizeRewards.filter(r => (r.level === 0 || r.level <= currentLevel) && (!r.userEmail || r.userEmail === currentUser?.email));
   const availableSalaryPackages = salaryPackages.filter(p => (p.level === 0 || p.level === currentLevel) && (!p.userEmail || p.userEmail === currentUser?.email));
   const uplineReferralProgress = uplineCommissionSettings.requiredReferrals > 0 ? (activeL1Referrals / uplineCommissionSettings.requiredReferrals) * 100 : 100;
+  const shouldShowCommunityCommission = communityCommissionRules.length > 0;
 
   return (
     <ScrollArea className="h-full">
@@ -542,55 +544,55 @@ export default function TeamPage() {
                             </CardContent>
                         </Card>
                     ))}
-                    {applicableCommunityRule && (
-                    <Card>
-                        <CardHeader>
-                            <div className="flex items-center gap-2">
-                                <Layers className="h-5 w-5 text-primary" />
-                                <CardTitle>Community Commission</CardTitle>
-                            </div>
-                            <CardDescription>
-                                Earn a special commission from your L4+ team members.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">${communityCommission.toFixed(2)}</div>
-                            <p className="text-xs text-muted-foreground">From L4+ active members</p>
-                        </CardContent>
-                    </Card>
-                    )}
-                    {applicableCommunityRule && (
-                        <Card>
-                            <CardHeader>
-                            <CardTitle>Community Commission Requirements</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {applicableCommunityRule ? (
-                                    <>
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between items-center text-xs text-muted-foreground">
-                                            <span>Active L1 Referrals</span>
-                                            <span>{activeL1Referrals} / {applicableCommunityRule.requiredDirectReferrals}</span>
-                                        </div>
-                                        <Progress value={Math.min(100, (activeL1Referrals/applicableCommunityRule.requiredDirectReferrals)*100)} />
+                    {shouldShowCommunityCommission && (
+                        <>
+                            <Card>
+                                <CardHeader>
+                                    <div className="flex items-center gap-2">
+                                        <Layers className="h-5 w-5 text-primary" />
+                                        <CardTitle>Community Commission</CardTitle>
                                     </div>
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between items-center text-xs text-muted-foreground">
-                                            <span>L1-L3 Team Size</span>
-                                            <span>{teamData.level1.count + teamData.level2.count + teamData.level3.count} / {applicableCommunityRule.requiredTeamSize}</span>
+                                    <CardDescription>
+                                        Earn a special commission from your L4+ team members.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-2xl font-bold">${communityCommission.toFixed(2)}</div>
+                                    <p className="text-xs text-muted-foreground">From L4+ active members</p>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardHeader>
+                                <CardTitle>Community Commission Requirements</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    {applicableCommunityRule ? (
+                                        <>
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                                <span>Active L1 Referrals</span>
+                                                <span>{activeL1Referrals} / {applicableCommunityRule.requiredDirectReferrals}</span>
+                                            </div>
+                                            <Progress value={Math.min(100, (activeL1Referrals/applicableCommunityRule.requiredDirectReferrals)*100)} />
                                         </div>
-                                        <Progress value={Math.min(100, ((teamData.level1.count + teamData.level2.count + teamData.level3.count)/applicableCommunityRule.requiredTeamSize)*100)} />
-                                    </div>
-                                    </>
-                                ) : (
-                                    <p className="text-sm text-muted-foreground text-center">No community commission rule is currently applicable for your level.</p>
-                                )}
-                            </CardContent>
-                        </Card>
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                                <span>L1-L3 Team Size</span>
+                                                <span>{teamData.level1.count + teamData.level2.count + teamData.level3.count} / {applicableCommunityRule.requiredTeamSize}</span>
+                                            </div>
+                                            <Progress value={Math.min(100, ((teamData.level1.count + teamData.level2.count + teamData.level3.count)/applicableCommunityRule.requiredTeamSize)*100)} />
+                                        </div>
+                                        </>
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground text-center">No community commission rule is currently applicable for your level.</p>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </>
                     )}
                 </div>
 
-                {communityData.members.length > 0 && applicableCommunityRule && (
+                {shouldShowCommunityCommission && communityData.members.length > 0 && (
                 <Card>
                     <CardHeader>
                         <CardTitle>L4+ Community Members</CardTitle>
@@ -599,6 +601,7 @@ export default function TeamPage() {
                         <Accordion type="single" collapsible className="w-full">
                             <AccordionItem value="item-1">
                                 <AccordionTrigger>View L4+ Members ({communityData.members.length})</AccordionTrigger>
+
                                 <AccordionContent>
                                 {communityData.members.length > 0 ? (
                                     <ul className="space-y-2 text-sm text-muted-foreground max-h-60 overflow-y-auto">
