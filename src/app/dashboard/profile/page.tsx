@@ -2,6 +2,7 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { useWallet } from "@/contexts/WalletContext";
 import {
   Card,
   CardContent,
@@ -18,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { format } from 'date-fns';
 import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import Image from "next/image";
 
 function ProfileInfoCard() {
     const { currentUser } = useAuth();
@@ -70,9 +72,7 @@ function ProfileInfoCard() {
 }
 
 function NftCollectionTab() {
-    // This is a placeholder for the user's NFT collection.
-    // In a future step, we'll fetch and display the actual NFTs.
-    const nfts = []; // Placeholder for NFT data
+    const { nftCollection } = useWallet();
 
     return (
         <Card>
@@ -81,9 +81,25 @@ function NftCollectionTab() {
                 <CardDescription>A gallery of your unique, minted achievements.</CardDescription>
             </CardHeader>
             <CardContent>
-                {nfts.length > 0 ? (
+                {nftCollection.length > 0 ? (
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                        {/* Placeholder for NFT items */}
+                        {nftCollection.map(nft => (
+                            <div key={nft.id} className="space-y-2 group">
+                                <div className="aspect-square rounded-lg overflow-hidden border">
+                                    <Image 
+                                        src={nft.artworkUrl} 
+                                        alt={nft.title}
+                                        width={200}
+                                        height={200}
+                                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                                    />
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-sm font-semibold truncate">{nft.title}</p>
+                                    <p className="text-xs text-muted-foreground">Minted: {format(new Date(nft.mintedAt), 'MMM d, yyyy')}</p>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 ) : (
                     <div className="flex flex-col items-center justify-center text-center py-12 border-2 border-dashed rounded-lg">
