@@ -12,59 +12,20 @@ import {
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { User, Mail, ShieldCheck, CalendarCheck } from "lucide-react";
+import { User, Mail, ShieldCheck, CalendarCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { format } from 'date-fns';
 import { useEffect, useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export default function ProfilePage() {
-  const { currentUser } = useAuth();
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  if (!isClient) {
+function ProfileInfoCard() {
+    const { currentUser } = useAuth();
+    
     return (
-        <div className="max-w-md mx-auto">
-            <div className="flex justify-between items-center mb-4">
-                <div>
-                    <Skeleton className="h-9 w-40" />
-                    <Skeleton className="h-5 w-56 mt-2" />
-                </div>
-            </div>
-            <Card>
-                <CardHeader className="items-center text-center">
-                    <Skeleton className="h-24 w-24 rounded-full mb-4" />
-                    <Skeleton className="h-7 w-48" />
-                    <Skeleton className="h-5 w-56 mt-1" />
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                </CardContent>
-            </Card>
-        </div>
-    );
-  }
-
-  return (
-    <div className="max-w-md mx-auto">
-      <div className="flex justify-between items-center mb-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">My Profile</h1>
-          <p className="text-muted-foreground">
-            View your account details.
-          </p>
-        </div>
-      </div>
-      <Card>
+         <Card>
         <CardHeader className="items-center text-center">
             <Avatar className="h-24 w-24 mb-4">
                 <AvatarImage src={`https://placehold.co/100x100/${'673ab7'}/${'ffffff'}.png?text=${currentUser?.fullName?.[0].toUpperCase() ?? 'U'}`} alt="User Avatar" data-ai-hint="user avatar" />
@@ -127,6 +88,108 @@ export default function ProfilePage() {
             </Button>
         </CardContent>
       </Card>
+    )
+}
+
+function NftCollectionTab() {
+    // This is a placeholder for the user's NFT collection.
+    // In a future step, we'll fetch and display the actual NFTs.
+    const nfts = []; // Placeholder for NFT data
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>My NFT Collection</CardTitle>
+                <CardDescription>A gallery of your unique, minted achievements.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {nfts.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        {/* Placeholder for NFT items */}
+                    </div>
+                ) : (
+                    <div className="flex flex-col items-center justify-center text-center py-12 border-2 border-dashed rounded-lg">
+                         <Sparkles className="h-12 w-12 text-muted-foreground mb-4" />
+                        <h3 className="text-lg font-semibold">Your Collection is Empty</h3>
+                        <p className="text-muted-foreground mt-1 text-sm">
+                            Mint NFTs from your achievements to start your collection.
+                        </p>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
+export default function ProfilePage() {
+  const [isClient, setIsClient] = useState(false);
+  const [isNftFeatureEnabled, setIsNftFeatureEnabled] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    const settings = localStorage.getItem("nft_market_settings");
+    if (settings) {
+        setIsNftFeatureEnabled(JSON.parse(settings).isNftEnabled ?? false);
+    }
+  }, []);
+
+  if (!isClient) {
+    return (
+        <div className="max-w-md mx-auto">
+            <div className="flex justify-between items-center mb-4">
+                <div>
+                    <Skeleton className="h-9 w-40" />
+                    <Skeleton className="h-5 w-56 mt-2" />
+                </div>
+            </div>
+            <Card>
+                <CardHeader className="items-center text-center">
+                    <Skeleton className="h-24 w-24 rounded-full mb-4" />
+                    <Skeleton className="h-7 w-48" />
+                    <Skeleton className="h-5 w-56 mt-1" />
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                </CardContent>
+            </Card>
+        </div>
+    );
+  }
+
+  return (
+    <div className="max-w-md mx-auto">
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">My Profile</h1>
+          <p className="text-muted-foreground">
+            View your account details and collectibles.
+          </p>
+        </div>
+      </div>
+       <Tabs defaultValue="profile" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="profile">
+                <User className="mr-2 h-4 w-4" /> Profile
+            </TabsTrigger>
+            {isNftFeatureEnabled && (
+                <TabsTrigger value="nfts">
+                    <Sparkles className="mr-2 h-4 w-4" /> NFT Collection
+                </TabsTrigger>
+            )}
+        </TabsList>
+        <TabsContent value="profile" className="mt-4">
+            <ProfileInfoCard />
+        </TabsContent>
+        {isNftFeatureEnabled && (
+            <TabsContent value="nfts" className="mt-4">
+                <NftCollectionTab />
+            </TabsContent>
+        )}
+        </Tabs>
     </div>
   );
 }
+
