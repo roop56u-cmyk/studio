@@ -384,12 +384,13 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             setHasClaimedSignUpBonus(getInitialState('hasClaimedSignUpBonus', false));
             setClaimedReferralIds(getInitialState('claimedReferralIds', []));
 
-            // Reset daily task count
+            // Reset daily task count based on admin-defined time
             const now = new Date();
             const IST_OFFSET = 5.5 * 60 * 60 * 1000;
             const nowIST = new Date(now.getTime() + IST_OFFSET);
-            const resetHourIST = 9;
-            const resetMinuteIST = 30;
+            const resetTime = getGlobalSetting('platform_task_reset_time', '09:30');
+            const [resetHourIST, resetMinuteIST] = resetTime.split(':').map(Number);
+            
             let lastReset = new Date(nowIST);
             lastReset.setUTCHours(resetHourIST, resetMinuteIST, 0, 0);
 

@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, RefreshCw, Clock, Globe, Settings, Save } from "lucide-react";
+import { Loader2, RefreshCw, Clock, Globe, Settings, Save, Timer } from "lucide-react";
 import { getInternetTime } from "@/app/actions";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -69,6 +69,7 @@ export default function SchedulingPage() {
 
   const [timeSource, setTimeSource] = useState<'live' | 'manual'>('live');
   const [manualDateTime, setManualDateTime] = useState(new Date().toISOString().slice(0, 16));
+  const [taskResetTime, setTaskResetTime] = useState("09:30"); // Default to 9:30
 
   const fetchTime = async () => {
     setIsLoading(true);
@@ -98,6 +99,12 @@ export default function SchedulingPage() {
         setTimeSource('manual');
     }
 
+    const savedTaskResetTime = localStorage.getItem('platform_task_reset_time');
+    if (savedTaskResetTime) {
+        setTaskResetTime(savedTaskResetTime);
+    }
+
+
     fetchTime();
     const liveTimer = setInterval(() => {
         if(timeSource === 'live') {
@@ -112,7 +119,8 @@ export default function SchedulingPage() {
       if (timeSource === 'manual') {
           localStorage.setItem('platform_manual_time', new Date(manualDateTime).toISOString());
       }
-      toast({ title: "Time Settings Saved", description: `Platform is now using ${timeSource} time.`});
+      localStorage.setItem('platform_task_reset_time', taskResetTime);
+      toast({ title: "Time Settings Saved", description: `Platform is now using ${timeSource} time and task reset is at ${taskResetTime} IST.`});
   }
 
   const displayTime = timeSource === 'live' ? liveTime : new Date(manualDateTime);
@@ -170,6 +178,30 @@ export default function SchedulingPage() {
                 </Button>
             </CardFooter>
       </Card>
+      
+        <Card>
+            <CardHeader>
+                <CardTitle>Daily Task Reset Time</CardTitle>
+                <CardDescription>
+                    Set the time of day when all user tasks are reset. (Time is in IST).
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="flex items-center gap-4">
+                    <Timer className="h-6 w-6 text-muted-foreground" />
+                    <div className="space-y-2">
+                        <Label htmlFor="task-reset-time">Reset Time (IST)</Label>
+                        <Input
+                            id="task-reset-time"
+                            type="time"
+                            value={taskResetTime}
+                            onChange={(e) => setTaskResetTime(e.target.value)}
+                            className="w-48"
+                        />
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
 
       <Card>
         <CardHeader>
