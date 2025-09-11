@@ -88,7 +88,8 @@ import {
   HandCoins,
   Info,
   CalendarClock,
-  Layers
+  Layers,
+  Sparkles,
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -128,6 +129,7 @@ import AdminNoticesPage from "./admin/notices/page";
 import ManageUserPanelsPage from "./admin/user-panels/page";
 import WebsiteUIPage from "./admin/website-ui/page";
 import SystemSettingsPage from "./admin/settings/page";
+import NftSettingsPage from './admin/nft-settings/page';
 import ActivityLogPage from "./admin/activity-log/page";
 import ManageRechargeAddressesPage from "./admin/recharge-addresses/page";
 import ManageTeamRewardsPage from "./admin/team-rewards/page";
@@ -147,7 +149,7 @@ import SettingsPage from './settings/page';
 import type { Notice } from './admin/notices/page';
 
 
-type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement' | 'purchaseHistory' | 'reimbursements' | 'aboutUs' | 'adminProfile' | 'scheduling' | 'communityCommission';
+type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'nftSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement' | 'purchaseHistory' | 'reimbursements' | 'aboutUs' | 'adminProfile' | 'scheduling' | 'communityCommission';
 
 
 const adminPanelComponents: Record<PanelType, React.ComponentType> = {
@@ -162,6 +164,7 @@ const adminPanelComponents: Record<PanelType, React.ComponentType> = {
     userPanels: ManageUserPanelsPage,
     websiteUI: WebsiteUIPage,
     systemSettings: SystemSettingsPage,
+    nftSettings: NftSettingsPage,
     activityLog: ActivityLogPage,
     inbox: InboxPanel,
     rechargeAddresses: ManageRechargeAddressesPage,
@@ -190,6 +193,7 @@ const adminPanelTitles: Record<PanelType, { title: string; description: string }
     userPanels: { title: "User Panels", description: "Control visibility of user dashboard panels." },
     websiteUI: { title: "Website & UI", description: "Customize the look and feel of the website." },
     systemSettings: { title: "System Settings", description: "Configure global application settings." },
+    nftSettings: { title: "NFT Settings", description: "Configure the NFT circulation market." },
     activityLog: { title: "Activity Log", description: "Review administrative actions." },
     inbox: { title: "Inbox", description: "View and respond to user messages." },
     rechargeAddresses: { title: "Recharge Addresses", description: "Manage official deposit addresses." },
@@ -445,6 +449,12 @@ function SidebarContentComponent({
                     <SidebarMenuButton onClick={() => onAdminPanelClick('websiteUI')} tooltip={{ children: "Website & UI" }}>
                         <Palette />
                         <span>Website &amp; UI</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton onClick={() => onAdminPanelClick('nftSettings')} tooltip={{ children: "NFT Settings" }}>
+                        <Sparkles />
+                        <span>NFT Settings</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                  <SidebarMenuItem>

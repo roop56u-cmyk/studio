@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useCallback, ChangeEvent } from "react";
@@ -217,10 +218,10 @@ export default function SystemSettingsPage() {
         
         toast({
             title: "Settings Saved",
-            description: "Global system settings have been updated.",
+            description: "Global system settings have been updated. Reloading to apply all changes.",
         });
         
-        window.location.reload();
+        setTimeout(() => window.location.reload(), 1000);
     };
 
     const handleLevelRestrictionChange = useCallback((level: number, checked: boolean) => {
