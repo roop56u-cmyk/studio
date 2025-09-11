@@ -800,28 +800,34 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       setTasksCompletedToday(newTasksCompleted);
       setPersistentState('lastCompletionTime', new Date().getTime());
 
-      // Upline Commission Logic
+      // Correct Upline Commission Logic
       const uplineSettings = getGlobalSetting('upline_commission_settings', { enabled: false, rate: 0, requiredReferrals: 0 }, true);
-      
-      if (uplineSettings.enabled && currentUser.referredBy) {
-          const upline = users.find(u => u.referralCode === currentUser.referredBy);
-          if (upline && upline.status === 'active') { // Check if upline is active
-              const uplineL1Count = users.filter(u => u.referredBy === upline.referralCode && u.status === 'active').length;
-              if (uplineL1Count >= uplineSettings.requiredReferrals) {
+
+      // Find all direct downlines of the current user (who is the sponsor/upline)
+      const downlines = users.filter(u => u.referredBy === currentUser.referralCode);
+
+      if (uplineSettings.enabled && downlines.length > 0) {
+          downlines.forEach(downline => {
+              // Check if the downline is eligible to receive this commission
+              const downlineL1Count = users.filter(u => u.referredBy === downline.referralCode && u.status === 'active').length;
+              if (downline.status === 'active' && downlineL1Count >= uplineSettings.requiredReferrals) {
                   const commissionAmount = finalEarning * (uplineSettings.rate / 100);
+
                   if (commissionAmount > 0) {
-                      const uplineBalanceKey = `${upline.email}_mainBalance`;
-                      const currentUplineBalance = parseFloat(localStorage.getItem(uplineBalanceKey) || '0');
-                      localStorage.setItem(uplineBalanceKey, (currentUplineBalance + commissionAmount).toString());
-                      addActivity(upline.email, {
+                      const downlineBalanceKey = `${downline.email}_mainBalance`;
+                      const currentDownlineBalance = parseFloat(localStorage.getItem(downlineBalanceKey) || '0');
+                      localStorage.setItem(downlineBalanceKey, (currentDownlineBalance + commissionAmount).toString());
+
+                      // Add activity log for the downline member who is RECEIVING the commission
+                      addActivity(downline.email, {
                           type: 'Upline Commission',
-                          description: `Commission from downline: ${currentUser.email}`,
+                          description: `Commission from sponsor: ${currentUser.email}`,
                           amount: commissionAmount,
                           date: new Date().toISOString()
                       });
                   }
               }
-          }
+          });
       }
 
       toast({ title: "Task Completed!", description: `You've earned ${finalEarning.toFixed(4)} USDT.` });
