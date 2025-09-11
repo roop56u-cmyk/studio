@@ -125,9 +125,9 @@ export default function SystemSettingsPage() {
     const [earningModel, setEarningModel] = useState("dynamic"); // 'dynamic' or 'fixed'
     
     // Interest Model
-    const [interestEnabled, setInterestEnabled] = useState(true);
-    const [interestModel, setInterestModel] = useState("flexible"); // 'flexible' or 'fixed'
-    const [fixedTermDays, setFixedTermDays] = useState("10, 30, 60");
+    const [isInterestFeatureEnabled, setIsInterestFeatureEnabled] = useState(true);
+    const [interestEarningModel, setInterestEarningModel] = useState("flexible"); // 'flexible' or 'fixed'
+    const [interestFixedTermDays, setInterestFixedTermDays] = useState("10, 30, 60");
 
     const [isClient, setIsClient] = useState(false);
 
@@ -178,11 +178,11 @@ export default function SystemSettingsPage() {
 
         // Interest Model
         const savedInterestEnabled = localStorage.getItem('system_interest_enabled');
-        if (savedInterestEnabled) setInterestEnabled(JSON.parse(savedInterestEnabled));
+        if (savedInterestEnabled) setIsInterestFeatureEnabled(JSON.parse(savedInterestEnabled));
         const savedInterestModel = localStorage.getItem('system_interest_model');
-        if (savedInterestModel) setInterestModel(savedInterestModel);
+        if (savedInterestModel) setInterestEarningModel(savedInterestModel);
         const savedFixedTermDays = localStorage.getItem('system_interest_fixed_term_days');
-        if(savedFixedTermDays) setFixedTermDays(savedFixedTermDays);
+        if(savedFixedTermDays) setInterestFixedTermDays(savedFixedTermDays);
 
 
         setIsClient(true);
@@ -211,9 +211,9 @@ export default function SystemSettingsPage() {
         localStorage.setItem('system_earning_model', earningModel);
         
         // Interest Model
-        localStorage.setItem('system_interest_enabled', JSON.stringify(interestEnabled));
-        localStorage.setItem('system_interest_model', interestModel);
-        localStorage.setItem('system_interest_fixed_term_days', fixedTermDays);
+        localStorage.setItem('system_interest_enabled', JSON.stringify(isInterestFeatureEnabled));
+        localStorage.setItem('system_interest_model', interestEarningModel);
+        localStorage.setItem('system_interest_fixed_term_days', interestFixedTermDays);
         
         toast({
             title: "Settings Saved",
@@ -346,11 +346,11 @@ export default function SystemSettingsPage() {
         </CardHeader>
         <CardContent className="space-y-6">
             <div className="flex items-center space-x-2">
-              <Switch id="interest-enabled-toggle" checked={interestEnabled} onCheckedChange={setInterestEnabled} />
+              <Switch id="interest-enabled-toggle" checked={isInterestFeatureEnabled} onCheckedChange={setIsInterestFeatureEnabled} />
               <Label htmlFor="interest-enabled-toggle">Enable Interest Earning Feature</Label>
             </div>
             
-            <RadioGroup value={interestModel} onValueChange={setInterestModel} className="space-y-2" disabled={!interestEnabled}>
+            <RadioGroup value={interestEarningModel} onValueChange={setInterestEarningModel} className="space-y-2" disabled={!isInterestFeatureEnabled}>
                 <div className="flex items-center space-x-2">
                     <RadioGroupItem value="flexible" id="flexible-interest" />
                     <Label htmlFor="flexible-interest" className="font-normal">Flexible Earning (24-hour cycle)</Label>
@@ -362,15 +362,15 @@ export default function SystemSettingsPage() {
                     <Label htmlFor="fixed-interest" className="font-normal">Fixed-Term Locking</Label>
                 </div>
                  <p className="text-xs text-muted-foreground pl-6">Users lock their funds for a set number of days and claim total accumulated interest at the end.</p>
-                 {interestModel === 'fixed' && (
+                 {interestEarningModel === 'fixed' && (
                     <div className="pl-6 pt-2 space-y-2">
                         <Label htmlFor="fixed-term-days">Lock-in Durations (in days)</Label>
                         <Input 
                             id="fixed-term-days"
-                            value={fixedTermDays}
-                            onChange={(e) => setFixedTermDays(e.target.value)}
+                            value={interestFixedTermDays}
+                            onChange={(e) => setInterestFixedTermDays(e.target.value)}
                             placeholder="e.g., 10, 30, 60, 90"
-                            disabled={!interestEnabled}
+                            disabled={!isInterestFeatureEnabled}
                         />
                         <p className="text-xs text-muted-foreground">Enter a comma-separated list of the available day options for users.</p>
                     </div>
@@ -584,3 +584,5 @@ export default function SystemSettingsPage() {
     </div>
   );
 }
+
+    
