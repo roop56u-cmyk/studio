@@ -1,21 +1,21 @@
 
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "../ui/scroll-area";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWallet } from "@/contexts/WalletContext";
-import { useRequests } from "@/contexts/RequestContext";
-import { CheckCircle, Lock, Users, ListChecks, CalendarDays, BarChart4 } from "lucide-react";
+import { CheckCircle, Lock, Users, ListChecks, CalendarDays, BarChart4, Sparkles, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "../ui/button";
 
 type Achievement = {
   id: string;
@@ -27,8 +27,16 @@ type Achievement = {
 
 export function AchievementsPanel() {
   const { currentUser, users } = useAuth();
-  const { completedTasks, currentLevel } = useWallet();
-  const { requests } = useRequests();
+  const { completedTasks, currentLevel, mintNft } = useWallet();
+  const [isMinting, setIsMinting] = useState<string | null>(null);
+  const [isNftFeatureEnabled, setIsNftFeatureEnabled] = useState(false);
+
+  useEffect(() => {
+    const settings = localStorage.getItem("nft_market_settings");
+    if (settings) {
+        setIsNftFeatureEnabled(JSON.parse(settings).isNftEnabled ?? false);
+    }
+  }, []);
 
   const achievements = useMemo((): Achievement[] => {
     if (!currentUser) return [];
@@ -88,6 +96,12 @@ export function AchievementsPanel() {
     ];
   }, [currentUser, completedTasks, currentLevel, users]);
 
+  const handleMint = async (achievement: Achievement) => {
+    setIsMinting(achievement.id);
+    await mintNft(achievement.title);
+    setIsMinting(null);
+  };
+
   return (
     <ScrollArea className="h-[calc(100vh-8rem)]">
       <div className="grid gap-4 pr-6">
@@ -107,6 +121,23 @@ export function AchievementsPanel() {
                 <Lock className="h-6 w-6 text-muted-foreground flex-shrink-0" />
               )}
             </CardContent>
+            {isNftFeatureEnabled && achievement.isUnlocked && (
+              <CardFooter className="p-2 pt-0">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => handleMint(achievement)}
+                    disabled={isMinting === achievement.id}
+                   >
+                     {isMinting === achievement.id ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Sparkles className="mr-2 h-4 w-4" />
+                      )}
+                    Mint NFT
+                  </Button>
+              </CardFooter>
+            )}
           </Card>
         ))}
       </div>

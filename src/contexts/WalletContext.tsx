@@ -4,11 +4,12 @@
 import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect, useMemo } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from './AuthContext';
-import { GenerateTaskSuggestionOutput } from '@/app/actions';
+import { GenerateTaskSuggestionOutput, generateTaskSuggestion } from '@/app/actions';
 import { levels as defaultLevels, Level } from '@/components/dashboard/level-tiers';
 import { platformMessages } from '@/lib/platform-messages';
 import type { BonusTier } from '@/app/dashboard/admin/settings/page';
 import type { DailyReward } from '@/app/dashboard/admin/daily-rewards/page';
+import { generateNftArtwork } from '@/ai/flows/generate-nft-artwork-flow';
 
 
 export type Request = {
@@ -27,6 +28,13 @@ export type Request = {
     upline?: string | null;
 };
 
+export type Nft = {
+    id: string;
+    title: string;
+    artworkUrl: string;
+    mintedAt: string;
+    currentValue: number;
+};
 
 export type CompletedTask = {
     id: string;
@@ -146,6 +154,8 @@ interface WalletContextType {
   isInterestFeatureEnabled: boolean;
   interestEarningModel: 'flexible' | 'fixed';
   fixedTermDays: string;
+  nftCollection: Nft[];
+  mintNft: (achievementTitle: string) => Promise<void>;
 }
 
 export type Activity = {
@@ -224,6 +234,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [dailyRewardState, setDailyRewardState] = useState<DailyRewardState>({ isEnabled: false, canClaim: false, streak: 0, reward: 0 });
   const [isReady, setIsReady] = useState(false);
   const [isInactiveWarningOpen, setIsInactiveWarningOpen] = useState(false);
+  const [nftCollection, setNftCollection] = useState<Nft[]>([]);
   
   const committedBalance = taskRewardsBalance + interestEarningsBalance;
   
@@ -393,6 +404,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             setPurchasedReferralsCount(getInitialState('purchased_referrals', 0));
             setHasClaimedSignUpBonus(getInitialState('hasClaimedSignUpBonus', false));
             setClaimedReferralIds(getInitialState('claimedReferralIds', []));
+            setNftCollection(getInitialState('nftCollection', []));
 
             // Reset daily task count based on admin-defined time
             const now = new Date();
@@ -457,6 +469,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             setActiveBoosters([]); setPurchasedBoosterIds([]); setPurchasedReferralsCount(0);
             setHasClaimedSignUpBonus(false); setClaimedReferralIds([]);
             setDailyRewardState({ isEnabled: false, canClaim: false, streak: 0, reward: 0 });
+            setNftCollection([]);
         }
         setIsLoading(false);
         setIsReady(true);
@@ -538,6 +551,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => { if (!isLoading) setPersistentState('purchased_referrals', purchasedReferralsCount)}, [purchasedReferralsCount, isLoading, setPersistentState]);
   useEffect(() => { if (!isLoading) setPersistentState('hasClaimedSignUpBonus', hasClaimedSignUpBonus)}, [hasClaimedSignUpBonus, isLoading, setPersistentState]);
   useEffect(() => { if (!isLoading) setPersistentState('claimedReferralIds', claimedReferralIds)}, [claimedReferralIds, isLoading, setPersistentState]);
+  useEffect(() => { if (!isLoading) setPersistentState('nftCollection', nftCollection)}, [nftCollection, isLoading, setPersistentState]);
 
  const addActivity = useCallback((userEmail: string, activity: Omit<Activity, 'id'>) => {
     const newActivity: Activity = {
@@ -1030,6 +1044,44 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       return boost ? boost.value : 0;
   }
 
+  const mintNft = async (achievementTitle: string) => {
+    if (!currentUser) return;
+    const nftSettings = getGlobalSetting('nft_market_settings', { mintingFee: 10 }, true);
+    const mintingFee = nftSettings.mintingFee;
+
+    if (mainBalance < mintingFee) {
+        toast({ variant: 'destructive', title: 'Insufficient Funds', description: `You need at least $${mintingFee.toFixed(2)} in your main wallet to mint an NFT.` });
+        return;
+    }
+
+    try {
+        const artworkUrl = await generateNftArtwork({ achievementTitle });
+        
+        const newNft: Nft = {
+            id: `NFT-${Date.now()}`,
+            title: achievementTitle,
+            artworkUrl,
+            mintedAt: new Date().toISOString(),
+            currentValue: 50, // Initial value
+        };
+        
+        setMainBalance(prev => prev - mintingFee);
+        setNftCollection(prev => [...prev, newNft]);
+
+        addActivity(currentUser.email, {
+            type: 'NFT Mint',
+            description: `Minted "${achievementTitle}" NFT`,
+            amount: -mintingFee,
+            date: new Date().toISOString()
+        });
+
+        toast({ title: 'NFT Minted!', description: `Your "${achievementTitle}" achievement is now an NFT in your collection.` });
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Minting Failed', description: 'Could not generate artwork for your NFT. Please try again.' });
+    }
+  };
+
+
   return (
     <WalletContext.Provider
       value={{
@@ -1095,6 +1147,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         isInterestFeatureEnabled,
         interestEarningModel,
         fixedTermDays,
+        nftCollection,
+        mintNft,
       }}
     >
       {children}
