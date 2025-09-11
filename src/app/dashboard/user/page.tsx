@@ -58,6 +58,7 @@ export default function UserDashboardPage() {
     dailyRewardState,
     claimDailyReward,
     setIsInactiveWarningOpen,
+    isInterestFeatureEnabled
   } = useWallet();
   const [panelConfig, setPanelConfig] = React.useState<PanelConfig[]>(defaultPanelConfig);
 
@@ -174,7 +175,7 @@ export default function UserDashboardPage() {
                     showMoveToOther={true}
                 />
             )}
-            {isPanelEnabled("walletBalances") && (
+            {isPanelEnabled("walletBalances") && isInterestFeatureEnabled && (
                 <WalletBalance
                     gradientClass="bg-gradient-teal"
                     title="Interest Earnings"
@@ -184,7 +185,7 @@ export default function UserDashboardPage() {
                     showMoveToOther={true}
                 />
             )}
-            {isPanelEnabled("interestCounter") && (
+            {isPanelEnabled("interestCounter") && isInterestFeatureEnabled &&(
                 <InterestCounterPanel
                     gradientClass="bg-gradient-sky"
                     title="Daily Interest"
@@ -195,7 +196,7 @@ export default function UserDashboardPage() {
             )}
              {isPanelEnabled("featureLock") && (
                 <>
-                    {(isTaskLockedByLevel && isInterestLocked) ? (
+                    {(isTaskLockedByLevel && (isInterestLocked || !isInterestFeatureEnabled)) ? (
                     <Card className="bg-gradient-slate text-slate-100">
                         <CardHeader>
                             <CardTitle className="flex items-center"><Lock className="mr-2 h-5 w-5" /> Features Locked</CardTitle>

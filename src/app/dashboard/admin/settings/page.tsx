@@ -1,8 +1,7 @@
 
-
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, ChangeEvent } from "react";
 import {
   Card,
   CardContent,
@@ -125,6 +124,11 @@ export default function SystemSettingsPage() {
     // Earning Model
     const [earningModel, setEarningModel] = useState("dynamic"); // 'dynamic' or 'fixed'
     
+    // Interest Model
+    const [interestEnabled, setInterestEnabled] = useState(true);
+    const [interestModel, setInterestModel] = useState("flexible"); // 'flexible' or 'fixed'
+    const [fixedTermDays, setFixedTermDays] = useState("10, 30, 60");
+
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
@@ -172,6 +176,15 @@ export default function SystemSettingsPage() {
         const savedEarningModel = localStorage.getItem('system_earning_model');
         if (savedEarningModel) setEarningModel(savedEarningModel);
 
+        // Interest Model
+        const savedInterestEnabled = localStorage.getItem('system_interest_enabled');
+        if (savedInterestEnabled) setInterestEnabled(JSON.parse(savedInterestEnabled));
+        const savedInterestModel = localStorage.getItem('system_interest_model');
+        if (savedInterestModel) setInterestModel(savedInterestModel);
+        const savedFixedTermDays = localStorage.getItem('system_interest_fixed_term_days');
+        if(savedFixedTermDays) setFixedTermDays(savedFixedTermDays);
+
+
         setIsClient(true);
     }, []);
 
@@ -196,6 +209,11 @@ export default function SystemSettingsPage() {
 
         // Earning Model
         localStorage.setItem('system_earning_model', earningModel);
+        
+        // Interest Model
+        localStorage.setItem('system_interest_enabled', JSON.stringify(interestEnabled));
+        localStorage.setItem('system_interest_model', interestModel);
+        localStorage.setItem('system_interest_fixed_term_days', fixedTermDays);
         
         toast({
             title: "Settings Saved",
@@ -318,6 +336,49 @@ export default function SystemSettingsPage() {
           Manage global application settings and features.
         </p>
       </div>
+
+       <Card>
+        <CardHeader>
+          <CardTitle>Interest Earning Model</CardTitle>
+          <CardDescription>
+            Configure the platform's interest earning system for all users.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+            <div className="flex items-center space-x-2">
+              <Switch id="interest-enabled-toggle" checked={interestEnabled} onCheckedChange={setInterestEnabled} />
+              <Label htmlFor="interest-enabled-toggle">Enable Interest Earning Feature</Label>
+            </div>
+            
+            <RadioGroup value={interestModel} onValueChange={setInterestModel} className="space-y-2" disabled={!interestEnabled}>
+                <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="flexible" id="flexible-interest" />
+                    <Label htmlFor="flexible-interest" className="font-normal">Flexible Earning (24-hour cycle)</Label>
+                </div>
+                 <p className="text-xs text-muted-foreground pl-6">Users can claim interest every 24 hours. This is the default mode.</p>
+
+                <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="fixed" id="fixed-interest" />
+                    <Label htmlFor="fixed-interest" className="font-normal">Fixed-Term Locking</Label>
+                </div>
+                 <p className="text-xs text-muted-foreground pl-6">Users lock their funds for a set number of days and claim total accumulated interest at the end.</p>
+                 {interestModel === 'fixed' && (
+                    <div className="pl-6 pt-2 space-y-2">
+                        <Label htmlFor="fixed-term-days">Lock-in Durations (in days)</Label>
+                        <Input 
+                            id="fixed-term-days"
+                            value={fixedTermDays}
+                            onChange={(e) => setFixedTermDays(e.target.value)}
+                            placeholder="e.g., 10, 30, 60, 90"
+                            disabled={!interestEnabled}
+                        />
+                        <p className="text-xs text-muted-foreground">Enter a comma-separated list of the available day options for users.</p>
+                    </div>
+                 )}
+            </RadioGroup>
+        </CardContent>
+      </Card>
+      
        <Card>
         <CardHeader>
           <CardTitle>Earning Model</CardTitle>
