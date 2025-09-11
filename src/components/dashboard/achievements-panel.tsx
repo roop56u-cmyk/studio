@@ -42,15 +42,6 @@ export function AchievementsPanel() {
     }
   }, []);
   
-  useEffect(() => {
-    // Determine which achievements have already been minted into NFTs by this user
-    const mintedIds = nftCollection.map(nft => {
-      const achievement = achievements.find(a => a.title === nft.title);
-      return achievement ? achievement.id : '';
-    }).filter(id => id);
-    setMintedAchievementIds(mintedIds);
-  }, [nftCollection, isNftFeatureEnabled]); // Rerun when nftCollection changes
-
   const achievements = useMemo((): Achievement[] => {
     if (!currentUser) return [];
 
@@ -109,9 +100,18 @@ export function AchievementsPanel() {
     ];
   }, [currentUser, completedTasks, currentLevel, users]);
 
+  useEffect(() => {
+    // Determine which achievements have already been minted into NFTs by this user
+    const mintedIds = nftCollection.map(nft => {
+      const achievement = achievements.find(a => a.title === nft.title);
+      return achievement ? achievement.id : '';
+    }).filter(id => id);
+    setMintedAchievementIds(mintedIds);
+  }, [nftCollection, achievements]); 
+
   const handleMint = async (achievement: Achievement) => {
     setIsMinting(achievement.id);
-    await mintNft(achievement.title);
+    await mintNft(achievement.id, achievement.title);
     setIsMinting(null);
   };
 

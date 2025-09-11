@@ -9,7 +9,7 @@ import { levels as defaultLevels, Level } from '@/components/dashboard/level-tie
 import { platformMessages } from '@/lib/platform-messages';
 import type { BonusTier } from '@/app/dashboard/admin/settings/page';
 import type { DailyReward } from '@/app/dashboard/admin/daily-rewards/page';
-import { generateNftArtwork } from '@/ai/flows/generate-nft-artwork-flow';
+import { nftLibrary } from '@/lib/nft-library';
 
 
 export type Request = {
@@ -155,7 +155,7 @@ interface WalletContextType {
   interestEarningModel: 'flexible' | 'fixed';
   fixedTermDays: string;
   nftCollection: Nft[];
-  mintNft: (achievementTitle: string) => Promise<void>;
+  mintNft: (achievementId: string, achievementTitle: string) => Promise<void>;
 }
 
 export type Activity = {
@@ -1044,7 +1044,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       return boost ? boost.value : 0;
   }
 
-  const mintNft = async (achievementTitle: string) => {
+  const mintNft = async (achievementId: string, achievementTitle: string) => {
     if (!currentUser) return;
     const nftSettings = getGlobalSetting('nft_market_settings', { mintingFee: 10 }, true);
     const mintingFee = nftSettings.mintingFee;
@@ -1055,12 +1055,16 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-        const artworkUrl = await generateNftArtwork({ achievementTitle });
-        
+        const artworkFromLibrary = nftLibrary.find(item => item.achievementId === achievementId);
+
+        if (!artworkFromLibrary) {
+            throw new Error('Artwork not found in library for this achievement.');
+        }
+
         const newNft: Nft = {
             id: `NFT-${Date.now()}`,
             title: achievementTitle,
-            artworkUrl,
+            artworkUrl: artworkFromLibrary.imageUrl,
             mintedAt: new Date().toISOString(),
             currentValue: 50, // Initial value
         };
@@ -1077,7 +1081,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
         toast({ title: 'NFT Minted!', description: `Your "${achievementTitle}" achievement is now an NFT in your collection.` });
     } catch (error) {
-        toast({ variant: 'destructive', title: 'Minting Failed', description: 'Could not generate artwork for your NFT. Please try again.' });
+        console.error("Minting Error:", error);
+        toast({ variant: 'destructive', title: 'Minting Failed', description: 'Could not create NFT from the library. Please contact support.' });
     }
   };
 
