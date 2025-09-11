@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,7 +10,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Skeleton } from "@/components/ui/skeleton";
 import { User, Mail, ShieldCheck, CalendarCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -31,46 +29,26 @@ function ProfileInfoCard() {
                 <AvatarImage src={`https://placehold.co/100x100/${'673ab7'}/${'ffffff'}.png?text=${currentUser?.fullName?.[0].toUpperCase() ?? 'U'}`} alt="User Avatar" data-ai-hint="user avatar" />
                 <AvatarFallback className="text-4xl">{currentUser?.fullName?.[0].toUpperCase() ?? 'U'}</AvatarFallback>
             </Avatar>
-            {currentUser ? (
-              <CardTitle>{currentUser.fullName}</CardTitle>
-            ) : (
-                <Skeleton className="h-7 w-48" />
-            )}
-            {currentUser ? (
-                 <CardDescription>{currentUser.email}</CardDescription>
-            ) : (
-                <Skeleton className="h-5 w-56 mt-1" />
-            )}
+            <CardTitle>{currentUser?.fullName}</CardTitle>
+            <CardDescription>{currentUser?.email}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
             <div className="flex items-center gap-4 p-3 bg-muted rounded-lg">
                 <User className="h-5 w-5 text-muted-foreground" />
-                 {currentUser ? (
-                    <span className="text-foreground">{currentUser.fullName}</span>
-                 ) : (
-                    <Skeleton className="h-5 w-full" />
-                 )}
+                <span className="text-foreground">{currentUser?.fullName}</span>
             </div>
              <div className="flex items-center gap-4 p-3 bg-muted rounded-lg">
                 <Mail className="h-5 w-5 text-muted-foreground" />
-                 {currentUser ? (
-                    <span className="text-foreground">{currentUser.email}</span>
-                 ) : (
-                    <Skeleton className="h-5 w-full" />
-                 )}
+                <span className="text-foreground">{currentUser?.email}</span>
             </div>
             <div className="flex items-center justify-between gap-4 p-3 bg-muted rounded-lg">
                 <div className="flex items-center gap-4">
                     <ShieldCheck className="h-5 w-5 text-muted-foreground" />
                     <span className="text-foreground">Account Status</span>
                 </div>
-                 {currentUser ? (
-                     <Badge variant={currentUser.status === 'active' ? 'default' : 'secondary'} className={cn(currentUser.status === 'active' && 'bg-green-100 text-green-800')}>
-                        {currentUser.status.charAt(0).toUpperCase() + currentUser.status.slice(1)}
-                    </Badge>
-                 ) : (
-                    <Skeleton className="h-6 w-20" />
-                 )}
+                 <Badge variant={currentUser?.status === 'active' ? 'default' : 'secondary'} className={cn(currentUser?.status === 'active' && 'bg-green-100 text-green-800')}>
+                    {currentUser?.status.charAt(0).toUpperCase()}{currentUser?.status.slice(1)}
+                </Badge>
             </div>
             {currentUser?.status === 'active' && currentUser.activatedAt && (
               <div className="flex items-center gap-4 p-3 bg-muted rounded-lg">
@@ -134,29 +112,7 @@ export default function ProfilePage() {
   }, []);
 
   if (!isClient) {
-    return (
-        <div className="max-w-md mx-auto">
-            <div className="flex justify-between items-center mb-4">
-                <div>
-                    <Skeleton className="h-9 w-40" />
-                    <Skeleton className="h-5 w-56 mt-2" />
-                </div>
-            </div>
-            <Card>
-                <CardHeader className="items-center text-center">
-                    <Skeleton className="h-24 w-24 rounded-full mb-4" />
-                    <Skeleton className="h-7 w-48" />
-                    <Skeleton className="h-5 w-56 mt-1" />
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                </CardContent>
-            </Card>
-        </div>
-    );
+    return null; // The parent sheet handles loading state
   }
 
   return (
@@ -195,5 +151,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-

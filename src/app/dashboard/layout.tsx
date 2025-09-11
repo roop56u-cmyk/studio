@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Link from "next/link";
@@ -138,7 +137,7 @@ import ManageMessagesPage from "./admin/messages/page";
 import ManageDailyRewardsPage from './admin/daily-rewards/page';
 import UplineCommissionPage from './admin/upline-commission/page';
 import ManageSalaryPage from './admin/salary/page';
-import PurchaseHistoryPage from './admin/purchase-history/page';
+import PurchaseHistoryPage from "./admin/purchase-history/page";
 import ManageReimbursementsPage from './admin/reimbursements/page';
 import ManageAboutUsPage from './admin/about-us/page';
 import AdminProfilePage from './admin/admin-profile/page';
@@ -1071,9 +1070,9 @@ export default function DashboardLayout({
                  <SheetHeader>
                     <SheetTitle>My Profile</SheetTitle>
                 </SheetHeader>
-                <ScrollArea className="h-full">
+                <div className="mt-4">
                     <ProfilePage />
-                </ScrollArea>
+                </div>
                  <SheetClose asChild><Button variant="outline" className="sr-only">Close</Button></SheetClose>
             </SheetContent>
         </Sheet>
