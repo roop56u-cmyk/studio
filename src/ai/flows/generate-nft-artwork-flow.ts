@@ -16,26 +16,8 @@ const GenerateNftLibraryArtworkInputSchema = z.object({
 export type GenerateNftArtworkInput = z.infer<typeof GenerateNftLibraryArtworkInputSchema>;
 
 export async function generateNftLibraryArtwork(input: GenerateNftArtworkInput): Promise<{ imageUrl: string }> {
-  const result = await generateNftArtworkFlow(input);
-  return result;
+  // This function is now a placeholder and will not be called
+  // as the AI generation feature is disabled due to billing issues.
+  // We keep the file to avoid breaking imports, but the logic is moved to a manual upload.
+  throw new Error('AI artwork generation is disabled.');
 }
-
-const generateNftArtworkFlow = ai.defineFlow(
-  {
-    name: 'generateNftLibraryArtworkFlow',
-    inputSchema: GenerateNftLibraryArtworkInputSchema,
-    outputSchema: z.object({ imageUrl: z.string() }),
-  },
-  async (input) => {
-    const { media } = await ai.generate({
-      model: 'googleai/imagen-4.0-fast-generate-001',
-      prompt: `Create a visually stunning, abstract piece of digital art representing: "${input.prompt}". The style should be futuristic, elegant, and worthy of being a collectible NFT. Use a vibrant but harmonious color palette. The output should be a square image. Ensure the final image has a distinct and visually appealing border.`,
-    });
-
-    if (!media?.url) {
-      throw new Error('Failed to generate NFT artwork from the AI model.');
-    }
-
-    return { imageUrl: media.url };
-  }
-);

@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, ChangeEvent } from "react";
 import Image from "next/image";
 import {
   Card,
@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Percent, Info, AlertTriangle, ListChecks, Users, BarChart4, PlusCircle, Wand2, Loader2, Trash2 } from "lucide-react";
+import { Percent, Info, AlertTriangle, ListChecks, Users, BarChart4, PlusCircle, Upload, Loader2, Trash2 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -29,7 +29,7 @@ import {
   DialogClose,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { generateNftLibraryArtwork, saveNftToLibrary } from "@/app/actions";
+import { saveNftToLibrary } from "@/app/actions";
 import { nftLibrary, NftLibraryItem } from "@/lib/nft-library";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -57,9 +57,12 @@ export default function NftSettingsPage() {
     const [successfulSaleCooldown, setSuccessfulSaleCooldown] = useState(24 * 60); // Total minutes
     const [mintableAchievementIds, setMintableAchievementIds] = useState<string[]>([]);
     
-    // State for AI generation
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [prompt, setPrompt] = useState("");
+    // State for manual upload
+    const [isUploading, setIsUploading] = useState(false);
+    const [newImageFile, setNewImageFile] = useState<File | null>(null);
+    const [newImageHint, setNewImageHint] = useState("");
+    const [newImagePreview, setNewImagePreview] = useState<string | null>(null);
+
     const [currentLibrary, setCurrentLibrary] = useState<NftLibraryItem[]>(nftLibrary);
 
 
@@ -95,27 +98,44 @@ export default function NftSettingsPage() {
         });
     };
     
-    const handleGenerate = async () => {
-        if (!prompt.trim()) {
-            toast({ variant: 'destructive', title: 'Prompt is empty', description: 'Please enter a prompt to generate artwork.' });
+    const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setNewImageFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setNewImagePreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    
+    const handleAddArtwork = async () => {
+        if (!newImageFile || !newImageHint.trim()) {
+            toast({ variant: 'destructive', title: 'Missing Info', description: 'Please select an image and provide a hint.' });
             return;
         }
-        setIsGenerating(true);
+        
+        if (!newImagePreview) return;
+
+        setIsUploading(true);
         try {
-            const { imageUrl } = await generateNftLibraryArtwork(prompt);
-            const result = await saveNftToLibrary({ imageUrl, aiHint: prompt });
-            if (result.success && result.newItem) {
+            const result = await saveNftToLibrary({ imageUrl: newImagePreview, aiHint: newImageHint });
+             if (result.success && result.newItem) {
                 setCurrentLibrary(prev => [...prev, result.newItem!]);
                 toast({ title: 'Artwork Added!', description: 'The new NFT artwork has been added to your library.' });
-                setPrompt("");
+                // Reset form
+                setNewImageFile(null);
+                setNewImageHint("");
+                setNewImagePreview(null);
             } else {
                  throw new Error(result.error || "Failed to save the new artwork to the library file.");
             }
         } catch (error) {
-            console.error("AI Generation Error:", error);
-            toast({ variant: 'destructive', title: 'Generation Failed', description: 'Could not generate or save the artwork.' });
+            console.error("Upload Error:", error);
+            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not save the artwork.' });
         } finally {
-            setIsGenerating(false);
+            setIsUploading(false);
         }
     };
     
@@ -314,33 +334,38 @@ export default function NftSettingsPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>NFT Artwork Library</CardTitle>
-                    <CardDescription>Manage the collection of artwork available for NFTs. Add new art using AI.</CardDescription>
+                    <CardDescription>Manage the collection of artwork available for NFTs. Add new art for custom NFTs.</CardDescription>
                 </CardHeader>
                 <CardContent>
                      <Dialog>
                         <DialogTrigger asChild>
                             <Button variant="outline" className="w-full">
-                                <PlusCircle className="mr-2 h-4 w-4" /> Add New Artwork with AI
+                                <PlusCircle className="mr-2 h-4 w-4" /> Add New Artwork
                             </Button>
                         </DialogTrigger>
                         <DialogContent>
                             <DialogHeader>
-                                <DialogTitle>Generate New NFT Artwork</DialogTitle>
-                                <DialogDescription>Describe the artwork you want to create. Be specific for best results.</DialogDescription>
+                                <DialogTitle>Upload New NFT Artwork</DialogTitle>
+                                <DialogDescription>Upload an image and provide a hint for your new custom NFT artwork.</DialogDescription>
                             </DialogHeader>
                             <div className="space-y-4 py-4">
+                                 <div className="space-y-2">
+                                    <Label htmlFor="image-upload">Image File</Label>
+                                    <Input id="image-upload" type="file" accept="image/*" onChange={handleFileChange} />
+                                    {newImagePreview && <Image src={newImagePreview} alt="Preview" width={100} height={100} className="rounded-lg mt-2 object-cover" />}
+                                </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="prompt">AI Prompt</Label>
-                                    <Input id="prompt" value={prompt} onChange={e => setPrompt(e.target.value)} placeholder="e.g., golden trophy with diamond inlays" />
+                                    <Label htmlFor="hint">Artwork Hint / Title</Label>
+                                    <Input id="hint" value={newImageHint} onChange={e => setNewImageHint(e.target.value)} placeholder="e.g., golden trophy with diamond inlays" />
                                 </div>
                             </div>
                             <DialogFooter>
                                 <DialogClose asChild>
                                     <Button type="button" variant="secondary">Cancel</Button>
                                 </DialogClose>
-                                <Button onClick={handleGenerate} disabled={isGenerating}>
-                                    {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
-                                    Generate
+                                <Button onClick={handleAddArtwork} disabled={isUploading}>
+                                    {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                                    Add to Library
                                 </Button>
                             </DialogFooter>
                         </DialogContent>
