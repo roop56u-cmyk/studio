@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo, useCallback } from 'react';
@@ -38,6 +39,7 @@ type CommunityData = {
     members: TeamMember[];
     totalEarnings: number;
     activeCount: number;
+    activationsToday: number;
 }
 
 interface TeamContextType {
@@ -227,12 +229,15 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         
         const enrichedMembers: TeamMember[] = L4PlusMembers.map(m => ({ ...m, level: getLevelForUser(m, allUsers), status: allUsers.find(u => u.email === m.email)?.status || m.status }));
 
+        const activationsToday = allUsers.filter(u => L4PlusMembers.some(m => m.email === u.email) && getIsNewToday(u)).length;
+
         return {
             members: enrichedMembers,
             totalEarnings,
             activeCount: activeMembers.length,
+            activationsToday,
         };
-    }, [getDailyTaskEarnings]);
+    }, [getDailyTaskEarnings, getIsNewToday]);
 
 
     const calculateTeamData = useCallback((user: User, allUsers: User[]): TeamData => {
@@ -308,9 +313,9 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     }, [teamData]);
 
     const totalActivationsToday = useMemo(() => {
-        if (!teamData) return 0;
-        return teamData.level1.activationsToday + teamData.level2.activationsToday + teamData.level3.activationsToday;
-    }, [teamData]);
+        if (!teamData || !communityData) return 0;
+        return teamData.level1.activationsToday + teamData.level2.activationsToday + teamData.level3.activationsToday + communityData.activationsToday;
+    }, [teamData, communityData]);
 
     const value = {
         teamData,

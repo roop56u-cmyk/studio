@@ -592,7 +592,7 @@ export default function TeamPage() {
                     )}
                 </div>
 
-                {shouldShowCommunityCommission && communityData.members.length > 0 && (
+                {shouldShowCommunityCommission && (
                 <Card>
                     <CardHeader>
                         <CardTitle>L4+ Community Members</CardTitle>
