@@ -116,6 +116,8 @@ import { gradients } from "@/lib/gradients";
 import { NoticesPanel } from "@/components/dashboard/notices-panel";
 import TeamPage from "./team/page";
 import { AboutUsPanel } from '@/components/dashboard/about-us-panel';
+import { NftCollectionPanel } from '@/components/dashboard/nft-collection-panel';
+
 
 // Admin Panel Imports
 import UserManagementPage from "./admin/users/page";
@@ -225,6 +227,7 @@ function SidebarContentComponent({
     onNoticesClick,
     onTeamClick,
     onAboutUsClick,
+    onNftCollectionClick,
     onShowInterestWarning,
     onShowTaskWarning
 }: { 
@@ -243,6 +246,7 @@ function SidebarContentComponent({
     onNoticesClick: () => void,
     onTeamClick: () => void,
     onAboutUsClick: () => void,
+    onNftCollectionClick: () => void,
     onShowInterestWarning: () => void,
     onShowTaskWarning: () => void
 }) {
@@ -256,7 +260,8 @@ function SidebarContentComponent({
     isLoading,
     isFundMovementLocked,
     tasksCompletedToday,
-    dailyTaskQuota
+    dailyTaskQuota,
+    isNftFeatureEnabled,
   } = useWallet();
   const [amount, setAmount] = React.useState('');
   const [isClient, setIsClient] = React.useState(false);
@@ -499,6 +504,17 @@ function SidebarContentComponent({
                         <span>Achievements</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
+                {isNftFeatureEnabled && (
+                    <SidebarMenuItem>
+                        <SidebarMenuButton
+                            onClick={onNftCollectionClick}
+                            tooltip={{ children: "NFT Collection" }}
+                        >
+                            <Sparkles />
+                            <span>NFT Collection</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                )}
                  <SidebarMenuItem>
                     <SidebarMenuButton
                         onClick={onWalletOverviewClick}
@@ -681,7 +697,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
     const { logout, currentUser } = useAuth();
-    const { isInactiveWarningOpen, setIsInactiveWarningOpen } = useWallet();
+    const { isInactiveWarningOpen, setIsInactiveWarningOpen, isNftFeatureEnabled } = useWallet();
     const { unreadConversationsCount, markConversationAsRead } = useInbox();
     const [isClient, setIsClient] = React.useState(false);
 
@@ -700,6 +716,8 @@ export default function DashboardLayout({
     const [isNoticesOpen, setIsNoticesOpen] = React.useState(false);
     const [isTeamPanelOpen, setIsTeamPanelOpen] = React.useState(false);
     const [isAboutUsOpen, setIsAboutUsOpen] = React.useState(false);
+    const [isNftCollectionOpen, setIsNftCollectionOpen] = React.useState(false);
+
 
     // User menu popups
     const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
@@ -828,6 +846,7 @@ export default function DashboardLayout({
                 onNoticesClick={() => setIsNoticesOpen(true)}
                 onTeamClick={() => setIsTeamPanelOpen(true)}
                 onAboutUsClick={() => setIsAboutUsOpen(true)}
+                onNftCollectionClick={() => setIsNftCollectionOpen(true)}
                 onShowInterestWarning={() => setIsInterestMoveWarningOpen(true)}
                 onShowTaskWarning={() => setIsTaskMoveWarningOpen(true)}
             />
@@ -983,6 +1002,20 @@ export default function DashboardLayout({
                  <SheetClose asChild><Button variant="outline" className="sr-only">Close</Button></SheetClose>
             </SheetContent>
         </Sheet>
+        {isNftFeatureEnabled && (
+            <Sheet open={isNftCollectionOpen} onOpenChange={setIsNftCollectionOpen}>
+                <SheetContent className="w-full sm:max-w-lg">
+                    <SheetHeader>
+                        <SheetTitle>My NFT Collection</SheetTitle>
+                        <SheetDescription>A gallery of your unique, minted achievements.</SheetDescription>
+                    </SheetHeader>
+                    <div className="mt-4">
+                        <NftCollectionPanel />
+                    </div>
+                    <SheetClose asChild><Button variant="outline" className="sr-only">Close</Button></SheetClose>
+                </SheetContent>
+            </Sheet>
+        )}
         <Sheet open={isNoticesOpen} onOpenChange={setIsNoticesOpen}>
             <SheetContent className="w-full sm:max-w-lg">
                 <SheetHeader>

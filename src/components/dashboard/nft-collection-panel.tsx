@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/contexts/WalletContext";
 import { Loader2, Sparkles, Clock } from "lucide-react";
+import { ScrollArea } from "../ui/scroll-area";
 
 export function NftCollectionPanel() {
     const { nftCollection, sellNft, nftCooldowns } = useWallet();
@@ -41,14 +42,10 @@ export function NftCollectionPanel() {
     const successfulCooldownActive = nftCooldowns.successfulSale && nftCooldowns.successfulSale > Date.now();
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>My NFT Collection</CardTitle>
-                <CardDescription>A gallery of your unique, minted achievements. Click "Sell" to circulate an NFT.</CardDescription>
-            </CardHeader>
-            <CardContent>
+         <ScrollArea className="h-[calc(100vh-8rem)]">
+            <div className="space-y-6 pr-6">
                 {(failedCooldownActive || successfulCooldownActive) && (
-                    <Card className="mb-4 bg-muted">
+                    <Card className="bg-muted">
                         <CardContent className="p-3 flex items-center gap-3 text-sm">
                             <Clock className="h-5 w-5 text-primary" />
                             <div>
@@ -91,7 +88,7 @@ export function NftCollectionPanel() {
                         ))}
                     </div>
                 ) : (
-                    <div className="flex flex-col items-center justify-center text-center py-12 border-2 border-dashed rounded-lg">
+                    <div className="flex flex-col items-center justify-center text-center py-12 border-2 border-dashed rounded-lg mt-8">
                          <Sparkles className="h-12 w-12 text-muted-foreground mb-4" />
                         <h3 className="text-lg font-semibold">Your Collection is Empty</h3>
                         <p className="text-muted-foreground mt-1 text-sm">
@@ -99,7 +96,7 @@ export function NftCollectionPanel() {
                         </p>
                     </div>
                 )}
-            </CardContent>
-        </Card>
+            </div>
+        </ScrollArea>
     );
 }

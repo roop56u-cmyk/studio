@@ -22,7 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useWallet } from "@/contexts/WalletContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { NftCollectionPanel } from "@/components/dashboard/nft-collection-panel";
+
 
 
 export type PanelConfig = {
@@ -63,17 +63,12 @@ export default function UserDashboardPage() {
     isInterestFeatureEnabled
   } = useWallet();
   const [panelConfig, setPanelConfig] = React.useState<PanelConfig[]>(defaultPanelConfig);
-  const [isNftFeatureEnabled, setIsNftFeatureEnabled] = React.useState(false);
 
 
   React.useEffect(() => {
     const storedConfig = localStorage.getItem("user_panel_config");
     if (storedConfig) {
       setPanelConfig(JSON.parse(storedConfig));
-    }
-    const nftSettings = localStorage.getItem("nft_market_settings");
-    if (nftSettings) {
-        setIsNftFeatureEnabled(JSON.parse(nftSettings).isNftEnabled ?? false);
     }
   }, []);
 
@@ -201,9 +196,6 @@ export default function UserDashboardPage() {
                     balance={interestEarningsBalance}
                     counterType="interest"
                 />
-            )}
-            {isPanelEnabled("nftCollection") && isNftFeatureEnabled && (
-                <NftCollectionPanel />
             )}
              {isPanelEnabled("featureLock") && (
                 <>
