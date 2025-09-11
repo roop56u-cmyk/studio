@@ -202,20 +202,21 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     const calculateCommunityData = useCallback((user: User, allUsers: User[]): CommunityData => {
-        const processedEmails = new Set([user.email]);
+        const processedEmails = new Set<string>([user.email]);
         const L4PlusMembers: User[] = [];
 
-        // Correctly find L1, L2, L3 members first to establish the starting point
+        // Find L1, L2, L3 and add them to processedEmails to exclude them
         const l1 = allUsers.filter(u => u.referredBy === user.referralCode);
         l1.forEach(u => processedEmails.add(u.email));
 
         const l2 = l1.flatMap(l1User => allUsers.filter(u => u.referredBy === l1User.referralCode));
         l2.forEach(u => processedEmails.add(u.email));
         
-        let parentLayer = l2.flatMap(l2User => allUsers.filter(u => u.referredBy === l2User.referralCode)); // Start traversal from L3's children (L4)
-        parentLayer.forEach(u => processedEmails.add(u.email));
-        
-        L4PlusMembers.push(...parentLayer);
+        const l3 = l2.flatMap(l2User => allUsers.filter(u => u.referredBy === l2User.referralCode));
+        l3.forEach(u => processedEmails.add(u.email));
+
+        // Start traversal from L3's children (which are L4)
+        let parentLayer = l3;
 
         while (parentLayer.length > 0) {
             const currentLayer = parentLayer.flatMap(parent => allUsers.filter(u => u.referredBy === parent.referralCode && !processedEmails.has(u.email)));
