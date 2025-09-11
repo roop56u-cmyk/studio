@@ -163,6 +163,7 @@ interface WalletContextType {
   mintNft: (achievementId: string, achievementTitle: string) => Promise<void>;
   sellNft: (nftId: string) => Promise<void>;
   nftCooldowns: NftCooldowns;
+  isNftFeatureEnabled: boolean;
 }
 
 export type Activity = {
@@ -202,6 +203,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [isInterestFeatureEnabled, setIsInterestFeatureEnabled] = useState(true);
   const [interestEarningModel, setInterestEarningModel] = useState<'flexible' | 'fixed'>('flexible');
   const [fixedTermDays, setFixedTermDays] = useState("10, 30, 60");
+  const [isNftFeatureEnabled, setIsNftFeatureEnabled] = useState(false);
   
   const getGlobalSetting = (key: string, defaultValue: any, isJson: boolean = false) => {
      if (typeof window === 'undefined') {
@@ -394,6 +396,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setIsInterestFeatureEnabled(getGlobalSetting('system_interest_enabled', true, true));
         setInterestEarningModel(getGlobalSetting('system_interest_model', 'flexible'));
         setFixedTermDays(getGlobalSetting('system_interest_fixed_term_days', "10, 30, 60"));
+        setIsNftFeatureEnabled(getGlobalSetting('nft_market_settings', { isNftEnabled: false }, true).isNftEnabled);
 
         // User-specific data
         if (currentUser?.email) {
@@ -1223,6 +1226,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         mintNft,
         sellNft,
         nftCooldowns,
+        isNftFeatureEnabled,
       }}
     >
       {children}
