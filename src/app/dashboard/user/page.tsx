@@ -87,7 +87,6 @@ export default function UserDashboardPage() {
   const isTaskLockedByBalance = !hasSufficientTaskBalance && taskLevel > 0;
   
   const finalIsTaskLocked = isTaskLockedByLevel || isTaskLockedByBalance || allTasksCompleted;
-  const isInterestLocked = currentLevel === 0 || !hasSufficientTotalBalance;
 
   const handleStartTasks = () => {
     if (allTasksCompleted) {
@@ -197,7 +196,7 @@ export default function UserDashboardPage() {
                 <InterestCounterPanel
                     gradientClass="bg-gradient-sky"
                     title="Daily Interest"
-                    isLocked={isInterestLocked}
+                    isLocked={currentLevel === 0}
                     balance={interestEarningsBalance}
                     counterType="interest"
                 />
@@ -216,29 +215,25 @@ export default function UserDashboardPage() {
                     </CardContent>
                 </Card>
             )}
-             {isPanelEnabled("featureLock") && (
-                <>
-                    {(isTaskLockedByLevel && (isInterestLocked || !isInterestFeatureEnabled)) && !allTasksCompleted ? (
-                    <Card className="bg-gradient-slate text-slate-100">
-                        <CardHeader>
-                            <CardTitle className="flex items-center"><Lock className="mr-2 h-5 w-5" /> Features Locked</CardTitle>
-                            <CardDescription className="text-slate-300">Commit funds and invite friends to unlock platform features.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-sm mb-2">
-                                To unlock Level 1, you must commit at least <strong>${minRequiredBalanceForLevel(1).toLocaleString()} to Task Rewards or Interest Earnings</strong>.
-                            </p>
-                            <p className="text-sm mb-4">
-                                Higher levels may also require inviting a certain number of friends. Check the level details above.
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                                Your main balance is ${mainBalance.toFixed(2)}. Use the sidebar wallet to move funds.
-                            </p>
-                        </CardContent>
-                    </Card>
-                    ) : null}
-                </>
-            )}
+             {isPanelEnabled("featureLock") && currentLevel === 0 && !allTasksCompleted && (
+                <Card className="bg-gradient-slate text-slate-100">
+                    <CardHeader>
+                        <CardTitle className="flex items-center"><Lock className="mr-2 h-5 w-5" /> Features Locked</CardTitle>
+                        <CardDescription className="text-slate-300">Commit funds and invite friends to unlock platform features.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm mb-2">
+                            To unlock Level 1, you must commit at least <strong>${minRequiredBalanceForLevel(1).toLocaleString()} to Task Rewards or Interest Earnings</strong>.
+                        </p>
+                        <p className="text-sm mb-4">
+                            Higher levels may also require inviting a certain number of friends. Check the level details above.
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                            Your main balance is ${mainBalance.toFixed(2)}. Use the sidebar wallet to move funds.
+                        </p>
+                    </CardContent>
+                </Card>
+             )}
         </div>
       </div>
       
