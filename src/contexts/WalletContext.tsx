@@ -380,9 +380,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     return baseEarning + (baseEarning * (taskEarningBoost / 100));
   }, [taskRewardsBalance, taskLevelData, dailyTaskQuota, earningModel, taskLevel, minRequiredBalanceForLevel, activeBoosters]);
   
-  // This effect will run once on mount and then poll for changes
+  // This effect will run once on mount to load initial data
   useEffect(() => {
-    const loadAndPollData = () => {
+    const loadInitialData = () => {
         // Global settings
         setIsWithdrawalRestrictionEnabled(getGlobalSetting('system_withdrawal_restriction_enabled', true, true));
         setWithdrawalRestrictionDays(parseInt(getGlobalSetting('system_withdrawal_restriction_days', '45'), 10));
@@ -488,10 +488,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setIsReady(true);
     };
 
-    loadAndPollData(); // Initial load
-    const intervalId = setInterval(loadAndPollData, 3000); // Poll every 3 seconds
-
-    return () => clearInterval(intervalId);
+    loadInitialData();
   }, [currentUser?.email, getInitialState, setPersistentState]);
 
   useEffect(() => {
@@ -828,15 +825,20 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       const baseEarning = earningPerTask || 0;
       const finalEarning = baseEarning + (baseEarning * (taskEarningBoost / 100));
 
-      if (finalEarning > 0) {
-        setTaskRewardsBalance(prev => prev + finalEarning);
-      }
-      
-      const newCompletedTask: CompletedTask = { id: `TASK-${Date.now()}`, title: task.taskTitle, description: task.taskDescription, earnings: finalEarning, completedAt: new Date().toISOString() };
-      setCompletedTasks(prev => [newCompletedTask, ...prev]);
-      
       const newTasksCompleted = tasksCompletedToday + 1;
+      const newTaskRewardsBalance = taskRewardsBalance + finalEarning;
+      const newCompletedTask: CompletedTask = { id: `TASK-${Date.now()}`, title: task.taskTitle, description: task.taskDescription, earnings: finalEarning, completedAt: new Date().toISOString() };
+      const newCompletedTasks = [newCompletedTask, ...completedTasks];
+      
+      // Update state immediately
+      setTaskRewardsBalance(newTaskRewardsBalance);
       setTasksCompletedToday(newTasksCompleted);
+      setCompletedTasks(newCompletedTasks);
+      
+      // Persist state
+      setPersistentState('taskRewardsBalance', newTaskRewardsBalance);
+      setPersistentState('tasksCompletedToday', newTasksCompleted);
+      setPersistentState('completedTasks', newCompletedTasks);
       setPersistentState('lastCompletionTime', new Date().getTime());
 
       // Correct Upline Commission Logic

@@ -44,7 +44,7 @@ export function TaskDialog({ open, onOpenChange }: TaskDialogProps) {
   const hasSufficientBalance = taskRewardsBalance >= minBalanceForTaskLevel;
   const allTasksCompleted = tasksCompletedToday >= dailyTaskQuota;
 
-  const fetchTask = async () => {
+  const fetchTask = useCallback(async () => {
     setIsLoading(true);
     try {
       const result = await generateTaskSuggestion();
@@ -59,29 +59,23 @@ export function TaskDialog({ open, onOpenChange }: TaskDialogProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     if (open && !allTasksCompleted && hasSufficientBalance) {
       fetchTask();
     } else if (!open) {
-      // Reset when dialog is closed
       setCurrentTask(null);
-      setIsLoading(true);
     }
-  }, [open, allTasksCompleted, hasSufficientBalance]);
+  }, [open, allTasksCompleted, hasSufficientBalance, fetchTask]);
 
-  const handleReviewSubmit = async () => {
+  const handleReviewSubmit = () => {
     if (!currentTask) return;
 
     completeTask(currentTask);
-    toast({
-      title: "Task Completed!",
-      description: `You've earned ${earningPerTask.toFixed(4)} USDT.`,
-    });
 
     if (tasksCompletedToday + 1 < dailyTaskQuota) {
-      await fetchTask(); // Fetch the next task
+      fetchTask(); // Fetch the next task
     } else {
       onOpenChange(false); // Close dialog if all tasks are done
     }
