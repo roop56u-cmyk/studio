@@ -207,7 +207,7 @@ export default function UserDashboardPage() {
                         </CardHeader>
                         <CardContent>
                             <p className="text-sm mb-2">
-                                To unlock Level 1, you must commit at least <strong>${minBalanceForLevel1.toLocaleString()} to Task Rewards or Interest Earnings</strong>.
+                                To unlock Level 1, you must commit at least <strong>${minRequiredBalanceForLevel(1).toLocaleString()} to Task Rewards or Interest Earnings</strong>.
                             </p>
                             <p className="text-sm mb-4">
                                 Higher levels may also require inviting a certain number of friends. Check the level details above.
@@ -227,7 +227,7 @@ export default function UserDashboardPage() {
                             <CardDescription className="text-green-800">You have reached your daily limit.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-sm font-medium">Please come back tomorrow for more tasks.</p>
+                            <p className="text-sm font-medium text-green-900">Please come back tomorrow for more tasks.</p>
                         </CardContent>
                     </Card>
                     ) : null}
