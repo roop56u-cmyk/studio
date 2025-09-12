@@ -96,10 +96,43 @@ type NftCooldowns = {
   successfulSale: number | null; // timestamp
 }
 
+export type MiningPackageInfo = {
+    id: string;
+    name: string;
+    price: number;
+    miningRate: number;
+    duration: number; // hours
+};
+
+export type PurchasedMiningPackage = {
+    id: string; // unique instance id
+    packageId: string; // id of the package from store
+    name: string;
+    status: 'available' | 'active' | 'expired';
+};
+
+export type ActiveMiningPackage = {
+    id: string; // unique instance id
+    packageId: string;
+    name: string;
+    miningRate: number;
+    duration: number; // hours
+    startedAt: number; // timestamp
+    expiresAt: number; // timestamp
+};
+
+export type TokenomicsSettings = {
+  tokenName: string;
+  tokenSymbol: string;
+  conversionRate: number; // How many tokens for 1 USDT
+  miningEnabled: boolean;
+};
+
 interface WalletContextType {
   mainBalance: number;
   taskRewardsBalance: number;
   interestEarningsBalance: number;
+  miningPoolBalance: number;
   committedBalance: number;
   currentLevel: number;
   taskLevel: number;
@@ -115,7 +148,7 @@ interface WalletContextType {
   completedTasks: CompletedTask[];
   levelUnlockProgress: Record<number, LevelUnlockStatus>;
   minRequiredBalanceForLevel: (level: number) => number;
-  handleMoveFunds: (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', amountToMove: number, fromAccount?: 'Task Rewards' | 'Interest Earnings') => void;
+  handleMoveFunds: (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet' | 'Mining Pool', amountToMove: number, fromAccount?: 'Task Rewards' | 'Interest Earnings' | 'Mining Pool') => void;
   approveRecharge: (userEmail: string, rechargeAmount: number) => void;
   addCommissionToMainBalance: (commissionAmount: number) => void;
   requestWithdrawal: (withdrawalAmount: number, withdrawalAddress: string) => void;
@@ -139,7 +172,7 @@ interface WalletContextType {
   activeBoosters: ActiveBooster[];
   purchasedBoosterIds: string[];
   getReferralCommissionBoost: () => number;
-  isFundMovementLocked: (type: 'interest' | 'task') => boolean;
+  isFundMovementLocked: (type: 'interest' | 'task' | 'mining') => boolean;
   addActivity: (userEmail: string, activity: Omit<Activity, 'id'>) => void;
   activityHistory: Activity[];
   multipleAddressesEnabled: boolean;
@@ -165,6 +198,16 @@ interface WalletContextType {
   sellNft: (nftId: string) => Promise<void>;
   nftCooldowns: NftCooldowns;
   isNftFeatureEnabled: boolean;
+  // Token Mining
+  isMiningEnabled: boolean;
+  tokenBalance: number;
+  tokenomics: TokenomicsSettings;
+  activeMiningPackage: ActiveMiningPackage | null;
+  purchasedMiningPackages: PurchasedMiningPackage[];
+  purchaseMiningPackage: (packageId: string) => void;
+  startMining: (purchasedPackageId: string) => void;
+  claimMinedTokens: () => void;
+  convertTokensToUsdt: (tokenAmount: number) => void;
 }
 
 export type Activity = {
@@ -227,6 +270,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [mainBalance, setMainBalance] = useState(0);
   const [taskRewardsBalance, setTaskRewardsBalance] = useState(0);
   const [interestEarningsBalance, setInterestEarningsBalance] = useState(0);
+  const [miningPoolBalance, setMiningPoolBalance] = useState(0);
   const [deposits, setDeposits] = useState(0);
   const [withdrawals, setWithdrawals] = useState(0);
   const [activityHistory, setActivityHistory] = useState<Activity[]>([]);
@@ -246,8 +290,15 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [isInactiveWarningOpen, setIsInactiveWarningOpen] = useState(false);
   const [nftCollection, setNftCollection] = useState<Nft[]>([]);
   const [nftCooldowns, setNftCooldowns] = useState<NftCooldowns>({ failedSale: null, successfulSale: null });
+
+  // Token Mining States
+  const [isMiningEnabled, setIsMiningEnabled] = useState(true);
+  const [tokenomics, setTokenomics] = useState<TokenomicsSettings>({ tokenName: 'Taskify Coin', tokenSymbol: 'TFT', conversionRate: 10, miningEnabled: true });
+  const [tokenBalance, setTokenBalance] = useState(0);
+  const [purchasedMiningPackages, setPurchasedMiningPackages] = useState<PurchasedMiningPackage[]>([]);
+  const [activeMiningPackage, setActiveMiningPackage] = useState<ActiveMiningPackage | null>(null);
   
-  const committedBalance = taskRewardsBalance + interestEarningsBalance;
+  const committedBalance = taskRewardsBalance + interestEarningsBalance + miningPoolBalance;
   
   const getInitialState = useCallback((key: string, defaultValue: any, userEmail?: string) => {
     const targetEmail = userEmail || currentUser?.email;
@@ -385,6 +436,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const loadInitialData = () => {
         // Global settings
+        const tokenomicsSettings = getGlobalSetting('tokenomics_settings', { miningEnabled: true, tokenName: "Taskify Coin", tokenSymbol: "TFT", conversionRate: 10 }, true);
+        setIsMiningEnabled(tokenomicsSettings.miningEnabled);
+        setTokenomics(tokenomicsSettings);
         setIsWithdrawalRestrictionEnabled(getGlobalSetting('system_withdrawal_restriction_enabled', true, true));
         setWithdrawalRestrictionDays(parseInt(getGlobalSetting('system_withdrawal_restriction_days', '45'), 10));
         setConfiguredLevels(getGlobalSetting('platform_levels', defaultLevels, true));
@@ -404,6 +458,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             setMainBalance(getInitialState('mainBalance', 0));
             setTaskRewardsBalance(getInitialState('taskRewardsBalance', 0));
             setInterestEarningsBalance(getInitialState('interestEarningsBalance', 0));
+            setMiningPoolBalance(getInitialState('miningPoolBalance', 0));
+            setTokenBalance(getInitialState('tokenBalance', 0));
+            setPurchasedMiningPackages(getInitialState('purchasedMiningPackages', []));
+            setActiveMiningPackage(getInitialState('activeMiningPackage', null));
             setDeposits(getInitialState('deposits', 0));
             setWithdrawals(getInitialState('withdrawals', 0));
             setActivityHistory(getInitialState('activityHistory', []));
@@ -465,7 +523,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             }
         } else {
             // Reset state if no user is logged in
-            setMainBalance(0); setTaskRewardsBalance(0); setInterestEarningsBalance(0);
+            setMainBalance(0); setTaskRewardsBalance(0); setInterestEarningsBalance(0); setMiningPoolBalance(0);
+            setTokenBalance(0); setPurchasedMiningPackages([]); setActiveMiningPackage(null);
             setDeposits(0); setWithdrawals(0); setActivityHistory([]);
             setInterestCounter({ isRunning: false, startTime: null, durationHours: 24 });
             setTasksCompletedToday(0); setCompletedTasks([]); setWithdrawalAddresses([]);
@@ -497,6 +556,16 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
     return () => clearInterval(interval);
   }, [activeBoosters]);
+
+  useEffect(() => {
+    // Check for expired mining package
+    const interval = setInterval(() => {
+        if (activeMiningPackage && Date.now() >= activeMiningPackage.expiresAt) {
+            toast({ title: 'Mining Complete!', description: `Your ${activeMiningPackage.name} package has finished. You can now claim your tokens.` });
+        }
+    }, 1000 * 60); // Check every minute
+    return () => clearInterval(interval);
+  }, [activeMiningPackage, toast]);
 
   const { requests: userRequests } = useMemo(() => {
     if (typeof window === 'undefined' || !currentUser) {
@@ -539,6 +608,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => { if (!isLoading) setPersistentState('mainBalance', mainBalance)}, [mainBalance, isLoading, setPersistentState]);
   useEffect(() => { if (!isLoading) setPersistentState('taskRewardsBalance', taskRewardsBalance)}, [taskRewardsBalance, isLoading, setPersistentState]);
   useEffect(() => { if (!isLoading) setPersistentState('interestEarningsBalance', interestEarningsBalance)}, [interestEarningsBalance, isLoading, setPersistentState]);
+  useEffect(() => { if (!isLoading) setPersistentState('miningPoolBalance', miningPoolBalance)}, [miningPoolBalance, isLoading, setPersistentState]);
+  useEffect(() => { if (!isLoading) setPersistentState('tokenBalance', tokenBalance)}, [tokenBalance, isLoading, setPersistentState]);
+  useEffect(() => { if (!isLoading) setPersistentState('purchasedMiningPackages', purchasedMiningPackages)}, [purchasedMiningPackages, isLoading, setPersistentState]);
+  useEffect(() => { if (!isLoading) setPersistentState('activeMiningPackage', activeMiningPackage)}, [activeMiningPackage, isLoading, setPersistentState]);
   useEffect(() => { if (!isLoading) setPersistentState('deposits', deposits)}, [deposits, isLoading, setPersistentState]);
   useEffect(() => { if (!isLoading) setPersistentState('withdrawals', withdrawals)}, [withdrawals, isLoading, setPersistentState]);
   useEffect(() => { if (!isLoading) setPersistentState('activityHistory', activityHistory)}, [activityHistory, isLoading, setPersistentState]);
@@ -570,39 +643,47 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
      }
  }, [currentUser]);
 
-  const handleMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', amountToMove: number, fromAccount?: 'Task Rewards' | 'Interest Earnings') => {
+  const handleMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet' | 'Mining Pool', amountToMove: number, fromAccount?: 'Task Rewards' | 'Interest Earnings' | 'Mining Pool') => {
     if (!currentUser) return;
 
     let description = '';
     let tempMainBalance = mainBalance;
     let tempTaskBalance = taskRewardsBalance;
     let tempInterestBalance = interestEarningsBalance;
+    let tempMiningPoolBalance = miningPoolBalance;
 
     if (!fromAccount) { // Moving from Main Wallet
+      if (amountToMove > tempMainBalance) { toast({ variant: "destructive", title: "Insufficient Funds" }); return; }
       tempMainBalance -= amountToMove;
       if (destination === 'Task Rewards') tempTaskBalance += amountToMove;
       if (destination === 'Interest Earnings') tempInterestBalance += amountToMove;
+      if (destination === 'Mining Pool') tempMiningPoolBalance += amountToMove;
       description = `Moved $${amountToMove.toFixed(2)} to ${destination}`;
     } else { // Moving between earning wallets or back to main
         if (fromAccount === 'Task Rewards') {
             if (amountToMove > taskRewardsBalance) { toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than the available balance of $${taskRewardsBalance.toFixed(2)}.` }); return; }
             tempTaskBalance -= amountToMove;
-        } else {
+        } else if (fromAccount === 'Interest Earnings') {
             if (amountToMove > interestEarningsBalance) { toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than the available balance of $${interestEarningsBalance.toFixed(2)}.` }); return; }
             tempInterestBalance -= amountToMove;
+        } else if (fromAccount === 'Mining Pool') {
+            if (amountToMove > miningPoolBalance) { toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than the available balance of $${miningPoolBalance.toFixed(2)}.` }); return; }
+            tempMiningPoolBalance -= amountToMove;
         }
 
         if (destination === 'Main Wallet') tempMainBalance += amountToMove;
         if (destination === 'Interest Earnings') tempInterestBalance += amountToMove;
         if (destination === 'Task Rewards') tempTaskBalance += amountToMove;
+        if (destination === 'Mining Pool') tempMiningPoolBalance += amountToMove;
         description = `Moved $${amountToMove.toFixed(2)} from ${fromAccount} to ${destination}`;
     }
 
     setMainBalance(tempMainBalance);
     setTaskRewardsBalance(tempTaskBalance);
     setInterestEarningsBalance(tempInterestBalance);
+    setMiningPoolBalance(tempMiningPoolBalance);
 
-    const newCommittedBalance = tempTaskBalance + tempInterestBalance;
+    const newCommittedBalance = tempTaskBalance + tempInterestBalance + tempMiningPoolBalance;
     const minBalanceForLevel1 = minRequiredBalanceForLevel(1);
 
     // Check for Activation/Deactivation
@@ -777,13 +858,16 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       }
   };
   
-  const isFundMovementLocked = (type: 'interest' | 'task') => {
+  const isFundMovementLocked = (type: 'interest' | 'task' | 'mining') => {
       if (type === 'interest') {
         return interestCounter.isRunning;
       }
       if (type === 'task') {
         const tasksInProgress = tasksCompletedToday > 0 && tasksCompletedToday < dailyTaskQuota;
         return tasksInProgress;
+      }
+      if (type === 'mining') {
+          return activeMiningPackage !== null;
       }
       return false;
   }
@@ -1149,8 +1233,99 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
         toast({ variant: 'destructive', title: 'Sale Failed', description: 'Your NFT did not find a buyer this time. Please try again later.' });
     }
-  }
+  };
 
+  const purchaseMiningPackage = (packageId: string) => {
+    if (!currentUser) return;
+    const allPackages = getGlobalSetting('mining_packages', [], true);
+    const pkgToBuy = allPackages.find((p: MiningPackageInfo) => p.id === packageId);
+    
+    if (!pkgToBuy) {
+        toast({ variant: 'destructive', title: 'Package not found' });
+        return;
+    }
+    
+    if (mainBalance < pkgToBuy.price) {
+        toast({ variant: 'destructive', title: 'Insufficient Funds' });
+        return;
+    }
+
+    setMainBalance(prev => prev - pkgToBuy.price);
+    const newPurchasedPackage: PurchasedMiningPackage = {
+        id: `purchased-${Date.now()}`,
+        packageId: pkgToBuy.id,
+        name: pkgToBuy.name,
+        status: 'available',
+    };
+    setPurchasedMiningPackages(prev => [...prev, newPurchasedPackage]);
+    
+    addActivity(currentUser.email, { type: 'Mining Package Purchase', description: `Purchased ${pkgToBuy.name}`, amount: -pkgToBuy.price, date: new Date().toISOString() });
+    toast({ title: 'Package Purchased', description: `${pkgToBuy.name} is now available to be activated.` });
+  };
+  
+  const startMining = (purchasedPackageId: string) => {
+    if (!currentUser || activeMiningPackage) return;
+    
+    const allPackages = getGlobalSetting('mining_packages', [], true);
+    const purchasedPkg = purchasedMiningPackages.find(p => p.id === purchasedPackageId);
+    if (!purchasedPkg || purchasedPkg.status !== 'available') {
+        toast({ variant: 'destructive', title: 'Package not available' });
+        return;
+    }
+    
+    const packageInfo = allPackages.find((p: MiningPackageInfo) => p.id === purchasedPkg.packageId);
+    if (!packageInfo) return;
+
+    if (miningPoolBalance < packageInfo.price) {
+        toast({ variant: 'destructive', title: 'Insufficient Mining Pool Balance', description: `You need at least $${packageInfo.price} in your mining pool to activate this package.` });
+        return;
+    }
+    
+    const now = Date.now();
+    const newActivePackage: ActiveMiningPackage = {
+        id: purchasedPkg.id,
+        packageId: packageInfo.id,
+        name: packageInfo.name,
+        miningRate: packageInfo.miningRate,
+        duration: packageInfo.duration,
+        startedAt: now,
+        expiresAt: now + packageInfo.duration * 60 * 60 * 1000,
+    };
+
+    setActiveMiningPackage(newActivePackage);
+    setPurchasedMiningPackages(prev => prev.map(p => p.id === purchasedPackageId ? { ...p, status: 'active' } : p));
+    toast({ title: 'Mining Activated!', description: `${packageInfo.name} has started mining.` });
+  };
+
+  const claimMinedTokens = () => {
+    if (!currentUser || !activeMiningPackage || Date.now() < activeMiningPackage.expiresAt) return;
+    
+    const minedAmount = activeMiningPackage.miningRate * activeMiningPackage.duration;
+    
+    setTokenBalance(prev => prev + minedAmount);
+    addActivity(currentUser.email, { type: 'Token Claim', description: `Claimed ${minedAmount.toFixed(4)} ${tokenomics.tokenSymbol} from ${activeMiningPackage.name}`, date: new Date().toISOString() });
+    
+    setPurchasedMiningPackages(prev => prev.filter(p => p.id !== activeMiningPackage.id));
+    setActiveMiningPackage(null);
+    toast({ title: 'Tokens Claimed!', description: `${minedAmount.toFixed(4)} ${tokenomics.tokenSymbol} has been added to your token wallet.` });
+  };
+  
+  const convertTokensToUsdt = (tokenAmount: number) => {
+    if (!currentUser) return;
+    if (tokenAmount > tokenBalance) return;
+    
+    const usdtAmount = tokenAmount / tokenomics.conversionRate;
+    
+    setTokenBalance(prev => prev - tokenAmount);
+    setMainBalance(prev => prev + usdtAmount);
+
+    addActivity(currentUser.email, {
+        type: 'Token Conversion',
+        description: `Converted ${tokenAmount.toFixed(4)} ${tokenomics.tokenSymbol} to ${usdtAmount.toFixed(2)} USDT`,
+        date: new Date().toISOString()
+    });
+    toast({ title: 'Conversion Successful', description: `You received ${usdtAmount.toFixed(2)} USDT in your main wallet.` });
+  };
 
   return (
     <WalletContext.Provider
@@ -1158,6 +1333,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         mainBalance,
         taskRewardsBalance,
         interestEarningsBalance,
+        miningPoolBalance,
         committedBalance,
         currentLevel,
         taskLevel,
@@ -1222,6 +1398,15 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         sellNft,
         nftCooldowns,
         isNftFeatureEnabled,
+        isMiningEnabled,
+        tokenBalance,
+        tokenomics,
+        activeMiningPackage,
+        purchasedMiningPackages,
+        purchaseMiningPackage,
+        startMining,
+        claimMinedTokens,
+        convertTokensToUsdt
       }}
     >
       {children}
