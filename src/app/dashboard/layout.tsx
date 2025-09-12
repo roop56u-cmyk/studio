@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from "next/link";
@@ -577,12 +578,6 @@ function SidebarContentComponent({
                                     <TrendingUp className="h-4 w-4 text-accent" />
                                     <span>Move to Interest</span>
                                 </Button>
-                                {isMiningEnabled && (
-                                <Button variant="outline" size="sm" className="justify-start gap-2 w-full" onClick={() => handleLocalMoveFunds("Mining Pool")}>
-                                    <Gem className="h-4 w-4 text-yellow-500" />
-                                    <span>Move to Mining Pool</span>
-                                </Button>
-                                )}
                             </div>
                         </div>
                     </CollapsibleContent>
@@ -1150,3 +1145,4 @@ export default function DashboardLayout({
       </SidebarProvider>
   );
 }
+
