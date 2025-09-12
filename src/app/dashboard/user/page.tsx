@@ -168,12 +168,14 @@ export default function UserDashboardPage() {
                 </CardFooter>
             </Card>
         )}
+        
         {isMiningEnabled && isPanelEnabled("miningMachine") && (
             <div className="space-y-4">
                 <MiningMachinePanel />
                 <TokenWalletPanel />
             </div>
         )}
+        
         {isPanelEnabled("levelTiers") && (
          <div className="space-y-4">
             <LevelTiers 
@@ -182,6 +184,7 @@ export default function UserDashboardPage() {
             />
           </div>
         )}
+
         <div className="space-y-4">
             {isPanelEnabled("walletBalances") && (
                 <WalletBalance
@@ -212,7 +215,7 @@ export default function UserDashboardPage() {
                     onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Mining Pool')}
                 />
             )}
-            {isPanelEnabled("interestCounter") && isInterestFeatureEnabled &&(
+            {isPanelEnabled("interestCounter") && isInterestFeatureEnabled && (
                 <InterestCounterPanel
                     gradientClass="bg-gradient-sky"
                     title="Daily Interest"
