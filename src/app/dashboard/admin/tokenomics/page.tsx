@@ -52,6 +52,27 @@ export type TokenomicsSettings = {
   miningEnabled: boolean;
 };
 
+// Helper to convert total hours into days, hours, minutes object
+constgetHoursParts = (totalHours: number) => {
+    const totalMinutes = Math.round(totalHours * 60);
+    const days = Math.floor(totalMinutes / (24 * 60));
+    const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+    const minutes = totalMinutes % 60;
+    return { days, hours, minutes };
+};
+
+// Helper to format duration for display
+const formatDuration = (totalHours: number) => {
+    if (totalHours <= 0) return 'Invalid duration';
+    const { days, hours, minutes } = getHoursParts(totalHours);
+    const parts = [];
+    if (days > 0) parts.push(`${days}d`);
+    if (hours > 0) parts.push(`${hours}h`);
+    if (minutes > 0) parts.push(`${minutes}m`);
+    return parts.join(' ') || '0m';
+};
+
+
 const PackageForm = ({
   pkg,
   onSave,
@@ -64,15 +85,21 @@ const PackageForm = ({
   const [name, setName] = useState(pkg?.name || "");
   const [price, setPrice] = useState(pkg?.price || 50);
   const [miningRate, setMiningRate] = useState(pkg?.miningRate || 0.5);
-  const [duration, setDuration] = useState(pkg?.duration || 24);
+
+  const initialDuration = pkg?.duration ? getHoursParts(pkg.duration) : { days: 1, hours: 0, minutes: 0 };
+  const [days, setDays] = useState(initialDuration.days);
+  const [hours, setHours] = useState(initialDuration.hours);
+  const [minutes, setMinutes] = useState(initialDuration.minutes);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || price <= 0 || miningRate <= 0 || duration <= 0) {
-      alert("Please fill all fields with valid positive values.");
+    const totalDurationInHours = (days * 24) + hours + (minutes / 60);
+
+    if (!name || price <= 0 || miningRate <= 0 || totalDurationInHours <= 0) {
+      alert("Please fill all fields with valid positive values, including a duration.");
       return;
     }
-    onSave({ name, price, miningRate, duration });
+    onSave({ name, price, miningRate, duration: totalDurationInHours });
   };
 
   return (
@@ -81,19 +108,32 @@ const PackageForm = ({
         <Label htmlFor="name">Package Name</Label>
         <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required placeholder="e.g., Starter Miner" />
       </div>
-      <div className="grid grid-cols-2 gap-4">
+       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
             <Label htmlFor="price">Price (USDT)</Label>
-            <Input id="price" type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} required />
+            <Input id="price" type="number" value={price} onChange={e => setPrice(Number(e.target.value))} required />
         </div>
         <div className="space-y-2">
-            <Label htmlFor="duration">Duration (hours)</Label>
-            <Input id="duration" type="number" value={duration} onChange={(e) => setDuration(Number(e.target.value))} required />
+            <Label htmlFor="miningRate">Mining Rate (Tokens/hour)</Label>
+            <Input id="miningRate" type="number" step="0.01" value={miningRate} onChange={e => setMiningRate(Number(e.target.value))} required />
         </div>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="miningRate">Mining Rate (Tokens/hour)</Label>
-        <Input id="miningRate" type="number" step="0.01" value={miningRate} onChange={(e) => setMiningRate(Number(e.target.value))} required />
+        <Label>Duration</Label>
+        <div className="grid grid-cols-3 gap-2">
+            <div>
+                 <Label htmlFor="duration-days" className="text-xs text-muted-foreground">Days</Label>
+                <Input id="duration-days" type="number" value={days} onChange={e => setDays(Number(e.target.value))} min="0" />
+            </div>
+             <div>
+                 <Label htmlFor="duration-hours" className="text-xs text-muted-foreground">Hours</Label>
+                <Input id="duration-hours" type="number" value={hours} onChange={e => setHours(Number(e.target.value))} min="0" />
+            </div>
+             <div>
+                 <Label htmlFor="duration-minutes" className="text-xs text-muted-foreground">Minutes</Label>
+                <Input id="duration-minutes" type="number" value={minutes} onChange={e => setMinutes(Number(e.target.value))} min="0" />
+            </div>
+        </div>
       </div>
       
       <DialogFooter>
@@ -158,8 +198,8 @@ export default function TokenomicsPage() {
   };
 
   const closeForm = () => {
-    setIsFormOpen(false);
     setEditingPackage(null);
+    setIsFormOpen(false);
   };
 
   if (!isClient) return null;
@@ -224,7 +264,7 @@ export default function TokenomicsPage() {
                   <div className="text-xs text-muted-foreground grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-1 mt-2">
                     <span className="flex items-center gap-1.5"><DollarSign className="h-3 w-3" /> Price: ${pkg.price.toLocaleString()}</span>
                     <span className="flex items-center gap-1.5"><Gauge className="h-3 w-3" /> Rate: {pkg.miningRate} {settings.tokenSymbol}/hr</span>
-                    <span className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> Duration: {pkg.duration} hours</span>
+                    <span className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> Duration: {formatDuration(pkg.duration)}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
