@@ -132,7 +132,6 @@ interface WalletContextType {
   mainBalance: number;
   taskRewardsBalance: number;
   interestEarningsBalance: number;
-  miningPoolBalance: number;
   committedBalance: number;
   currentLevel: number;
   taskLevel: number;
@@ -148,7 +147,7 @@ interface WalletContextType {
   completedTasks: CompletedTask[];
   levelUnlockProgress: Record<number, LevelUnlockStatus>;
   minRequiredBalanceForLevel: (level: number) => number;
-  handleMoveFunds: (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet' | 'Mining Pool', amountToMove: number, fromAccount?: 'Task Rewards' | 'Interest Earnings' | 'Mining Pool') => void;
+  handleMoveFunds: (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', amountToMove: number, fromAccount?: 'Task Rewards' | 'Interest Earnings') => void;
   approveRecharge: (userEmail: string, rechargeAmount: number) => void;
   addCommissionToMainBalance: (commissionAmount: number) => void;
   requestWithdrawal: (withdrawalAmount: number, withdrawalAddress: string) => void;
@@ -270,7 +269,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [mainBalance, setMainBalance] = useState(0);
   const [taskRewardsBalance, setTaskRewardsBalance] = useState(0);
   const [interestEarningsBalance, setInterestEarningsBalance] = useState(0);
-  const [miningPoolBalance, setMiningPoolBalance] = useState(0);
   const [deposits, setDeposits] = useState(0);
   const [withdrawals, setWithdrawals] = useState(0);
   const [activityHistory, setActivityHistory] = useState<Activity[]>([]);
@@ -298,7 +296,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [purchasedMiningPackages, setPurchasedMiningPackages] = useState<PurchasedMiningPackage[]>([]);
   const [activeMiningPackage, setActiveMiningPackage] = useState<ActiveMiningPackage | null>(null);
   
-  const committedBalance = taskRewardsBalance + interestEarningsBalance + miningPoolBalance;
+  const committedBalance = taskRewardsBalance + interestEarningsBalance;
   
   const getInitialState = useCallback((key: string, defaultValue: any, userEmail?: string) => {
     const targetEmail = userEmail || currentUser?.email;
@@ -458,7 +456,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             setMainBalance(getInitialState('mainBalance', 0));
             setTaskRewardsBalance(getInitialState('taskRewardsBalance', 0));
             setInterestEarningsBalance(getInitialState('interestEarningsBalance', 0));
-            setMiningPoolBalance(getInitialState('miningPoolBalance', 0));
             setTokenBalance(getInitialState('tokenBalance', 0));
             setPurchasedMiningPackages(getInitialState('purchasedMiningPackages', []));
             setActiveMiningPackage(getInitialState('activeMiningPackage', null));
@@ -523,7 +520,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             }
         } else {
             // Reset state if no user is logged in
-            setMainBalance(0); setTaskRewardsBalance(0); setInterestEarningsBalance(0); setMiningPoolBalance(0);
+            setMainBalance(0); setTaskRewardsBalance(0); setInterestEarningsBalance(0);
             setTokenBalance(0); setPurchasedMiningPackages([]); setActiveMiningPackage(null);
             setDeposits(0); setWithdrawals(0); setActivityHistory([]);
             setInterestCounter({ isRunning: false, startTime: null, durationHours: 24 });
@@ -608,7 +605,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => { if (!isLoading) setPersistentState('mainBalance', mainBalance)}, [mainBalance, isLoading, setPersistentState]);
   useEffect(() => { if (!isLoading) setPersistentState('taskRewardsBalance', taskRewardsBalance)}, [taskRewardsBalance, isLoading, setPersistentState]);
   useEffect(() => { if (!isLoading) setPersistentState('interestEarningsBalance', interestEarningsBalance)}, [interestEarningsBalance, isLoading, setPersistentState]);
-  useEffect(() => { if (!isLoading) setPersistentState('miningPoolBalance', miningPoolBalance)}, [miningPoolBalance, isLoading, setPersistentState]);
   useEffect(() => { if (!isLoading) setPersistentState('tokenBalance', tokenBalance)}, [tokenBalance, isLoading, setPersistentState]);
   useEffect(() => { if (!isLoading) setPersistentState('purchasedMiningPackages', purchasedMiningPackages)}, [purchasedMiningPackages, isLoading, setPersistentState]);
   useEffect(() => { if (!isLoading) setPersistentState('activeMiningPackage', activeMiningPackage)}, [activeMiningPackage, isLoading, setPersistentState]);
@@ -643,21 +639,19 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
      }
  }, [currentUser]);
 
-  const handleMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet' | 'Mining Pool', amountToMove: number, fromAccount?: 'Task Rewards' | 'Interest Earnings' | 'Mining Pool') => {
+  const handleMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', amountToMove: number, fromAccount?: 'Task Rewards' | 'Interest Earnings') => {
     if (!currentUser) return;
 
     let description = '';
     let tempMainBalance = mainBalance;
     let tempTaskBalance = taskRewardsBalance;
     let tempInterestBalance = interestEarningsBalance;
-    let tempMiningPoolBalance = miningPoolBalance;
 
     if (!fromAccount) { // Moving from Main Wallet
       if (amountToMove > tempMainBalance) { toast({ variant: "destructive", title: "Insufficient Funds" }); return; }
       tempMainBalance -= amountToMove;
       if (destination === 'Task Rewards') tempTaskBalance += amountToMove;
       if (destination === 'Interest Earnings') tempInterestBalance += amountToMove;
-      if (destination === 'Mining Pool') tempMiningPoolBalance += amountToMove;
       description = `Moved $${amountToMove.toFixed(2)} to ${destination}`;
     } else { // Moving between earning wallets or back to main
         if (fromAccount === 'Task Rewards') {
@@ -666,24 +660,19 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         } else if (fromAccount === 'Interest Earnings') {
             if (amountToMove > interestEarningsBalance) { toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than the available balance of $${interestEarningsBalance.toFixed(2)}.` }); return; }
             tempInterestBalance -= amountToMove;
-        } else if (fromAccount === 'Mining Pool') {
-            if (amountToMove > miningPoolBalance) { toast({ variant: "destructive", title: "Insufficient Funds", description: `You cannot move more than the available balance of $${miningPoolBalance.toFixed(2)}.` }); return; }
-            tempMiningPoolBalance -= amountToMove;
         }
 
         if (destination === 'Main Wallet') tempMainBalance += amountToMove;
         if (destination === 'Interest Earnings') tempInterestBalance += amountToMove;
         if (destination === 'Task Rewards') tempTaskBalance += amountToMove;
-        if (destination === 'Mining Pool') tempMiningPoolBalance += amountToMove;
         description = `Moved $${amountToMove.toFixed(2)} from ${fromAccount} to ${destination}`;
     }
 
     setMainBalance(tempMainBalance);
     setTaskRewardsBalance(tempTaskBalance);
     setInterestEarningsBalance(tempInterestBalance);
-    setMiningPoolBalance(tempMiningPoolBalance);
 
-    const newCommittedBalance = tempTaskBalance + tempInterestBalance + tempMiningPoolBalance;
+    const newCommittedBalance = tempTaskBalance + tempInterestBalance;
     const minBalanceForLevel1 = minRequiredBalanceForLevel(1);
 
     // Check for Activation/Deactivation
@@ -841,7 +830,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
     if(currentUser?.email === userEmail) {
         setMainBalance(prev => prev + withdrawalAmount);
-        toast({ variant: "default", title: "Withdrawal Refunded", description: `Your withdrawal request was declined. ${withdrawalAmount.toFixed(2)} USDT has been returned to your main balance.` });
+        toast({ variant: "default", title: "Withdrawal Refunded", description: `Your withdrawal request was declined. ${withdrawalAmount.toFixed(2)} has been returned to your main balance.` });
     }
   }
   
@@ -1275,11 +1264,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     
     const packageInfo = allPackages.find((p: MiningPackageInfo) => p.id === purchasedPkg.packageId);
     if (!packageInfo) return;
-
-    if (miningPoolBalance < packageInfo.price) {
-        toast({ variant: 'destructive', title: 'Insufficient Mining Pool Balance', description: `You need at least $${packageInfo.price} in your mining pool to activate this package.` });
-        return;
-    }
     
     const now = Date.now();
     const newActivePackage: ActiveMiningPackage = {
@@ -1322,6 +1306,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     addActivity(currentUser.email, {
         type: 'Token Conversion',
         description: `Converted ${tokenAmount.toFixed(4)} ${tokenomics.tokenSymbol} to ${usdtAmount.toFixed(2)} USDT`,
+        amount: usdtAmount,
         date: new Date().toISOString()
     });
     toast({ title: 'Conversion Successful', description: `You received ${usdtAmount.toFixed(2)} USDT in your main wallet.` });
@@ -1333,7 +1318,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         mainBalance,
         taskRewardsBalance,
         interestEarningsBalance,
-        miningPoolBalance,
         committedBalance,
         currentLevel,
         taskLevel,
@@ -1421,3 +1405,4 @@ export const useWallet = () => {
   }
   return context;
 };
+
