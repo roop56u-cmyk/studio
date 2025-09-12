@@ -7,7 +7,7 @@ import { LevelTiers, Level, levels } from "@/components/dashboard/level-tiers";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Lock, CalendarCheck, PieChart, Trophy } from "lucide-react";
+import { Lock, CalendarCheck, PieChart, Trophy, CheckCircle } from "lucide-react";
 import { TaskDialog } from "@/components/dashboard/task-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -207,7 +207,7 @@ export default function UserDashboardPage() {
                         </CardHeader>
                         <CardContent>
                             <p className="text-sm mb-2">
-                                To unlock Level 1, you must commit at least <strong>$100 to Task Rewards or Interest Earnings</strong>.
+                                To unlock Level 1, you must commit at least <strong>${minBalanceForLevel1.toLocaleString()} to Task Rewards or Interest Earnings</strong>.
                             </p>
                             <p className="text-sm mb-4">
                                 Higher levels may also require inviting a certain number of friends. Check the level details above.
@@ -218,13 +218,16 @@ export default function UserDashboardPage() {
                         </CardContent>
                     </Card>
                     ) : allTasksCompleted ? (
-                    <Card className="bg-gradient-green text-white">
+                    <Card className="bg-gradient-green text-green-900">
                         <CardHeader>
-                            <CardTitle>All Tasks Completed!</CardTitle>
-                            <CardDescription className="text-green-100">You have reached your daily limit.</CardDescription>
+                            <CardTitle className="flex items-center gap-2">
+                                <CheckCircle className="h-5 w-5"/>
+                                All Tasks Completed!
+                            </CardTitle>
+                            <CardDescription className="text-green-800">You have reached your daily limit.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-sm">Please come back tomorrow for more tasks.</p>
+                            <p className="text-sm font-medium">Please come back tomorrow for more tasks.</p>
                         </CardContent>
                     </Card>
                     ) : null}
