@@ -82,7 +82,7 @@ export default function UserDashboardPage() {
   const hasSufficientTotalBalance = committedBalance >= minBalanceForCurrentLevel;
   const hasSufficientTaskBalance = taskRewardsBalance >= minBalanceForTaskLevel;
   
-  const allTasksCompleted = tasksCompletedToday >= dailyTaskQuota;
+  const allTasksCompleted = tasksCompletedToday >= dailyTaskQuota && dailyTaskQuota > 0;
   const isTaskLockedByLevel = taskLevel === 0;
   const isTaskLockedByBalance = !hasSufficientTaskBalance && taskLevel > 0;
   
@@ -201,8 +201,8 @@ export default function UserDashboardPage() {
                     counterType="interest"
                 />
             )}
-             {allTasksCompleted && (
-                 <Card className="bg-gradient-green text-primary-foreground">
+            {allTasksCompleted && (
+                <Card className="bg-gradient-green text-primary-foreground">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-primary-foreground">
                             <CheckCircle className="h-5 w-5" />
@@ -215,7 +215,7 @@ export default function UserDashboardPage() {
                     </CardContent>
                 </Card>
             )}
-             {isPanelEnabled("featureLock") && currentLevel === 0 && !allTasksCompleted && (
+            {isPanelEnabled("featureLock") && currentLevel === 0 && (
                 <Card className="bg-gradient-slate text-slate-100">
                     <CardHeader>
                         <CardTitle className="flex items-center"><Lock className="mr-2 h-5 w-5" /> Features Locked</CardTitle>
