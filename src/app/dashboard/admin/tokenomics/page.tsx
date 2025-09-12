@@ -53,7 +53,7 @@ export type TokenomicsSettings = {
 };
 
 // Helper to convert total hours into days, hours, minutes object
-constgetHoursParts = (totalHours: number) => {
+const getHoursParts = (totalHours: number) => {
     const totalMinutes = Math.round(totalHours * 60);
     const days = Math.floor(totalMinutes / (24 * 60));
     const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
