@@ -74,6 +74,7 @@ export default function UserDashboardPage() {
 
   const [isTaskDialogOpen, setIsTaskDialogOpen] = React.useState(false);
   const [isBalanceWarningOpen, setIsBalanceWarningOpen] = React.useState(false);
+  const [isCompletionDialogOpen, setIsCompletionDialogOpen] = React.useState(false);
   const [warningMessage, setWarningMessage] = React.useState("");
 
   const minBalanceForCurrentLevel = minRequiredBalanceForLevel(currentLevel);
@@ -90,7 +91,7 @@ export default function UserDashboardPage() {
 
   const handleStartTasks = () => {
     if (allTasksCompleted) {
-        // Do nothing, the banner is already showing
+        setIsCompletionDialogOpen(true);
         return;
     }
     if (isTaskLockedByLevel) {
@@ -202,9 +203,9 @@ export default function UserDashboardPage() {
                 />
             )}
              {allTasksCompleted && (
-                <Card className="bg-gradient-green text-primary-foreground">
+                 <Card className="bg-gradient-green text-primary-foreground">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
+                        <CardTitle className="flex items-center gap-2 text-primary-foreground">
                             <CheckCircle className="h-5 w-5" />
                             All Tasks Completed!
                         </CardTitle>
@@ -255,6 +256,19 @@ export default function UserDashboardPage() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogAction onClick={() => setIsBalanceWarningOpen(false)}>OK</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        <AlertDialog open={isCompletionDialogOpen} onOpenChange={setIsCompletionDialogOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>All Tasks Completed!</AlertDialogTitle>
+                    <AlertDialogDescription>
+                       You have reached your daily task limit. Please come back tomorrow for more tasks.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogAction onClick={() => setIsCompletionDialogOpen(false)}>OK</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
