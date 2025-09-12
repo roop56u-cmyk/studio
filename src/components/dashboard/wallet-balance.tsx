@@ -41,13 +41,15 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
   const { handleMoveFunds, isFundMovementLocked } = useWallet();
   const [isInterestWarningOpen, setIsInterestWarningOpen] = useState(false);
   const [isTaskWarningOpen, setIsTaskWarningOpen] = useState(false);
+  const [isMiningWarningOpen, setIsMiningWarningOpen] = useState(false);
   
   const canMove = parseFloat(balance) > 0;
   
   const isInterestLockActive = isFundMovementLocked('interest');
   const isTaskLockActive = isFundMovementLocked('task');
+  const isMiningLockActive = isFundMovementLocked('mining');
 
-  const handleFundMovement = (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', fromAccount?: 'Task Rewards' | 'Interest Earnings') => {
+  const handleFundMovement = (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet' | 'Mining Pool', fromAccount?: 'Task Rewards' | 'Interest Earnings' | 'Mining Pool') => {
     
     const numericAmount = parseFloat(moveAmount);
     if (isNaN(numericAmount) || numericAmount <= 0) {
@@ -64,6 +66,11 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
     // Check task lock
     if ((destination === 'Task Rewards' || fromAccount === 'Task Rewards') && isTaskLockActive) {
       setIsTaskWarningOpen(true);
+      return;
+    }
+     // Check mining lock
+    if ((destination === 'Mining Pool' || fromAccount === 'Mining Pool') && isMiningLockActive) {
+      setIsMiningWarningOpen(true);
       return;
     }
 
@@ -111,6 +118,9 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
         )}
          {title === 'Task Rewards' && isTaskLockActive && (
             <p className="text-xs text-yellow-300 mt-1">Cannot move funds while tasks are in progress.</p>
+        )}
+         {title === 'Mining Pool' && isMiningLockActive && (
+            <p className="text-xs text-yellow-300 mt-1">Cannot move funds while mining package is active.</p>
         )}
       </CardContent>
        {(onMoveToMain || showMoveToOther) && (
@@ -177,6 +187,19 @@ export function WalletBalance({ title, description, balance = "0.00", onMoveToMa
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogAction onClick={() => setIsTaskWarningOpen(false)}>OK</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+     <AlertDialog open={isMiningWarningOpen} onOpenChange={setIsMiningWarningOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Action Locked</AlertDialogTitle>
+                <AlertDialogDescription>
+                    You cannot move funds while a mining package is active.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogAction onClick={() => setIsMiningWarningOpen(false)}>OK</AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>

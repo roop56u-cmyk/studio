@@ -149,6 +149,7 @@ export default function UserDashboardPage() {
             Welcome back! Here's your space to manage reviews.
           </p>
         </div>
+        
         {isPanelEnabled("dailyCheckIn") && dailyRewardState && dailyRewardState.isEnabled && (
             <Card className="bg-gradient-purple text-primary-foreground">
                 <CardHeader>
@@ -168,7 +169,7 @@ export default function UserDashboardPage() {
                 </CardFooter>
             </Card>
         )}
-        
+
         {isMiningEnabled && isPanelEnabled("miningMachine") && (
             <div className="space-y-4">
                 <MiningMachinePanel />
@@ -206,13 +207,12 @@ export default function UserDashboardPage() {
                     showMoveToOther={true}
                 />
             )}
-            {isPanelEnabled("walletBalances") && isMiningEnabled && (
+             {isPanelEnabled("walletBalances") && isMiningEnabled && (
                 <WalletBalance
-                    gradientClass="bg-gradient-yellow"
+                    gradientClass="bg-gradient-violet"
                     title="Mining Pool"
                     balance={miningPoolBalance.toFixed(2)}
                     description="Funds staked for token mining."
-                    onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Mining Pool')}
                 />
             )}
             {isPanelEnabled("interestCounter") && isInterestFeatureEnabled && (
