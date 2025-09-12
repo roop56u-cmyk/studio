@@ -74,6 +74,7 @@ export default function UserDashboardPage() {
 
   const [isTaskDialogOpen, setIsTaskDialogOpen] = React.useState(false);
   const [isBalanceWarningOpen, setIsBalanceWarningOpen] = React.useState(false);
+  const [isCompletionDialogOpen, setIsCompletionDialogOpen] = React.useState(false);
   const [warningMessage, setWarningMessage] = React.useState("");
 
   const minBalanceForCurrentLevel = minRequiredBalanceForLevel(currentLevel);
@@ -90,7 +91,8 @@ export default function UserDashboardPage() {
 
   const handleStartTasks = () => {
     if (allTasksCompleted) {
-        return; // Do nothing if all tasks are completed
+        setIsCompletionDialogOpen(true);
+        return;
     }
     if (isTaskLockedByLevel) {
         setWarningMessage(`Your Task Rewards balance is $${taskRewardsBalance.toFixed(2)}. You must have at least $${minRequiredBalanceForLevel(1).toLocaleString()} to start tasks.`);
@@ -202,7 +204,7 @@ export default function UserDashboardPage() {
             )}
              {isPanelEnabled("featureLock") && (
                 <>
-                    {(isTaskLockedByLevel && (isInterestLocked || !isInterestFeatureEnabled)) ? (
+                    {(isTaskLockedByLevel && (isInterestLocked || !isInterestFeatureEnabled)) && !allTasksCompleted ? (
                     <Card className="bg-gradient-slate text-slate-100">
                         <CardHeader>
                             <CardTitle className="flex items-center"><Lock className="mr-2 h-5 w-5" /> Features Locked</CardTitle>
@@ -218,19 +220,6 @@ export default function UserDashboardPage() {
                             <p className="text-xs text-muted-foreground">
                                 Your main balance is ${mainBalance.toFixed(2)}. Use the sidebar wallet to move funds.
                             </p>
-                        </CardContent>
-                    </Card>
-                    ) : allTasksCompleted ? (
-                    <Card className="bg-gradient-green text-green-950">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-green-950">
-                                <CheckCircle className="h-5 w-5"/>
-                                All Tasks Completed!
-                            </CardTitle>
-                            <CardDescription className="text-green-900">You have reached your daily limit.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-sm font-medium text-green-950">Please come back tomorrow for more tasks.</p>
                         </CardContent>
                     </Card>
                     ) : null}
@@ -253,6 +242,22 @@ export default function UserDashboardPage() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogAction onClick={() => setIsBalanceWarningOpen(false)}>OK</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+         <AlertDialog open={isCompletionDialogOpen} onOpenChange={setIsCompletionDialogOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center gap-2">
+                        <CheckCircle className="h-6 w-6 text-green-500" />
+                        All Tasks Completed!
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                        You have finished all your tasks for today. Please come back tomorrow for more.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogAction onClick={() => setIsCompletionDialogOpen(false)}>OK</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
