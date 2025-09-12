@@ -73,7 +73,12 @@ export default function UserDashboardPage() {
   React.useEffect(() => {
     const storedConfig = localStorage.getItem("user_panel_config");
     if (storedConfig) {
-      setPanelConfig(JSON.parse(storedConfig));
+      const parsedConfig = JSON.parse(storedConfig);
+      const newConfig = defaultPanelConfig.map(defaultPanel => {
+        const savedPanel = parsedConfig.find((p: PanelConfig) => p.id === defaultPanel.id);
+        return savedPanel ? savedPanel : defaultPanel;
+      });
+      setPanelConfig(newConfig);
     }
     const tokenomicsSettings = localStorage.getItem("tokenomics_settings");
     if (tokenomicsSettings) {
@@ -204,14 +209,7 @@ export default function UserDashboardPage() {
                     showMoveToOther={true}
                 />
             )}
-             {isPanelEnabled("walletBalances") && isMiningEnabled && (
-                <WalletBalance
-                    gradientClass="bg-gradient-violet"
-                    title="Mining Pool"
-                    balance={miningPoolBalance.toFixed(2)}
-                    description="Funds staked for token mining."
-                />
-            )}
+            
             {isPanelEnabled("interestCounter") && isInterestFeatureEnabled && (
                 <InterestCounterPanel
                     gradientClass="bg-gradient-sky"
@@ -258,6 +256,14 @@ export default function UserDashboardPage() {
 
         {isMiningEnabled && isPanelEnabled("miningMachine") && (
             <div className="space-y-4">
+                {isPanelEnabled("walletBalances") && isMiningEnabled && (
+                    <WalletBalance
+                        gradientClass="bg-gradient-violet"
+                        title="Mining Pool"
+                        balance={miningPoolBalance.toFixed(2)}
+                        description="Funds staked for token mining."
+                    />
+                )}
                 <MiningMachinePanel />
                 <TokenWalletPanel />
             </div>
