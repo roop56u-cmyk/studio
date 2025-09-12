@@ -89,6 +89,9 @@ export default function UserDashboardPage() {
   const isInterestLocked = currentLevel === 0 || !hasSufficientTotalBalance;
 
   const handleStartTasks = () => {
+    if (allTasksCompleted) {
+        return; // Do nothing if all tasks are completed
+    }
     if (isTaskLockedByLevel) {
         setWarningMessage(`Your Task Rewards balance is $${taskRewardsBalance.toFixed(2)}. You must have at least $${minRequiredBalanceForLevel(1).toLocaleString()} to start tasks.`);
         setIsBalanceWarningOpen(true);
@@ -218,16 +221,16 @@ export default function UserDashboardPage() {
                         </CardContent>
                     </Card>
                     ) : allTasksCompleted ? (
-                    <Card className="bg-gradient-green text-green-900">
+                    <Card className="bg-gradient-green text-green-950">
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
+                            <CardTitle className="flex items-center gap-2 text-green-950">
                                 <CheckCircle className="h-5 w-5"/>
                                 All Tasks Completed!
                             </CardTitle>
-                            <CardDescription className="text-green-800">You have reached your daily limit.</CardDescription>
+                            <CardDescription className="text-green-900">You have reached your daily limit.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-sm font-medium text-green-900">Please come back tomorrow for more tasks.</p>
+                            <p className="text-sm font-medium text-green-950">Please come back tomorrow for more tasks.</p>
                         </CardContent>
                     </Card>
                     ) : null}
