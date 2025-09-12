@@ -32,7 +32,7 @@ import {
 
 export function MiningPackageStore() {
   const [packages, setPackages] = useState<MiningPackage[]>([]);
-  const { purchaseMiningPackage, mainBalance, purchasedMiningPackages } = useWallet();
+  const { purchaseMiningPackage, mainBalance, purchasedMiningPackages, setIsInactiveWarningOpen } = useWallet();
   const { currentUser } = useAuth();
   const { toast } = useToast();
 
@@ -44,6 +44,10 @@ export function MiningPackageStore() {
   }, []);
 
   const handlePurchase = (pkg: MiningPackage) => {
+    if (currentUser?.status !== 'active') {
+        setIsInactiveWarningOpen(true);
+        return;
+    }
     if (mainBalance < pkg.price) {
         toast({ variant: 'destructive', title: 'Insufficient Funds', description: 'Not enough USDT in your main wallet.'});
         return;
@@ -107,4 +111,3 @@ export function MiningPackageStore() {
     </Dialog>
   );
 }
-
