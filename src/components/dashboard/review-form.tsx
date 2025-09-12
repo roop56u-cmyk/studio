@@ -105,16 +105,17 @@ export function ReviewForm({ onTaskLoaded, onTaskCompleted, onCancel }: ReviewFo
        });
 
       completeTask(task);
+      
+      // Directly call fetchTask to get the next one
+      if (tasksCompletedToday + 1 < dailyTaskQuota) {
+        await fetchTask();
+      } else {
+         setTask(null); // All tasks are done
+         if (onCancel) onCancel();
+      }
 
       if (onTaskCompleted) {
         onTaskCompleted();
-      }
-      
-      const newTasksCompleted = tasksCompletedToday + 1;
-
-      if (newTasksCompleted >= dailyTaskQuota) {
-          setTask(null); // All tasks are done
-          if (onCancel) onCancel(); // Close dialog if all tasks are done
       }
 
     } catch (error) {
