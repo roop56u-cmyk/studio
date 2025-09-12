@@ -418,26 +418,19 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             setNftCollection(getInitialState('nftCollection', []));
             setNftCooldowns(getInitialState('nftCooldowns', { failedSale: null, successfulSale: null }));
 
-            // Reset daily task count based on admin-defined time
-            const now = new Date();
-            const IST_OFFSET = 5.5 * 60 * 60 * 1000;
-            const nowIST = new Date(now.getTime() + IST_OFFSET);
-            const resetTime = getGlobalSetting('platform_task_reset_time', '09:30');
-            const [resetHourIST, resetMinuteIST] = resetTime.split(':').map(Number);
-            
-            let lastReset = new Date(nowIST);
-            lastReset.setUTCHours(resetHourIST, resetMinuteIST, 0, 0);
+            // Daily task reset logic
+            const lastResetDate = getInitialState('lastTaskResetDate', null);
+            const todayStr = new Date().toDateString(); // "Mon Aug 05 2024"
 
-            if (nowIST < lastReset) {
-                lastReset.setUTCDate(lastReset.getUTCDate() - 1);
-            }
-            const lastCompletionTime = getInitialState('lastCompletionTime', 0);
-            if (!lastCompletionTime || lastCompletionTime < lastReset.getTime()) {
+            if (lastResetDate !== todayStr) {
                 setTasksCompletedToday(0);
                 setPersistentState('tasksCompletedToday', 0);
+                // Optionally update the reset date here, or when the first task is done.
+                // We'll update it upon completion to be robust.
             } else {
                 setTasksCompletedToday(getInitialState('tasksCompletedToday', 0));
             }
+
 
             const currentMonth = new Date().getMonth();
             const lastMonth = getInitialState('lastWithdrawalMonth', -1);
@@ -839,7 +832,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       setPersistentState('taskRewardsBalance', newTaskRewardsBalance);
       setPersistentState('tasksCompletedToday', newTasksCompleted);
       setPersistentState('completedTasks', newCompletedTasks);
-      setPersistentState('lastCompletionTime', new Date().getTime());
+      setPersistentState('lastTaskResetDate', new Date().toDateString());
 
       // Correct Upline Commission Logic
       const uplineSettings = getGlobalSetting('upline_commission_settings', { enabled: false, rate: 0, requiredReferrals: 0 }, true);
