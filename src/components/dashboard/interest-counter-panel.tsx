@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -36,6 +37,17 @@ interface InterestCounterPanelProps {
 
 const DURATION_MS_24H = 24 * 60 * 60 * 1000; // 24 hours
 
+// Helper to parse duration string like "12h" or "10d" into hours
+const parseDuration = (durationStr: string): number => {
+    const value = parseInt(durationStr.slice(0, -1));
+    const unit = durationStr.slice(-1).toLowerCase();
+    if (isNaN(value)) return 0;
+    if (unit === 'd') return value * 24;
+    if (unit === 'h') return value;
+    return 0;
+};
+
+
 export function InterestCounterPanel({
   title,
   isLocked = false,
@@ -50,16 +62,16 @@ export function InterestCounterPanel({
     interestCounter,
     isLoading,
     interestEarningModel,
-    fixedTermDays,
+    fixedTermDurations,
   } = useWallet();
   
   const [isDurationDialogOpen, setIsDurationDialogOpen] = useState(false);
   const counter = interestCounter;
-  const { isRunning, startTime, durationDays } = counter;
+  const { isRunning, startTime, durationHours } = counter;
 
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
-  const totalDuration = (durationDays || 1) * DURATION_MS_24H;
+  const totalDuration = (durationHours || 24) * 60 * 60 * 1000;
 
   useEffect(() => {
     if (!isRunning || !startTime) {
@@ -116,8 +128,8 @@ export function InterestCounterPanel({
     }
   };
 
-  const handleDurationSelect = (days: number) => {
-    startCounter(counterType, days);
+  const handleDurationSelect = (hours: number) => {
+    startCounter(counterType, hours);
     setIsDurationDialogOpen(false);
   }
 
@@ -206,12 +218,12 @@ export function InterestCounterPanel({
                 </DialogDescription>
             </DialogHeader>
             <DialogFooter className="grid grid-cols-2 gap-2 sm:justify-start">
-                 {fixedTermDays.split(',').map(dayStr => {
-                     const day = parseInt(dayStr.trim());
-                     if (isNaN(day) || day <= 0) return null;
+                 {fixedTermDurations.split(',').map(dayStr => {
+                     const durationHours = parseDuration(dayStr.trim());
+                     if (durationHours <= 0) return null;
                      return (
-                        <Button key={day} onClick={() => handleDurationSelect(day)}>
-                           {day} Days
+                        <Button key={dayStr} onClick={() => handleDurationSelect(durationHours)}>
+                           {dayStr.trim()}
                         </Button>
                      )
                  })}

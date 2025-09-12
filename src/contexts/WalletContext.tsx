@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect, useMemo } from 'react';
@@ -125,7 +126,7 @@ interface WalletContextType {
   refundWithdrawal: (userEmail: string, withdrawalAmount: number) => void;
   isLoading: boolean;
   interestCounter: CounterState;
-  startCounter: (type: 'task' | 'interest', durationDays?: number) => void;
+  startCounter: (type: 'task' | 'interest', durationHours?: number) => void;
   claimAndRestartCounter: (type: 'task' | 'interest') => void;
   completeTask: (task: GenerateTaskSuggestionOutput) => void;
   withdrawalAddresses: WithdrawalAddress[];
@@ -158,7 +159,7 @@ interface WalletContextType {
   setIsInactiveWarningOpen: (isOpen: boolean) => void;
   isInterestFeatureEnabled: boolean;
   interestEarningModel: 'flexible' | 'fixed';
-  fixedTermDays: string;
+  fixedTermDurations: string;
   nftCollection: Nft[];
   mintNft: (achievementId: string, achievementTitle: string) => Promise<void>;
   sellNft: (nftId: string) => Promise<void>;
@@ -180,7 +181,7 @@ export type CounterType = 'task' | 'interest';
 export interface CounterState {
     isRunning: boolean;
     startTime: number | null;
-    durationDays?: number;
+    durationHours?: number;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -202,7 +203,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [isReferralApprovalRequired, setIsReferralApprovalRequired] = useState(false);
   const [isInterestFeatureEnabled, setIsInterestFeatureEnabled] = useState(true);
   const [interestEarningModel, setInterestEarningModel] = useState<'flexible' | 'fixed'>('flexible');
-  const [fixedTermDays, setFixedTermDays] = useState("10, 30, 60");
+  const [fixedTermDurations, setFixedTermDurations] = useState("12h, 1d, 10d, 30d");
   const [isNftFeatureEnabled, setIsNftFeatureEnabled] = useState(false);
   
   const getGlobalSetting = (key: string, defaultValue: any, isJson: boolean = false) => {
@@ -229,7 +230,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [deposits, setDeposits] = useState(0);
   const [withdrawals, setWithdrawals] = useState(0);
   const [activityHistory, setActivityHistory] = useState<Activity[]>([]);
-  const [interestCounter, setInterestCounter] = useState<CounterState>({ isRunning: false, startTime: null, durationDays: 1 });
+  const [interestCounter, setInterestCounter] = useState<CounterState>({ isRunning: false, startTime: null, durationHours: 24 });
   const [tasksCompletedToday, setTasksCompletedToday] = useState(0);
   const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>([]);
   const [withdrawalAddresses, setWithdrawalAddresses] = useState<WithdrawalAddress[]>([]);
@@ -395,7 +396,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setIsReferralApprovalRequired(getGlobalSetting('system_referral_bonus_approval_required', false, true));
         setIsInterestFeatureEnabled(getGlobalSetting('system_interest_enabled', true, true));
         setInterestEarningModel(getGlobalSetting('system_interest_model', 'flexible'));
-        setFixedTermDays(getGlobalSetting('system_interest_fixed_term_days', "10, 30, 60"));
+        setFixedTermDurations(getGlobalSetting('system_interest_fixed_term_durations', "12h, 1d, 10d, 30d"));
         setIsNftFeatureEnabled(getGlobalSetting('nft_market_settings', { isNftEnabled: false }, true).isNftEnabled);
 
         // User-specific data
@@ -406,7 +407,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             setDeposits(getInitialState('deposits', 0));
             setWithdrawals(getInitialState('withdrawals', 0));
             setActivityHistory(getInitialState('activityHistory', []));
-            setInterestCounter(getInitialState('interestCounter', { isRunning: false, startTime: null, durationDays: 1 }));
+            setInterestCounter(getInitialState('interestCounter', { isRunning: false, startTime: null, durationHours: 24 }));
             
             setCompletedTasks(getInitialState('completedTasks', []));
             setWithdrawalAddresses(getInitialState('withdrawalAddresses', []));
@@ -420,13 +421,11 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
             // Daily task reset logic
             const lastResetDate = getInitialState('lastTaskResetDate', null);
-            const todayStr = new Date().toDateString(); // "Mon Aug 05 2024"
+            const todayStr = new Date().toDateString(); 
 
             if (lastResetDate !== todayStr) {
                 setTasksCompletedToday(0);
                 setPersistentState('tasksCompletedToday', 0);
-                // Optionally update the reset date here, or when the first task is done.
-                // We'll update it upon completion to be robust.
             } else {
                 setTasksCompletedToday(getInitialState('tasksCompletedToday', 0));
             }
@@ -468,7 +467,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             // Reset state if no user is logged in
             setMainBalance(0); setTaskRewardsBalance(0); setInterestEarningsBalance(0);
             setDeposits(0); setWithdrawals(0); setActivityHistory([]);
-            setInterestCounter({ isRunning: false, startTime: null, durationDays: 1 });
+            setInterestCounter({ isRunning: false, startTime: null, durationHours: 24 });
             setTasksCompletedToday(0); setCompletedTasks([]); setWithdrawalAddresses([]);
             setMonthlyWithdrawalsCount(0); setLastWithdrawalMonth(-1);
             setActiveBoosters([]); setPurchasedBoosterIds([]); setPurchasedReferralsCount(0);
@@ -765,7 +764,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     }
   }
   
-  const startCounter = (type: CounterType, durationDays = 1) => {
+  const startCounter = (type: CounterType, durationHours = 24) => {
       const now = Date.now();
       if (type === 'interest') {
           const minBalanceForLevel1 = configuredLevels.find(l => l.level === 1)?.minAmount ?? 100;
@@ -773,8 +772,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
                 toast({ variant: "destructive", title: "Insufficient Funds", description: `A minimum of $${minBalanceForLevel1} is required in the interest wallet.` });
                 return;
            }
-          setInterestCounter({ isRunning: true, startTime: now, durationDays });
-          toast({ title: `Interest Earning Started`, description: `Your ${durationDays}-day earning cycle has begun.` });
+          setInterestCounter({ isRunning: true, startTime: now, durationHours });
+          toast({ title: `Interest Earning Started`, description: `Your ${durationHours}-hour earning cycle has begun.` });
       }
   };
   
@@ -793,16 +792,17 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       if(!currentUser) return;
       const dailyRate = currentRate / 100;
       if (type === 'interest') {
-          const lockedDuration = interestCounter.durationDays || 1;
-          const earnings = interestEarningsBalance * dailyRate * lockedDuration;
+          const lockedDurationHours = interestCounter.durationHours || 24;
+          const lockedDurationDays = lockedDurationHours / 24;
+          const earnings = interestEarningsBalance * dailyRate * lockedDurationDays;
           setInterestEarningsBalance(prev => prev + earnings);
           addActivity(currentUser.email, {
             type: 'Interest Claim',
-            description: `Claimed ${lockedDuration}-day interest`,
+            description: `Claimed ${lockedDurationHours}-hour interest`,
             amount: earnings,
             date: new Date().toISOString()
           });
-          setInterestCounter({ isRunning: false, startTime: null, durationDays: 1 }); 
+          setInterestCounter({ isRunning: false, startTime: null, durationHours: 24 }); 
           toast({ title: "Interest Claimed!", description: `You earned ${earnings.toFixed(4)} USDT. You can now move funds and restart the timer when ready.`});
       }
   };
@@ -1216,7 +1216,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setIsInactiveWarningOpen,
         isInterestFeatureEnabled,
         interestEarningModel,
-        fixedTermDays,
+        fixedTermDurations,
         nftCollection,
         mintNft,
         sellNft,

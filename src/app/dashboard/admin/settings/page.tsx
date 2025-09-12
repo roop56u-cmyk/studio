@@ -128,7 +128,7 @@ export default function SystemSettingsPage() {
     // Interest Model
     const [isInterestFeatureEnabled, setIsInterestFeatureEnabled] = useState(true);
     const [interestEarningModel, setInterestEarningModel] = useState("flexible"); // 'flexible' or 'fixed'
-    const [interestFixedTermDays, setInterestFixedTermDays] = useState("10, 30, 60");
+    const [interestFixedTermDurations, setInterestFixedTermDurations] = useState("12h, 1d, 10d, 30d");
 
     const [isClient, setIsClient] = useState(false);
 
@@ -182,8 +182,8 @@ export default function SystemSettingsPage() {
         if (savedInterestEnabled) setIsInterestFeatureEnabled(JSON.parse(savedInterestEnabled));
         const savedInterestModel = localStorage.getItem('system_interest_model');
         if (savedInterestModel) setInterestEarningModel(savedInterestModel);
-        const savedFixedTermDays = localStorage.getItem('system_interest_fixed_term_days');
-        if(savedFixedTermDays) setInterestFixedTermDays(savedFixedTermDays);
+        const savedFixedTermDurations = localStorage.getItem('system_interest_fixed_term_durations');
+        if(savedFixedTermDurations) setInterestFixedTermDurations(savedFixedTermDurations);
 
 
         setIsClient(true);
@@ -214,7 +214,7 @@ export default function SystemSettingsPage() {
         // Interest Model
         localStorage.setItem('system_interest_enabled', JSON.stringify(isInterestFeatureEnabled));
         localStorage.setItem('system_interest_model', interestEarningModel);
-        localStorage.setItem('system_interest_fixed_term_days', interestFixedTermDays);
+        localStorage.setItem('system_interest_fixed_term_durations', interestFixedTermDurations);
         
         toast({
             title: "Settings Saved",
@@ -365,15 +365,15 @@ export default function SystemSettingsPage() {
                  <p className="text-xs text-muted-foreground pl-6">Users lock their funds for a set number of days and claim total accumulated interest at the end.</p>
                  {interestEarningModel === 'fixed' && (
                     <div className="pl-6 pt-2 space-y-2">
-                        <Label htmlFor="fixed-term-days">Lock-in Durations (in days)</Label>
+                        <Label htmlFor="fixed-term-durations">Lock-in Durations (Days or Hours)</Label>
                         <Input 
-                            id="fixed-term-days"
-                            value={interestFixedTermDays}
-                            onChange={(e) => setInterestFixedTermDays(e.target.value)}
-                            placeholder="e.g., 10, 30, 60, 90"
+                            id="fixed-term-durations"
+                            value={interestFixedTermDurations}
+                            onChange={(e) => setInterestFixedTermDurations(e.target.value)}
+                            placeholder="e.g., 12h, 1d, 10d, 30d"
                             disabled={!isInterestFeatureEnabled}
                         />
-                        <p className="text-xs text-muted-foreground">Enter a comma-separated list of the available day options for users.</p>
+                        <p className="text-xs text-muted-foreground">Enter a comma-separated list of durations. Use 'h' for hours and 'd' for days.</p>
                     </div>
                  )}
             </RadioGroup>
