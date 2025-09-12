@@ -65,15 +65,19 @@ export default function UserDashboardPage() {
     claimDailyReward,
     setIsInactiveWarningOpen,
     isInterestFeatureEnabled,
-    isMiningEnabled,
   } = useWallet();
   const [panelConfig, setPanelConfig] = React.useState<PanelConfig[]>(defaultPanelConfig);
+  const [isMiningEnabled, setIsMiningEnabled] = React.useState(false);
 
 
   React.useEffect(() => {
     const storedConfig = localStorage.getItem("user_panel_config");
     if (storedConfig) {
       setPanelConfig(JSON.parse(storedConfig));
+    }
+    const tokenomicsSettings = localStorage.getItem("tokenomics_settings");
+    if (tokenomicsSettings) {
+      setIsMiningEnabled(JSON.parse(tokenomicsSettings).miningEnabled);
     }
   }, []);
 
@@ -169,7 +173,7 @@ export default function UserDashboardPage() {
                 </CardFooter>
             </Card>
         )}
-
+        
         {isMiningEnabled && isPanelEnabled("miningMachine") && (
             <div className="space-y-4">
                 <MiningMachinePanel />
