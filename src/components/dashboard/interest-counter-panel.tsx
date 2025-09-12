@@ -37,13 +37,14 @@ interface InterestCounterPanelProps {
 
 const DURATION_MS_24H = 24 * 60 * 60 * 1000; // 24 hours
 
-// Helper to parse duration string like "12h" or "10d" into hours
+// Helper to parse duration string like "30m", "12h", or "10d" into hours
 const parseDuration = (durationStr: string): number => {
-    const value = parseInt(durationStr.slice(0, -1));
+    const value = parseInt(durationStr);
     const unit = durationStr.slice(-1).toLowerCase();
     if (isNaN(value)) return 0;
     if (unit === 'd') return value * 24;
     if (unit === 'h') return value;
+    if (unit === 'm') return value / 60;
     return 0;
 };
 

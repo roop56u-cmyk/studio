@@ -128,7 +128,7 @@ export default function SystemSettingsPage() {
     // Interest Model
     const [isInterestFeatureEnabled, setIsInterestFeatureEnabled] = useState(true);
     const [interestEarningModel, setInterestEarningModel] = useState("flexible"); // 'flexible' or 'fixed'
-    const [interestFixedTermDurations, setInterestFixedTermDurations] = useState("12h, 1d, 10d, 30d");
+    const [interestFixedTermDurations, setInterestFixedTermDurations] = useState("30m, 12h, 1d, 10d, 30d");
 
     const [isClient, setIsClient] = useState(false);
 
@@ -365,15 +365,15 @@ export default function SystemSettingsPage() {
                  <p className="text-xs text-muted-foreground pl-6">Users lock their funds for a set number of days and claim total accumulated interest at the end.</p>
                  {interestEarningModel === 'fixed' && (
                     <div className="pl-6 pt-2 space-y-2">
-                        <Label htmlFor="fixed-term-durations">Lock-in Durations (Days or Hours)</Label>
+                        <Label htmlFor="fixed-term-durations">Lock-in Durations</Label>
                         <Input 
                             id="fixed-term-durations"
                             value={interestFixedTermDurations}
                             onChange={(e) => setInterestFixedTermDurations(e.target.value)}
-                            placeholder="e.g., 12h, 1d, 10d, 30d"
+                            placeholder="e.g., 30m, 12h, 1d, 10d"
                             disabled={!isInterestFeatureEnabled}
                         />
-                        <p className="text-xs text-muted-foreground">Enter a comma-separated list of durations. Use 'h' for hours and 'd' for days.</p>
+                        <p className="text-xs text-muted-foreground">Enter a comma-separated list of durations. Use 'm' for minutes, 'h' for hours, and 'd' for days.</p>
                     </div>
                  )}
             </RadioGroup>
