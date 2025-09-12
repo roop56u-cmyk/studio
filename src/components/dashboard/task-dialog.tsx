@@ -11,7 +11,7 @@ import {
 import { ReviewForm } from "./review-form";
 import { useWallet } from "@/contexts/WalletContext";
 import { Utensils, ShieldAlert } from "lucide-react";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { format } from "date-fns";
 import type { Task } from "@/lib/tasks";
 import { generateTaskSuggestion } from "@/app/actions";
@@ -68,7 +68,7 @@ export function TaskDialog({ open, onOpenChange }: TaskDialogProps) {
       setCurrentTask(null);
     }
   }, [open, allTasksCompleted, hasSufficientBalance, fetchTask]);
-
+  
   const handleReviewSubmit = () => {
     if (!currentTask) return;
 
