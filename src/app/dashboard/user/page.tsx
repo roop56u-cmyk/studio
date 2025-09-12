@@ -174,13 +174,6 @@ export default function UserDashboardPage() {
             </Card>
         )}
         
-        {isMiningEnabled && isPanelEnabled("miningMachine") && (
-            <div className="space-y-4">
-                <MiningMachinePanel />
-                <TokenWalletPanel />
-            </div>
-        )}
-        
         {isPanelEnabled("levelTiers") && (
          <div className="space-y-4">
             <LevelTiers 
@@ -262,6 +255,13 @@ export default function UserDashboardPage() {
                 </Card>
              )}
         </div>
+
+        {isMiningEnabled && isPanelEnabled("miningMachine") && (
+            <div className="space-y-4">
+                <MiningMachinePanel />
+                <TokenWalletPanel />
+            </div>
+        )}
       </div>
       
       <TaskDialog
