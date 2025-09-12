@@ -7,7 +7,7 @@ import { LevelTiers, Level, levels } from "@/components/dashboard/level-tiers";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Lock, CalendarCheck, PieChart, Trophy, CheckCircle } from "lucide-react";
+import { Lock, CalendarCheck, PieChart, Trophy, CheckCircle, Gem } from "lucide-react";
 import { TaskDialog } from "@/components/dashboard/task-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +22,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useWallet } from "@/contexts/WalletContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { MiningMachinePanel } from "@/components/dashboard/mining-machine-panel";
+import { TokenWalletPanel } from "@/components/dashboard/token-wallet-panel";
 
 
 
@@ -41,6 +43,7 @@ export const defaultPanelConfig: PanelConfig[] = [
     { id: "featureLock", name: "Feature Lock Notice", enabled: true },
     { id: "dailyCheckIn", name: "Daily Check-in", enabled: true },
     { id: "nftCollection", name: "NFT Collection", enabled: true },
+    { id: "miningMachine", name: "Token Mining", enabled: true },
 ];
 
 export default function UserDashboardPage() {
@@ -48,7 +51,8 @@ export default function UserDashboardPage() {
   const { 
     mainBalance, 
     taskRewardsBalance, 
-    interestEarningsBalance, 
+    interestEarningsBalance,
+    miningPoolBalance, 
     isLoading,
     dailyTaskQuota,
     tasksCompletedToday,
@@ -60,7 +64,8 @@ export default function UserDashboardPage() {
     dailyRewardState,
     claimDailyReward,
     setIsInactiveWarningOpen,
-    isInterestFeatureEnabled
+    isInterestFeatureEnabled,
+    isMiningEnabled,
   } = useWallet();
   const [panelConfig, setPanelConfig] = React.useState<PanelConfig[]>(defaultPanelConfig);
 
@@ -163,6 +168,12 @@ export default function UserDashboardPage() {
                 </CardFooter>
             </Card>
         )}
+        {isMiningEnabled && isPanelEnabled("miningMachine") && (
+            <div className="space-y-4">
+                <MiningMachinePanel />
+                <TokenWalletPanel />
+            </div>
+        )}
         {isPanelEnabled("levelTiers") && (
          <div className="space-y-4">
             <LevelTiers 
@@ -190,6 +201,15 @@ export default function UserDashboardPage() {
                     description="Balance from interest."
                     onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Interest Earnings')}
                     showMoveToOther={true}
+                />
+            )}
+            {isPanelEnabled("walletBalances") && isMiningEnabled && (
+                <WalletBalance
+                    gradientClass="bg-gradient-yellow"
+                    title="Mining Pool"
+                    balance={miningPoolBalance.toFixed(2)}
+                    description="Funds staked for token mining."
+                    onMoveToMain={(amount) => handleMoveFunds('Main Wallet', amount, 'Mining Pool')}
                 />
             )}
             {isPanelEnabled("interestCounter") && isInterestFeatureEnabled &&(
@@ -223,7 +243,7 @@ export default function UserDashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <p className="text-sm mb-2">
-                            To unlock Level 1, you must commit at least <strong>${minRequiredBalanceForLevel(1).toLocaleString()} to Task Rewards or Interest Earnings</strong>.
+                            To unlock Level 1, you must commit at least <strong>${minRequiredBalanceForLevel(1).toLocaleString()} to an earning pool</strong> (Tasks, Interest, or Mining).
                         </p>
                         <p className="text-sm mb-4">
                             Higher levels may also require inviting a certain number of friends. Check the level details above.

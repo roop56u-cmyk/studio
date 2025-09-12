@@ -89,6 +89,7 @@ import {
   CalendarClock,
   Layers,
   Sparkles,
+  Gem,
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -145,12 +146,13 @@ import ManageAboutUsPage from './admin/about-us/page';
 import AdminProfilePage from './admin/admin-profile/page';
 import SchedulingPage from './admin/scheduling/page';
 import ManageCommunityCommissionPage from './admin/community-commission/page';
+import TokenomicsPage from './admin/tokenomics/page';
 import ProfilePage from './profile/page';
 import SettingsPage from './settings/page';
 import type { Notice } from './admin/notices/page';
 
 
-type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'nftSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement' | 'purchaseHistory' | 'reimbursements' | 'aboutUs' | 'adminProfile' | 'scheduling' | 'communityCommission';
+type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'nftSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement' | 'purchaseHistory' | 'reimbursements' | 'aboutUs' | 'adminProfile' | 'scheduling' | 'communityCommission' | 'tokenomics';
 
 
 const adminPanelComponents: Record<PanelType, React.ComponentType> = {
@@ -180,6 +182,7 @@ const adminPanelComponents: Record<PanelType, React.ComponentType> = {
     adminProfile: AdminProfilePage,
     scheduling: SchedulingPage,
     communityCommission: ManageCommunityCommissionPage,
+    tokenomics: TokenomicsPage,
 };
 
 const adminPanelTitles: Record<PanelType, { title: string; description: string }> = {
@@ -209,6 +212,7 @@ const adminPanelTitles: Record<PanelType, { title: string; description: string }
     adminProfile: { title: "Admin Profile", description: "Manage the primary admin credentials." },
     scheduling: { title: "Scheduling", description: "View and manage platform time settings." },
     communityCommission: { title: "Community Commission", description: "Define rules for L4+ community commissions." },
+    tokenomics: { title: "Tokenomics", description: "Manage the platform's custom token and mining economy." },
 };
 
 function SidebarContentComponent({ 
@@ -229,7 +233,8 @@ function SidebarContentComponent({
     onAboutUsClick,
     onNftCollectionClick,
     onShowInterestWarning,
-    onShowTaskWarning
+    onShowTaskWarning,
+    onShowMiningWarning
 }: { 
     onRechargeClick: () => void, 
     onWithdrawalClick: () => void, 
@@ -248,7 +253,8 @@ function SidebarContentComponent({
     onAboutUsClick: () => void,
     onNftCollectionClick: () => void,
     onShowInterestWarning: () => void,
-    onShowTaskWarning: () => void
+    onShowTaskWarning: () => void,
+    onShowMiningWarning: () => void
 }) {
   const pathname = usePathname();
   const { logout, currentUser } = useAuth();
@@ -262,6 +268,7 @@ function SidebarContentComponent({
     tasksCompletedToday,
     dailyTaskQuota,
     isNftFeatureEnabled,
+    isMiningEnabled
   } = useWallet();
   const [amount, setAmount] = React.useState('');
   const [isClient, setIsClient] = React.useState(false);
@@ -276,13 +283,17 @@ function SidebarContentComponent({
   const isAdmin = currentUser?.isAdmin;
   const isMainAdminPage = pathname === "/dashboard/admin";
   
-  const handleLocalMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings') => {
+  const handleLocalMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings' | 'Mining Pool', fromAccount?: 'Task Rewards' | 'Interest Earnings' | 'Mining Pool') => {
     if (destination === 'Task Rewards' && isFundMovementLocked('task')) {
         onShowTaskWarning();
         return;
     }
     if (destination === 'Interest Earnings' && isFundMovementLocked('interest')) {
         onShowInterestWarning();
+        return;
+    }
+     if (destination === 'Mining Pool' && isFundMovementLocked('mining')) {
+        onShowMiningWarning();
         return;
     }
 
@@ -296,7 +307,7 @@ function SidebarContentComponent({
       return;
     }
 
-    handleMoveFunds(destination, numericAmount);
+    handleMoveFunds(destination, numericAmount, fromAccount);
     setAmount('');
   };
 
@@ -335,84 +346,63 @@ function SidebarContentComponent({
                         <span>User Management</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
-                 <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => onAdminPanelClick('taskManagement')} tooltip={{ children: "Manage Tasks" }}>
-                        <ListChecks />
-                        <span>Manage Tasks</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => onAdminPanelClick('questManagement')} tooltip={{ children: "Manage Quests" }}>
-                        <CheckCheck />
-                        <span>Manage Quests</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                 <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => onAdminPanelClick('boosterManagement')} tooltip={{ children: "Manage Boosters" }}>
-                        <Flame />
-                        <span>Manage Boosters</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                 <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => onAdminPanelClick('salaryManagement')} tooltip={{ children: "Manage Salary" }}>
-                        <Briefcase />
-                        <span>Manage Salary</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => onAdminPanelClick('reimbursements')} tooltip={{ children: "Reimbursements" }}>
-                        <HandCoins />
-                        <span>Reimbursements</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => onAdminPanelClick('purchaseHistory')} tooltip={{ children: "Purchase History" }}>
-                        <ShoppingCart />
-                        <span>Purchase History</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => onAdminPanelClick('levelManagement')} tooltip={{ children: "Manage Levels" }}>
-                        <SlidersHorizontal />
-                        <span>Manage Levels</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                 <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => onAdminPanelClick('teamCommission')} tooltip={{ children: "Team Commission" }}>
-                        <Percent />
-                        <span>Team Commission</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => onAdminPanelClick('uplineCommission')} tooltip={{ children: "Upline Commission" }}>
-                        <ArrowUp />
-                        <span>Upline Commission</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => onAdminPanelClick('communityCommission')} tooltip={{ children: "Community Commission" }}>
-                        <Layers />
-                        <span>Community Commission</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                 <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => onAdminPanelClick('dailyRewards')} tooltip={{ children: "Daily Rewards" }}>
-                        <CalendarDays />
-                        <span>Daily Rewards</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => onAdminPanelClick('teamRewards')} tooltip={{ children: "Team Rewards" }}>
-                        <Award />
-                        <span>Team Rewards</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => onAdminPanelClick('teamSizeRewards')} tooltip={{ children: "Team Size Rewards" }}>
-                        <Trophy />
-                        <span>Team Size Rewards</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
+                <Collapsible>
+                    <CollapsibleTrigger asChild>
+                        <SidebarMenuButton>
+                            <Settings />
+                            <span>Platform Settings</span>
+                            <ChevronDown className="ml-auto h-4 w-4 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                        </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pl-4">
+                        <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('tokenomics')} tooltip={{ children: "Tokenomics" }}><Gem /><span>Tokenomics</span></SidebarMenuButton></SidebarMenuItem>
+                        <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('levelManagement')} tooltip={{ children: "Manage Levels" }}><SlidersHorizontal /><span>Manage Levels</span></SidebarMenuButton></SidebarMenuItem>
+                        <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('taskManagement')} tooltip={{ children: "Manage Tasks" }}><ListChecks /><span>Manage Tasks</span></SidebarMenuButton></SidebarMenuItem>
+                        <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('questManagement')} tooltip={{ children: "Manage Quests" }}><CheckCheck /><span>Manage Quests</span></SidebarMenuButton></SidebarMenuItem>
+                        <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('boosterManagement')} tooltip={{ children: "Manage Boosters" }}><Flame /><span>Manage Boosters</span></SidebarMenuButton></SidebarMenuItem>
+                        <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('dailyRewards')} tooltip={{ children: "Daily Rewards" }}><CalendarDays /><span>Daily Rewards</span></SidebarMenuButton></SidebarMenuItem>
+                        <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('reimbursements')} tooltip={{ children: "Reimbursements" }}><HandCoins /><span>Reimbursements</span></SidebarMenuButton></SidebarMenuItem>
+                        <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('purchaseHistory')} tooltip={{ children: "Purchase History" }}><ShoppingCart /><span>Purchase History</span></SidebarMenuButton></SidebarMenuItem>
+                    </CollapsibleContent>
+                </Collapsible>
+
+                <Collapsible>
+                    <CollapsibleTrigger asChild>
+                        <SidebarMenuButton>
+                            <Users />
+                            <span>Team & Commissions</span>
+                            <ChevronDown className="ml-auto h-4 w-4 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                        </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pl-4">
+                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('teamCommission')} tooltip={{ children: "Team Commission" }}><Percent /><span>Team Commission</span></SidebarMenuButton></SidebarMenuItem>
+                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('uplineCommission')} tooltip={{ children: "Upline Commission" }}><ArrowUp /><span>Upline Commission</span></SidebarMenuButton></SidebarMenuItem>
+                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('communityCommission')} tooltip={{ children: "Community Commission" }}><Layers /><span>Community Commission</span></SidebarMenuButton></SidebarMenuItem>
+                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('teamRewards')} tooltip={{ children: "Team Rewards" }}><Award /><span>Team Rewards</span></SidebarMenuButton></SidebarMenuItem>
+                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('teamSizeRewards')} tooltip={{ children: "Team Size Rewards" }}><Trophy /><span>Team Size Rewards</span></SidebarMenuButton></SidebarMenuItem>
+                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('salaryManagement')} tooltip={{ children: "Manage Salary" }}><Briefcase /><span>Manage Salary</span></SidebarMenuButton></SidebarMenuItem>
+                    </CollapsibleContent>
+                </Collapsible>
+                
+                <Collapsible>
+                    <CollapsibleTrigger asChild>
+                        <SidebarMenuButton>
+                            <Settings2 />
+                            <span>System & UI</span>
+                            <ChevronDown className="ml-auto h-4 w-4 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                        </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pl-4">
+                        <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('systemSettings')} tooltip={{ children: "System Settings" }}><Settings2 /><span>System Settings</span></SidebarMenuButton></SidebarMenuItem>
+                        <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('websiteUI')} tooltip={{ children: "Website & UI" }}><Palette /><span>Website & UI</span></SidebarMenuButton></SidebarMenuItem>
+                        <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('userPanels')} tooltip={{ children: "User Panels" }}><LayoutGrid /><span>User Panels</span></SidebarMenuButton></SidebarMenuItem>
+                        <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('nftSettings')} tooltip={{ children: "NFT Settings" }}><Sparkles /><span>NFT Settings</span></SidebarMenuButton></SidebarMenuItem>
+                        <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('rechargeAddresses')} tooltip={{ children: "Recharge Addresses" }}><Network /><span>Recharge Addresses</span></SidebarMenuButton></SidebarMenuItem>
+                        <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('aboutUs')} tooltip={{ children: "About Us Page" }}><Info /><span>About Us Page</span></SidebarMenuButton></SidebarMenuItem>
+                        <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('scheduling')} tooltip={{ children: "Scheduling" }}><CalendarClock /><span>Scheduling</span></SidebarMenuButton></SidebarMenuItem>
+                    </CollapsibleContent>
+                </Collapsible>
+                 
                  <SidebarMenuItem>
                     <SidebarMenuButton onClick={() => onAdminPanelClick('noticeManagement')} tooltip={{ children: "Manage Notices" }}>
                         <Megaphone />
@@ -423,48 +413,6 @@ function SidebarContentComponent({
                     <SidebarMenuButton onClick={() => onAdminPanelClick('messageManagement')} tooltip={{ children: "Manage Messages" }}>
                         <MessageSquare />
                         <span>Manage Messages</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => onAdminPanelClick('rechargeAddresses')} tooltip={{ children: "Recharge Addresses" }}>
-                        <Network />
-                        <span>Recharge Addresses</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                 <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => onAdminPanelClick('aboutUs')} tooltip={{ children: "About Us Page" }}>
-                        <Info />
-                        <span>About Us Page</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                 <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => onAdminPanelClick('scheduling')} tooltip={{ children: "Scheduling" }}>
-                        <CalendarClock />
-                        <span>Scheduling</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => onAdminPanelClick('userPanels')} tooltip={{ children: "User Panels" }}>
-                        <LayoutGrid />
-                        <span>User Panels</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => onAdminPanelClick('websiteUI')} tooltip={{ children: "Website & UI" }}>
-                        <Palette />
-                        <span>Website &amp; UI</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                 <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => onAdminPanelClick('nftSettings')} tooltip={{ children: "NFT Settings" }}>
-                        <Sparkles />
-                        <span>NFT Settings</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                 <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => onAdminPanelClick('systemSettings')} tooltip={{ children: "System Settings" }}>
-                        <Settings2 />
-                        <span>System Settings</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
@@ -629,6 +577,12 @@ function SidebarContentComponent({
                                     <TrendingUp className="h-4 w-4 text-accent" />
                                     <span>Move to Interest</span>
                                 </Button>
+                                {isMiningEnabled && (
+                                <Button variant="outline" size="sm" className="justify-start gap-2 w-full" onClick={() => handleLocalMoveFunds("Mining Pool")}>
+                                    <Gem className="h-4 w-4 text-yellow-500" />
+                                    <span>Move to Mining Pool</span>
+                                </Button>
+                                )}
                             </div>
                         </div>
                     </CollapsibleContent>
@@ -742,7 +696,8 @@ export default function DashboardLayout({
     // Main wallet warning popups
     const [isInterestMoveWarningOpen, setIsInterestMoveWarningOpen] = React.useState(false);
     const [isTaskMoveWarningOpen, setIsTaskMoveWarningOpen] = React.useState(false);
-
+    const [isMiningMoveWarningOpen, setIsMiningMoveWarningOpen] = React.useState(false);
+    
     useTeamCommission();
 
     React.useEffect(() => {
@@ -849,6 +804,7 @@ export default function DashboardLayout({
                 onNftCollectionClick={() => setIsNftCollectionOpen(true)}
                 onShowInterestWarning={() => setIsInterestMoveWarningOpen(true)}
                 onShowTaskWarning={() => setIsTaskMoveWarningOpen(true)}
+                onShowMiningWarning={() => setIsMiningMoveWarningOpen(true)}
             />
           </Sidebar>
           <div className={cn("flex flex-1 flex-col transition-colors duration-1000", backgroundClass)} style={backgroundStyle}>
@@ -1159,6 +1115,19 @@ export default function DashboardLayout({
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogAction onClick={() => setIsTaskMoveWarningOpen(false)}>OK</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        <AlertDialog open={isMiningMoveWarningOpen} onOpenChange={setIsMiningMoveWarningOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Action Locked</AlertDialogTitle>
+                    <AlertDialogDescription>
+                       You cannot move funds to the Mining Pool while a mining package is active. Please wait for the current package to expire.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogAction onClick={() => setIsMiningMoveWarningOpen(false)}>OK</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>

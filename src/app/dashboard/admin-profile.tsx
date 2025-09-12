@@ -12,13 +12,22 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Calendar, Wallet, ArrowUpCircle, ArrowDownCircle, Users as UsersIcon, Gift, UserCheck, Briefcase, HandCoins } from "lucide-react";
+import { User, Calendar, Wallet, ArrowUpCircle, ArrowDownCircle, Users as UsersIcon, Gift, UserCheck, Briefcase, HandCoins, Paperclip } from "lucide-react";
 import { useRequests } from "@/contexts/RequestContext";
 import { Skeleton } from "../ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { levels as defaultLevels, Level } from "./level-tiers";
 import { useTeam } from "@/contexts/TeamContext";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import Image from "next/image";
+
 
 type RequestStatus = 'Pending' | 'Approved' | 'Declined' | 'On Hold';
 type RequestType = 'Finance' | 'Rewards';
@@ -172,13 +181,30 @@ export function AdminProfile() {
                   <div key={request.id} className="border rounded-lg p-4 space-y-4 bg-card">
                     {/* Header */}
                     <div>
-                        <div className="flex items-center gap-2">
-                            <div className={cn("flex h-6 w-6 items-center justify-center rounded-full", getIconBg())}>
-                                {getIcon()}
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className={cn("flex h-6 w-6 items-center justify-center rounded-full", getIconBg())}>
+                                    {getIcon()}
+                                </div>
+                                <h3 className="text-lg font-bold text-foreground">
+                                    {request.type} Request
+                                </h3>
                             </div>
-                            <h3 className="text-lg font-bold text-foreground">
-                                {request.type} Request
-                            </h3>
+                             {request.imageUrl && (
+                                <Dialog>
+                                    <DialogTrigger asChild>
+                                         <Button variant="outline" size="sm">
+                                            <Paperclip className="mr-2 h-4 w-4" /> View Proof
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="max-w-xl">
+                                        <DialogHeader>
+                                            <DialogTitle>Recharge Proof</DialogTitle>
+                                        </DialogHeader>
+                                        <Image src={request.imageUrl} alt="Recharge Proof" width={800} height={600} className="w-full h-auto rounded-md" unoptimized />
+                                    </DialogContent>
+                                </Dialog>
+                            )}
                         </div>
                         <p className="text-sm text-muted-foreground font-mono mt-1">{request.id}</p>
                     </div>
