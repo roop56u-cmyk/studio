@@ -407,7 +407,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             setWithdrawals(getInitialState('withdrawals', 0));
             setActivityHistory(getInitialState('activityHistory', []));
             setInterestCounter(getInitialState('interestCounter', { isRunning: false, startTime: null, durationDays: 1 }));
-            setTasksCompletedToday(getInitialState('tasksCompletedToday', 0));
+            
             setCompletedTasks(getInitialState('completedTasks', []));
             setWithdrawalAddresses(getInitialState('withdrawalAddresses', []));
             setActiveBoosters(getInitialState('activeBoosters', []));
