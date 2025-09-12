@@ -52,7 +52,6 @@ export default function UserDashboardPage() {
     mainBalance, 
     taskRewardsBalance, 
     interestEarningsBalance,
-    miningPoolBalance, 
     isLoading,
     dailyTaskQuota,
     tasksCompletedToday,
@@ -241,7 +240,7 @@ export default function UserDashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <p className="text-sm mb-2">
-                            To unlock Level 1, you must commit at least <strong>${minRequiredBalanceForLevel(1).toLocaleString()} to an earning pool</strong> (Tasks, Interest, or Mining).
+                            To unlock Level 1, you must commit at least <strong>${minRequiredBalanceForLevel(1).toLocaleString()} to an earning pool</strong> (Tasks or Interest).
                         </p>
                         <p className="text-sm mb-4">
                             Higher levels may also require inviting a certain number of friends. Check the level details above.
@@ -256,14 +255,6 @@ export default function UserDashboardPage() {
 
         {isMiningEnabled && isPanelEnabled("miningMachine") && (
             <div className="space-y-4">
-                {isPanelEnabled("walletBalances") && isMiningEnabled && (
-                    <WalletBalance
-                        gradientClass="bg-gradient-violet"
-                        title="Mining Pool"
-                        balance={miningPoolBalance.toFixed(2)}
-                        description="Funds staked for token mining."
-                    />
-                )}
                 <MiningMachinePanel />
                 <TokenWalletPanel />
             </div>
