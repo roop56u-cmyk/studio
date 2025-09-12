@@ -74,7 +74,6 @@ export default function UserDashboardPage() {
 
   const [isTaskDialogOpen, setIsTaskDialogOpen] = React.useState(false);
   const [isBalanceWarningOpen, setIsBalanceWarningOpen] = React.useState(false);
-  const [isCompletionDialogOpen, setIsCompletionDialogOpen] = React.useState(false);
   const [warningMessage, setWarningMessage] = React.useState("");
 
   const minBalanceForCurrentLevel = minRequiredBalanceForLevel(currentLevel);
@@ -91,7 +90,7 @@ export default function UserDashboardPage() {
 
   const handleStartTasks = () => {
     if (allTasksCompleted) {
-        setIsCompletionDialogOpen(true);
+        // Do nothing, the banner is already showing
         return;
     }
     if (isTaskLockedByLevel) {
@@ -202,6 +201,20 @@ export default function UserDashboardPage() {
                     counterType="interest"
                 />
             )}
+             {allTasksCompleted && (
+                <Card className="bg-gradient-green text-primary-foreground">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <CheckCircle className="h-5 w-5" />
+                            All Tasks Completed!
+                        </CardTitle>
+                        <CardDescription className="text-primary-foreground/80">You have reached your daily limit.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm text-primary-foreground/90">Please come back tomorrow for more tasks.</p>
+                    </CardContent>
+                </Card>
+            )}
              {isPanelEnabled("featureLock") && (
                 <>
                     {(isTaskLockedByLevel && (isInterestLocked || !isInterestFeatureEnabled)) && !allTasksCompleted ? (
@@ -242,22 +255,6 @@ export default function UserDashboardPage() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogAction onClick={() => setIsBalanceWarningOpen(false)}>OK</AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-         <AlertDialog open={isCompletionDialogOpen} onOpenChange={setIsCompletionDialogOpen}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle className="flex items-center gap-2">
-                        <CheckCircle className="h-6 w-6 text-green-500" />
-                        All Tasks Completed!
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                        You have finished all your tasks for today. Please come back tomorrow for more.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogAction onClick={() => setIsCompletionDialogOpen(false)}>OK</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
