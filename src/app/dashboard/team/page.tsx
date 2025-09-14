@@ -12,7 +12,7 @@ import {
   CardTitle,
   CardFooter
 } from "@/components/ui/card";
-import { Users, DollarSign, UserPlus, Briefcase, Activity, Award, X, Trophy, ArrowUp, Info, HandCoins, UserCheck, TrendingUp, AlertTriangle, Layers } from "lucide-react";
+import { Users, DollarSign, UserPlus, Briefcase, Activity, Award, X, Trophy, ArrowUp, Info, HandCoins, UserCheck, TrendingUp, AlertTriangle, Layers, Lock } from "lucide-react";
 import { useTeam } from "@/contexts/TeamContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -381,9 +381,9 @@ export default function TeamPage() {
   }
 
   const teamLevels = [
-      { title: "Level 1", data: teamData.level1, rate: commissionRates.level1, enabled: commissionEnabled.level1 },
-      { title: "Level 2", data: teamData.level2, rate: commissionRates.level2, enabled: commissionEnabled.level2 },
-      { title: "Level 3", data: teamData.level3, rate: commissionRates.level3, enabled: commissionEnabled.level3 },
+      { title: "Level 1", data: teamData.level1, rate: commissionRates.level1, enabled: commissionEnabled.level1, unlockReq: 1 },
+      { title: "Level 2", data: teamData.level2, rate: commissionRates.level2, enabled: commissionEnabled.level2, unlockReq: 2 },
+      { title: "Level 3", data: teamData.level3, rate: commissionRates.level3, enabled: commissionEnabled.level3, unlockReq: 3 },
   ];
   
   const availableTeamRewards = teamRewards.filter(r => (r.level === 0 || r.level <= currentLevel) && (!r.userEmail || r.userEmail === currentUser?.email));
@@ -488,11 +488,16 @@ export default function TeamPage() {
                 )}
                 
                 <div className="grid md:grid-cols-2 gap-4">
-                    {teamLevels.map(level => (
+                    {teamLevels.map(level => {
+                        const isUnlocked = activeL1Referrals >= level.unlockReq;
+                        return (
                         <Card key={level.title}>
                             <CardHeader>
                                 <div className="flex items-center justify-between">
-                                    <CardTitle className="text-lg">{level.title}</CardTitle>
+                                    <div className="flex items-center gap-2">
+                                        <CardTitle className="text-lg">{level.title}</CardTitle>
+                                        {!isUnlocked && <Lock className="h-4 w-4 text-muted-foreground" />}
+                                    </div>
                                     {level.enabled ? (
                                         <span className="text-sm font-bold text-primary">{level.rate}%</span>
                                     ) : (
@@ -515,7 +520,7 @@ export default function TeamPage() {
                                 </div>
                                 <div className="flex items-center">
                                     <DollarSign className="h-5 w-5 text-muted-foreground mr-3" />
-                                    <p className="font-semibold">${currentUser?.status === 'active' ? (level.data.commission * (level.rate / 100)).toFixed(2) : '0.00'} Commission</p>
+                                    <p className="font-semibold">${currentUser?.status === 'active' && isUnlocked ? (level.data.commission * (level.rate / 100)).toFixed(2) : '0.00'} Commission</p>
                                 </div>
                                 <Accordion type="single" collapsible className="w-full">
                                     <AccordionItem value="item-1">
@@ -543,7 +548,8 @@ export default function TeamPage() {
                                     </Accordion>
                             </CardContent>
                         </Card>
-                    ))}
+                        )
+                    })}
                     {shouldShowCommunityCommission && (
                         <>
                             <Card>
