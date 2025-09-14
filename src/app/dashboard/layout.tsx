@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Link from "next/link";
@@ -133,6 +132,7 @@ import ManageUserPanelsPage from "./admin/user-panels/page";
 import WebsiteUIPage from "./admin/website-ui/page";
 import SystemSettingsPage from "./admin/settings/page";
 import NftSettingsPage from './admin/nft-settings/page';
+import NftStakingPage from './admin/nft-staking/page';
 import ActivityLogPage from "./admin/activity-log/page";
 import ManageRechargeAddressesPage from "./admin/recharge-addresses/page";
 import ManageTeamRewardsPage from "./admin/team-rewards/page";
@@ -153,7 +153,7 @@ import SettingsPage from './settings/page';
 import type { Notice } from './admin/notices/page';
 
 
-type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'nftSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement' | 'purchaseHistory' | 'reimbursements' | 'aboutUs' | 'adminProfile' | 'scheduling' | 'communityCommission' | 'tokenomics';
+type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'nftSettings' | 'nftStaking' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement' | 'purchaseHistory' | 'reimbursements' | 'aboutUs' | 'adminProfile' | 'scheduling' | 'communityCommission' | 'tokenomics';
 
 
 const adminPanelComponents: Record<PanelType, React.ComponentType> = {
@@ -169,6 +169,7 @@ const adminPanelComponents: Record<PanelType, React.ComponentType> = {
     websiteUI: WebsiteUIPage,
     systemSettings: SystemSettingsPage,
     nftSettings: NftSettingsPage,
+    nftStaking: NftStakingPage,
     activityLog: ActivityLogPage,
     inbox: InboxPanel,
     rechargeAddresses: ManageRechargeAddressesPage,
@@ -199,6 +200,7 @@ const adminPanelTitles: Record<PanelType, { title: string; description: string }
     websiteUI: { title: "Website & UI", description: "Customize the look and feel of the website." },
     systemSettings: { title: "System Settings", description: "Configure global application settings." },
     nftSettings: { title: "NFT Settings", description: "Configure the NFT circulation market." },
+    nftStaking: { title: "NFT Staking", description: "Manage NFT staking packages." },
     activityLog: { title: "Activity Log", description: "Review administrative actions." },
     inbox: { title: "Inbox", description: "View and respond to user messages." },
     rechargeAddresses: { title: "Recharge Addresses", description: "Manage official deposit addresses." },
@@ -234,8 +236,7 @@ function SidebarContentComponent({
     onAboutUsClick,
     onNftCollectionClick,
     onShowInterestWarning,
-    onShowTaskWarning,
-    onShowMiningWarning
+    onShowTaskWarning
 }: { 
     onRechargeClick: () => void, 
     onWithdrawalClick: () => void, 
@@ -254,8 +255,7 @@ function SidebarContentComponent({
     onAboutUsClick: () => void,
     onNftCollectionClick: () => void,
     onShowInterestWarning: () => void,
-    onShowTaskWarning: () => void,
-    onShowMiningWarning: () => void
+    onShowTaskWarning: () => void
 }) {
   const pathname = usePathname();
   const { logout, currentUser } = useAuth();
@@ -268,8 +268,7 @@ function SidebarContentComponent({
     isFundMovementLocked,
     tasksCompletedToday,
     dailyTaskQuota,
-    isNftFeatureEnabled,
-    isMiningEnabled
+    isNftFeatureEnabled
   } = useWallet();
   const [amount, setAmount] = React.useState('');
   const [isClient, setIsClient] = React.useState(false);
@@ -284,17 +283,13 @@ function SidebarContentComponent({
   const isAdmin = currentUser?.isAdmin;
   const isMainAdminPage = pathname === "/dashboard/admin";
   
-  const handleLocalMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings' | 'Mining Pool', fromAccount?: 'Task Rewards' | 'Interest Earnings' | 'Mining Pool') => {
+  const handleLocalMoveFunds = (destination: 'Task Rewards' | 'Interest Earnings', fromAccount?: 'Task Rewards' | 'Interest Earnings') => {
     if (destination === 'Task Rewards' && isFundMovementLocked('task')) {
         onShowTaskWarning();
         return;
     }
     if (destination === 'Interest Earnings' && isFundMovementLocked('interest')) {
         onShowInterestWarning();
-        return;
-    }
-     if (destination === 'Mining Pool' && isFundMovementLocked('mining')) {
-        onShowMiningWarning();
         return;
     }
 
@@ -398,6 +393,7 @@ function SidebarContentComponent({
                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('websiteUI')} tooltip={{ children: "Website & UI" }}><Palette /><span>Website & UI</span></SidebarMenuButton></SidebarMenuItem>
                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('userPanels')} tooltip={{ children: "User Panels" }}><LayoutGrid /><span>User Panels</span></SidebarMenuButton></SidebarMenuItem>
                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('nftSettings')} tooltip={{ children: "NFT Settings" }}><Sparkles /><span>NFT Settings</span></SidebarMenuButton></SidebarMenuItem>
+                        <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('nftStaking')} tooltip={{ children: "NFT Staking" }}><Layers /><span>NFT Staking</span></SidebarMenuButton></SidebarMenuItem>
                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('rechargeAddresses')} tooltip={{ children: "Recharge Addresses" }}><Network /><span>Recharge Addresses</span></SidebarMenuButton></SidebarMenuItem>
                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('aboutUs')} tooltip={{ children: "About Us Page" }}><Info /><span>About Us Page</span></SidebarMenuButton></SidebarMenuItem>
                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('scheduling')} tooltip={{ children: "Scheduling" }}><CalendarClock /><span>Scheduling</span></SidebarMenuButton></SidebarMenuItem>
@@ -691,7 +687,6 @@ export default function DashboardLayout({
     // Main wallet warning popups
     const [isInterestMoveWarningOpen, setIsInterestMoveWarningOpen] = React.useState(false);
     const [isTaskMoveWarningOpen, setIsTaskMoveWarningOpen] = React.useState(false);
-    const [isMiningMoveWarningOpen, setIsMiningMoveWarningOpen] = React.useState(false);
     
     useTeamCommission();
 
@@ -799,7 +794,6 @@ export default function DashboardLayout({
                 onNftCollectionClick={() => setIsNftCollectionOpen(true)}
                 onShowInterestWarning={() => setIsInterestMoveWarningOpen(true)}
                 onShowTaskWarning={() => setIsTaskMoveWarningOpen(true)}
-                onShowMiningWarning={() => setIsMiningMoveWarningOpen(true)}
             />
           </Sidebar>
           <div className={cn("flex flex-1 flex-col transition-colors duration-1000", backgroundClass)} style={backgroundStyle}>
@@ -1113,19 +1107,6 @@ export default function DashboardLayout({
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
-        <AlertDialog open={isMiningMoveWarningOpen} onOpenChange={setIsMiningMoveWarningOpen}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Action Locked</AlertDialogTitle>
-                    <AlertDialogDescription>
-                       You cannot move funds to the Mining Pool while a mining package is active. Please wait for the current package to expire.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogAction onClick={() => setIsMiningMoveWarningOpen(false)}>OK</AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
         <AlertDialog open={isInactiveWarningOpen} onOpenChange={setIsInactiveWarningOpen}>
             <AlertDialogContent>
                 <AlertDialogHeader>
@@ -1145,4 +1126,3 @@ export default function DashboardLayout({
       </SidebarProvider>
   );
 }
-

@@ -252,7 +252,6 @@ export default function UserDashboardPage() {
                 </Card>
              )}
         </div>
-
         {isMiningEnabled && isPanelEnabled("miningMachine") && (
             <div className="space-y-4">
                 <MiningMachinePanel />
