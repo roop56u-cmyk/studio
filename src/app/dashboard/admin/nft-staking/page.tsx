@@ -45,12 +45,19 @@ export type NftStakingPackage = {
   enabled: boolean;
 };
 
+// Helper to convert total hours into days, hours, minutes object
+const getHoursParts = (totalHours: number) => {
+    const totalMinutes = Math.round(totalHours * 60);
+    const days = Math.floor(totalMinutes / (24 * 60));
+    const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+    const minutes = totalMinutes % 60;
+    return { days, hours, minutes };
+};
+
 // Helper to format duration for display
 const formatDuration = (totalHours: number) => {
     if (totalHours <= 0) return 'Invalid duration';
-    const days = Math.floor(totalHours / 24);
-    const hours = Math.floor(totalHours % 24);
-    const minutes = Math.round((totalHours * 60) % 60);
+    const { days, hours, minutes } = getHoursParts(totalHours);
     const parts = [];
     if (days > 0) parts.push(`${days}d`);
     if (hours > 0) parts.push(`${hours}h`);
@@ -69,15 +76,17 @@ const PackageForm = ({
   onCancel: () => void;
 }) => {
   const [name, setName] = useState(pkg?.name || "");
-  const [days, setDays] = useState(pkg?.durationHours ? Math.floor(pkg.durationHours / 24) : 7);
-  const [hours, setHours] = useState(pkg?.durationHours ? pkg.durationHours % 24 : 0);
+  const initialDuration = pkg?.durationHours ? getHoursParts(pkg.durationHours) : { days: 7, hours: 0, minutes: 0 };
+  const [days, setDays] = useState(initialDuration.days);
+  const [hours, setHours] = useState(initialDuration.hours);
+  const [minutes, setMinutes] = useState(initialDuration.minutes);
   const [rewardRatePercent, setRewardRatePercent] = useState(pkg?.rewardRatePercent || 5);
   const [fixedTokenBonus, setFixedTokenBonus] = useState(pkg?.fixedTokenBonus || 10);
   const [nftValue, setNftValue] = useState(100); // For calculator
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const totalDurationInHours = (days * 24) + hours;
+    const totalDurationInHours = (days * 24) + hours + (minutes / 60);
     if (!name || totalDurationInHours <= 0 || rewardRatePercent < 0 || fixedTokenBonus < 0) {
       alert("Please fill all fields with valid, non-negative values.");
       return;
@@ -101,7 +110,7 @@ const PackageForm = ({
       </div>
       <div className="space-y-2">
         <Label>Duration</Label>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
             <div>
                  <Label htmlFor="duration-days" className="text-xs text-muted-foreground">Days</Label>
                 <Input id="duration-days" type="number" value={days} onChange={e => setDays(Number(e.target.value))} min="0" />
@@ -109,6 +118,10 @@ const PackageForm = ({
              <div>
                  <Label htmlFor="duration-hours" className="text-xs text-muted-foreground">Hours</Label>
                 <Input id="duration-hours" type="number" value={hours} onChange={e => setHours(Number(e.target.value))} min="0" />
+            </div>
+             <div>
+                 <Label htmlFor="duration-minutes" className="text-xs text-muted-foreground">Minutes</Label>
+                <Input id="duration-minutes" type="number" value={minutes} onChange={e => setMinutes(Number(e.target.value))} min="0" />
             </div>
         </div>
       </div>
