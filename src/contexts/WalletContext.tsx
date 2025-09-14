@@ -11,6 +11,7 @@ import { platformMessages } from '@/lib/platform-messages';
 import type { BonusTier } from '@/app/dashboard/admin/settings/page';
 import type { DailyReward } from '@/app/dashboard/admin/daily-rewards/page';
 import { nftLibrary } from '@/lib/nft-library';
+import type { NftStakingPackage } from '@/app/dashboard/admin/nft-staking/page';
 
 
 export type Request = {
@@ -35,6 +36,8 @@ export type Nft = {
     artworkUrl: string;
     mintedAt: string;
     currentValue: number;
+    stakedUntil?: number | null; // Timestamp
+    stakedInPackageId?: string | null;
 };
 
 export type CompletedTask = {
@@ -197,6 +200,8 @@ interface WalletContextType {
   sellNft: (nftId: string) => Promise<void>;
   nftCooldowns: NftCooldowns;
   isNftFeatureEnabled: boolean;
+  stakeNft: (nftId: string, packageId: string) => void;
+  claimStakedNftRewards: (nftId: string) => void;
   // Token Mining
   isMiningEnabled: boolean;
   tokenBalance: number;
@@ -1224,6 +1229,71 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const stakeNft = (nftId: string, packageId: string) => {
+    if (!currentUser) return;
+    const nftToStake = nftCollection.find(n => n.id === nftId);
+    if (!nftToStake || nftToStake.stakedUntil) return;
+  
+    const stakingPackages: NftStakingPackage[] = getGlobalSetting('nft_staking_packages', [], true);
+    const pkg = stakingPackages.find(p => p.id === packageId);
+    if (!pkg) {
+      toast({ variant: 'destructive', title: 'Staking package not found.' });
+      return;
+    }
+  
+    const now = Date.now();
+    const expiresAt = now + pkg.durationHours * 60 * 60 * 1000;
+  
+    setNftCollection(prev =>
+      prev.map(nft =>
+        nft.id === nftId ? { ...nft, stakedUntil: expiresAt, stakedInPackageId: pkg.id } : nft
+      )
+    );
+  
+    addActivity(currentUser.email, {
+      type: 'NFT Stake',
+      description: `Staked "${nftToStake.title}" for ${pkg.durationHours} hours.`,
+      date: new Date().toISOString(),
+    });
+  
+    toast({ title: 'NFT Staked!', description: `Your "${nftToStake.title}" is now earning token rewards.` });
+  };
+  
+  const claimStakedNftRewards = (nftId: string) => {
+    if (!currentUser) return;
+    const nftToClaim = nftCollection.find(n => n.id === nftId);
+    if (!nftToClaim || !nftToClaim.stakedUntil || Date.now() < nftToClaim.stakedUntil) {
+      toast({ variant: 'destructive', title: 'Staking period not over.' });
+      return;
+    }
+  
+    const stakingPackages: NftStakingPackage[] = getGlobalSetting('nft_staking_packages', [], true);
+    const pkg = stakingPackages.find(p => p.id === nftToClaim.stakedInPackageId);
+    if (!pkg) {
+      toast({ variant: 'destructive', title: 'Could not find staking package details.' });
+      return;
+    }
+  
+    const percentageReward = nftToClaim.currentValue * (pkg.rewardRatePercent / 100);
+    const totalReward = percentageReward + pkg.fixedTokenBonus;
+  
+    setTokenBalance(prev => prev + totalReward);
+    setNftCollection(prev =>
+      prev.map(nft =>
+        nft.id === nftId ? { ...nft, stakedUntil: null, stakedInPackageId: null } : nft
+      )
+    );
+  
+    addActivity(currentUser.email, {
+      type: 'NFT Staking Reward',
+      description: `Claimed rewards for "${nftToClaim.title}"`,
+      amount: totalReward,
+      date: new Date().toISOString(),
+    });
+  
+    toast({ title: 'Rewards Claimed!', description: `You received ${totalReward.toFixed(4)} ${tokenomics.tokenSymbol} tokens.` });
+  };
+
   const purchaseMiningPackage = (packageId: string) => {
     if (!currentUser) return;
     const allPackages = getGlobalSetting('mining_packages', [], true);
@@ -1296,7 +1366,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   
   const convertTokensToUsdt = (tokenAmount: number) => {
     if (!currentUser) return;
-    if (tokenAmount > tokenBalance) return;
+    if (tokenAmount > tokenBalance) {
+        toast({ variant: 'destructive', title: 'Insufficient Tokens' });
+        return;
+    }
     
     const usdtAmount = tokenAmount / tokenomics.conversionRate;
     
@@ -1382,6 +1455,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         sellNft,
         nftCooldowns,
         isNftFeatureEnabled,
+        stakeNft,
+        claimStakedNftRewards,
+        // Token Mining
         isMiningEnabled,
         tokenBalance,
         tokenomics,
