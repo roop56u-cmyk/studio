@@ -31,8 +31,7 @@ export function useTeamCommission() {
         now = new Date();
     }
 
-    // Calculate IST-based reset time
-    const istOffset = -330; // UTC+5:30 is -330 minutes from UTC
+    const istOffset = -330; 
     const localOffset = now.getTimezoneOffset();
     const totalOffset = localOffset - istOffset;
 
@@ -43,20 +42,17 @@ export function useTeamCommission() {
     let resetTimeYesterday = new Date(resetTimeToday);
     resetTimeYesterday.setDate(resetTimeToday.getDate() - 1);
     
-    // Determine the last effective reset time that has passed
     const lastEffectiveReset = now >= resetTimeToday ? resetTimeToday : resetTimeYesterday;
 
-    // Check if commission has already been credited FOR THIS SPECIFIC reset cycle
     if (lastCreditDateStr) {
         const lastCreditDate = new Date(lastCreditDateStr);
         if (lastCreditDate.getTime() >= lastEffectiveReset.getTime()) {
-            // Already credited for this cycle, so we do nothing.
             return;
         }
     }
     
-    // If we reach here, it means we haven't credited for the current cycle yet.
-    // Calculate and credit the commission.
+    // Calculate commission based on the data available.
+    // teamData.levelX.commission should represent the earnings of the just-ended cycle.
     let totalCommission = 0;
     const activeL1Referrals = teamData.level1.activeCount;
 
@@ -78,19 +74,23 @@ export function useTeamCommission() {
         addCommissionToMainBalance(finalCommission);
     }
     
-    // ALWAYS update the last credit time to now, to mark this cycle as processed.
-    localStorage.setItem(lastCreditKey, new Date().toISOString());
+    localStorage.setItem(lastCreditKey, now.toISOString());
 
   }, [teamData, commissionRates, commissionEnabled, currentUser, addCommissionToMainBalance, getReferralCommissionBoost]);
   
   useEffect(() => {
     // Run once on load
-    creditCommission();
+    if (currentUser?.email) {
+      creditCommission();
+    }
     
-    // Re-check every hour to catch the reset time if the user keeps the app open
-    const interval = setInterval(creditCommission, 60 * 60 * 1000); 
+    // Re-check every minute to catch the reset time
+    const interval = setInterval(() => {
+        if (currentUser?.email) {
+            creditCommission();
+        }
+    }, 60 * 1000); 
     
     return () => clearInterval(interval);
-  }, [creditCommission]);
+  }, [creditCommission, currentUser?.email]);
 }
-
