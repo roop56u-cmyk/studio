@@ -17,11 +17,38 @@ export function useTeamCommission() {
 
     const lastCreditKey = `${currentUser.email}_lastTeamCommissionCredit`;
     const lastCreditDateStr = localStorage.getItem(lastCreditKey);
-    const lastCreditDate = lastCreditDateStr ? new Date(lastCreditDateStr).getTime() : 0;
+    const lastCreditDate = lastCreditDateStr ? new Date(lastCreditDateStr) : new Date(0);
 
-    const now = new Date();
-    // Check if 24 hours have passed since last credit
-    if (now.getTime() - lastCreditDate > 24 * 60 * 60 * 1000) {
+    // Get admin-defined reset time settings
+    const timeSource = localStorage.getItem('platform_time_source') || 'live';
+    const resetTimeStr = localStorage.getItem('platform_task_reset_time') || '00:00';
+    const [resetHours, resetMinutes] = resetTimeStr.split(':').map(Number);
+    
+    let now;
+    if (timeSource === 'manual') {
+        const manualTime = localStorage.getItem('platform_manual_time') || new Date().toISOString();
+        now = new Date(manualTime);
+    } else {
+        now = new Date();
+    }
+
+    // Calculate IST-based reset time
+    const istOffset = -330; // UTC+5:30 is -330 minutes from UTC
+    const localOffset = now.getTimezoneOffset();
+    const totalOffset = localOffset - istOffset;
+
+    let resetTimeToday = new Date(now);
+    resetTimeToday.setHours(resetHours, resetMinutes, 0, 0);
+    resetTimeToday.setMinutes(resetTimeToday.getMinutes() + totalOffset);
+
+    let resetTimeYesterday = new Date(resetTimeToday);
+    resetTimeYesterday.setDate(resetTimeToday.getDate() - 1);
+    
+    // Determine the last effective reset time that has passed
+    const lastEffectiveReset = now >= resetTimeToday ? resetTimeToday : resetTimeYesterday;
+
+    // Check if commission has already been credited for the current cycle
+    if (lastCreditDate.getTime() < lastEffectiveReset.getTime()) {
       let totalCommission = 0;
       const activeL1Referrals = teamData.level1.activeCount;
 
@@ -45,14 +72,21 @@ export function useTeamCommission() {
       if (finalCommission > 0) {
           addCommissionToMainBalance(finalCommission);
           localStorage.setItem(lastCreditKey, now.toISOString());
+      } else {
+          // If no commission was earned, still update the credit time to prevent re-checking until next cycle
+          localStorage.setItem(lastCreditKey, now.toISOString());
       }
     }
   }, [teamData, commissionRates, commissionEnabled, currentUser, addCommissionToMainBalance, getReferralCommissionBoost]);
   
   useEffect(() => {
+    // Run once on load
     creditCommission();
-    const interval = setInterval(creditCommission, 60 * 60 * 1000);
+    
+    // Re-check every hour to catch the reset time if the user keeps the app open
+    const interval = setInterval(creditCommission, 60 * 60 * 1000); 
     
     return () => clearInterval(interval);
   }, [creditCommission]);
 }
+
