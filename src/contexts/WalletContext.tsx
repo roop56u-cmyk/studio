@@ -497,7 +497,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             const totalOffset = localOffset - istOffset;
 
             const lastResetDateStr = getInitialState('lastTaskResetDate', null);
-            let lastResetDate = lastResetDateStr ? new Date(lastResetDateStr) : null;
+            const lastResetDate = lastResetDateStr ? new Date(lastResetDateStr) : null;
             
             let resetTimeToday = new Date(now);
             resetTimeToday.setHours(resetHours, resetMinutes, 0, 0);
@@ -508,7 +508,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
             const lastEffectiveReset = now >= resetTimeToday ? resetTimeToday : resetTimeYesterday;
             
-            if (!lastResetDate || lastResetDate < lastEffectiveReset) {
+            if (!lastResetDate || lastResetDate.getTime() < lastEffectiveReset.getTime()) {
                 setTasksCompletedToday(0);
                 setPersistentState('tasksCompletedToday', 0);
                 setPersistentState('lastTaskResetDate', now.toISOString()); // Mark reset
