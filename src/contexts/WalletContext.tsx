@@ -480,14 +480,40 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             setNftCooldowns(getInitialState('nftCooldowns', { failedSale: null, successfulSale: null }));
 
             // Daily task reset logic
-            const lastResetDate = getInitialState('lastTaskResetDate', null);
-            const todayStr = new Date().toDateString(); 
+            const timeSource = getGlobalSetting('platform_time_source', 'live');
+            let now;
+            if (timeSource === 'manual') {
+                const manualTime = getGlobalSetting('platform_manual_time', new Date().toISOString());
+                now = new Date(manualTime);
+            } else {
+                now = new Date();
+            }
 
-            if (lastResetDate !== todayStr) {
+            const resetTimeStr = getGlobalSetting('platform_task_reset_time', '09:30');
+            const [resetHours, resetMinutes] = resetTimeStr.split(':').map(Number);
+
+            const istOffset = -330; // UTC+5:30 is -330 minutes from UTC
+            const localOffset = now.getTimezoneOffset();
+            const totalOffset = localOffset - istOffset;
+
+            const lastResetDateStr = getInitialState('lastTaskResetDate', null);
+            let lastResetDate = lastResetDateStr ? new Date(lastResetDateStr) : null;
+            
+            let resetTimeToday = new Date(now);
+            resetTimeToday.setHours(resetHours, resetMinutes, 0, 0);
+            resetTimeToday.setMinutes(resetTimeToday.getMinutes() + totalOffset);
+
+            let resetTimeYesterday = new Date(resetTimeToday);
+            resetTimeYesterday.setDate(resetTimeToday.getDate() - 1);
+
+            const lastEffectiveReset = now >= resetTimeToday ? resetTimeToday : resetTimeYesterday;
+            
+            if (!lastResetDate || lastResetDate < lastEffectiveReset) {
                 setTasksCompletedToday(0);
                 setPersistentState('tasksCompletedToday', 0);
+                setPersistentState('lastTaskResetDate', now.toISOString()); // Mark reset
             } else {
-                setTasksCompletedToday(getInitialState('tasksCompletedToday', 0));
+                 setTasksCompletedToday(getInitialState('tasksCompletedToday', 0));
             }
 
 
@@ -910,7 +936,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       setPersistentState('taskRewardsBalance', newTaskRewardsBalance);
       setPersistentState('tasksCompletedToday', newTasksCompleted);
       setPersistentState('completedTasks', newCompletedTasks);
-      setPersistentState('lastTaskResetDate', new Date().toDateString());
+      setPersistentState('lastTaskResetDate', new Date().toISOString());
 
       // Correct Upline Commission Logic
       const uplineSettings = getGlobalSetting('upline_commission_settings', { enabled: false, rate: 0, requiredReferrals: 0 }, true);
