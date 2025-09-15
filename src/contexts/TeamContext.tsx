@@ -171,19 +171,6 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         return mainBalance + taskBalance + interestBalance;
     }, []);
 
-    const getIsNewToday = useCallback((user: User): boolean => {
-         if (!user.activatedAt || user.status !== 'active') {
-             return false;
-         }
-
-         const activationDate = new Date(user.activatedAt);
-         const today = new Date();
-
-         return activationDate.getFullYear() === today.getFullYear() &&
-                activationDate.getMonth() === today.getMonth() &&
-                activationDate.getDate() === today.getDate();
-    }, []);
-
     const getDailyTaskEarnings = useCallback((user: User, allUsers: User[]) => {
         const platformLevels = JSON.parse(localStorage.getItem('platform_levels') || JSON.stringify(defaultLevels));
         const earningModel = localStorage.getItem('system_earning_model') || 'dynamic';
@@ -200,7 +187,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         }
     }, []);
 
-    const calculateCommunityData = useCallback((user: User, allUsers: User[]): CommunityData => {
+    const calculateCommunityData = useCallback((user: User, allUsers: User[], lastResetTime: number): CommunityData => {
         const processedEmails = new Set<string>([user.email]);
         
         const l1 = allUsers.filter(u => u.referredBy === user.referralCode);
@@ -225,11 +212,17 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         }
 
         const activeMembers = L4PlusMembers.filter(m => allUsers.find(u => u.email === m.email)?.status === 'active');
-        const totalEarnings = activeMembers.reduce((sum, m) => sum + getDailyTaskEarnings(m, allUsers), 0);
+        const totalEarnings = activeMembers.reduce((sum, m) => {
+            const lastTaskCompletionDate = new Date(localStorage.getItem(`${m.email}_lastTaskCompletionDate`) || 0).getTime();
+            if (lastTaskCompletionDate >= lastResetTime) {
+                return sum + getDailyTaskEarnings(m, allUsers);
+            }
+            return sum;
+        }, 0);
         
         const enrichedMembers: TeamMember[] = L4PlusMembers.map(m => ({ ...m, level: getLevelForUser(m, allUsers), status: allUsers.find(u => u.email === m.email)?.status || m.status }));
 
-        const activationsToday = allUsers.filter(u => L4PlusMembers.some(m => m.email === u.email) && getIsNewToday(u)).length;
+        const activationsToday = allUsers.filter(u => L4PlusMembers.some(m => m.email === u.email) && u.status === 'active' && u.activatedAt && new Date(u.activatedAt).getTime() >= lastResetTime).length;
 
         return {
             members: enrichedMembers,
@@ -237,12 +230,35 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             activeCount: activeMembers.length,
             activationsToday,
         };
-    }, [getDailyTaskEarnings, getIsNewToday]);
+    }, [getDailyTaskEarnings]);
 
 
     const calculateTeamData = useCallback((user: User, allUsers: User[]): TeamData => {
-        const platformLevels = JSON.parse(localStorage.getItem('platform_levels') || JSON.stringify(defaultLevels));
-        const earningModel = localStorage.getItem('system_earning_model') || 'dynamic';
+        const timeSource = localStorage.getItem('platform_time_source') || 'live';
+        const resetTimeStr = localStorage.getItem('platform_task_reset_time') || '00:00';
+        const [resetHours, resetMinutes] = resetTimeStr.split(':').map(Number);
+        
+        let now;
+        if (timeSource === 'manual') {
+            const manualTime = localStorage.getItem('platform_manual_time') || new Date().toISOString();
+            now = new Date(manualTime);
+        } else {
+            now = new Date();
+        }
+
+        const istOffset = -330;
+        const localOffset = now.getTimezoneOffset();
+        const totalOffset = localOffset - istOffset;
+        
+        let resetTimeToday = new Date(now);
+        resetTimeToday.setHours(resetHours, resetMinutes, 0, 0);
+        resetTimeToday.setMinutes(resetTimeToday.getMinutes() + totalOffset);
+        
+        let resetTimeYesterday = new Date(resetTimeToday);
+        resetTimeYesterday.setDate(resetTimeToday.getDate() - 1);
+        
+        const lastEffectiveReset = now >= resetTimeToday ? resetTimeToday.getTime() : resetTimeYesterday.getTime();
+
 
         const calculateLayer = (members: User[]): TeamLevelData => {
             const activeMembers = members.filter(m => {
@@ -252,9 +268,14 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             const enrichedMembers: TeamMember[] = members.map(m => ({ ...m, level: getLevelForUser(m, allUsers), status: allUsers.find(u => u.email === m.email)?.status || m.status }));
             const totalDeposits = enrichedMembers.reduce((sum, m) => sum + getDepositsForUser(m.email), 0);
             
-            const dailyTaskEarnings = activeMembers.reduce((sum, m) => sum + getDailyTaskEarnings(m, allUsers), 0);
+            const dailyTaskEarnings = activeMembers.reduce((sum, m) => {
+                const completedTasksToday = JSON.parse(localStorage.getItem(`${m.email}_completedTasks`) || '[]')
+                    .filter((task: { completedAt: string }) => new Date(task.completedAt).getTime() >= lastEffectiveReset);
+                
+                return sum + completedTasksToday.reduce((taskSum: number, task: { earnings: number }) => taskSum + task.earnings, 0);
+            }, 0);
 
-            const activationsToday = allUsers.filter(u => members.some(m => m.email === u.email) && getIsNewToday(u)).length;
+            const activationsToday = allUsers.filter(u => members.some(m => m.email === u.email) && u.status === 'active' && u.activatedAt && new Date(u.activatedAt).getTime() >= lastEffectiveReset).length;
             
             return {
                 count: members.length,
@@ -292,14 +313,29 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
         return { level1, level2, level3 };
 
-    }, [getDepositsForUser, getIsNewToday, getDailyTaskEarnings]);
+    }, [getDepositsForUser]);
 
 
     useEffect(() => {
         if (currentUser) {
             setIsLoading(true);
             const data = calculateTeamData(currentUser, users);
-            const communityData = calculateCommunityData(currentUser, users);
+            
+            const timeSource = localStorage.getItem('platform_time_source') || 'live';
+            const resetTimeStr = localStorage.getItem('platform_task_reset_time') || '00:00';
+            const [resetHours, resetMinutes] = resetTimeStr.split(':').map(Number);
+            let now = timeSource === 'manual' ? new Date(localStorage.getItem('platform_manual_time') || new Date()) : new Date();
+            const istOffset = -330;
+            const localOffset = now.getTimezoneOffset();
+            const totalOffset = localOffset - istOffset;
+            let resetTimeToday = new Date(now);
+            resetTimeToday.setHours(resetHours, resetMinutes, 0, 0);
+            resetTimeToday.setMinutes(resetTimeToday.getMinutes() + totalOffset);
+            let resetTimeYesterday = new Date(resetTimeToday);
+            resetTimeYesterday.setDate(resetTimeToday.getDate() - 1);
+            const lastEffectiveReset = now >= resetTimeToday ? resetTimeToday.getTime() : resetTimeYesterday.getTime();
+            
+            const communityData = calculateCommunityData(currentUser, users, lastEffectiveReset);
             setTeamData(data);
             setCommunityData(communityData);
             setIsLoading(false);
@@ -350,3 +386,4 @@ export const useTeam = () => {
     }
     return context;
 };
+
