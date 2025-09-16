@@ -734,6 +734,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       const depositsKey = `${userEmail}_deposits`;
       const depositCount = parseInt(localStorage.getItem(depositsKey) || '0');
       localStorage.setItem(depositsKey, (depositCount + 1).toString());
+
+      const totalDepositsKey = `${userEmail}_totalDeposits`;
+      const currentTotalDeposits = parseFloat(localStorage.getItem(totalDepositsKey) || '0');
+      localStorage.setItem(totalDepositsKey, (currentTotalDeposits + rechargeAmount).toString());
       
       if(currentUser?.email === userEmail) {
           setMainBalance(prev => prev + rechargeAmount);

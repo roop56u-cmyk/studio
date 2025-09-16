@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo, useCallback } from "react";
@@ -32,12 +33,9 @@ import {
 type RequestStatus = 'Pending' | 'Approved' | 'Declined' | 'On Hold';
 type RequestType = 'Finance' | 'Rewards';
 
-const getDepositsForUser = (userEmail: string): number => {
+const getTotalDepositsForUser = (userEmail: string): number => {
     if (typeof window === 'undefined') return 0;
-    const mainBalance = parseFloat(localStorage.getItem(`${userEmail}_mainBalance`) || '0');
-    const taskBalance = parseFloat(localStorage.getItem(`${userEmail}_taskRewardsBalance`) || '0');
-    const interestBalance = parseFloat(localStorage.getItem(`${userEmail}_interestEarningsBalance`) || '0');
-    return mainBalance + taskBalance + interestBalance;
+    return parseFloat(localStorage.getItem(`${userEmail}_totalDeposits`) || '0');
 };
 
 export function RequestPanel() {
@@ -73,9 +71,9 @@ export function RequestPanel() {
         const upline = users.find(u => u.referralCode === user.referredBy);
         
         const totalTeamBusiness = 
-            level1.reduce((sum, u) => sum + getDepositsForUser(u.email), 0) +
-            level2.reduce((sum, u) => sum + getDepositsForUser(u.email), 0) +
-            level3.reduce((sum, u) => sum + getDepositsForUser(u.email), 0);
+            level1.reduce((sum, u) => sum + getTotalDepositsForUser(u.email), 0) +
+            level2.reduce((sum, u) => sum + getTotalDepositsForUser(u.email), 0) +
+            level3.reduce((sum, u) => sum + getTotalDepositsForUser(u.email), 0);
 
         return {
             balance: mainBalance,

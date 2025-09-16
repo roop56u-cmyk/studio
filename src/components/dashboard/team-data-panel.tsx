@@ -37,12 +37,9 @@ type TeamData = {
     level3: TeamLevelData;
 };
 
-const getDepositsForUser = (userEmail: string): number => {
+const getTotalDepositsForUser = (userEmail: string): number => {
     if (typeof window === 'undefined') return 0;
-    const mainBalance = parseFloat(localStorage.getItem(`${userEmail}_mainBalance`) || '0');
-    const taskBalance = parseFloat(localStorage.getItem(`${userEmail}_taskRewardsBalance`) || '0');
-    const interestBalance = parseFloat(localStorage.getItem(`${userEmail}_interestEarningsBalance`) || '0');
-    return mainBalance + taskBalance + interestBalance;
+    return parseFloat(localStorage.getItem(`${userEmail}_totalDeposits`) || '0');
 };
 
 export function TeamDataPanel({ user }: { user: User }) {
@@ -60,7 +57,7 @@ export function TeamDataPanel({ user }: { user: User }) {
                 level: getTeamLevelForUser(m, users),
                 status: users.find(u => u.email === m.email)?.status || m.status
             }));
-            const totalDeposits = enrichedMembers.reduce((sum, m) => sum + getDepositsForUser(m.email), 0);
+            const totalDeposits = enrichedMembers.reduce((sum, m) => sum + getTotalDepositsForUser(m.email), 0);
             return { count: members.length, activeCount: activeMembers.length, members: enrichedMembers, totalDeposits };
         };
 

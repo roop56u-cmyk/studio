@@ -88,6 +88,11 @@ export const getLevelForUser = (user: User, allUsers: User[]): number => {
     return finalLevel;
 };
 
+const getTotalDepositsForUser = (userEmail: string): number => {
+    if (typeof window === 'undefined') return 0;
+    return parseFloat(localStorage.getItem(`${userEmail}_totalDeposits`) || '0');
+};
+
 
 const TeamContext = createContext<TeamContextType | undefined>(undefined);
 
@@ -114,7 +119,6 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const commissionCreditKey = currentUser?.email ? `${currentUser.email}_lastCommissionCredit` : '';
     useLocalStorageWatcher(commissionCreditKey, setLastCommissionCredit);
 
-    // Watch the current user's activity history to update commission cards in real-time
     const activityHistoryKey = currentUser?.email ? `${currentUser.email}_activityHistory` : '';
     useLocalStorageWatcher(activityHistoryKey, setUserActivityHistory);
 
@@ -160,19 +164,11 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         const lastCreditTime = new Date(lastCommissionCredit).getTime();
 
         return userActivityHistory
-            .filter((activity: { type: string, amount?: number, date: string }) => {
+            .filter((activity) => {
                 return activity.type === 'Upline Commission' && activity.amount && new Date(activity.date).getTime() >= lastCreditTime;
             })
-            .reduce((sum: number, activity: { amount?: number }) => sum + (activity.amount || 0), 0);
+            .reduce((sum, activity) => sum + (activity.amount || 0), 0);
     }, [userActivityHistory, lastCommissionCredit, currentUser?.email]);
-
-    const getDepositsForUser = useCallback((userEmail: string): number => {
-        if (typeof window === 'undefined') return 0;
-        const mainBalance = parseFloat(localStorage.getItem(`${userEmail}_mainBalance`) || '0');
-        const taskBalance = parseFloat(localStorage.getItem(`${userEmail}_taskRewardsBalance`) || '0');
-        const interestBalance = parseFloat(localStorage.getItem(`${userEmail}_interestEarningsBalance`) || '0');
-        return mainBalance + taskBalance + interestBalance;
-    }, []);
 
     const calculateCommunityData = useCallback((user: User, allUsers: User[], cycleStartTime: number): CommunityData => {
         const processedEmails = new Set<string>([user.email]);
@@ -229,7 +225,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
                 return latestUser?.status === 'active';
             });
             const enrichedMembers: TeamMember[] = members.map(m => ({ ...m, level: getLevelForUser(m, allUsers), status: allUsers.find(u => u.email === m.email)?.status || m.status }));
-            const totalDeposits = enrichedMembers.reduce((sum, m) => sum + getDepositsForUser(m.email), 0);
+            const totalDeposits = enrichedMembers.reduce((sum, m) => sum + getTotalDepositsForUser(m.email), 0);
             
             const dailyTaskEarnings = activeMembers.reduce((sum, m) => {
                 const completedTasksForCycle = JSON.parse(localStorage.getItem(`${m.email}_completedTasks`) || '[]')
@@ -278,7 +274,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
         return { level1, level2, level3 };
 
-    }, [getDepositsForUser, users]);
+    }, [users]);
     
     const handleCommissionPayouts = useCallback(() => {
         if (!currentUser || currentUser.status !== 'active') return;
