@@ -12,7 +12,6 @@ import type { UplineCommissionSettings } from '@/app/dashboard/admin/upline-comm
 import type { SalaryPackage } from '@/app/dashboard/admin/salary/page';
 import { useLocalStorageWatcher } from '@/hooks/use-local-storage-watcher';
 import type { CommunityCommissionRule } from '@/app/dashboard/admin/community-commission/page';
-import { useRequests } from './RequestContext';
 
 type TeamMember = User & {
     level: number;
@@ -102,19 +101,17 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [uplineInfo, setUplineInfo] = useState<{ name: string; email: string; } | null>(null);
     const [activeL1Referrals, setActiveL1Referrals] = useState(0);
-    const { addCommunityCommissionToMainBalance, addCommissionToMainBalance, getReferralCommissionBoost, currentLevel, addActivity } = useWallet();
+    const { addCommunityCommissionToMainBalance, addCommissionToMainBalance, getReferralCommissionBoost, currentLevel, addUplineCommissionToMainBalance } = useWallet();
     
     const [commissionRates, setCommissionRates] = useState({ level1: 10, level2: 5, level3: 2 });
     const [commissionEnabled, setCommissionEnabled] = useState({ level1: true, level2: true, level3: true });
     const [uplineCommissionSettings, setUplineCommissionSettings] = useState<UplineCommissionSettings>({ enabled: false, rate: 5, requiredReferrals: 3 });
     
-    // State for payout timestamps
     const [lastCommissionCredit, setLastCommissionCredit] = useState<string | null>(null);
     
     const commissionCreditKey = currentUser?.email ? `${currentUser.email}_lastCommissionCredit` : '';
     useLocalStorageWatcher(commissionCreditKey, setLastCommissionCredit);
 
-    // Initial load from localStorage
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const savedRates = localStorage.getItem('team_commission_rates');
@@ -149,18 +146,17 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [currentUser?.email, commissionCreditKey]);
 
-
     const totalUplineCommission = useMemo(() => {
-        if (typeof window === 'undefined' || !currentUser?.email) return 0;
+        if (typeof window === 'undefined' || !currentUser?.email || !lastCommissionCredit) return 0;
+        
         const activityHistory = JSON.parse(localStorage.getItem(`${currentUser.email}_activityHistory`) || '[]');
         return activityHistory
             .filter((activity: { type: string, amount?: number, date: string }) => {
-                const lastCreditTime = new Date(lastCommissionCredit || 0).getTime();
+                const lastCreditTime = new Date(lastCommissionCredit).getTime();
                 return activity.type === 'Upline Commission' && activity.amount && new Date(activity.date).getTime() >= lastCreditTime;
             })
             .reduce((sum: number, activity: { amount?: number }) => sum + (activity.amount || 0), 0);
     }, [currentUser?.email, lastCommissionCredit]);
-
 
     const getDepositsForUser = useCallback((userEmail: string): number => {
         if (typeof window === 'undefined') return 0;
@@ -276,7 +272,6 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
     }, [getDepositsForUser, users]);
     
-    // Master payout logic
     const handleCommissionPayouts = useCallback(() => {
         if (!currentUser || currentUser.status !== 'active') return;
 
@@ -325,51 +320,31 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             .reduce((sum: number, activity: { amount?: number }) => sum + (activity.amount || 0), 0);
 
         if (finalUplineCommission > 0) {
-            const currentMainBalance = parseFloat(localStorage.getItem(`${currentUser.email}_mainBalance`) || '0');
-            localStorage.setItem(`${currentUser.email}_mainBalance`, (currentMainBalance + finalUplineCommission).toString());
-            addActivity(currentUser.email, {
-                type: 'Upline Commission Payout',
-                description: 'Daily commission from sponsor credited',
-                amount: finalUplineCommission,
-                date: new Date().toISOString()
-            });
+            addUplineCommissionToMainBalance(finalUplineCommission);
         }
         
-        // Set new timestamp after all calculations and payouts
         localStorage.setItem(commissionCreditKey, new Date().toISOString());
-        // This will force a state update and re-render with the new timestamps
         setLastCommissionCredit(localStorage.getItem(commissionCreditKey));
 
-    }, [currentUser, users, commissionCreditKey, commissionEnabled, commissionRates, getReferralCommissionBoost, addCommissionToMainBalance, calculateTeamData, calculateCommunityData, communityCommissionRules, currentLevel, activeL1Referrals, addCommunityCommissionToMainBalance, addActivity]);
+    }, [currentUser, users, commissionCreditKey, commissionEnabled, commissionRates, getReferralCommissionBoost, addCommissionToMainBalance, calculateTeamData, calculateCommunityData, communityCommissionRules, currentLevel, activeL1Referrals, addCommunityCommissionToMainBalance, addUplineCommissionToMainBalance]);
 
 
-    // MASTER CLOCK WATCHER
     useEffect(() => {
         const checkPayouts = () => {
             if (!currentUser?.email) return;
-
             const timeSource = localStorage.getItem('platform_time_source') || 'live';
             const resetTimeStr = localStorage.getItem('platform_task_reset_time') || '00:00';
             const [resetHours, resetMinutes] = resetTimeStr.split(':').map(Number);
-            
             let now = timeSource === 'manual' 
                 ? new Date(localStorage.getItem('platform_manual_time') || new Date()) 
                 : new Date();
-
-            // Convert current time to IST for comparison
             const istNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-
             const lastPayoutCheckTime = new Date(localStorage.getItem(`${currentUser.email}_lastPayoutCheck`) || 0);
-
-            // Determine the last reset time that occurred
             let lastResetTime = new Date(istNow);
             lastResetTime.setHours(resetHours, resetMinutes, 0, 0);
-
             if (istNow < lastResetTime) {
-                // If current time is before today's reset time, the last reset was yesterday
                 lastResetTime.setDate(lastResetTime.getDate() - 1);
             }
-            
             if (lastPayoutCheckTime < lastResetTime) {
                  handleCommissionPayouts();
                  localStorage.setItem(`${currentUser.email}_lastPayoutCheck`, new Date().toISOString());

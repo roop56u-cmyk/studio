@@ -153,6 +153,7 @@ interface WalletContextType {
   approveRecharge: (userEmail: string, rechargeAmount: number) => void;
   addCommissionToMainBalance: (commissionAmount: number) => void;
   addCommunityCommissionToMainBalance: (commissionAmount: number) => void;
+  addUplineCommissionToMainBalance: (commissionAmount: number) => void;
   requestWithdrawal: (withdrawalAmount: number, withdrawalAddress: string) => void;
   approveWithdrawal: (userEmail: string, amount: number) => void;
   approveSignUpBonus: (userEmail: string, amount: number) => void;
@@ -747,7 +748,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const addCommissionToMainBalance = useCallback((commissionAmount: number) => {
-    if (!currentUser || currentUser.status !== 'active') return;
+    if (!currentUser || currentUser.status !== 'active' || commissionAmount <= 0) return;
     setMainBalance(prev => prev + commissionAmount);
     addActivity(currentUser.email, {
         type: 'Team Commission',
@@ -755,11 +756,11 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         amount: commissionAmount,
         date: new Date().toISOString()
     });
-    toast({ title: "Commission Received!", description: `Your daily team commission of $${commissionAmount.toFixed(2)} has been added to your main wallet.` });
+    toast({ title: "Team Commission Received!", description: `Your daily team commission of $${commissionAmount.toFixed(2)} has been credited.` });
   }, [toast, addActivity, currentUser]);
   
   const addCommunityCommissionToMainBalance = useCallback((commissionAmount: number) => {
-    if (!currentUser || currentUser.status !== 'active') return;
+    if (!currentUser || currentUser.status !== 'active' || commissionAmount <= 0) return;
     setMainBalance(prev => prev + commissionAmount);
     addActivity(currentUser.email, {
         type: 'Community Commission',
@@ -767,8 +768,21 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         amount: commissionAmount,
         date: new Date().toISOString()
     });
-    toast({ title: "Community Commission Received!", description: `Your community commission of $${commissionAmount.toFixed(2)} has been added to your main wallet.` });
+    toast({ title: "Community Commission Received!", description: `Your community commission of $${commissionAmount.toFixed(2)} has been credited.` });
   }, [toast, addActivity, currentUser]);
+
+  const addUplineCommissionToMainBalance = useCallback((commissionAmount: number) => {
+    if (!currentUser || currentUser.status !== 'active' || commissionAmount <= 0) return;
+    setMainBalance(prev => prev + commissionAmount);
+    addActivity(currentUser.email, {
+      type: 'Upline Commission Payout',
+      description: 'Daily commission from sponsor credited',
+      amount: commissionAmount,
+      date: new Date().toISOString(),
+    });
+    toast({ title: 'Upline Commission Received!', description: `Your daily upline commission of $${commissionAmount.toFixed(2)} has been credited.` });
+  }, [toast, addActivity, currentUser]);
+
 
   const requestWithdrawal = (withdrawalAmount: number, withdrawalAddress: string) => { 
     if (!currentUser) return;
@@ -963,7 +977,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
               if (downline.status === 'active' && downlineL1Count >= uplineSettings.requiredReferrals) {
                   const commissionAmount = finalEarning * (uplineSettings.rate / 100);
                   if (commissionAmount > 0) {
-                      // We no longer pay out instantly. We just log the event for the daily payout cycle.
                       addActivity(downline.email, {
                           type: 'Upline Commission',
                           description: `Commission earned from sponsor: ${currentUser.email}`,
@@ -1443,6 +1456,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         approveRecharge,
         addCommissionToMainBalance,
         addCommunityCommissionToMainBalance,
+        addUplineCommissionToMainBalance,
         requestWithdrawal,
         approveWithdrawal,
         approveSignUpBonus,
