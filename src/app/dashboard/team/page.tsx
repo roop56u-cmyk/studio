@@ -353,10 +353,16 @@ export default function TeamPage() {
     return 0;
   }, [communityData, applicableCommunityRule, currentUser, teamData, activeL1Referrals]);
   
-  const totalActiveMembers = useMemo(() => {
+  const totalActiveMembersL1toL3 = useMemo(() => {
     if (!teamData) return 0;
     return teamData.level1.activeCount + teamData.level2.activeCount + teamData.level3.activeCount;
   }, [teamData]);
+
+  const totalActiveTeamMembers = useMemo(() => {
+    if (!teamData || !communityData) return 0;
+    return totalActiveMembersL1toL3 + communityData.activeCount;
+  }, [totalActiveMembersL1toL3, communityData]);
+
 
   if (isLoading || !teamData || !communityData) {
       return (
@@ -443,12 +449,12 @@ export default function TeamPage() {
                         )}
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Active Team Members</CardTitle>
+                                <CardTitle className="text-sm font-medium">Total Active Members</CardTitle>
                                 <Users className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{totalActiveMembers}</div>
-                                <p className="text-xs text-muted-foreground">Across all 3 layers</p>
+                                <div className="text-2xl font-bold">{totalActiveTeamMembers}</div>
+                                <p className="text-xs text-muted-foreground">Across all levels</p>
                             </CardContent>
                         </Card>
                         <Card>
@@ -654,7 +660,7 @@ export default function TeamPage() {
                         <h2 className="text-2xl font-bold tracking-tight mb-4">Team Size Rewards</h2>
                         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {availableTeamSizeRewards.map(reward => (
-                                <TeamSizeRewardCard key={reward.id} reward={reward} totalActiveMembers={totalActiveMembers} onInactiveClaim={() => setIsInactiveWarningOpen(true)} />
+                                <TeamSizeRewardCard key={reward.id} reward={reward} totalActiveMembers={totalActiveMembersL1toL3} onInactiveClaim={() => setIsInactiveWarningOpen(true)} />
                             ))}
                         </div>
                     </div>
@@ -675,3 +681,4 @@ export default function TeamPage() {
     </ScrollArea>
   );
 }
+
