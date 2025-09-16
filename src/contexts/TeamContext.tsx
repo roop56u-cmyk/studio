@@ -44,6 +44,7 @@ type CommunityData = {
 
 interface TeamContextType {
   teamData: TeamData | null;
+  previousCycleTeamData: TeamData | null; // Snapshot for payout calculation
   communityData: CommunityData | null;
   communityCommissionRules: CommunityCommissionRule[];
   teamRewards: TeamReward[];
@@ -96,6 +97,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const { currentUser, users } = useAuth();
     const { activityHistory } = useRequests();
     const [teamData, setTeamData] = useState<TeamData | null>(null);
+    const [previousCycleTeamData, setPreviousCycleTeamData] = useState<TeamData | null>(null);
     const [communityData, setCommunityData] = useState<CommunityData | null>(null);
     const [communityCommissionRules, setCommunityCommissionRules] = useState<CommunityCommissionRule[]>([]);
     const [teamRewards, setTeamRewards] = useState<TeamReward[]>([]);
@@ -213,11 +215,13 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
         const activeMembers = L4PlusMembers.filter(m => allUsers.find(u => u.email === m.email)?.status === 'active');
         const totalEarnings = activeMembers.reduce((sum, m) => {
-            const lastTaskCompletionDate = new Date(localStorage.getItem(`${m.email}_lastTaskCompletionDate`) || 0).getTime();
-            if (lastTaskCompletionDate >= lastResetTime) {
-                return sum + getDailyTaskEarnings(m, allUsers);
-            }
-            return sum;
+            const completedTasksForCycle = JSON.parse(localStorage.getItem(`${m.email}_completedTasks`) || '[]')
+                .filter((task: { completedAt: string }) => {
+                    const completedAt = new Date(task.completedAt).getTime();
+                    return completedAt >= lastResetTime;
+                });
+
+            return sum + completedTasksForCycle.reduce((taskSum: number, task: { earnings: number }) => taskSum + task.earnings, 0);
         }, 0);
         
         const enrichedMembers: TeamMember[] = L4PlusMembers.map(m => ({ ...m, level: getLevelForUser(m, allUsers), status: allUsers.find(u => u.email === m.email)?.status || m.status }));
@@ -233,33 +237,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     }, [getDailyTaskEarnings]);
 
 
-    const calculateTeamData = useCallback((user: User, allUsers: User[]): TeamData => {
-        const timeSource = localStorage.getItem('platform_time_source') || 'live';
-        const resetTimeStr = localStorage.getItem('platform_task_reset_time') || '00:00';
-        const [resetHours, resetMinutes] = resetTimeStr.split(':').map(Number);
-        
-        let now;
-        if (timeSource === 'manual') {
-            const manualTime = localStorage.getItem('platform_manual_time') || new Date().toISOString();
-            now = new Date(manualTime);
-        } else {
-            now = new Date();
-        }
-
-        const istOffset = -330;
-        const localOffset = now.getTimezoneOffset();
-        const totalOffset = localOffset - istOffset;
-        
-        let resetTimeToday = new Date(now);
-        resetTimeToday.setHours(resetHours, resetMinutes, 0, 0);
-        resetTimeToday.setMinutes(resetTimeToday.getMinutes() + totalOffset);
-        
-        let resetTimeYesterday = new Date(resetTimeToday);
-        resetTimeYesterday.setDate(resetTimeToday.getDate() - 1);
-        
-        const lastEffectiveReset = now >= resetTimeToday ? resetTimeToday.getTime() : resetTimeYesterday.getTime();
-
-
+    const calculateTeamData = useCallback((user: User, allUsers: User[], cycleStartTime: number): TeamData => {
         const calculateLayer = (members: User[]): TeamLevelData => {
             const activeMembers = members.filter(m => {
                 const latestUser = allUsers.find(u => u.email === m.email);
@@ -269,13 +247,16 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             const totalDeposits = enrichedMembers.reduce((sum, m) => sum + getDepositsForUser(m.email), 0);
             
             const dailyTaskEarnings = activeMembers.reduce((sum, m) => {
-                const completedTasksToday = JSON.parse(localStorage.getItem(`${m.email}_completedTasks`) || '[]')
-                    .filter((task: { completedAt: string }) => new Date(task.completedAt).getTime() >= lastEffectiveReset);
+                const completedTasksForCycle = JSON.parse(localStorage.getItem(`${m.email}_completedTasks`) || '[]')
+                    .filter((task: { completedAt: string }) => {
+                        const completedAt = new Date(task.completedAt).getTime();
+                        return completedAt >= cycleStartTime;
+                    });
                 
-                return sum + completedTasksToday.reduce((taskSum: number, task: { earnings: number }) => taskSum + task.earnings, 0);
+                return sum + completedTasksForCycle.reduce((taskSum: number, task: { earnings: number }) => taskSum + task.earnings, 0);
             }, 0);
 
-            const activationsToday = allUsers.filter(u => members.some(m => m.email === u.email) && u.status === 'active' && u.activatedAt && new Date(u.activatedAt).getTime() >= lastEffectiveReset).length;
+            const activationsToday = allUsers.filter(u => members.some(m => m.email === u.email) && u.status === 'active' && u.activatedAt && new Date(u.activatedAt).getTime() >= cycleStartTime).length;
             
             return {
                 count: members.length,
@@ -289,7 +270,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
         const level1Members = allUsers.filter(u => u.referredBy === user.referralCode);
         const level2Members = level1Members.flatMap(l1User => allUsers.filter(u => u.referredBy === l1User.referralCode));
-        const level3Members = level2Members.flatMap(l2User => allUsers.filter(u => u.referredBy === l2User.referralCode));
+        const level3Members = level2Members.flatMap(l2User => users.filter(u => u.referredBy === l2User.referralCode));
         
         const level1 = calculateLayer(level1Members);
         const purchasedReferrals = parseInt(localStorage.getItem(`${user.email}_purchased_referrals`) || '0');
@@ -319,24 +300,36 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         if (currentUser) {
             setIsLoading(true);
-            const data = calculateTeamData(currentUser, users);
-            
             const timeSource = localStorage.getItem('platform_time_source') || 'live';
             const resetTimeStr = localStorage.getItem('platform_task_reset_time') || '00:00';
             const [resetHours, resetMinutes] = resetTimeStr.split(':').map(Number);
             let now = timeSource === 'manual' ? new Date(localStorage.getItem('platform_manual_time') || new Date()) : new Date();
+
             const istOffset = -330;
             const localOffset = now.getTimezoneOffset();
             const totalOffset = localOffset - istOffset;
+            
             let resetTimeToday = new Date(now);
             resetTimeToday.setHours(resetHours, resetMinutes, 0, 0);
             resetTimeToday.setMinutes(resetTimeToday.getMinutes() + totalOffset);
+            
             let resetTimeYesterday = new Date(resetTimeToday);
             resetTimeYesterday.setDate(resetTimeToday.getDate() - 1);
+            
             const lastEffectiveReset = now >= resetTimeToday ? resetTimeToday.getTime() : resetTimeYesterday.getTime();
             
+            // For previous cycle stats
+            let secondToLastResetTime = new Date(lastEffectiveReset);
+            secondToLastResetTime.setDate(secondToLastResetTime.getDate() - 1);
+            const previousCycleStartTime = secondToLastResetTime.getTime();
+
+            const currentData = calculateTeamData(currentUser, users, lastEffectiveReset);
+            const previousData = calculateTeamData(currentUser, users, previousCycleStartTime);
+            
             const communityData = calculateCommunityData(currentUser, users, lastEffectiveReset);
-            setTeamData(data);
+            
+            setTeamData(currentData);
+            setPreviousCycleTeamData(previousData);
             setCommunityData(communityData);
             setIsLoading(false);
         }
@@ -355,6 +348,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
     const value = {
         teamData,
+        previousCycleTeamData,
         communityData,
         communityCommissionRules,
         teamRewards,
@@ -386,4 +380,3 @@ export const useTeam = () => {
     }
     return context;
 };
-

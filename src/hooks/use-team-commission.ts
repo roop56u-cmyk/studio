@@ -8,12 +8,13 @@ import { useWallet } from "@/contexts/WalletContext";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function useTeamCommission() {
-  const { teamData, commissionRates, commissionEnabled } = useTeam();
+  const { previousCycleTeamData, commissionRates, commissionEnabled } = useTeam();
   const { addCommissionToMainBalance, getReferralCommissionBoost } = useWallet();
   const { currentUser } = useAuth();
   
   const creditCommission = useCallback(() => {
-    if (!teamData || !currentUser || currentUser.status !== 'active') return;
+    // Only run this logic if we have a user and valid data for the previous cycle
+    if (!previousCycleTeamData || !currentUser || currentUser.status !== 'active') return;
 
     const lastCreditKey = `${currentUser.email}_lastTeamCommissionCredit`;
     const lastCreditDateStr = localStorage.getItem(lastCreditKey);
@@ -44,6 +45,7 @@ export function useTeamCommission() {
     
     const lastEffectiveReset = now >= resetTimeToday ? resetTimeToday : resetTimeYesterday;
 
+    // If we have already credited for this cycle, do nothing.
     if (lastCreditDateStr) {
         const lastCreditDate = new Date(lastCreditDateStr);
         if (lastCreditDate.getTime() >= lastEffectiveReset.getTime()) {
@@ -51,19 +53,18 @@ export function useTeamCommission() {
         }
     }
     
-    // Calculate commission based on the data available.
-    // teamData.levelX.commission should represent the earnings of the just-ended cycle.
+    // Calculate commission using the SNAPSHOTTED data from the previous cycle.
     let totalCommission = 0;
-    const activeL1Referrals = teamData.level1.activeCount;
+    const activeL1Referrals = previousCycleTeamData.level1.activeCount;
 
     if (commissionEnabled.level1 && activeL1Referrals >= 1) {
-        totalCommission += teamData.level1.commission * (commissionRates.level1 / 100);
+        totalCommission += previousCycleTeamData.level1.commission * (commissionRates.level1 / 100);
     }
     if (commissionEnabled.level2 && activeL1Referrals >= 2) {
-        totalCommission += teamData.level2.commission * (commissionRates.level2 / 100);
+        totalCommission += previousCycleTeamData.level2.commission * (commissionRates.level2 / 100);
     }
     if (commissionEnabled.level3 && activeL1Referrals >= 3) {
-        totalCommission += teamData.level3.commission * (commissionRates.level3 / 100);
+        totalCommission += previousCycleTeamData.level3.commission * (commissionRates.level3 / 100);
     }
 
     const commissionBoostPercent = getReferralCommissionBoost();
@@ -74,16 +75,12 @@ export function useTeamCommission() {
         addCommissionToMainBalance(finalCommission);
     }
     
-    localStorage.setItem(lastCreditKey, now.toISOString());
+    // Record that we have credited for this cycle.
+    localStorage.setItem(lastCreditKey, new Date().toISOString());
 
-  }, [teamData, commissionRates, commissionEnabled, currentUser, addCommissionToMainBalance, getReferralCommissionBoost]);
+  }, [previousCycleTeamData, commissionRates, commissionEnabled, currentUser, addCommissionToMainBalance, getReferralCommissionBoost]);
   
   useEffect(() => {
-    // Run once on load
-    if (currentUser?.email) {
-      creditCommission();
-    }
-    
     // Re-check every minute to catch the reset time
     const interval = setInterval(() => {
         if (currentUser?.email) {
