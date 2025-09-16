@@ -964,28 +964,25 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       setPersistentState('completedTasks', newCompletedTasks);
       setPersistentState('lastTaskResetDate', new Date().toISOString());
 
-      // Upline Commission Logic: Just log the event. Payout is handled by TeamContext.
-      const uplineSettings = getGlobalSetting('upline_commission_settings', { enabled: false, rate: 0, requiredReferrals: 0 }, true);
-
-      // Find all direct downlines of the current user (who is the sponsor/upline)
-      const downlines = users.filter(u => u.referredBy === currentUser.referralCode);
-
-      if (uplineSettings.enabled && downlines.length > 0) {
-          downlines.forEach(downline => {
-              // Check if the downline is eligible to receive this commission
-              const downlineL1Count = users.filter(u => u.referredBy === downline.referralCode && u.status === 'active').length;
-              if (downline.status === 'active' && downlineL1Count >= uplineSettings.requiredReferrals) {
-                  const commissionAmount = finalEarning * (uplineSettings.rate / 100);
+      // Upline Commission Logic: Just log the event. The daily payout is handled by TeamContext.
+      if (currentUser.referredBy) {
+          const uplineUser = users.find(u => u.referralCode === currentUser.referredBy);
+          if (uplineUser) {
+              const uplineCommissionSettings = getGlobalSetting('upline_commission_settings', { enabled: false, rate: 0, requiredReferrals: 0 }, true);
+              const downlineCount = users.filter(u => u.referredBy === uplineUser.referralCode && u.status === 'active').length;
+              if (uplineCommissionSettings.enabled && uplineUser.status === 'active' && downlineCount >= uplineCommissionSettings.requiredReferrals) {
+                  const commissionAmount = finalEarning * (uplineCommissionSettings.rate / 100);
                   if (commissionAmount > 0) {
-                      addActivity(downline.email, {
+                      // Log this event for the upline user. It will be processed at their next daily payout.
+                      addActivity(uplineUser.email, {
                           type: 'Upline Commission',
-                          description: `Commission earned from sponsor: ${currentUser.email}`,
+                          description: `Commission from downline: ${currentUser.email}`,
                           amount: commissionAmount,
-                          date: new Date().toISOString()
+                          date: new Date().toISOString(),
                       });
                   }
               }
-          });
+          }
       }
 
       toast({ title: "Task Completed!", description: `You've earned ${finalEarning.toFixed(4)} USDT.` });
