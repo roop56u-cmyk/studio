@@ -32,6 +32,7 @@ export function AchievementsPanel() {
   const [isNftFeatureEnabled, setIsNftFeatureEnabled] = useState(false);
   const [mintableAchievementIds, setMintableAchievementIds] = useState<string[]>([]);
   const [mintedAchievementIds, setMintedAchievementIds] = useState<string[]>([]);
+  const [mintingFee, setMintingFee] = useState(10);
 
   useEffect(() => {
     const settings = localStorage.getItem("nft_market_settings");
@@ -39,6 +40,7 @@ export function AchievementsPanel() {
         const parsed = JSON.parse(settings);
         setIsNftFeatureEnabled(parsed.isNftEnabled ?? false);
         setMintableAchievementIds(parsed.mintableAchievementIds ?? []);
+        setMintingFee(parsed.mintingFee ?? 10);
     }
   }, []);
   
@@ -151,7 +153,7 @@ export function AchievementsPanel() {
                         ) : (
                           <Sparkles className="mr-2 h-4 w-4" />
                         )}
-                      {isAlreadyMinted ? "View in Collection" : "Mint NFT"}
+                      {isAlreadyMinted ? "View in Collection" : `Mint NFT ($${mintingFee})`}
                     </Button>
                 </CardFooter>
               )}
