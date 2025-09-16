@@ -128,6 +128,7 @@ export type TokenomicsSettings = {
   tokenSymbol: string;
   conversionRate: number; // How many tokens for 1 USDT
   miningEnabled: boolean;
+  conversionEnabled: boolean;
 };
 
 interface WalletContextType {
@@ -205,6 +206,7 @@ interface WalletContextType {
   claimStakedNftRewards: (nftId: string) => void;
   // Token Mining
   isMiningEnabled: boolean;
+  isConversionEnabled: boolean;
   tokenBalance: number;
   tokenomics: TokenomicsSettings;
   activeMiningPackage: ActiveMiningPackage | null;
@@ -297,7 +299,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
   // Token Mining States
   const [isMiningEnabled, setIsMiningEnabled] = useState(true);
-  const [tokenomics, setTokenomics] = useState<TokenomicsSettings>({ tokenName: 'Taskify Coin', tokenSymbol: 'TFT', conversionRate: 10, miningEnabled: true });
+  const [isConversionEnabled, setIsConversionEnabled] = useState(true);
+  const [tokenomics, setTokenomics] = useState<TokenomicsSettings>({ tokenName: 'Taskify Coin', tokenSymbol: 'TFT', conversionRate: 10, miningEnabled: true, conversionEnabled: true });
   const [tokenBalance, setTokenBalance] = useState(0);
   const [purchasedMiningPackages, setPurchasedMiningPackages] = useState<PurchasedMiningPackage[]>([]);
   const [activeMiningPackage, setActiveMiningPackage] = useState<ActiveMiningPackage | null>(null);
@@ -442,8 +445,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const loadInitialData = () => {
         // Global settings
-        const tokenomicsSettings = getGlobalSetting('tokenomics_settings', { miningEnabled: true, tokenName: "Taskify Coin", tokenSymbol: "TFT", conversionRate: 10 }, true);
+        const tokenomicsSettings = getGlobalSetting('tokenomics_settings', { miningEnabled: true, conversionEnabled: true, tokenName: "Taskify Coin", tokenSymbol: "TFT", conversionRate: 10 }, true);
         setIsMiningEnabled(tokenomicsSettings.miningEnabled);
+        setIsConversionEnabled(tokenomicsSettings.conversionEnabled);
         setTokenomics(tokenomicsSettings);
         setIsWithdrawalRestrictionEnabled(getGlobalSetting('system_withdrawal_restriction_enabled', true, true));
         setWithdrawalRestrictionDays(parseInt(getGlobalSetting('system_withdrawal_restriction_days', '45'), 10));
@@ -1506,6 +1510,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         claimStakedNftRewards,
         // Token Mining
         isMiningEnabled,
+        isConversionEnabled,
         tokenBalance,
         tokenomics,
         activeMiningPackage,

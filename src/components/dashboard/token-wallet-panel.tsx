@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useWallet } from "@/contexts/WalletContext";
-import { Gem, Repeat } from 'lucide-react';
+import { Gem, Repeat, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export function TokenWalletPanel() {
-  const { tokenBalance, tokenomics, convertTokensToUsdt, isMiningEnabled } = useWallet();
+  const { tokenBalance, tokenomics, convertTokensToUsdt, isMiningEnabled, isConversionEnabled } = useWallet();
   const [amountToConvert, setAmountToConvert] = useState('');
   const { toast } = useToast();
 
@@ -47,24 +47,34 @@ export function TokenWalletPanel() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <label htmlFor="convert-amount">Amount to Convert</label>
-          <Input 
-            id="convert-amount"
-            type="number"
-            placeholder={`e.g., 50 ${tokenomics.tokenSymbol}`}
-            value={amountToConvert}
-            onChange={(e) => setAmountToConvert(e.target.value)}
-          />
-        </div>
-        <div className="flex items-center justify-center text-sm text-muted-foreground gap-2">
-          <span>{amountToConvert || 0} {tokenomics.tokenSymbol}</span>
-          <Repeat className="h-4 w-4" />
-          <span>{usdtValue} USDT</span>
-        </div>
-        <Button onClick={handleConvert} className="w-full">
-          Convert to USDT
-        </Button>
+        {isConversionEnabled ? (
+          <>
+            <div className="space-y-2">
+              <label htmlFor="convert-amount">Amount to Convert</label>
+              <Input 
+                id="convert-amount"
+                type="number"
+                placeholder={`e.g., 50 ${tokenomics.tokenSymbol}`}
+                value={amountToConvert}
+                onChange={(e) => setAmountToConvert(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center justify-center text-sm text-muted-foreground gap-2">
+              <span>{amountToConvert || 0} {tokenomics.tokenSymbol}</span>
+              <Repeat className="h-4 w-4" />
+              <span>{usdtValue} USDT</span>
+            </div>
+            <Button onClick={handleConvert} className="w-full">
+              Convert to USDT
+            </Button>
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center text-center p-4 bg-muted rounded-md">
+            <Lock className="h-8 w-8 text-muted-foreground mb-2" />
+            <p className="text-sm font-semibold">Conversion Disabled</p>
+            <p className="text-xs text-muted-foreground">Token conversion is currently disabled by the admin.</p>
+          </div>
+        )}
         <p className="text-xs text-muted-foreground text-center">
           Conversion Rate: {tokenomics.conversionRate} {tokenomics.tokenSymbol} = 1 USDT
         </p>

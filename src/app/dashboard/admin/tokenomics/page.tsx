@@ -50,6 +50,7 @@ export type TokenomicsSettings = {
   tokenSymbol: string;
   conversionRate: number; // How many tokens for 1 USDT
   miningEnabled: boolean;
+  conversionEnabled: boolean;
 };
 
 // Helper to convert total hours into days, hours, minutes object
@@ -153,7 +154,8 @@ export default function TokenomicsPage() {
     tokenName: 'Taskify Coin',
     tokenSymbol: 'TFT',
     conversionRate: 10,
-    miningEnabled: true
+    miningEnabled: true,
+    conversionEnabled: true,
   });
   
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -165,7 +167,10 @@ export default function TokenomicsPage() {
     if (storedPackages) setPackages(JSON.parse(storedPackages));
 
     const storedSettings = localStorage.getItem("tokenomics_settings");
-    if (storedSettings) setSettings(JSON.parse(storedSettings));
+    if (storedSettings) {
+        const parsed = JSON.parse(storedSettings);
+        setSettings(s => ({...s, ...parsed}));
+    }
   }, []);
 
   const handleSave = () => {
@@ -218,30 +223,39 @@ export default function TokenomicsPage() {
           <CardHeader>
             <div className="flex justify-between items-start">
               <div>
-                <CardTitle>Global Mining Settings</CardTitle>
-                <CardDescription>Control the entire token mining feature from here.</CardDescription>
-              </div>
-              <div className="flex items-center gap-2">
-                <Label htmlFor="mining-enabled" className="text-sm">Mining Enabled</Label>
-                <Switch id="mining-enabled" checked={settings.miningEnabled} onCheckedChange={(checked) => setSettings(s => ({ ...s, miningEnabled: checked }))} />
+                <CardTitle>Global Token Settings</CardTitle>
+                <CardDescription>Control the entire token economy from here.</CardDescription>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="tokenName">Token Name</Label>
-              <Input id="tokenName" value={settings.tokenName} onChange={e => setSettings(s => ({...s, tokenName: e.target.value}))} />
+          <CardContent className="space-y-6">
+            <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                    <Label htmlFor="mining-enabled" className="text-sm">Mining Enabled</Label>
+                    <Switch id="mining-enabled" checked={settings.miningEnabled} onCheckedChange={(checked) => setSettings(s => ({ ...s, miningEnabled: checked }))} />
+                </div>
+                 <div className="flex items-center gap-2">
+                    <Label htmlFor="conversion-enabled" className="text-sm">Conversion Enabled</Label>
+                    <Switch id="conversion-enabled" checked={settings.conversionEnabled} onCheckedChange={(checked) => setSettings(s => ({ ...s, conversionEnabled: checked }))} />
+                </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="tokenSymbol">Token Symbol</Label>
-              <Input id="tokenSymbol" value={settings.tokenSymbol} onChange={e => setSettings(s => ({...s, tokenSymbol: e.target.value}))} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="conversionRate">Conversion Rate to 1 USDT</Label>
-              <div className="relative">
-                <Input id="conversionRate" type="number" value={settings.conversionRate} onChange={e => setSettings(s => ({...s, conversionRate: Number(e.target.value)}))} className="pl-8" />
-                <Gem className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              </div>
+            <Separator />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                <Label htmlFor="tokenName">Token Name</Label>
+                <Input id="tokenName" value={settings.tokenName} onChange={e => setSettings(s => ({...s, tokenName: e.target.value}))} />
+                </div>
+                <div className="space-y-2">
+                <Label htmlFor="tokenSymbol">Token Symbol</Label>
+                <Input id="tokenSymbol" value={settings.tokenSymbol} onChange={e => setSettings(s => ({...s, tokenSymbol: e.target.value}))} />
+                </div>
+                <div className="space-y-2">
+                <Label htmlFor="conversionRate">Conversion Rate to 1 USDT</Label>
+                <div className="relative">
+                    <Input id="conversionRate" type="number" value={settings.conversionRate} onChange={e => setSettings(s => ({...s, conversionRate: Number(e.target.value)}))} className="pl-8" />
+                    <Gem className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                </div>
+                </div>
             </div>
           </CardContent>
         </Card>
