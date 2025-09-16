@@ -98,7 +98,6 @@ import { useWallet } from "@/contexts/WalletContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { RechargeDialog } from "@/components/dashboard/recharge-dialog";
 import { WithdrawalDialog } from "@/components/dashboard/withdrawal-dialog";
-import { useTeamCommission } from "@/hooks/use-team-commission";
 import { ActivityHistoryPanel } from "@/components/dashboard/activity-history-panel";
 import { TaskHistoryPanel } from "@/components/dashboard/task-history-panel";
 import { ReferralCard } from "@/components/dashboard/referral-card";
@@ -688,8 +687,6 @@ export default function DashboardLayout({
     const [isInterestMoveWarningOpen, setIsInterestMoveWarningOpen] = React.useState(false);
     const [isTaskMoveWarningOpen, setIsTaskMoveWarningOpen] = React.useState(false);
     
-    useTeamCommission();
-
     React.useEffect(() => {
         setIsClient(true);
         const showLoginPopup = sessionStorage.getItem("show_login_popup");
