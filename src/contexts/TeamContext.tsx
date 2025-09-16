@@ -115,6 +115,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     
     const teamCommissionCreditKey = currentUser?.email ? `${currentUser.email}_lastTeamCommissionCredit` : '';
     useLocalStorageWatcher(teamCommissionCreditKey, setLastTeamCommissionCredit);
+
     const communityCommissionCreditKey = currentUser?.email ? `${currentUser.email}_lastCommunityCommissionCredit` : '';
     useLocalStorageWatcher(communityCommissionCreditKey, setLastCommunityCommissionCredit);
 
@@ -332,21 +333,27 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             const resetTimeStr = localStorage.getItem('platform_task_reset_time') || '00:00';
             const [resetHours, resetMinutes] = resetTimeStr.split(':').map(Number);
             
-            let now = timeSource === 'manual' ? new Date(localStorage.getItem('platform_manual_time') || new Date()) : new Date();
+            let now = timeSource === 'manual' 
+                ? new Date(localStorage.getItem('platform_manual_time') || new Date()) 
+                : new Date();
 
-            const istOffset = -330; 
-            const localOffset = now.getTimezoneOffset();
-            const totalOffset = localOffset - istOffset;
+            // Convert current time to IST for comparison
+            const istNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
 
-            let resetTimeToday = new Date(now);
-            resetTimeToday.setUTCHours(resetHours, resetMinutes, 0, 0);
-            resetTimeToday.setMinutes(resetTimeToday.getMinutes() + totalOffset);
+            const lastPayoutCheckTime = new Date(localStorage.getItem(`${currentUser.email}_lastPayoutCheck`) || 0);
+
+            // Determine the last reset time that occurred
+            let lastResetTime = new Date(istNow);
+            lastResetTime.setHours(resetHours, resetMinutes, 0, 0);
+
+            if (istNow < lastResetTime) {
+                // If current time is before today's reset time, the last reset was yesterday
+                lastResetTime.setDate(lastResetTime.getDate() - 1);
+            }
             
-            const lastPayoutCheckTime = new Date(localStorage.getItem(`${currentUser.email}_lastPayoutCheck`) || 0).getTime();
-            
-            if (now.getTime() >= resetTimeToday.getTime() && lastPayoutCheckTime < resetTimeToday.getTime()) {
-                handleCommissionPayouts();
-                localStorage.setItem(`${currentUser.email}_lastPayoutCheck`, new Date().toISOString());
+            if (lastPayoutCheckTime < lastResetTime) {
+                 handleCommissionPayouts();
+                 localStorage.setItem(`${currentUser.email}_lastPayoutCheck`, new Date().toISOString());
             }
         };
 
