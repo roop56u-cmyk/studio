@@ -44,7 +44,6 @@ type CommunityData = {
 
 interface TeamContextType {
   teamData: TeamData | null;
-  previousCycleTeamData: TeamData | null; // Snapshot for payout calculation
   communityData: CommunityData | null;
   communityCommissionRules: CommunityCommissionRule[];
   teamRewards: TeamReward[];
@@ -97,7 +96,6 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const { currentUser, users } = useAuth();
     const { activityHistory } = useRequests();
     const [teamData, setTeamData] = useState<TeamData | null>(null);
-    const [previousCycleTeamData, setPreviousCycleTeamData] = useState<TeamData | null>(null);
     const [communityData, setCommunityData] = useState<CommunityData | null>(null);
     const [communityCommissionRules, setCommunityCommissionRules] = useState<CommunityCommissionRule[]>([]);
     const [teamRewards, setTeamRewards] = useState<TeamReward[]>([]);
@@ -173,22 +171,6 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         return mainBalance + taskBalance + interestBalance;
     }, []);
 
-    const getDailyTaskEarnings = useCallback((user: User, allUsers: User[]) => {
-        const platformLevels = JSON.parse(localStorage.getItem('platform_levels') || JSON.stringify(defaultLevels));
-        const earningModel = localStorage.getItem('system_earning_model') || 'dynamic';
-        const userLevel = getLevelForUser(user, allUsers);
-        const memberLevelData = platformLevels.find((l:Level) => l.level === userLevel);
-        
-        if (!memberLevelData) return 0;
-
-        if (earningModel === 'fixed') {
-            return memberLevelData.earningPerTask * memberLevelData.dailyTasks;
-        } else { // dynamic
-            const taskBalance = parseFloat(localStorage.getItem(`${user.email}_taskRewardsBalance`) || '0');
-            return taskBalance * (memberLevelData.rate / 100);
-        }
-    }, []);
-
     const calculateCommunityData = useCallback((user: User, allUsers: User[], lastResetTime: number): CommunityData => {
         const processedEmails = new Set<string>([user.email]);
         
@@ -234,7 +216,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             activeCount: activeMembers.length,
             activationsToday,
         };
-    }, [getDailyTaskEarnings]);
+    }, []);
 
 
     const calculateTeamData = useCallback((user: User, allUsers: User[], cycleStartTime: number): TeamData => {
@@ -317,19 +299,13 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             resetTimeYesterday.setDate(resetTimeToday.getDate() - 1);
             
             const lastEffectiveReset = now >= resetTimeToday ? resetTimeToday.getTime() : resetTimeYesterday.getTime();
+            const lastCreditDateStr = localStorage.getItem(`${currentUser.email}_lastTeamCommissionCredit`);
+            const lastCreditTime = lastCreditDateStr ? new Date(lastCreditDateStr).getTime() : 0;
             
-            // For previous cycle stats
-            let secondToLastResetTime = new Date(lastEffectiveReset);
-            secondToLastResetTime.setDate(secondToLastResetTime.getDate() - 1);
-            const previousCycleStartTime = secondToLastResetTime.getTime();
-
-            const currentData = calculateTeamData(currentUser, users, lastEffectiveReset);
-            const previousData = calculateTeamData(currentUser, users, previousCycleStartTime);
-            
+            const currentData = calculateTeamData(currentUser, users, lastCreditTime);
             const communityData = calculateCommunityData(currentUser, users, lastEffectiveReset);
             
             setTeamData(currentData);
-            setPreviousCycleTeamData(previousData);
             setCommunityData(communityData);
             setIsLoading(false);
         }
@@ -348,7 +324,6 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
     const value = {
         teamData,
-        previousCycleTeamData,
         communityData,
         communityCommissionRules,
         teamRewards,

@@ -8,18 +8,16 @@ import { useWallet } from "@/contexts/WalletContext";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function useTeamCommission() {
-  const { previousCycleTeamData, commissionRates, commissionEnabled } = useTeam();
+  const { teamData, commissionRates, commissionEnabled } = useTeam();
   const { addCommissionToMainBalance, getReferralCommissionBoost } = useWallet();
   const { currentUser } = useAuth();
   
   const creditCommission = useCallback(() => {
-    // Only run this logic if we have a user and valid data for the previous cycle
-    if (!previousCycleTeamData || !currentUser || currentUser.status !== 'active') return;
+    if (!teamData || !currentUser || currentUser.status !== 'active') return;
 
     const lastCreditKey = `${currentUser.email}_lastTeamCommissionCredit`;
     const lastCreditDateStr = localStorage.getItem(lastCreditKey);
     
-    // Get admin-defined reset time settings
     const timeSource = localStorage.getItem('platform_time_source') || 'live';
     const resetTimeStr = localStorage.getItem('platform_task_reset_time') || '00:00';
     const [resetHours, resetMinutes] = resetTimeStr.split(':').map(Number);
@@ -39,46 +37,38 @@ export function useTeamCommission() {
     let resetTimeToday = new Date(now);
     resetTimeToday.setHours(resetHours, resetMinutes, 0, 0);
     resetTimeToday.setMinutes(resetTimeToday.getMinutes() + totalOffset);
-
-    let resetTimeYesterday = new Date(resetTimeToday);
-    resetTimeYesterday.setDate(resetTimeToday.getDate() - 1);
     
-    const lastEffectiveReset = now >= resetTimeToday ? resetTimeToday : resetTimeYesterday;
-
-    // If we have already credited for this cycle, do nothing.
-    if (lastCreditDateStr) {
-        const lastCreditDate = new Date(lastCreditDateStr);
-        if (lastCreditDate.getTime() >= lastEffectiveReset.getTime()) {
-            return;
-        }
-    }
+    const lastCreditTime = lastCreditDateStr ? new Date(lastCreditDateStr).getTime() : 0;
     
-    // Calculate commission using the SNAPSHOTTED data from the previous cycle.
-    let totalCommission = 0;
-    const activeL1Referrals = previousCycleTeamData.level1.activeCount;
+    // Check if the current time has passed today's reset time, and if we haven't credited for this cycle yet
+    if (now.getTime() >= resetTimeToday.getTime() && lastCreditTime < resetTimeToday.getTime()) {
+      // It's time to pay out. The `teamData` already contains the calculations for the cycle that just ended.
+      let totalCommission = 0;
+      const activeL1Referrals = teamData.level1.activeCount;
 
-    if (commissionEnabled.level1 && activeL1Referrals >= 1) {
-        totalCommission += previousCycleTeamData.level1.commission * (commissionRates.level1 / 100);
-    }
-    if (commissionEnabled.level2 && activeL1Referrals >= 2) {
-        totalCommission += previousCycleTeamData.level2.commission * (commissionRates.level2 / 100);
-    }
-    if (commissionEnabled.level3 && activeL1Referrals >= 3) {
-        totalCommission += previousCycleTeamData.level3.commission * (commissionRates.level3 / 100);
+      if (commissionEnabled.level1 && activeL1Referrals >= 1) {
+          totalCommission += teamData.level1.commission * (commissionRates.level1 / 100);
+      }
+      if (commissionEnabled.level2 && activeL1Referrals >= 2) {
+          totalCommission += teamData.level2.commission * (commissionRates.level2 / 100);
+      }
+      if (commissionEnabled.level3 && activeL1Referrals >= 3) {
+          totalCommission += teamData.level3.commission * (commissionRates.level3 / 100);
+      }
+
+      const commissionBoostPercent = getReferralCommissionBoost();
+      const boostAmount = totalCommission * (commissionBoostPercent / 100);
+      const finalCommission = totalCommission + boostAmount;
+
+      if (finalCommission > 0) {
+          addCommissionToMainBalance(finalCommission);
+      }
+      
+      // IMPORTANT: Record that we have credited for this cycle immediately after calculation.
+      localStorage.setItem(lastCreditKey, new Date().toISOString());
     }
 
-    const commissionBoostPercent = getReferralCommissionBoost();
-    const boostAmount = totalCommission * (commissionBoostPercent / 100);
-    const finalCommission = totalCommission + boostAmount;
-
-    if (finalCommission > 0) {
-        addCommissionToMainBalance(finalCommission);
-    }
-    
-    // Record that we have credited for this cycle.
-    localStorage.setItem(lastCreditKey, new Date().toISOString());
-
-  }, [previousCycleTeamData, commissionRates, commissionEnabled, currentUser, addCommissionToMainBalance, getReferralCommissionBoost]);
+  }, [teamData, commissionRates, commissionEnabled, currentUser, addCommissionToMainBalance, getReferralCommissionBoost]);
   
   useEffect(() => {
     // Re-check every minute to catch the reset time
