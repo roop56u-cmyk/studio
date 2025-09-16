@@ -129,6 +129,7 @@ export type TokenomicsSettings = {
   conversionRate: number; // How many tokens for 1 USDT
   miningEnabled: boolean;
   conversionEnabled: boolean;
+  conversionFee: number;
 };
 
 interface WalletContextType {
@@ -300,7 +301,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   // Token Mining States
   const [isMiningEnabled, setIsMiningEnabled] = useState(true);
   const [isConversionEnabled, setIsConversionEnabled] = useState(true);
-  const [tokenomics, setTokenomics] = useState<TokenomicsSettings>({ tokenName: 'Taskify Coin', tokenSymbol: 'TFT', conversionRate: 10, miningEnabled: true, conversionEnabled: true });
+  const [tokenomics, setTokenomics] = useState<TokenomicsSettings>({ tokenName: 'Taskify Coin', tokenSymbol: 'TFT', conversionRate: 10, miningEnabled: true, conversionEnabled: true, conversionFee: 2.5 });
   const [tokenBalance, setTokenBalance] = useState(0);
   const [purchasedMiningPackages, setPurchasedMiningPackages] = useState<PurchasedMiningPackage[]>([]);
   const [activeMiningPackage, setActiveMiningPackage] = useState<ActiveMiningPackage | null>(null);
@@ -445,7 +446,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const loadInitialData = () => {
         // Global settings
-        const tokenomicsSettings = getGlobalSetting('tokenomics_settings', { miningEnabled: true, conversionEnabled: true, tokenName: "Taskify Coin", tokenSymbol: "TFT", conversionRate: 10 }, true);
+        const tokenomicsSettings = getGlobalSetting('tokenomics_settings', { miningEnabled: true, conversionEnabled: true, tokenName: "Taskify Coin", tokenSymbol: "TFT", conversionRate: 10, conversionFee: 2.5 }, true);
         setIsMiningEnabled(tokenomicsSettings.miningEnabled);
         setIsConversionEnabled(tokenomicsSettings.conversionEnabled);
         setTokenomics(tokenomicsSettings);
@@ -948,51 +949,47 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const completeTask = (task: GenerateTaskSuggestionOutput) => {
-      if (!currentUser) return;
-      if (tasksCompletedToday >= dailyTaskQuota) {
-          toast({ variant: "destructive", title: "Daily Limit Reached", description: "You have already completed all your tasks for today." });
-          return;
-      }
-      
-      const finalEarning = earningPerTask;
-
-      const newTasksCompleted = tasksCompletedToday + 1;
-      const newTaskRewardsBalance = taskRewardsBalance + finalEarning;
-      const newCompletedTask: CompletedTask = { id: `TASK-${Date.now()}`, title: task.taskTitle, description: task.taskDescription, earnings: finalEarning, completedAt: new Date().toISOString() };
-      const newCompletedTasks = [newCompletedTask, ...completedTasks];
-      
-      setTaskRewardsBalance(newTaskRewardsBalance);
-      setTasksCompletedToday(newTasksCompleted);
-      setCompletedTasks(newCompletedTasks);
-      
-      setPersistentState('taskRewardsBalance', newTaskRewardsBalance);
-      setPersistentState('tasksCompletedToday', newTasksCompleted);
-      setPersistentState('completedTasks', newCompletedTasks);
-      setPersistentState('lastTaskResetDate', new Date().toISOString());
-
-      // Find all direct downline users to record their potential commission
-      const downlineUsers = users.filter(u => u.referredBy === currentUser.referralCode);
-
-      downlineUsers.forEach(downlineUser => {
-          const uplineCommissionSettings = getGlobalSetting('upline_commission_settings', { enabled: false, rate: 0, requiredReferrals: 0 }, true);
-          if (uplineCommissionSettings.enabled && downlineUser.status === 'active') {
-              const downlineUserReferralCount = users.filter(u => u.referredBy === downlineUser.referralCode && u.status === 'active').length;
-              if (downlineUserReferralCount >= uplineCommissionSettings.requiredReferrals) {
-                  const commissionAmount = finalEarning * (uplineCommissionSettings.rate / 100);
-                  if (commissionAmount > 0) {
-                      addActivity(downlineUser.email, {
-                          type: 'Upline Commission',
-                          description: `Commission from upline: ${currentUser.email}`,
-                          amount: commissionAmount,
-                          date: new Date().toISOString(),
-                      });
-                  }
-              }
+    if (!currentUser) return;
+    if (tasksCompletedToday >= dailyTaskQuota) {
+      toast({ variant: 'destructive', title: 'Daily Limit Reached', description: 'You have already completed all your tasks for today.' });
+      return;
+    }
+  
+    const finalEarning = earningPerTask;
+  
+    const newTasksCompleted = tasksCompletedToday + 1;
+    const newTaskRewardsBalance = taskRewardsBalance + finalEarning;
+    const newCompletedTask: CompletedTask = { id: `TASK-${Date.now()}`, title: task.taskTitle, description: task.taskDescription, earnings: finalEarning, completedAt: new Date().toISOString() };
+    const newCompletedTasks = [newCompletedTask, ...completedTasks];
+  
+    setTaskRewardsBalance(newTaskRewardsBalance);
+    setTasksCompletedToday(newTasksCompleted);
+    setCompletedTasks(newCompletedTasks);
+  
+    // Find all direct downline users to record their potential commission
+    const downlineUsers = users.filter(u => u.referredBy === currentUser.referralCode);
+  
+    downlineUsers.forEach(downlineUser => {
+      const uplineCommissionSettings = getGlobalSetting('upline_commission_settings', { enabled: false, rate: 0, requiredReferrals: 0 }, true);
+      if (uplineCommissionSettings.enabled && downlineUser.status === 'active') {
+        const downlineUserReferralCount = users.filter(u => u.referredBy === downlineUser.referralCode && u.status === 'active').length;
+        if (downlineUserReferralCount >= uplineCommissionSettings.requiredReferrals) {
+          const commissionAmount = finalEarning * (uplineCommissionSettings.rate / 100);
+          if (commissionAmount > 0) {
+            addActivity(downlineUser.email, {
+              type: 'Upline Commission',
+              description: `Commission from upline: ${currentUser.email}`,
+              amount: commissionAmount,
+              date: new Date().toISOString(),
+            });
           }
-      });
-
-      toast({ title: "Task Completed!", description: `You've earned ${finalEarning.toFixed(4)} USDT.` });
+        }
+      }
+    });
+  
+    toast({ title: 'Task Completed!', description: `You've earned ${finalEarning.toFixed(4)} USDT.` });
   };
+  
 
   const addWithdrawalAddress = (addressData: Omit<WithdrawalAddress, 'id'>) => {
     const newAddress: WithdrawalAddress = {
@@ -1421,17 +1418,19 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     }
     
     const usdtAmount = tokenAmount / tokenomics.conversionRate;
+    const fee = usdtAmount * (tokenomics.conversionFee / 100);
+    const netUsdtAmount = usdtAmount - fee;
     
     setTokenBalance(prev => prev - tokenAmount);
-    setMainBalance(prev => prev + usdtAmount);
+    setMainBalance(prev => prev + netUsdtAmount);
 
     addActivity(currentUser.email, {
         type: 'Token Conversion',
-        description: `Converted ${tokenAmount.toFixed(4)} ${tokenomics.tokenSymbol} to ${usdtAmount.toFixed(2)} USDT`,
-        amount: usdtAmount,
+        description: `Converted ${tokenAmount.toFixed(4)} ${tokenomics.tokenSymbol} to ${netUsdtAmount.toFixed(2)} USDT`,
+        amount: netUsdtAmount,
         date: new Date().toISOString()
     });
-    toast({ title: 'Conversion Successful', description: `You received ${usdtAmount.toFixed(2)} USDT in your main wallet.` });
+    toast({ title: 'Conversion Successful', description: `You received ${netUsdtAmount.toFixed(2)} USDT in your main wallet.` });
   };
 
   return (

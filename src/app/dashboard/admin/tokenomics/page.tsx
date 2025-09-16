@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { PlusCircle, Edit, Trash2, DollarSign, Settings, Save, Power, Gauge, Clock, Gem } from "lucide-react";
+import { PlusCircle, Edit, Trash2, DollarSign, Settings, Save, Power, Gauge, Clock, Gem, Percent } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,6 +51,7 @@ export type TokenomicsSettings = {
   conversionRate: number; // How many tokens for 1 USDT
   miningEnabled: boolean;
   conversionEnabled: boolean;
+  conversionFee: number; // Percentage
 };
 
 // Helper to convert total hours into days, hours, minutes object
@@ -156,6 +157,7 @@ export default function TokenomicsPage() {
     conversionRate: 10,
     miningEnabled: true,
     conversionEnabled: true,
+    conversionFee: 2.5,
   });
   
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -240,7 +242,7 @@ export default function TokenomicsPage() {
                 </div>
             </div>
             <Separator />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="space-y-2">
                 <Label htmlFor="tokenName">Token Name</Label>
                 <Input id="tokenName" value={settings.tokenName} onChange={e => setSettings(s => ({...s, tokenName: e.target.value}))} />
@@ -255,6 +257,13 @@ export default function TokenomicsPage() {
                     <Input id="conversionRate" type="number" value={settings.conversionRate} onChange={e => setSettings(s => ({...s, conversionRate: Number(e.target.value)}))} className="pl-8" />
                     <Gem className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 </div>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="conversionFee">Conversion Fee (%)</Label>
+                    <div className="relative">
+                        <Input id="conversionFee" type="number" value={settings.conversionFee} onChange={e => setSettings(s => ({...s, conversionFee: Number(e.target.value)}))} className="pr-8" />
+                        <Percent className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    </div>
                 </div>
             </div>
           </CardContent>

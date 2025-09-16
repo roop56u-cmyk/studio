@@ -6,13 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useWallet } from "@/contexts/WalletContext";
-import { Gem, Repeat, Lock } from 'lucide-react';
+import { Gem, Repeat, Lock, ArrowDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Separator } from '../ui/separator';
 
 export function TokenWalletPanel() {
   const { tokenBalance, tokenomics, convertTokensToUsdt, isMiningEnabled, isConversionEnabled } = useWallet();
   const [amountToConvert, setAmountToConvert] = useState('');
   const { toast } = useToast();
+
+  if (!isMiningEnabled) {
+    return null;
+  }
 
   const handleConvert = () => {
     const amount = parseFloat(amountToConvert);
@@ -27,12 +32,10 @@ export function TokenWalletPanel() {
     convertTokensToUsdt(amount);
     setAmountToConvert('');
   };
-  
-  if (!isMiningEnabled) {
-    return null;
-  }
 
-  const usdtValue = amountToConvert ? (parseFloat(amountToConvert) / tokenomics.conversionRate).toFixed(2) : '0.00';
+  const usdtValue = amountToConvert ? (parseFloat(amountToConvert) / tokenomics.conversionRate) : 0;
+  const feeAmount = usdtValue * (tokenomics.conversionFee / 100);
+  const netUsdtValue = usdtValue - feeAmount;
 
   return (
     <Card>
@@ -50,21 +53,34 @@ export function TokenWalletPanel() {
         {isConversionEnabled ? (
           <>
             <div className="space-y-2">
-              <label htmlFor="convert-amount">Amount to Convert</label>
+              <label htmlFor="convert-amount">Amount to Convert ({tokenomics.tokenSymbol})</label>
               <Input 
                 id="convert-amount"
                 type="number"
-                placeholder={`e.g., 50 ${tokenomics.tokenSymbol}`}
+                placeholder={`e.g., 50`}
                 value={amountToConvert}
                 onChange={(e) => setAmountToConvert(e.target.value)}
               />
             </div>
-            <div className="flex items-center justify-center text-sm text-muted-foreground gap-2">
-              <span>{amountToConvert || 0} {tokenomics.tokenSymbol}</span>
-              <Repeat className="h-4 w-4" />
-              <span>{usdtValue} USDT</span>
+            
+            <div className="space-y-3 text-sm border rounded-md p-3 bg-muted/50">
+                <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Gross USDT Value</span>
+                    <span>${usdtValue.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Conversion Fee ({tokenomics.conversionFee}%)</span>
+                    <span className="text-red-500">-${feeAmount.toFixed(2)}</span>
+                </div>
+                <Separator />
+                 <div className="flex justify-between items-center font-bold">
+                    <span>You Receive</span>
+                    <span>${netUsdtValue > 0 ? netUsdtValue.toFixed(2) : '0.00'}</span>
+                </div>
             </div>
+
             <Button onClick={handleConvert} className="w-full">
+              <Repeat className="mr-2 h-4 w-4" />
               Convert to USDT
             </Button>
           </>
