@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo, useCallback } from 'react';
@@ -25,6 +26,7 @@ type TeamLevelData = {
     commission: number;
     members: TeamMember[];
     totalDeposits: number;
+    totalNetWorth: number;
     activationsToday: number;
 };
 
@@ -52,6 +54,7 @@ interface TeamContextType {
   commissionEnabled: { level1: boolean; level2: boolean; level3: boolean; };
   isLoading: boolean;
   totalTeamBusiness: number;
+  totalTeamNetWorth: number;
   totalActivationsToday: number;
   totalUplineCommission: number;
   uplineCommissionSettings: UplineCommissionSettings;
@@ -91,6 +94,14 @@ export const getLevelForUser = (user: User, allUsers: User[]): number => {
 const getTotalDepositsForUser = (userEmail: string): number => {
     if (typeof window === 'undefined') return 0;
     return parseFloat(localStorage.getItem(`${userEmail}_totalDeposits`) || '0');
+};
+
+const getNetWorthForUser = (userEmail: string): number => {
+  if (typeof window === 'undefined') return 0;
+  const main = parseFloat(localStorage.getItem(`${userEmail}_mainBalance`) || '0');
+  const task = parseFloat(localStorage.getItem(`${userEmail}_taskRewardsBalance`) || '0');
+  const interest = parseFloat(localStorage.getItem(`${userEmail}_interestEarningsBalance`) || '0');
+  return main + task + interest;
 };
 
 
@@ -226,6 +237,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             });
             const enrichedMembers: TeamMember[] = members.map(m => ({ ...m, level: getLevelForUser(m, allUsers), status: allUsers.find(u => u.email === m.email)?.status || m.status }));
             const totalDeposits = enrichedMembers.reduce((sum, m) => sum + getTotalDepositsForUser(m.email), 0);
+            const totalNetWorth = enrichedMembers.reduce((sum, m) => sum + getNetWorthForUser(m.email), 0);
             
             const dailyTaskEarnings = activeMembers.reduce((sum, m) => {
                 const completedTasksForCycle = JSON.parse(localStorage.getItem(`${m.email}_completedTasks`) || '[]')
@@ -245,6 +257,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
                 commission: dailyTaskEarnings,
                 members: enrichedMembers,
                 totalDeposits,
+                totalNetWorth,
                 activationsToday
             };
         };
@@ -377,7 +390,12 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
     const totalTeamBusiness = useMemo(() => {
         if (!teamData) return 0;
-        return teamData.level1.totalDeposits + teamData.level2.totalDeposits + teamData.level3.totalDeposits;
+        return (teamData.level1.totalDeposits || 0) + (teamData.level2.totalDeposits || 0) + (teamData.level3.totalDeposits || 0);
+    }, [teamData]);
+
+    const totalTeamNetWorth = useMemo(() => {
+        if (!teamData) return 0;
+        return (teamData.level1.totalNetWorth || 0) + (teamData.level2.totalNetWorth || 0) + (teamData.level3.totalNetWorth || 0);
     }, [teamData]);
 
     const totalActivationsToday = useMemo(() => {
@@ -396,6 +414,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         commissionEnabled,
         isLoading,
         totalTeamBusiness,
+        totalTeamNetWorth,
         totalActivationsToday,
         totalUplineCommission,
         uplineCommissionSettings,

@@ -12,7 +12,7 @@ import {
   CardTitle,
   CardFooter
 } from "@/components/ui/card";
-import { Users, DollarSign, UserPlus, Briefcase, Activity, Award, X, Trophy, ArrowUp, Info, HandCoins, UserCheck, TrendingUp, AlertTriangle, Layers, Lock } from "lucide-react";
+import { Users, DollarSign, UserPlus, Briefcase, Activity, Award, X, Trophy, ArrowUp, Info, HandCoins, UserCheck, TrendingUp, AlertTriangle, Layers, Lock, Landmark } from "lucide-react";
 import { useTeam } from "@/contexts/TeamContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -299,6 +299,7 @@ export default function TeamPage() {
       commissionEnabled, 
       isLoading, 
       totalTeamBusiness, 
+      totalTeamNetWorth,
       totalActivationsToday, 
       teamRewards, 
       teamSizeRewards,
@@ -448,7 +449,17 @@ export default function TeamPage() {
                                 <p className="text-xs text-muted-foreground">Total deposits from all members</p>
                             </CardContent>
                         </Card>
-                        <Card className="col-span-2">
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Total Team Net Worth</CardTitle>
+                                <Landmark className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">${totalTeamNetWorth.toFixed(2)}</div>
+                                <p className="text-xs text-muted-foreground">Current total wallet balances</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">Today's Activations</CardTitle>
                                 <Activity className="h-4 w-4 text-muted-foreground" />
@@ -670,3 +681,4 @@ export default function TeamPage() {
     </ScrollArea>
   );
 }
+
