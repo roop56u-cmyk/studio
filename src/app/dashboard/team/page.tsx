@@ -461,7 +461,7 @@ export default function TeamPage() {
                                 <p className="text-xs text-muted-foreground">Total deposits from all members</p>
                             </CardContent>
                         </Card>
-                        <Card>
+                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">Total Team Net Worth</CardTitle>
                                 <Landmark className="h-4 w-4 text-muted-foreground" />
@@ -506,6 +506,36 @@ export default function TeamPage() {
                                 </div>
                                 <Progress value={uplineReferralProgress} />
                             </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {shouldShowCommunityCommission && (
+                    <Card>
+                        <CardHeader>
+                        <CardTitle>Community Commission Requirements</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {applicableCommunityRule ? (
+                                <>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                        <span>Active L1 Referrals</span>
+                                        <span>{activeL1Referrals} / {applicableCommunityRule.requiredDirectReferrals}</span>
+                                    </div>
+                                    <Progress value={Math.min(100, (activeL1Referrals/applicableCommunityRule.requiredDirectReferrals)*100)} />
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                        <span>L1-L3 Team Size</span>
+                                        <span>{teamData.level1.count + teamData.level2.count + teamData.level3.count} / {applicableCommunityRule.requiredTeamSize}</span>
+                                    </div>
+                                    <Progress value={Math.min(100, ((teamData.level1.count + teamData.level2.count + teamData.level3.count)/applicableCommunityRule.requiredTeamSize)*100)} />
+                                </div>
+                                </>
+                            ) : (
+                                <p className="text-sm text-muted-foreground text-center">No community commission rule is currently applicable for your level.</p>
+                            )}
                         </CardContent>
                     </Card>
                 )}
@@ -575,38 +605,6 @@ export default function TeamPage() {
                     })}
                 </div>
 
-                {shouldShowCommunityCommission && (
-                    <Card>
-                        <CardHeader>
-                        <CardTitle>Community Commission Requirements</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {applicableCommunityRule ? (
-                                <>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between items-center text-xs text-muted-foreground">
-                                        <span>Active L1 Referrals</span>
-                                        <span>{activeL1Referrals} / {applicableCommunityRule.requiredDirectReferrals}</span>
-                                    </div>
-                                    <Progress value={Math.min(100, (activeL1Referrals/applicableCommunityRule.requiredDirectReferrals)*100)} />
-                                </div>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between items-center text-xs text-muted-foreground">
-                                        <span>L1-L3 Team Size</span>
-                                        <span>{teamData.level1.count + teamData.level2.count + teamData.level3.count} / {applicableCommunityRule.requiredTeamSize}</span>
-                                    </div>
-                                    <Progress value={Math.min(100, ((teamData.level1.count + teamData.level2.count + teamData.level3.count)/applicableCommunityRule.requiredTeamSize)*100)} />
-                                </div>
-                                </>
-                            ) : (
-                                <p className="text-sm text-muted-foreground text-center">No community commission rule is currently applicable for your level.</p>
-                            )}
-                        </CardContent>
-                    </Card>
-                )}
-
-
-                {shouldShowCommunityCommission && (
                 <Card>
                     <CardHeader>
                         <CardTitle>L4+ Community Members</CardTitle>
@@ -639,7 +637,6 @@ export default function TeamPage() {
                         </Accordion>
                     </CardContent>
                 </Card>
-                )}
 
                 {availableSalaryPackages.length > 0 && (
                     <div>
