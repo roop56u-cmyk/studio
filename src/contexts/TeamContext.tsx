@@ -148,9 +148,11 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             }
             if (currentUser?.email) {
                 setLastCommissionCredit(localStorage.getItem(commissionCreditKey));
+                const initialHistory = JSON.parse(localStorage.getItem(activityHistoryKey) || '[]');
+                setUserActivityHistory(initialHistory);
             }
         }
-    }, [currentUser?.email, commissionCreditKey]);
+    }, [currentUser?.email, commissionCreditKey, activityHistoryKey]);
 
     const totalUplineCommission = useMemo(() => {
         if (!currentUser?.email || !lastCommissionCredit) return 0;
