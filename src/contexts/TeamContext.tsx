@@ -103,15 +103,13 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [uplineInfo, setUplineInfo] = useState<{ name: string; email: string; } | null>(null);
     const [activeL1Referrals, setActiveL1Referrals] = useState(0);
-    const { currentLevel } = useWallet();
+    const { addCommunityCommissionToMainBalance, currentLevel } = useWallet();
     
     const [commissionRates, setCommissionRates] = useState({ level1: 10, level2: 5, level3: 2 });
     const [commissionEnabled, setCommissionEnabled] = useState({ level1: true, level2: true, level3: true });
     const [uplineCommissionSettings, setUplineCommissionSettings] = useState<UplineCommissionSettings>({ enabled: false, rate: 5, requiredReferrals: 3 });
-    const [lastTeamCommissionCredit, setLastTeamCommissionCredit] = useState<string | null>(null);
-    const [lastCommunityCommissionCredit, setLastCommunityCommissionCredit] = useState<string | null>(null);
-
-    // Watchers for real-time updates
+    
+    // These watchers will update state when localStorage changes from other tabs or admin actions.
     useLocalStorageWatcher('team_commission_rates', setCommissionRates);
     useLocalStorageWatcher('team_commission_enabled', setCommissionEnabled);
     useLocalStorageWatcher('platform_team_rewards', setTeamRewards);
@@ -120,11 +118,14 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     useLocalStorageWatcher('upline_commission_settings', setUplineCommissionSettings);
     useLocalStorageWatcher('community_commission_rules', (rules) => setCommunityCommissionRules(rules.filter((r: CommunityCommissionRule) => r.enabled)));
 
-    // Watcher for commission credit timestamps
+    // State for payout timestamps
+    const [lastTeamCommissionCredit, setLastTeamCommissionCredit] = useState<string | null>(null);
+    const [lastCommunityCommissionCredit, setLastCommunityCommissionCredit] = useState<string | null>(null);
+    
+    // Watchers for the specific user's payout timestamps
     const teamCommissionCreditKey = currentUser?.email ? `${currentUser.email}_lastTeamCommissionCredit` : '';
-    const communityCommissionCreditKey = currentUser?.email ? `${currentUser.email}_lastCommunityCommissionCredit` : '';
-
     useLocalStorageWatcher(teamCommissionCreditKey, setLastTeamCommissionCredit);
+    const communityCommissionCreditKey = currentUser?.email ? `${currentUser.email}_lastCommunityCommissionCredit` : '';
     useLocalStorageWatcher(communityCommissionCreditKey, setLastCommunityCommissionCredit);
 
 
@@ -289,7 +290,79 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
         return { level1, level2, level3 };
 
-    }, [getDepositsForUser]);
+    }, [getDepositsForUser, users]);
+    
+    // This is the core payout logic, now integrated into the context
+    const handleCommunityCommissionPayout = useCallback(() => {
+        if (!currentUser || currentUser.status !== 'active') return;
+
+        // 1. Calculate final earnings based on the *current* state before reset
+        const lastCreditTime = new Date(lastCommunityCommissionCredit || 0).getTime();
+        const payoutData = calculateCommunityData(currentUser, users, lastCreditTime);
+
+        // Find the applicable rule for the user
+        const applicableRule = [...communityCommissionRules]
+            .sort((a, b) => b.requiredLevel - a.requiredLevel)
+            .find(rule => rule.requiredLevel === 0 || currentLevel >= rule.requiredLevel);
+        
+        if (!applicableRule) return; // No rule applies, do nothing
+
+        // Check eligibility
+        const currentL1to3size = (teamData?.level1.count || 0) + (teamData?.level2.count || 0) + (teamData?.level3.count || 0);
+        const referralsMet = activeL1Referrals >= applicableRule.requiredDirectReferrals;
+        const teamSizeMet = currentL1to3size >= applicableRule.requiredTeamSize;
+        
+        if (!referralsMet || !teamSizeMet) return; // Not eligible, do nothing
+
+        const commissionAmount = payoutData.totalEarnings * (applicableRule.commissionRate / 100);
+
+        // 2. If there's an amount, credit the user's wallet
+        if (commissionAmount > 0) {
+            addCommunityCommissionToMainBalance(commissionAmount);
+        }
+
+        // 3. Update the last credit timestamp in both localStorage and state
+        const now = new Date().toISOString();
+        localStorage.setItem(communityCommissionCreditKey, now);
+        setLastCommunityCommissionCredit(now); // This direct state update forces the context to re-calculate, resetting the UI
+
+    }, [currentUser, users, lastCommunityCommissionCredit, communityCommissionRules, currentLevel, teamData, activeL1Referrals, addCommunityCommissionToMainBalance, calculateCommunityData, communityCommissionCreditKey]);
+
+
+    useEffect(() => {
+        const checkPayouts = () => {
+            if (!currentUser?.email) return;
+
+            const timeSource = localStorage.getItem('platform_time_source') || 'live';
+            const resetTimeStr = localStorage.getItem('platform_task_reset_time') || '00:00';
+            const [resetHours, resetMinutes] = resetTimeStr.split(':').map(Number);
+            
+            let now = timeSource === 'manual' ? new Date(localStorage.getItem('platform_manual_time') || new Date()) : new Date();
+
+            const istOffset = -330; 
+            const localOffset = now.getTimezoneOffset();
+            const totalOffset = localOffset - istOffset;
+
+            let resetTimeToday = new Date(now);
+            resetTimeToday.setUTCHours(resetHours, resetMinutes, 0, 0);
+            resetTimeToday.setMinutes(resetTimeToday.getMinutes() + totalOffset);
+            
+            // Determine the last effective reset time
+            if (now.getTime() < resetTimeToday.getTime()) {
+              resetTimeToday.setDate(resetTimeToday.getDate() - 1);
+            }
+
+            // Check for Community Commission Payout
+            const lastCommunityCreditTime = new Date(lastCommunityCommissionCredit || 0).getTime();
+            if (lastCommunityCreditTime < resetTimeToday.getTime()) {
+                handleCommunityCommissionPayout();
+            }
+        };
+
+        const interval = setInterval(checkPayouts, 5000); // Check every 5 seconds
+        return () => clearInterval(interval);
+
+    }, [currentUser, lastCommunityCommissionCredit, handleCommunityCommissionPayout]);
 
 
     useEffect(() => {
