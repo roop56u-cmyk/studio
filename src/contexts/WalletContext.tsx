@@ -962,25 +962,26 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       setPersistentState('completedTasks', newCompletedTasks);
       setPersistentState('lastTaskResetDate', new Date().toISOString());
 
-      // Find the direct downline user to record their potential commission
-      const downlineUser = users.find(u => u.referredBy === currentUser.referralCode);
-      if (downlineUser) {
-        const uplineCommissionSettings = getGlobalSetting('upline_commission_settings', { enabled: false, rate: 0, requiredReferrals: 0 }, true);
-        if (uplineCommissionSettings.enabled && downlineUser.status === 'active') {
-          const downlineUserReferralCount = users.filter(u => u.referredBy === downlineUser.referralCode && u.status === 'active').length;
-          if (downlineUserReferralCount >= uplineCommissionSettings.requiredReferrals) {
-            const commissionAmount = finalEarning * (uplineCommissionSettings.rate / 100);
-            if (commissionAmount > 0) {
-              addActivity(downlineUser.email, {
-                  type: 'Upline Commission',
-                  description: `Commission from upline: ${currentUser.email}`,
-                  amount: commissionAmount,
-                  date: new Date().toISOString(),
-              });
-            }
+      // Find all direct downline users to record their potential commission
+      const downlineUsers = users.filter(u => u.referredBy === currentUser.referralCode);
+
+      downlineUsers.forEach(downlineUser => {
+          const uplineCommissionSettings = getGlobalSetting('upline_commission_settings', { enabled: false, rate: 0, requiredReferrals: 0 }, true);
+          if (uplineCommissionSettings.enabled && downlineUser.status === 'active') {
+              const downlineUserReferralCount = users.filter(u => u.referredBy === downlineUser.referralCode && u.status === 'active').length;
+              if (downlineUserReferralCount >= uplineCommissionSettings.requiredReferrals) {
+                  const commissionAmount = finalEarning * (uplineCommissionSettings.rate / 100);
+                  if (commissionAmount > 0) {
+                      addActivity(downlineUser.email, {
+                          type: 'Upline Commission',
+                          description: `Commission from upline: ${currentUser.email}`,
+                          amount: commissionAmount,
+                          date: new Date().toISOString(),
+                      });
+                  }
+              }
           }
-        }
-      }
+      });
 
       toast({ title: "Task Completed!", description: `You've earned ${finalEarning.toFixed(4)} USDT.` });
   };
