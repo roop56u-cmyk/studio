@@ -121,12 +121,12 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     useLocalStorageWatcher('community_commission_rules', (rules) => setCommunityCommissionRules(rules.filter((r: CommunityCommissionRule) => r.enabled)));
 
     // Watcher for commission credit timestamps
-    useEffect(() => {
-        if(currentUser?.email) {
-            useLocalStorageWatcher(`${currentUser.email}_lastTeamCommissionCredit`, setLastTeamCommissionCredit);
-            useLocalStorageWatcher(`${currentUser.email}_lastCommunityCommissionCredit`, setLastCommunityCommissionCredit);
-        }
-    }, [currentUser?.email]);
+    const teamCommissionCreditKey = currentUser?.email ? `${currentUser.email}_lastTeamCommissionCredit` : '';
+    const communityCommissionCreditKey = currentUser?.email ? `${currentUser.email}_lastCommunityCommissionCredit` : '';
+
+    useLocalStorageWatcher(teamCommissionCreditKey, setLastTeamCommissionCredit);
+    useLocalStorageWatcher(communityCommissionCreditKey, setLastCommunityCommissionCredit);
+
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
