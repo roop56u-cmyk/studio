@@ -315,7 +315,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         return JSON.parse(storedValue);
       }
     } catch (error) {
-      console.error(`Failed to parse ${key} from localStorage for ${targetEmail}`, error);
+      // It might be a simple string, not JSON.
+      const storedValue = localStorage.getItem(`${targetEmail}_${key}`);
+      if(storedValue) return storedValue;
     }
     return defaultValue;
   }, [currentUser?.email]);
@@ -944,45 +946,40 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
           return;
       }
       
-      const taskEarningBoost = activeBoosters.find(b => b.type === 'TASK_EARNING')?.value || 0;
-      const baseEarning = earningPerTask || 0;
-      const finalEarning = baseEarning + (baseEarning * (taskEarningBoost / 100));
+      const finalEarning = earningPerTask;
 
       const newTasksCompleted = tasksCompletedToday + 1;
       const newTaskRewardsBalance = taskRewardsBalance + finalEarning;
       const newCompletedTask: CompletedTask = { id: `TASK-${Date.now()}`, title: task.taskTitle, description: task.taskDescription, earnings: finalEarning, completedAt: new Date().toISOString() };
       const newCompletedTasks = [newCompletedTask, ...completedTasks];
       
-      // Update state immediately
       setTaskRewardsBalance(newTaskRewardsBalance);
       setTasksCompletedToday(newTasksCompleted);
       setCompletedTasks(newCompletedTasks);
       
-      // Persist state
       setPersistentState('taskRewardsBalance', newTaskRewardsBalance);
       setPersistentState('tasksCompletedToday', newTasksCompleted);
       setPersistentState('completedTasks', newCompletedTasks);
       setPersistentState('lastTaskResetDate', new Date().toISOString());
 
-      // Upline Commission Logic: Just log the event. The daily payout is handled by TeamContext.
-      if (currentUser.referredBy) {
-          const uplineUser = users.find(u => u.referralCode === currentUser.referredBy);
-          if (uplineUser) {
-              const uplineCommissionSettings = getGlobalSetting('upline_commission_settings', { enabled: false, rate: 0, requiredReferrals: 0 }, true);
-              const downlineCount = users.filter(u => u.referredBy === uplineUser.referralCode && u.status === 'active').length;
-              if (uplineCommissionSettings.enabled && uplineUser.status === 'active' && downlineCount >= uplineCommissionSettings.requiredReferrals) {
-                  const commissionAmount = finalEarning * (uplineCommissionSettings.rate / 100);
-                  if (commissionAmount > 0) {
-                      // Log this event for the upline user. It will be processed at their next daily payout.
-                      addActivity(uplineUser.email, {
-                          type: 'Upline Commission',
-                          description: `Commission from downline: ${currentUser.email}`,
-                          amount: commissionAmount,
-                          date: new Date().toISOString(),
-                      });
-                  }
-              }
+      // Find the direct downline user to record their potential commission
+      const downlineUser = users.find(u => u.referredBy === currentUser.referralCode);
+      if (downlineUser) {
+        const uplineCommissionSettings = getGlobalSetting('upline_commission_settings', { enabled: false, rate: 0, requiredReferrals: 0 }, true);
+        if (uplineCommissionSettings.enabled && downlineUser.status === 'active') {
+          const downlineUserReferralCount = users.filter(u => u.referredBy === downlineUser.referralCode && u.status === 'active').length;
+          if (downlineUserReferralCount >= uplineCommissionSettings.requiredReferrals) {
+            const commissionAmount = finalEarning * (uplineCommissionSettings.rate / 100);
+            if (commissionAmount > 0) {
+              addActivity(downlineUser.email, {
+                  type: 'Upline Commission',
+                  description: `Commission from upline: ${currentUser.email}`,
+                  amount: commissionAmount,
+                  date: new Date().toISOString(),
+              });
+            }
           }
+        }
       }
 
       toast({ title: "Task Completed!", description: `You've earned ${finalEarning.toFixed(4)} USDT.` });
