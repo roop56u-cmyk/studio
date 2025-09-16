@@ -18,8 +18,9 @@ export function useLocalStorageWatcher<T>(key: string, setter: (value: T) => voi
     }
 
     const intervalId = setInterval(() => {
+      let currentValue: string | null = null;
       try {
-        const currentValue = localStorage.getItem(key);
+        currentValue = localStorage.getItem(key);
         if (currentValue !== previousValueRef.current) {
           if (currentValue === null) {
             // Handle item removal if needed, for now we assume it won't be null
@@ -31,7 +32,7 @@ export function useLocalStorageWatcher<T>(key: string, setter: (value: T) => voi
           previousValueRef.current = currentValue;
         }
       } catch (error) {
-        console.error(`useLocalStorageWatcher: Error polling key "${key}" from localStorage`, error);
+        console.error(`useLocalStorageWatcher: Error parsing key "${key}" from localStorage. Value was:`, currentValue, error);
       }
     }, POLLING_INTERVAL);
 
