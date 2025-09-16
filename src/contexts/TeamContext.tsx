@@ -12,6 +12,7 @@ import type { UplineCommissionSettings } from '@/app/dashboard/admin/upline-comm
 import type { SalaryPackage } from '@/app/dashboard/admin/salary/page';
 import { useLocalStorageWatcher } from '@/hooks/use-local-storage-watcher';
 import type { CommunityCommissionRule } from '@/app/dashboard/admin/community-commission/page';
+import type { Activity } from './RequestContext';
 
 type TeamMember = User & {
     level: number;
@@ -108,9 +109,14 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const [uplineCommissionSettings, setUplineCommissionSettings] = useState<UplineCommissionSettings>({ enabled: false, rate: 5, requiredReferrals: 3 });
     
     const [lastCommissionCredit, setLastCommissionCredit] = useState<string | null>(null);
+    const [userActivityHistory, setUserActivityHistory] = useState<Activity[]>([]);
     
     const commissionCreditKey = currentUser?.email ? `${currentUser.email}_lastCommissionCredit` : '';
     useLocalStorageWatcher(commissionCreditKey, setLastCommissionCredit);
+
+    // Watch the current user's activity history to update commission cards in real-time
+    const activityHistoryKey = currentUser?.email ? `${currentUser.email}_activityHistory` : '';
+    useLocalStorageWatcher(activityHistoryKey, setUserActivityHistory);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -147,16 +153,16 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     }, [currentUser?.email, commissionCreditKey]);
 
     const totalUplineCommission = useMemo(() => {
-        if (typeof window === 'undefined' || !currentUser?.email || !lastCommissionCredit) return 0;
+        if (!currentUser?.email || !lastCommissionCredit) return 0;
         
-        const activityHistory = JSON.parse(localStorage.getItem(`${currentUser.email}_activityHistory`) || '[]');
-        return activityHistory
+        const lastCreditTime = new Date(lastCommissionCredit).getTime();
+
+        return userActivityHistory
             .filter((activity: { type: string, amount?: number, date: string }) => {
-                const lastCreditTime = new Date(lastCommissionCredit).getTime();
                 return activity.type === 'Upline Commission' && activity.amount && new Date(activity.date).getTime() >= lastCreditTime;
             })
             .reduce((sum: number, activity: { amount?: number }) => sum + (activity.amount || 0), 0);
-    }, [currentUser?.email, lastCommissionCredit]);
+    }, [userActivityHistory, lastCommissionCredit, currentUser?.email]);
 
     const getDepositsForUser = useCallback((userEmail: string): number => {
         if (typeof window === 'undefined') return 0;
@@ -310,8 +316,8 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         }
         
         // --- UPLINE COMMISSION PAYOUT ---
-        const activityHistory = JSON.parse(localStorage.getItem(`${currentUser.email}_activityHistory`) || '[]');
-        const finalUplineCommission = activityHistory
+        const historyForPayout = JSON.parse(localStorage.getItem(`${currentUser.email}_activityHistory`) || '[]');
+        const finalUplineCommission = historyForPayout
             .filter((activity: { type: string, amount?: number, date: string }) => 
                 activity.type === 'Upline Commission' && 
                 activity.amount && 
