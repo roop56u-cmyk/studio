@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useEffect, useCallback } from "react";
@@ -8,24 +7,18 @@ import { useWallet } from "@/contexts/WalletContext";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function useCommunityCommission() {
-  const { communityData, communityCommissionRules, activeL1Referrals } = useTeam();
+  const { communityData, communityCommissionRules, activeL1Referrals, teamData } = useTeam();
   const { addCommunityCommissionToMainBalance } = useWallet();
   const { currentUser } = useAuth();
   
   const creditCommission = useCallback(() => {
-    if (!communityData || !currentUser || currentUser.status !== 'active') return;
+    if (!communityData || !teamData || !currentUser || currentUser.status !== 'active') return;
 
     const applicableRule = [...communityCommissionRules]
         .sort((a, b) => b.requiredLevel - a.requiredLevel)
         .find(rule => rule.requiredLevel === 0 || (currentUser as any).level >= rule.requiredLevel);
     
     if (!applicableRule) return;
-
-    const l1to3size = communityData.l1To3Size;
-    const referralsMet = activeL1Referrals >= applicableRule.requiredDirectReferrals;
-    const teamSizeMet = l1to3size >= applicableRule.requiredTeamSize;
-    
-    if (!referralsMet || !teamSizeMet) return;
 
     const lastCreditKey = `${currentUser.email}_lastCommunityCommissionCredit`;
     const lastCreditDateStr = localStorage.getItem(lastCreditKey);
@@ -47,16 +40,23 @@ export function useCommunityCommission() {
     const lastCreditTime = lastCreditDateStr ? new Date(lastCreditDateStr).getTime() : 0;
     
     if (now.getTime() >= resetTimeToday.getTime() && lastCreditTime < resetTimeToday.getTime()) {
-      const commissionAmount = communityData.totalEarnings * (applicableRule.commissionRate / 100);
+      
+      const l1to3size = teamData.level1.count + teamData.level2.count + teamData.level3.count;
+      const referralsMet = activeL1Referrals >= applicableRule.requiredDirectReferrals;
+      const teamSizeMet = l1to3size >= applicableRule.requiredTeamSize;
 
-      if (commissionAmount > 0) {
-        addCommunityCommissionToMainBalance(commissionAmount);
+      if (referralsMet && teamSizeMet) {
+        const commissionAmount = communityData.totalEarnings * (applicableRule.commissionRate / 100);
+
+        if (commissionAmount > 0) {
+          addCommunityCommissionToMainBalance(commissionAmount);
+        }
       }
       
       localStorage.setItem(lastCreditKey, new Date().toISOString());
     }
 
-  }, [communityData, communityCommissionRules, currentUser, activeL1Referrals, addCommunityCommissionToMainBalance]);
+  }, [communityData, teamData, communityCommissionRules, currentUser, activeL1Referrals, addCommunityCommissionToMainBalance]);
   
   useEffect(() => {
     const interval = setInterval(() => {
