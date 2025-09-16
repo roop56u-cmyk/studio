@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo, useCallback } from 'react';
@@ -171,7 +170,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         return mainBalance + taskBalance + interestBalance;
     }, []);
 
-    const calculateCommunityData = useCallback((user: User, allUsers: User[], lastResetTime: number): CommunityData => {
+    const calculateCommunityData = useCallback((user: User, allUsers: User[], cycleStartTime: number): CommunityData => {
         const processedEmails = new Set<string>([user.email]);
         
         const l1 = allUsers.filter(u => u.referredBy === user.referralCode);
@@ -200,7 +199,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             const completedTasksForCycle = JSON.parse(localStorage.getItem(`${m.email}_completedTasks`) || '[]')
                 .filter((task: { completedAt: string }) => {
                     const completedAt = new Date(task.completedAt).getTime();
-                    return completedAt >= lastResetTime;
+                    return completedAt >= cycleStartTime;
                 });
 
             return sum + completedTasksForCycle.reduce((taskSum: number, task: { earnings: number }) => taskSum + task.earnings, 0);
@@ -208,7 +207,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         
         const enrichedMembers: TeamMember[] = L4PlusMembers.map(m => ({ ...m, level: getLevelForUser(m, allUsers), status: allUsers.find(u => u.email === m.email)?.status || m.status }));
 
-        const activationsToday = allUsers.filter(u => L4PlusMembers.some(m => m.email === u.email) && u.status === 'active' && u.activatedAt && new Date(u.activatedAt).getTime() >= lastResetTime).length;
+        const activationsToday = allUsers.filter(u => L4PlusMembers.some(m => m.email === u.email) && u.status === 'active' && u.activatedAt && new Date(u.activatedAt).getTime() >= cycleStartTime).length;
 
         return {
             members: enrichedMembers,
@@ -282,31 +281,17 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         if (currentUser) {
             setIsLoading(true);
-            const timeSource = localStorage.getItem('platform_time_source') || 'live';
-            const resetTimeStr = localStorage.getItem('platform_task_reset_time') || '00:00';
-            const [resetHours, resetMinutes] = resetTimeStr.split(':').map(Number);
-            let now = timeSource === 'manual' ? new Date(localStorage.getItem('platform_manual_time') || new Date()) : new Date();
+            const teamCommissionCreditKey = `${currentUser.email}_lastTeamCommissionCredit`;
+            const communityCommissionCreditKey = `${currentUser.email}_lastCommunityCommissionCredit`;
 
-            const istOffset = -330;
-            const localOffset = now.getTimezoneOffset();
-            const totalOffset = localOffset - istOffset;
+            const lastTeamCreditTime = new Date(localStorage.getItem(teamCommissionCreditKey) || 0).getTime();
+            const lastCommunityCreditTime = new Date(localStorage.getItem(communityCommissionCreditKey) || 0).getTime();
+
+            const currentTeamData = calculateTeamData(currentUser, users, lastTeamCreditTime);
+            const currentCommunityData = calculateCommunityData(currentUser, users, lastCommunityCreditTime);
             
-            let resetTimeToday = new Date(now);
-            resetTimeToday.setHours(resetHours, resetMinutes, 0, 0);
-            resetTimeToday.setMinutes(resetTimeToday.getMinutes() + totalOffset);
-            
-            let resetTimeYesterday = new Date(resetTimeToday);
-            resetTimeYesterday.setDate(resetTimeToday.getDate() - 1);
-            
-            const lastEffectiveReset = now >= resetTimeToday ? resetTimeToday.getTime() : resetTimeYesterday.getTime();
-            const lastCreditDateStr = localStorage.getItem(`${currentUser.email}_lastTeamCommissionCredit`);
-            const lastCreditTime = lastCreditDateStr ? new Date(lastCreditDateStr).getTime() : 0;
-            
-            const currentData = calculateTeamData(currentUser, users, lastCreditTime);
-            const communityData = calculateCommunityData(currentUser, users, lastEffectiveReset);
-            
-            setTeamData(currentData);
-            setCommunityData(communityData);
+            setTeamData(currentTeamData);
+            setCommunityData(currentCommunityData);
             setIsLoading(false);
         }
     }, [currentUser, users, calculateTeamData, calculateCommunityData]);
