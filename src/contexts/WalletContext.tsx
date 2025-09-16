@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect, useMemo } from 'react';
@@ -153,6 +152,7 @@ interface WalletContextType {
   handleMoveFunds: (destination: 'Task Rewards' | 'Interest Earnings' | 'Main Wallet', amountToMove: number, fromAccount?: 'Task Rewards' | 'Interest Earnings') => void;
   approveRecharge: (userEmail: string, rechargeAmount: number) => void;
   addCommissionToMainBalance: (commissionAmount: number) => void;
+  addCommunityCommissionToMainBalance: (commissionAmount: number) => void;
   requestWithdrawal: (withdrawalAmount: number, withdrawalAddress: string) => void;
   approveWithdrawal: (userEmail: string, amount: number) => void;
   approveSignUpBonus: (userEmail: string, amount: number) => void;
@@ -756,6 +756,18 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         date: new Date().toISOString()
     });
     toast({ title: "Commission Received!", description: `Your daily team commission of $${commissionAmount.toFixed(2)} has been added to your main wallet.` });
+  }, [toast, addActivity, currentUser]);
+  
+  const addCommunityCommissionToMainBalance = useCallback((commissionAmount: number) => {
+    if (!currentUser || currentUser.status !== 'active') return;
+    setMainBalance(prev => prev + commissionAmount);
+    addActivity(currentUser.email, {
+        type: 'Community Commission',
+        description: 'Commission from community earnings',
+        amount: commissionAmount,
+        date: new Date().toISOString()
+    });
+    toast({ title: "Community Commission Received!", description: `Your community commission of $${commissionAmount.toFixed(2)} has been added to your main wallet.` });
   }, [toast, addActivity, currentUser]);
 
   const requestWithdrawal = (withdrawalAmount: number, withdrawalAddress: string) => { 
@@ -1435,6 +1447,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         handleMoveFunds,
         approveRecharge,
         addCommissionToMainBalance,
+        addCommunityCommissionToMainBalance,
         requestWithdrawal,
         approveWithdrawal,
         approveSignUpBonus,
@@ -1507,5 +1520,3 @@ export const useWallet = () => {
   }
   return context;
 };
-
-

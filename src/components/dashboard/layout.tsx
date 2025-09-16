@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from "next/link";
@@ -118,6 +119,7 @@ import { NoticesPanel } from "@/components/dashboard/notices-panel";
 import TeamPage from "./team/page";
 import { AboutUsPanel } from '@/components/dashboard/about-us-panel';
 import { NftCollectionPanel } from '@/components/dashboard/nft-collection-panel';
+import { useCommunityCommission } from '@/hooks/use-community-commission';
 
 
 // Admin Panel Imports
@@ -132,6 +134,7 @@ import ManageUserPanelsPage from "./admin/user-panels/page";
 import WebsiteUIPage from "./admin/website-ui/page";
 import SystemSettingsPage from "./admin/settings/page";
 import NftSettingsPage from './admin/nft-settings/page';
+import NftStakingPage from './admin/nft-staking/page';
 import ActivityLogPage from "./admin/activity-log/page";
 import ManageRechargeAddressesPage from "./admin/recharge-addresses/page";
 import ManageTeamRewardsPage from "./admin/team-rewards/page";
@@ -152,7 +155,7 @@ import SettingsPage from './settings/page';
 import type { Notice } from './admin/notices/page';
 
 
-type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'nftSettings' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement' | 'purchaseHistory' | 'reimbursements' | 'aboutUs' | 'adminProfile' | 'scheduling' | 'communityCommission' | 'tokenomics';
+type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'nftSettings' | 'nftStaking' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement' | 'purchaseHistory' | 'reimbursements' | 'aboutUs' | 'adminProfile' | 'scheduling' | 'communityCommission' | 'tokenomics';
 
 
 const adminPanelComponents: Record<PanelType, React.ComponentType> = {
@@ -168,6 +171,7 @@ const adminPanelComponents: Record<PanelType, React.ComponentType> = {
     websiteUI: WebsiteUIPage,
     systemSettings: SystemSettingsPage,
     nftSettings: NftSettingsPage,
+    nftStaking: NftStakingPage,
     activityLog: ActivityLogPage,
     inbox: InboxPanel,
     rechargeAddresses: ManageRechargeAddressesPage,
@@ -198,6 +202,7 @@ const adminPanelTitles: Record<PanelType, { title: string; description: string }
     websiteUI: { title: "Website & UI", description: "Customize the look and feel of the website." },
     systemSettings: { title: "System Settings", description: "Configure global application settings." },
     nftSettings: { title: "NFT Settings", description: "Configure the NFT circulation market." },
+    nftStaking: { title: "NFT Staking", description: "Manage NFT staking packages." },
     activityLog: { title: "Activity Log", description: "Review administrative actions." },
     inbox: { title: "Inbox", description: "View and respond to user messages." },
     rechargeAddresses: { title: "Recharge Addresses", description: "Manage official deposit addresses." },
@@ -390,6 +395,7 @@ function SidebarContentComponent({
                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('websiteUI')} tooltip={{ children: "Website & UI" }}><Palette /><span>Website & UI</span></SidebarMenuButton></SidebarMenuItem>
                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('userPanels')} tooltip={{ children: "User Panels" }}><LayoutGrid /><span>User Panels</span></SidebarMenuButton></SidebarMenuItem>
                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('nftSettings')} tooltip={{ children: "NFT Settings" }}><Sparkles /><span>NFT Settings</span></SidebarMenuButton></SidebarMenuItem>
+                        <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('nftStaking')} tooltip={{ children: "NFT Staking" }}><Layers /><span>NFT Staking</span></SidebarMenuButton></SidebarMenuItem>
                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('rechargeAddresses')} tooltip={{ children: "Recharge Addresses" }}><Network /><span>Recharge Addresses</span></SidebarMenuButton></SidebarMenuItem>
                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('aboutUs')} tooltip={{ children: "About Us Page" }}><Info /><span>About Us Page</span></SidebarMenuButton></SidebarMenuItem>
                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('scheduling')} tooltip={{ children: "Scheduling" }}><CalendarClock /><span>Scheduling</span></SidebarMenuButton></SidebarMenuItem>
@@ -685,6 +691,7 @@ export default function DashboardLayout({
     const [isTaskMoveWarningOpen, setIsTaskMoveWarningOpen] = React.useState(false);
     
     useTeamCommission();
+    useCommunityCommission();
 
     React.useEffect(() => {
         setIsClient(true);
