@@ -102,8 +102,8 @@ export type MiningPackageInfo = {
     id: string;
     name: string;
     price: number;
-    miningRate: number;
-    duration: number; // hours
+    miningRate: number; // Tokens per hour
+    duration: number; // in hours
 };
 
 export type PurchasedMiningPackage = {
@@ -545,7 +545,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             const rewardIndex = newStreak % rewardTiers.length;
             const reward = rewardTiers.length > 0 ? rewardTiers[rewardIndex]?.reward ?? 0 : 0;
 
-            setDailyRewardState({ isEnabled, canClaim, streak: newStreak, reward });
+            setDailyRewardState({ isEnabled, canClaim, streak: newStreak, reward: reward });
             if (newStreak !== streak) {
               setPersistentState('daily_claim_streak', newStreak);
             }
@@ -950,7 +950,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       setPersistentState('completedTasks', newCompletedTasks);
       setPersistentState('lastTaskResetDate', new Date().toISOString());
 
-      // Correct Upline Commission Logic
+      // Upline Commission Logic: Just log the event. Payout is handled by TeamContext.
       const uplineSettings = getGlobalSetting('upline_commission_settings', { enabled: false, rate: 0, requiredReferrals: 0 }, true);
 
       // Find all direct downlines of the current user (who is the sponsor/upline)
@@ -962,16 +962,11 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
               const downlineL1Count = users.filter(u => u.referredBy === downline.referralCode && u.status === 'active').length;
               if (downline.status === 'active' && downlineL1Count >= uplineSettings.requiredReferrals) {
                   const commissionAmount = finalEarning * (uplineSettings.rate / 100);
-
                   if (commissionAmount > 0) {
-                      const downlineBalanceKey = `${downline.email}_mainBalance`;
-                      const currentDownlineBalance = parseFloat(localStorage.getItem(downlineBalanceKey) || '0');
-                      localStorage.setItem(downlineBalanceKey, (currentDownlineBalance + commissionAmount).toString());
-
-                      // Add activity log for the downline member who is RECEIVING the commission
+                      // We no longer pay out instantly. We just log the event for the daily payout cycle.
                       addActivity(downline.email, {
                           type: 'Upline Commission',
-                          description: `Commission from sponsor: ${currentUser.email}`,
+                          description: `Commission earned from sponsor: ${currentUser.email}`,
                           amount: commissionAmount,
                           date: new Date().toISOString()
                       });
