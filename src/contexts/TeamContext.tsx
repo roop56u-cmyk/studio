@@ -108,6 +108,8 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const [commissionRates, setCommissionRates] = useState({ level1: 10, level2: 5, level3: 2 });
     const [commissionEnabled, setCommissionEnabled] = useState({ level1: true, level2: true, level3: true });
     const [uplineCommissionSettings, setUplineCommissionSettings] = useState<UplineCommissionSettings>({ enabled: false, rate: 5, requiredReferrals: 3 });
+    const [lastTeamCommissionCredit, setLastTeamCommissionCredit] = useState<string | null>(null);
+    const [lastCommunityCommissionCredit, setLastCommunityCommissionCredit] = useState<string | null>(null);
 
     // Watchers for real-time updates
     useLocalStorageWatcher('team_commission_rates', setCommissionRates);
@@ -117,6 +119,14 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     useLocalStorageWatcher('platform_salary_packages', (allPackages) => setSalaryPackages(allPackages.filter((p: SalaryPackage) => p.enabled)));
     useLocalStorageWatcher('upline_commission_settings', setUplineCommissionSettings);
     useLocalStorageWatcher('community_commission_rules', (rules) => setCommunityCommissionRules(rules.filter((r: CommunityCommissionRule) => r.enabled)));
+
+    // Watcher for commission credit timestamps
+    useEffect(() => {
+        if(currentUser?.email) {
+            useLocalStorageWatcher(`${currentUser.email}_lastTeamCommissionCredit`, setLastTeamCommissionCredit);
+            useLocalStorageWatcher(`${currentUser.email}_lastCommunityCommissionCredit`, setLastCommunityCommissionCredit);
+        }
+    }, [currentUser?.email]);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -152,8 +162,12 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
                 const allRules = JSON.parse(savedCommunityRules);
                 setCommunityCommissionRules(allRules.filter((r: CommunityCommissionRule) => r.enabled));
             }
+            if (currentUser?.email) {
+                setLastTeamCommissionCredit(localStorage.getItem(`${currentUser.email}_lastTeamCommissionCredit`));
+                setLastCommunityCommissionCredit(localStorage.getItem(`${currentUser.email}_lastCommunityCommissionCredit`));
+            }
         }
-    }, []);
+    }, [currentUser?.email]);
 
     const totalUplineCommission = useMemo(() => {
         return activityHistory
@@ -294,7 +308,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             setCommunityData(currentCommunityData);
             setIsLoading(false);
         }
-    }, [currentUser, users, calculateTeamData, calculateCommunityData]);
+    }, [currentUser, users, calculateTeamData, calculateCommunityData, lastTeamCommissionCredit, lastCommunityCommissionCredit]);
 
 
     const totalTeamBusiness = useMemo(() => {
