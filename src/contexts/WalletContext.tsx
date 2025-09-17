@@ -11,6 +11,7 @@ import type { BonusTier } from '@/app/dashboard/admin/settings/page';
 import type { DailyReward } from '@/app/dashboard/admin/daily-rewards/page';
 import { nftLibrary } from '@/lib/nft-library';
 import type { NftStakingPackage } from '@/app/dashboard/admin/nft-staking/page';
+import type { SpinPackage } from '@/app/dashboard/admin/lucky-wheel/page';
 
 
 export type Request = {
@@ -216,6 +217,9 @@ interface WalletContextType {
   startMining: (purchasedPackageId: string) => void;
   claimMinedTokens: () => void;
   convertTokensToUsdt: (tokenAmount: number) => void;
+  // Lucky Wheel
+  extraSpins: number;
+  purchaseSpins: (pkg: SpinPackage) => void;
 }
 
 export type Activity = {
@@ -306,6 +310,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [purchasedMiningPackages, setPurchasedMiningPackages] = useState<PurchasedMiningPackage[]>([]);
   const [activeMiningPackage, setActiveMiningPackage] = useState<ActiveMiningPackage | null>(null);
   
+  // Lucky Wheel
+  const [extraSpins, setExtraSpins] = useState(0);
+
   const committedBalance = taskRewardsBalance + interestEarningsBalance;
   
   const getInitialState = useCallback((key: string, defaultValue: any, userEmail?: string) => {
@@ -476,6 +483,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             setWithdrawals(getInitialState('withdrawals', 0));
             setActivityHistory(getInitialState('activityHistory', []));
             setInterestCounter(getInitialState('interestCounter', { isRunning: false, startTime: null, durationHours: 24 }));
+            setExtraSpins(getInitialState('extra_spins', 0));
             
             setCompletedTasks(getInitialState('completedTasks', []));
             setWithdrawalAddresses(getInitialState('withdrawalAddresses', []));
@@ -570,6 +578,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             setDailyRewardState({ isEnabled: false, canClaim: false, streak: 0, reward: 0 });
             setNftCollection([]);
             setNftCooldowns({ failedSale: null, successfulSale: null });
+            setExtraSpins(0);
         }
         setIsLoading(false);
         setIsReady(true);
@@ -663,6 +672,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => { if (!isLoading) setPersistentState('claimedReferralIds', claimedReferralIds)}, [claimedReferralIds, isLoading, setPersistentState]);
   useEffect(() => { if (!isLoading) setPersistentState('nftCollection', nftCollection)}, [nftCollection, isLoading, setPersistentState]);
   useEffect(() => { if (!isLoading) setPersistentState('nftCooldowns', nftCooldowns)}, [nftCooldowns, isLoading, setPersistentState]);
+  useEffect(() => { if (!isLoading) setPersistentState('extra_spins', extraSpins)}, [extraSpins, isLoading, setPersistentState]);
 
  const addActivity = useCallback((userEmail: string, activity: Omit<Activity, 'id'>) => {
     const newActivity: Activity = {
@@ -1433,6 +1443,18 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     toast({ title: 'Conversion Successful', description: `You received ${netUsdtAmount.toFixed(2)} USDT in your main wallet.` });
   };
 
+  const purchaseSpins = (pkg: SpinPackage) => {
+    if (!currentUser) return;
+    if (mainBalance < pkg.price) {
+      toast({ variant: 'destructive', title: 'Insufficient Funds' });
+      return;
+    }
+    setMainBalance(prev => prev - pkg.price);
+    setExtraSpins(prev => prev + pkg.spinsGranted);
+    addActivity(currentUser.email, { type: 'Lucky Wheel Purchase', description: `Purchased ${pkg.name}`, amount: -pkg.price, date: new Date().toISOString() });
+    toast({ title: 'Spins Purchased!', description: `You have received ${pkg.spinsGranted} extra spin(s).` });
+  };
+
   return (
     <WalletContext.Provider
       value={{
@@ -1517,7 +1539,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         purchaseMiningPackage,
         startMining,
         claimMinedTokens,
-        convertTokensToUsdt
+        convertTokensToUsdt,
+        // Lucky Wheel
+        extraSpins,
+        purchaseSpins,
       }}
     >
       {children}
