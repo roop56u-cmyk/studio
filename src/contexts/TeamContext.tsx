@@ -132,9 +132,13 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const [uplineCommissionSettings, setUplineCommissionSettings] = useState<UplineCommissionSettings>({ enabled: false, rate: 5, requiredReferrals: 3 });
     
     const [lastCommissionCredit, setLastCommissionCredit] = useState<string | null>(null);
+    const [lastPayoutCheckTime, setLastPayoutCheckTime] = useState<string | null>(null);
     
     const commissionCreditKey = currentUser?.email ? `${currentUser.email}_lastCommissionCredit` : '';
     useLocalStorageWatcher(commissionCreditKey, setLastCommissionCredit);
+
+    const lastPayoutCheckKey = currentUser?.email ? `${currentUser.email}_lastPayoutCheck` : '';
+    useLocalStorageWatcher(lastPayoutCheckKey, setLastPayoutCheckTime);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -166,21 +170,22 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             }
             if (currentUser?.email) {
                 setLastCommissionCredit(localStorage.getItem(commissionCreditKey));
+                setLastPayoutCheckTime(localStorage.getItem(lastPayoutCheckKey));
             }
         }
-    }, [currentUser?.email, commissionCreditKey]);
+    }, [currentUser?.email, commissionCreditKey, lastPayoutCheckKey]);
 
     const totalUplineCommission = useMemo(() => {
         if (!currentUser?.email) return 0;
         
-        const lastReset = new Date(lastTaskResetDate || 0).getTime();
+        const lastPayoutTime = new Date(lastPayoutCheckTime || 0).getTime();
 
         return activityHistory
             .filter((activity) => {
-                return activity.type === 'Upline Commission' && activity.amount && new Date(activity.date).getTime() >= lastReset;
+                return activity.type === 'Upline Commission' && activity.amount && new Date(activity.date).getTime() >= lastPayoutTime;
             })
             .reduce((sum, activity) => sum + (activity.amount || 0), 0);
-    }, [activityHistory, lastTaskResetDate, currentUser?.email]);
+    }, [activityHistory, lastPayoutCheckTime, currentUser?.email]);
 
     const calculateCommunityData = useCallback((user: User, allUsers: User[], cycleStartTime: number): CommunityData => {
         const processedEmails = new Set<string>([user.email]);
@@ -227,7 +232,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             activeCount: activeMembers.length,
             activationsToday,
         };
-    }, []);
+    }, [users]);
 
 
     const calculateTeamData = useCallback((user: User, allUsers: User[], cycleStartTime: number): TeamData => {
@@ -295,7 +300,6 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
         const lastCreditTime = new Date(localStorage.getItem(commissionCreditKey) || 0).getTime();
         
-        // --- TEAM COMMISSION PAYOUT ---
         const currentTeamData = calculateTeamData(currentUser, users, lastCreditTime);
         let totalTeamCommission = 0;
         if (currentTeamData.level1.activeCount >= 1 && commissionEnabled.level1) totalTeamCommission += currentTeamData.level1.commission * (commissionRates.level1 / 100);
@@ -308,7 +312,6 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             addCommissionToMainBalance(finalTeamCommission);
         }
         
-        // --- COMMUNITY COMMISSION PAYOUT ---
         const payoutCommunityData = calculateCommunityData(currentUser, users, lastCreditTime);
         const applicableRule = [...communityCommissionRules]
             .sort((a, b) => b.requiredLevel - a.requiredLevel)
@@ -327,18 +330,10 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             }
         }
         
-        // --- UPLINE COMMISSION PAYOUT ---
-        // This is now handled by the `totalUplineCommission` useMemo directly. 
-        // We only need to credit the amount calculated there.
-        const uplinePayoutAmount = totalUplineCommission;
-        if (uplinePayoutAmount > 0) {
-            addUplineCommissionToMainBalance(uplinePayoutAmount);
-        }
-        
         localStorage.setItem(commissionCreditKey, new Date().toISOString());
         setLastCommissionCredit(localStorage.getItem(commissionCreditKey));
 
-    }, [currentUser, users, commissionCreditKey, commissionEnabled, commissionRates, getReferralCommissionBoost, addCommissionToMainBalance, calculateTeamData, calculateCommunityData, communityCommissionRules, currentLevel, activeL1Referrals, addCommunityCommissionToMainBalance, totalUplineCommission, addUplineCommissionToMainBalance]);
+    }, [currentUser, users, commissionCreditKey, commissionEnabled, commissionRates, getReferralCommissionBoost, addCommissionToMainBalance, calculateTeamData, calculateCommunityData, communityCommissionRules, currentLevel, activeL1Referrals, addCommunityCommissionToMainBalance]);
 
 
     useEffect(() => {
@@ -351,22 +346,23 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
                 ? new Date(localStorage.getItem('platform_manual_time') || new Date()) 
                 : new Date();
             const istNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-            const lastPayoutCheckTime = new Date(localStorage.getItem(`${currentUser.email}_lastPayoutCheck`) || 0);
+            const lastPayoutCheckTimeValue = new Date(localStorage.getItem(lastPayoutCheckKey) || 0);
             let lastResetTime = new Date(istNow);
             lastResetTime.setHours(resetHours, resetMinutes, 0, 0);
             if (istNow < lastResetTime) {
                 lastResetTime.setDate(lastResetTime.getDate() - 1);
             }
-            if (lastPayoutCheckTime < lastResetTime) {
+            if (lastPayoutCheckTimeValue < lastResetTime) {
                  handleCommissionPayouts();
-                 localStorage.setItem(`${currentUser.email}_lastPayoutCheck`, new Date().toISOString());
+                 localStorage.setItem(lastPayoutCheckKey, new Date().toISOString());
+                 setLastPayoutCheckTime(new Date().toISOString());
             }
         };
 
-        const interval = setInterval(checkPayouts, 5000); // Check every 5 seconds
+        const interval = setInterval(checkPayouts, 5000);
         return () => clearInterval(interval);
 
-    }, [currentUser, handleCommissionPayouts]);
+    }, [currentUser, handleCommissionPayouts, lastPayoutCheckKey]);
 
 
     useEffect(() => {
