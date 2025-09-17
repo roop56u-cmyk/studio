@@ -24,7 +24,7 @@ type WheelSlice = {
 
 export function LuckyWheelPanel() {
   const { currentUser } = useAuth();
-  const { addActivity } = useWallet();
+  const { addActivity, addRecharge, setIsInactiveWarningOpen } = useWallet();
   const { toast } = useToast();
   const [isEnabled, setIsEnabled] = useState(false);
   const [slices, setSlices] = useState<WheelSlice[]>([]);
@@ -52,6 +52,11 @@ export function LuckyWheelPanel() {
 
   const handleSpin = () => {
     if (!canSpin || isSpinning || !currentUser) return;
+
+    if (currentUser.status !== 'active') {
+        setIsInactiveWarningOpen(true);
+        return;
+    }
     
     setIsSpinning(true);
 
@@ -75,9 +80,7 @@ export function LuckyWheelPanel() {
 
         const prizeAmount = selectedSlice.amount;
         if (prizeAmount > 0) {
-            const mainBalanceKey = `${currentUser.email}_mainBalance`;
-            const currentBalance = parseFloat(localStorage.getItem(mainBalanceKey) || '0');
-            localStorage.setItem(mainBalanceKey, (currentBalance + prizeAmount).toString());
+            addRecharge(prizeAmount);
             
             addActivity(currentUser.email, {
                 type: 'Lucky Wheel',
