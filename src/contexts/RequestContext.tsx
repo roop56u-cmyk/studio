@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useWallet } from './WalletContext';
 import type { SalaryPackage } from '@/app/dashboard/admin/salary/page';
 import { useLocalStorageWatcher } from '@/hooks/use-local-storage-watcher';
+import type { Activity } from './WalletContext';
 
 export type Request = {
     id: string;
@@ -19,22 +20,11 @@ export type Request = {
     imageUrl?: string | null;
 };
 
-export type Activity = {
-    id: string;
-    type: string; // e.g., 'Recharge', 'Withdrawal', 'Status Change', 'Profile Update'
-    description: string;
-    amount?: number; // Optional, for financial transactions
-    status?: 'Pending' | 'Approved' | 'Declined' | 'On Hold'; // Optional, for requests
-    date: string;
-};
-
-
 interface RequestContextType {
   requests: Request[];
   addRequest: (requestData: Partial<Omit<Request, 'id' | 'date' | 'status' | 'user'>>) => void;
   updateRequestStatus: (id: string, status: 'Approved' | 'Declined' | 'On Hold') => void;
   userRequests: Request[];
-  activityHistory: Activity[];
   addActivity: (userEmail: string, activity: Omit<Activity, 'id'>) => void;
 }
 
@@ -92,42 +82,19 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
   });
 
   const [userRequests, setUserRequests] = useState<Request[]>([]);
-  const [activityHistory, setActivityHistory] = useState<Activity[]>([]);
-
+  
   // Watch for changes in localStorage to update requests in real-time
   useLocalStorageWatcher('requests', setRequests);
   
-  // Watch for changes in the current user's activity history
-  useEffect(() => {
-    if (currentUser?.email) {
-      const key = `${currentUser.email}_activityHistory`;
-      const interval = setInterval(() => {
-        try {
-          const storedHistory = localStorage.getItem(key);
-          const currentHistory = storedHistory ? JSON.parse(storedHistory) : [];
-          setActivityHistory(currentHistory);
-        } catch (error) {
-          console.error(`Error polling ${key}:`, error);
-        }
-      }, 3000);
-      return () => clearInterval(interval);
-    }
-  }, [currentUser?.email]);
-
-
   // Function to add an activity for a specific user
   const addActivity = (userEmail: string, activity: Omit<Activity, 'id'>) => {
     const newActivity: Activity = {
         ...activity,
         id: `ACT-${Date.now()}-${Math.random()}`,
     };
-    const key = `${userEmail}_activityHistory`;
-    const currentHistory = JSON.parse(localStorage.getItem(key) || '[]');
-    localStorage.setItem(key, JSON.stringify([newActivity, ...currentHistory]));
-
-    if (currentUser?.email === userEmail) {
-        setActivityHistory(prev => [newActivity, ...prev]);
-    }
+     if (walletContext) {
+        walletContext.addActivity(userEmail, newActivity);
+     }
   };
   
   useEffect(() => {
@@ -144,15 +111,8 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
             .filter(req => req.user === currentUser.email)
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setUserRequests(sortedUserRequests);
-        
-        // Load initial activity history for current user
-        const key = `${currentUser.email}_activityHistory`;
-        const storedHistory = localStorage.getItem(key);
-        setActivityHistory(storedHistory ? JSON.parse(storedHistory) : []);
-
     } else {
         setUserRequests([]);
-        setActivityHistory([]);
     }
   }, [currentUser, requests]);
 
@@ -252,7 +212,6 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
         addRequest,
         updateRequestStatus,
         userRequests,
-        activityHistory,
         addActivity
       }}
     >

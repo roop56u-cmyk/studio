@@ -13,7 +13,7 @@ import type { UplineCommissionSettings } from '@/app/dashboard/admin/upline-comm
 import type { SalaryPackage } from '@/app/dashboard/admin/salary/page';
 import { useLocalStorageWatcher } from '@/hooks/use-local-storage-watcher';
 import type { CommunityCommissionRule } from '@/app/dashboard/admin/community-commission/page';
-import type { Activity } from './RequestContext';
+import type { Activity } from './WalletContext';
 
 type TeamMember = User & {
     level: number;
@@ -118,20 +118,23 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [uplineInfo, setUplineInfo] = useState<{ name: string; email: string; } | null>(null);
     const [activeL1Referrals, setActiveL1Referrals] = useState(0);
-    const { addCommunityCommissionToMainBalance, addCommissionToMainBalance, getReferralCommissionBoost, currentLevel, addUplineCommissionToMainBalance } = useWallet();
+    const { 
+        addCommunityCommissionToMainBalance, 
+        addCommissionToMainBalance, 
+        getReferralCommissionBoost, 
+        currentLevel, 
+        addUplineCommissionToMainBalance,
+        activityHistory
+    } = useWallet();
     
     const [commissionRates, setCommissionRates] = useState({ level1: 10, level2: 5, level3: 2 });
     const [commissionEnabled, setCommissionEnabled] = useState({ level1: true, level2: true, level3: true });
     const [uplineCommissionSettings, setUplineCommissionSettings] = useState<UplineCommissionSettings>({ enabled: false, rate: 5, requiredReferrals: 3 });
     
     const [lastCommissionCredit, setLastCommissionCredit] = useState<string | null>(null);
-    const [userActivityHistory, setUserActivityHistory] = useState<Activity[]>([]);
     
     const commissionCreditKey = currentUser?.email ? `${currentUser.email}_lastCommissionCredit` : '';
     useLocalStorageWatcher(commissionCreditKey, setLastCommissionCredit);
-
-    const activityHistoryKey = currentUser?.email ? `${currentUser.email}_activityHistory` : '';
-    useLocalStorageWatcher(activityHistoryKey, setUserActivityHistory);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -163,23 +166,21 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             }
             if (currentUser?.email) {
                 setLastCommissionCredit(localStorage.getItem(commissionCreditKey));
-                const initialHistory = JSON.parse(localStorage.getItem(activityHistoryKey) || '[]');
-                setUserActivityHistory(initialHistory);
             }
         }
-    }, [currentUser?.email, commissionCreditKey, activityHistoryKey]);
+    }, [currentUser?.email, commissionCreditKey]);
 
     const totalUplineCommission = useMemo(() => {
         if (!currentUser?.email || !lastCommissionCredit) return 0;
         
         const lastCreditTime = new Date(lastCommissionCredit).getTime();
 
-        return userActivityHistory
+        return activityHistory
             .filter((activity) => {
                 return activity.type === 'Upline Commission' && activity.amount && new Date(activity.date).getTime() >= lastCreditTime;
             })
             .reduce((sum, activity) => sum + (activity.amount || 0), 0);
-    }, [userActivityHistory, lastCommissionCredit, currentUser?.email]);
+    }, [activityHistory, lastCommissionCredit, currentUser?.email]);
 
     const calculateCommunityData = useCallback((user: User, allUsers: User[], cycleStartTime: number): CommunityData => {
         const processedEmails = new Set<string>([user.email]);
