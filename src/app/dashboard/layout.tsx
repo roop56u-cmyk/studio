@@ -90,6 +90,7 @@ import {
   Layers,
   Sparkles,
   Gem,
+  CircleDot,
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -141,18 +142,19 @@ import ManageDailyRewardsPage from './admin/daily-rewards/page';
 import UplineCommissionPage from './admin/upline-commission/page';
 import ManageSalaryPage from './admin/salary/page';
 import PurchaseHistoryPage from "./admin/purchase-history/page";
-import ManageReimbursementsPage from './admin/reimbursements/page';
+import ManageEventsPage from './admin/reimbursements/page';
 import ManageAboutUsPage from './admin/about-us/page';
 import AdminProfilePage from './admin/admin-profile/page';
 import SchedulingPage from './admin/scheduling/page';
 import ManageCommunityCommissionPage from './admin/community-commission/page';
 import TokenomicsPage from './admin/tokenomics/page';
+import LuckyWheelSettingsPage from './admin/lucky-wheel/page';
 import ProfilePage from './profile/page';
 import SettingsPage from './settings/page';
 import type { Notice } from './admin/notices/page';
 
 
-type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'nftSettings' | 'nftStaking' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement' | 'purchaseHistory' | 'reimbursements' | 'aboutUs' | 'adminProfile' | 'scheduling' | 'communityCommission' | 'tokenomics';
+type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'nftSettings' | 'nftStaking' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement' | 'purchaseHistory' | 'events' | 'aboutUs' | 'adminProfile' | 'scheduling' | 'communityCommission' | 'tokenomics' | 'luckyWheel';
 
 
 const adminPanelComponents: Record<PanelType, React.ComponentType> = {
@@ -178,12 +180,13 @@ const adminPanelComponents: Record<PanelType, React.ComponentType> = {
     dailyRewards: ManageDailyRewardsPage,
     salaryManagement: ManageSalaryPage,
     purchaseHistory: PurchaseHistoryPage,
-    reimbursements: ManageReimbursementsPage,
+    events: ManageEventsPage,
     aboutUs: ManageAboutUsPage,
     adminProfile: AdminProfilePage,
     scheduling: SchedulingPage,
     communityCommission: ManageCommunityCommissionPage,
     tokenomics: TokenomicsPage,
+    luckyWheel: LuckyWheelSettingsPage,
 };
 
 const adminPanelTitles: Record<PanelType, { title: string; description: string }> = {
@@ -209,12 +212,13 @@ const adminPanelTitles: Record<PanelType, { title: string; description: string }
     dailyRewards: { title: "Daily Login Rewards", description: "Configure rewards for daily check-ins." },
     salaryManagement: { title: "Manage Salary", description: "Create and configure salary packages for users." },
     purchaseHistory: { title: "Purchase History", description: "View user purchases of boosters and quests." },
-    reimbursements: { title: "Custom Rewards", description: "Create and manage custom, claimable rewards for users." },
+    events: { title: "Events & Rewards", description: "Create and manage custom, claimable rewards for users." },
     aboutUs: { title: "About Us", description: "Manage your company's information page." },
     adminProfile: { title: "Admin Profile", description: "Manage the primary admin credentials." },
     scheduling: { title: "Scheduling", description: "View and manage platform time settings." },
     communityCommission: { title: "Community Commission", description: "Define rules for L4+ community commissions." },
     tokenomics: { title: "Tokenomics", description: "Manage the platform's custom token and mining economy." },
+    luckyWheel: { title: "Lucky Wheel", description: "Configure the daily lucky wheel prizes." },
 };
 
 function SidebarContentComponent({ 
@@ -234,6 +238,7 @@ function SidebarContentComponent({
     onTeamClick,
     onAboutUsClick,
     onNftCollectionClick,
+    onEventsClick,
     onShowInterestWarning,
     onShowTaskWarning
 }: { 
@@ -253,6 +258,7 @@ function SidebarContentComponent({
     onTeamClick: () => void,
     onAboutUsClick: () => void,
     onNftCollectionClick: () => void,
+    onEventsClick: () => void,
     onShowInterestWarning: () => void,
     onShowTaskWarning: () => void
 }) {
@@ -356,7 +362,8 @@ function SidebarContentComponent({
                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('questManagement')} tooltip={{ children: "Manage Quests" }}><CheckCheck /><span>Manage Quests</span></SidebarMenuButton></SidebarMenuItem>
                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('boosterManagement')} tooltip={{ children: "Manage Boosters" }}><Flame /><span>Manage Boosters</span></SidebarMenuButton></SidebarMenuItem>
                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('dailyRewards')} tooltip={{ children: "Daily Rewards" }}><CalendarDays /><span>Daily Rewards</span></SidebarMenuButton></SidebarMenuItem>
-                        <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('reimbursements')} tooltip={{ children: "Custom Rewards" }}><HandCoins /><span>Custom Rewards</span></SidebarMenuButton></SidebarMenuItem>
+                        <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('luckyWheel')} tooltip={{ children: "Lucky Wheel" }}><CircleDot /><span>Lucky Wheel</span></SidebarMenuButton></SidebarMenuItem>
+                        <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('events')} tooltip={{ children: "Events & Rewards" }}><HandCoins /><span>Events & Rewards</span></SidebarMenuButton></SidebarMenuItem>
                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('purchaseHistory')} tooltip={{ children: "Purchase History" }}><ShoppingCart /><span>Purchase History</span></SidebarMenuButton></SidebarMenuItem>
                     </CollapsibleContent>
                 </Collapsible>
@@ -470,6 +477,15 @@ function SidebarContentComponent({
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                     <SidebarMenuButton
+                        onClick={onEventsClick}
+                        tooltip={{ children: "Events" }}
+                    >
+                        <Gift />
+                        <span>Events</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton
                         onClick={onQuestPanelClick}
                         tooltip={{ children: "Daily Quests" }}
                     >
@@ -482,7 +498,7 @@ function SidebarContentComponent({
                         onClick={onRewardsPanelClick}
                         tooltip={{ children: "Rewards" }}
                     >
-                        <Gift />
+                        <Award />
                         <span>Rewards</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -661,6 +677,7 @@ export default function DashboardLayout({
     const [isTeamPanelOpen, setIsTeamPanelOpen] = React.useState(false);
     const [isAboutUsOpen, setIsAboutUsOpen] = React.useState(false);
     const [isNftCollectionOpen, setIsNftCollectionOpen] = React.useState(false);
+    const [isEventsOpen, setIsEventsOpen] = React.useState(false);
 
 
     // User menu popups
@@ -789,6 +806,7 @@ export default function DashboardLayout({
                 onTeamClick={() => setIsTeamPanelOpen(true)}
                 onAboutUsClick={() => setIsAboutUsOpen(true)}
                 onNftCollectionClick={() => setIsNftCollectionOpen(true)}
+                onEventsClick={() => setIsEventsOpen(true)}
                 onShowInterestWarning={() => setIsInterestMoveWarningOpen(true)}
                 onShowTaskWarning={() => setIsTaskMoveWarningOpen(true)}
             />
@@ -968,6 +986,20 @@ export default function DashboardLayout({
                 </SheetHeader>
                  <div className="mt-4">
                     <NoticesPanel />
+                </div>
+                 <SheetClose asChild><Button variant="outline" className="sr-only">Close</Button></SheetClose>
+            </SheetContent>
+        </Sheet>
+        <Sheet open={isEventsOpen} onOpenChange={setIsEventsOpen}>
+            <SheetContent className="w-full sm:max-w-lg">
+                <SheetHeader>
+                    <SheetTitle>Claimable Events</SheetTitle>
+                    <SheetDescription>
+                       Participate in special events to earn rewards.
+                    </SheetDescription>
+                </SheetHeader>
+                 <div className="mt-4">
+                    <RewardsPanel isEventView={true} />
                 </div>
                  <SheetClose asChild><Button variant="outline" className="sr-only">Close</Button></SheetClose>
             </SheetContent>
