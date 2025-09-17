@@ -18,9 +18,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ScrollArea } from "../ui/scroll-area";
 import { Separator } from "../ui/separator";
 import { useRequests } from "@/contexts/RequestContext";
-import type { Reimbursement } from "@/app/dashboard/admin/reimbursements/page";
+import type { PlatformEvent } from "@/app/dashboard/admin/reimbursements/page";
+import Image from "next/image";
+import { cn } from "@/lib/utils";
 
-export function RewardsPanel() {
+
+export function RewardsPanel({ isEventView = false }: { isEventView?: boolean }) {
     const { toast } = useToast();
     const { currentUser, users } = useAuth();
     const { addRequest, userRequests } = useRequests();
@@ -38,7 +41,7 @@ export function RewardsPanel() {
 
     const [isSignupApprovalRequired, setIsSignupApprovalRequired] = React.useState(false);
     const [isReferralApprovalRequired, setIsReferralApprovalRequired] = React.useState(false);
-    const [reimbursements, setReimbursements] = React.useState<Reimbursement[]>([]);
+    const [events, setEvents] = React.useState<PlatformEvent[]>([]);
     
     React.useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -48,15 +51,17 @@ export function RewardsPanel() {
             const referralApproval = localStorage.getItem('system_referral_bonus_approval_required');
             if(referralApproval) setIsReferralApprovalRequired(JSON.parse(referralApproval));
 
-            const storedReimbursements = localStorage.getItem('platform_reimbursements');
-            if (storedReimbursements) {
-                const allItems: Reimbursement[] = JSON.parse(storedReimbursements);
+            const storedEvents = localStorage.getItem('platform_events');
+            if (storedEvents) {
+                const allItems: PlatformEvent[] = JSON.parse(storedEvents);
+                const now = new Date().getTime();
                 const availableItems = allItems.filter(item => 
                     item.enabled &&
-                    (item.level === 0 || item.level <= currentLevel) &&
+                    (!item.startTime || new Date(item.startTime).getTime() <= now) &&
+                    (!item.endTime || new Date(item.endTime).getTime() >= now) &&
                     (!item.userEmail || item.userEmail === currentUser?.email)
                 );
-                setReimbursements(availableItems);
+                setEvents(availableItems);
             }
         }
     }, [currentLevel, currentUser]);
@@ -105,16 +110,55 @@ export function RewardsPanel() {
         }
     }
 
-    const handleClaimReimbursement = (item: Reimbursement) => {
+    const handleClaimEvent = (item: PlatformEvent) => {
         if (currentUser?.status !== 'active') {
             setIsInactiveWarningOpen(true);
             return;
         }
-        addRequest({ type: 'Reimbursement', amount: item.amount, address: item.title });
+        addRequest({ type: 'Event Claim', amount: item.amount, address: item.title });
         toast({
-            title: "Reimbursement Claim Submitted",
+            title: "Event Reward Claim Submitted",
             description: `Your claim for "${item.title}" is now pending admin approval.`
         });
+    }
+
+    if(isEventView) {
+        return (
+             <ScrollArea className="h-[calc(100vh-8rem)]">
+                <div className="grid gap-6 pr-6">
+                    {events.length > 0 ? events.map(item => {
+                         const hasPending = userRequests.some(req => req.type === 'Event Claim' && req.address === item.title && req.status === 'Pending');
+                        const isClaimed = userRequests.some(req => req.type === 'Event Claim' && req.address === item.title && req.status === 'Approved');
+
+                        return (
+                        <Card key={item.id}>
+                            <CardHeader>
+                                {item.imageUrl && <Image src={item.imageUrl} alt={item.title} width={400} height={200} className="w-full h-32 object-cover rounded-t-lg -mt-6 -mx-6" />}
+                                <div className={cn(item.imageUrl && 'pt-4')}>
+                                    <CardTitle className="flex items-center gap-3">
+                                         <div className="flex-shrink-0 bg-green-500/10 text-green-600 p-2 rounded-full">
+                                            <Gift className="h-6 w-6" />
+                                        </div>
+                                        {item.title}
+                                    </CardTitle>
+                                    <CardDescription>{item.description}</CardDescription>
+                                </div>
+                            </CardHeader>
+                            <CardFooter className="flex justify-between items-center">
+                                <p className="text-lg font-bold text-primary">${item.amount.toFixed(2)}</p>
+                                <Button onClick={() => handleClaimEvent(item)} disabled={hasPending || isClaimed}>
+                                     {isClaimed ? "Claimed" : hasPending ? 'Pending' : 'Claim'}
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    )}) : (
+                        <div className="text-center py-12 text-muted-foreground">
+                            <p>There are no active events at this time.</p>
+                        </div>
+                    )}
+                </div>
+             </ScrollArea>
+        )
     }
 
   return (
@@ -150,46 +194,7 @@ export function RewardsPanel() {
                     </Button>
                 </CardFooter>
             </Card>
-
-             {/* Reimbursements Card */}
-             {reimbursements.length > 0 && (
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center gap-3">
-                            <div className="flex-shrink-0 bg-green-500/10 text-green-600 p-2 rounded-full">
-                                <HandCoins className="h-6 w-6" />
-                            </div>
-                            <div>
-                                <CardTitle>Event Reimbursements</CardTitle>
-                                <CardDescription>Claim rewards for hosting official events.</CardDescription>
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        {reimbursements.map((item, index) => {
-                             const hasPending = userRequests.some(req => req.type === 'Reimbursement' && req.address === item.title && req.status === 'Pending');
-                            return (
-                                <React.Fragment key={item.id}>
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <p className="font-semibold text-sm">{item.title}</p>
-                                            <p className="text-xs text-muted-foreground">{item.description}</p>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <p className="text-md font-bold text-primary">${item.amount.toFixed(2)}</p>
-                                            <Button size="sm" onClick={() => handleClaimReimbursement(item)} disabled={hasPending}>
-                                                {hasPending ? 'Pending' : 'Claim'}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                    {index < reimbursements.length - 1 && <Separator />}
-                                </React.Fragment>
-                            )
-                        })}
-                    </CardContent>
-                </Card>
-             )}
-
+            
             {/* Referral Bonuses Card */}
             <Card>
                  <CardHeader>
