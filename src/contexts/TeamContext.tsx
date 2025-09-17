@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo, useCallback } from 'react';
@@ -124,7 +123,8 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         getReferralCommissionBoost, 
         currentLevel, 
         addUplineCommissionToMainBalance,
-        activityHistory
+        activityHistory,
+        lastTaskResetDate
     } = useWallet();
     
     const [commissionRates, setCommissionRates] = useState({ level1: 10, level2: 5, level3: 2 });
@@ -171,16 +171,16 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     }, [currentUser?.email, commissionCreditKey]);
 
     const totalUplineCommission = useMemo(() => {
-        if (!currentUser?.email || !lastCommissionCredit) return 0;
+        if (!currentUser?.email) return 0;
         
-        const lastCreditTime = new Date(lastCommissionCredit).getTime();
+        const lastReset = new Date(lastTaskResetDate || 0).getTime();
 
         return activityHistory
             .filter((activity) => {
-                return activity.type === 'Upline Commission' && activity.amount && new Date(activity.date).getTime() >= lastCreditTime;
+                return activity.type === 'Upline Commission' && activity.amount && new Date(activity.date).getTime() >= lastReset;
             })
             .reduce((sum, activity) => sum + (activity.amount || 0), 0);
-    }, [activityHistory, lastCommissionCredit, currentUser?.email]);
+    }, [activityHistory, lastTaskResetDate, currentUser?.email]);
 
     const calculateCommunityData = useCallback((user: User, allUsers: User[], cycleStartTime: number): CommunityData => {
         const processedEmails = new Set<string>([user.email]);
@@ -191,7 +191,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         const l2 = l1.flatMap(l1User => allUsers.filter(u => u.referredBy === l1User.referralCode));
         l2.forEach(u => processedEmails.add(u.email));
         
-        const l3 = l2.flatMap(l2User => allUsers.filter(u => u.referredBy === l2User.referralCode));
+        const l3 = l2.flatMap(l2User => users.filter(u => u.referredBy === l2User.referralCode));
         l3.forEach(u => processedEmails.add(u.email));
 
         const L4PlusMembers: User[] = [];
@@ -328,23 +328,17 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         }
         
         // --- UPLINE COMMISSION PAYOUT ---
-        const historyForPayout = JSON.parse(localStorage.getItem(`${currentUser.email}_activityHistory`) || '[]');
-        const finalUplineCommission = historyForPayout
-            .filter((activity: { type: string, amount?: number, date: string }) => 
-                activity.type === 'Upline Commission' && 
-                activity.amount && 
-                new Date(activity.date).getTime() >= lastCreditTime
-            )
-            .reduce((sum: number, activity: { amount?: number }) => sum + (activity.amount || 0), 0);
-
-        if (finalUplineCommission > 0) {
-            addUplineCommissionToMainBalance(finalUplineCommission);
+        // This is now handled by the `totalUplineCommission` useMemo directly. 
+        // We only need to credit the amount calculated there.
+        const uplinePayoutAmount = totalUplineCommission;
+        if (uplinePayoutAmount > 0) {
+            addUplineCommissionToMainBalance(uplinePayoutAmount);
         }
         
         localStorage.setItem(commissionCreditKey, new Date().toISOString());
         setLastCommissionCredit(localStorage.getItem(commissionCreditKey));
 
-    }, [currentUser, users, commissionCreditKey, commissionEnabled, commissionRates, getReferralCommissionBoost, addCommissionToMainBalance, calculateTeamData, calculateCommunityData, communityCommissionRules, currentLevel, activeL1Referrals, addCommunityCommissionToMainBalance, addUplineCommissionToMainBalance]);
+    }, [currentUser, users, commissionCreditKey, commissionEnabled, commissionRates, getReferralCommissionBoost, addCommissionToMainBalance, calculateTeamData, calculateCommunityData, communityCommissionRules, currentLevel, activeL1Referrals, addCommunityCommissionToMainBalance, totalUplineCommission, addUplineCommissionToMainBalance]);
 
 
     useEffect(() => {
