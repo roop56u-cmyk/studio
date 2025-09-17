@@ -1,7 +1,8 @@
 
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, ChangeEvent } from "react";
+import Image from "next/image";
 import {
   Card,
   CardContent,
@@ -14,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { PlusCircle, Edit, Trash2, HandCoins, Loader2 } from "lucide-react";
+import { PlusCircle, Edit, Trash2, HandCoins, Loader2, Upload, X, Gift } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,18 +43,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { levels as defaultLevels, Level } from "@/components/dashboard/level-tiers";
 import { useAuth } from "@/contexts/AuthContext";
 import { Switch } from "@/components/ui/switch";
 
-export type Reimbursement = {
+export type CustomReward = {
   id: string;
   title: string;
   description: string;
   amount: number;
-  level: number; // 0 for All Levels
   userEmail?: string;
   enabled: boolean;
+  imageUrl?: string | null;
 };
 
 const ManualGrantForm = () => {
@@ -87,20 +87,20 @@ const ManualGrantForm = () => {
             const currentHistory = JSON.parse(localStorage.getItem(activityHistoryKey) || '[]');
             const newActivity = {
                 id: `ACT-MANUAL-${Date.now()}`,
-                type: 'Manual Reimbursement',
+                type: 'Manual Reward',
                 description: `${title}: ${description}`,
                 amount: numericAmount,
                 date: new Date().toISOString(),
             };
             localStorage.setItem(activityHistoryKey, JSON.stringify([newActivity, ...currentHistory]));
 
-            toast({ title: "Reimbursement Granted", description: `${selectedUser} has been credited with $${numericAmount}.` });
+            toast({ title: "Reward Granted", description: `${selectedUser} has been credited with $${numericAmount}.` });
             setSelectedUser("");
             setTitle("");
             setDescription("");
             setAmount("");
         } catch (error) {
-            toast({ variant: "destructive", title: "Error", description: "Could not grant reimbursement." });
+            toast({ variant: "destructive", title: "Error", description: "Could not grant reward." });
         } finally {
             setIsLoading(false);
         }
@@ -109,8 +109,8 @@ const ManualGrantForm = () => {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Grant Manual Reimbursement</CardTitle>
-                <CardDescription>Directly credit a reimbursement to a user's main wallet.</CardDescription>
+                <CardTitle>Grant Manual Reward</CardTitle>
+                <CardDescription>Directly credit a custom reward to a user's main wallet.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -138,30 +138,41 @@ const ManualGrantForm = () => {
             <CardFooter>
                  <Button onClick={handleGrant} disabled={isLoading}>
                     {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <HandCoins className="mr-2 h-4 w-4" />}
-                    Grant Reimbursement
+                    Grant Reward
                 </Button>
             </CardFooter>
         </Card>
     );
 };
 
-const ReimbursementForm = ({
+const CustomRewardForm = ({
   item,
   onSave,
   onCancel,
-  availableLevels,
 }: {
-  item: Partial<Reimbursement> | null;
-  onSave: (item: Omit<Reimbursement, 'id'>) => void;
+  item: Partial<CustomReward> | null;
+  onSave: (item: Omit<CustomReward, 'id'>) => void;
   onCancel: () => void;
-  availableLevels: Level[];
 }) => {
   const { users } = useAuth();
   const [title, setTitle] = useState(item?.title || "");
   const [description, setDescription] = useState(item?.description || "");
   const [amount, setAmount] = useState(item?.amount || 0);
-  const [level, setLevel] = useState(item?.level ?? 0);
   const [userEmail, setUserEmail] = useState(item?.userEmail || "");
+  const [image, setImage] = useState<string | null>(item?.imageUrl || null);
+
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,9 +184,9 @@ const ReimbursementForm = ({
       title,
       description,
       amount,
-      level,
       userEmail,
       enabled: item?.enabled ?? true,
+      imageUrl: image,
     });
   };
   
@@ -190,32 +201,16 @@ const ReimbursementForm = ({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="title">Reimbursement Title / Event Name</Label>
+        <Label htmlFor="title">Reward Title / Event Name</Label>
         <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
       </div>
       <div className="space-y-2">
         <Label htmlFor="description">Description</Label>
         <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} required />
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-            <Label htmlFor="amount">Amount (USDT)</Label>
-            <Input id="amount" type="number" value={amount} onChange={(e) => setAmount(Number(e.target.value))} required />
-        </div>
-        <div className="space-y-2">
-            <Label htmlFor="level">Target Level</Label>
-            <Select value={String(level)} onValueChange={(v) => setLevel(Number(v))}>
-                <SelectTrigger id="level">
-                    <SelectValue placeholder="Select a level" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="0">All Levels</SelectItem>
-                    {availableLevels.filter(l => l.level > 0).map(l => (
-                        <SelectItem key={l.level} value={String(l.level)}>Level {l.level}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor="amount">Amount (USDT)</Label>
+        <Input id="amount" type="number" value={amount} onChange={(e) => setAmount(Number(e.target.value))} required />
       </div>
        <div className="space-y-2">
         <Label htmlFor="userEmail">Specific User (Optional)</Label>
@@ -224,17 +219,29 @@ const ReimbursementForm = ({
                 <SelectValue placeholder="All users at level" />
             </SelectTrigger>
             <SelectContent>
-                <SelectItem value="ALL_USERS">All users at level</SelectItem>
+                <SelectItem value="ALL_USERS">All users</SelectItem>
                 {users.map(u => (
                     <SelectItem key={u.email} value={u.email}>{u.email}</SelectItem>
                 ))}
             </SelectContent>
         </Select>
       </div>
+       <div className="space-y-2">
+        <Label htmlFor="reward-image">Image / GIF (Optional)</Label>
+        <Input id="reward-image" type="file" accept="image/*,image/gif" onChange={handleFileChange} />
+        {image && (
+            <div className="relative mt-2 w-24 h-24">
+                 <Image src={image} alt="Reward preview" layout="fill" className="object-cover rounded-md" />
+                 <Button size="icon" variant="destructive" className="absolute -top-2 -right-2 h-6 w-6 rounded-full" onClick={() => setImage(null)}>
+                    <X className="h-4 w-4" />
+                </Button>
+            </div>
+        )}
+       </div>
       
       <DialogFooter>
         <DialogClose asChild><Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button></DialogClose>
-        <Button type="submit">Save Reimbursement</Button>
+        <Button type="submit">Save Reward</Button>
       </DialogFooter>
     </form>
   );
@@ -243,37 +250,32 @@ const ReimbursementForm = ({
 
 export default function ManageReimbursementsPage() {
   const { toast } = useToast();
-  const [reimbursements, setReimbursements] = useState<Reimbursement[]>([]);
+  const [rewards, setRewards] = useState<CustomReward[]>([]);
   const [isClient, setIsClient] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<Reimbursement | null>(null);
-  const [availableLevels, setAvailableLevels] = useState<Level[]>(defaultLevels);
+  const [editingItem, setEditingItem] = useState<CustomReward | null>(null);
 
   useEffect(() => {
     setIsClient(true);
     const stored = localStorage.getItem("platform_reimbursements");
     if (stored) {
-      setReimbursements(JSON.parse(stored));
-    }
-    const storedLevels = localStorage.getItem("platform_levels");
-    if (storedLevels) {
-        setAvailableLevels(JSON.parse(storedLevels));
+      setRewards(JSON.parse(stored));
     }
   }, []);
 
   useEffect(() => {
     if (isClient) {
-      localStorage.setItem("platform_reimbursements", JSON.stringify(reimbursements));
+      localStorage.setItem("platform_reimbursements", JSON.stringify(rewards));
     }
-  }, [reimbursements, isClient]);
+  }, [rewards, isClient]);
 
-  const handleSave = (itemData: Omit<Reimbursement, 'id'>) => {
+  const handleSave = (itemData: Omit<CustomReward, 'id'>) => {
     if (editingItem) {
-      setReimbursements(reimbursements.map(r => r.id === editingItem.id ? { ...editingItem, ...itemData } : r));
-      toast({ title: "Reimbursement Updated" });
+      setRewards(rewards.map(r => r.id === editingItem.id ? { ...editingItem, ...itemData } : r));
+      toast({ title: "Custom Reward Updated" });
     } else {
-      setReimbursements([...reimbursements, { ...itemData, id: `REIM-${Date.now()}` }]);
-      toast({ title: "Reimbursement Added" });
+      setRewards([...rewards, { ...itemData, id: `REWARD-${Date.now()}` }]);
+      toast({ title: "Custom Reward Added" });
     }
     closeForm();
   };
@@ -283,24 +285,24 @@ export default function ManageReimbursementsPage() {
     setIsFormOpen(true);
   };
 
-  const handleEdit = (item: Reimbursement) => {
+  const handleEdit = (item: CustomReward) => {
     setEditingItem(item);
     setIsFormOpen(true);
   };
   
   const handleDelete = (id: string) => {
-    setReimbursements(reimbursements.filter(r => r.id !== id));
-    toast({ title: "Reimbursement Deleted", variant: "destructive" });
+    setRewards(rewards.filter(r => r.id !== id));
+    toast({ title: "Reward Deleted", variant: "destructive" });
   };
 
   const handleToggle = (id: string, enabled: boolean) => {
-      setReimbursements(reimbursements.map(r => r.id === id ? {...r, enabled} : r));
-      toast({ title: `Reimbursement ${enabled ? "Enabled" : "Disabled"}` });
+      setRewards(rewards.map(r => r.id === id ? {...r, enabled} : r));
+      toast({ title: `Reward ${enabled ? "Enabled" : "Disabled"}` });
   }
   
   const closeForm = () => {
-    setIsFormOpen(false);
     setEditingItem(null);
+    setIsFormOpen(false);
   }
     
   return (
@@ -308,9 +310,9 @@ export default function ManageReimbursementsPage() {
         <div className="grid gap-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Manage Reimbursements</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">Manage Custom Rewards</h1>
                     <p className="text-muted-foreground">
-                        Create and manage reimbursement packages for user events.
+                        Create special, claimable rewards for users.
                     </p>
                 </div>
                 <div className="flex gap-2">
@@ -325,18 +327,20 @@ export default function ManageReimbursementsPage() {
                 <div className="lg:col-span-2">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Claimable Reimbursements ({reimbursements.length})</CardTitle>
+                            <CardTitle>Claimable Custom Rewards ({rewards.length})</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {reimbursements.map((item) => (
+                            {rewards.map((item) => (
                             <div key={item.id} className="border p-4 rounded-lg flex justify-between items-start gap-4">
-                                <div className="flex-1">
-                                    <h3 className="font-semibold">{item.title}</h3>
-                                    <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
-                                    <div className="flex items-center gap-4 mt-2 text-xs">
-                                        <span className="font-bold text-primary">${item.amount.toFixed(2)}</span>
-                                        <span className="text-muted-foreground">Level: {item.level === 0 ? "All" : `Level ${item.level}`}</span>
-                                        {item.userEmail && <span className="text-muted-foreground">User: {item.userEmail}</span>}
+                                <div className="flex-1 flex items-start gap-4">
+                                    {item.imageUrl && <Image src={item.imageUrl} alt={item.title} width={64} height={64} className="w-16 h-16 rounded-md object-cover" />}
+                                    <div>
+                                        <h3 className="font-semibold">{item.title}</h3>
+                                        <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+                                        <div className="flex items-center gap-4 mt-2 text-xs">
+                                            <span className="font-bold text-primary">${item.amount.toFixed(2)}</span>
+                                            {item.userEmail && <span className="text-muted-foreground">User: {item.userEmail}</span>}
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -352,7 +356,7 @@ export default function ManageReimbursementsPage() {
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader>
-                                                <AlertDialogTitle>Delete Reimbursement?</AlertDialogTitle>
+                                                <AlertDialogTitle>Delete Reward?</AlertDialogTitle>
                                                 <AlertDialogDescription>
                                                     This cannot be undone.
                                                 </AlertDialogDescription>
@@ -368,8 +372,8 @@ export default function ManageReimbursementsPage() {
                                 </div>
                             </div>
                             ))}
-                            {reimbursements.length === 0 && (
-                                <p className="text-muted-foreground text-center py-12">No reimbursement packages have been configured yet.</p>
+                            {rewards.length === 0 && (
+                                <p className="text-muted-foreground text-center py-12">No custom rewards have been configured yet.</p>
                             )}
                         </CardContent>
                     </Card>
@@ -383,13 +387,12 @@ export default function ManageReimbursementsPage() {
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>{editingItem ? 'Edit' : 'Add New'} Reimbursement</DialogTitle>
+                    <DialogTitle>{editingItem ? 'Edit' : 'Add New'} Custom Reward</DialogTitle>
                 </DialogHeader>
-                <ReimbursementForm 
+                <CustomRewardForm 
                     item={editingItem}
                     onSave={handleSave}
                     onCancel={closeForm}
-                    availableLevels={availableLevels}
                 />
             </DialogContent>
         </Dialog>

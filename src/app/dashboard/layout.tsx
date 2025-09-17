@@ -209,7 +209,7 @@ const adminPanelTitles: Record<PanelType, { title: string; description: string }
     dailyRewards: { title: "Daily Login Rewards", description: "Configure rewards for daily check-ins." },
     salaryManagement: { title: "Manage Salary", description: "Create and configure salary packages for users." },
     purchaseHistory: { title: "Purchase History", description: "View user purchases of boosters and quests." },
-    reimbursements: { title: "Manual Reimbursements", description: "Manage reimbursement packages for user events." },
+    reimbursements: { title: "Custom Rewards", description: "Create and manage custom, claimable rewards for users." },
     aboutUs: { title: "About Us", description: "Manage your company's information page." },
     adminProfile: { title: "Admin Profile", description: "Manage the primary admin credentials." },
     scheduling: { title: "Scheduling", description: "View and manage platform time settings." },
@@ -356,7 +356,7 @@ function SidebarContentComponent({
                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('questManagement')} tooltip={{ children: "Manage Quests" }}><CheckCheck /><span>Manage Quests</span></SidebarMenuButton></SidebarMenuItem>
                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('boosterManagement')} tooltip={{ children: "Manage Boosters" }}><Flame /><span>Manage Boosters</span></SidebarMenuButton></SidebarMenuItem>
                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('dailyRewards')} tooltip={{ children: "Daily Rewards" }}><CalendarDays /><span>Daily Rewards</span></SidebarMenuButton></SidebarMenuItem>
-                        <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('reimbursements')} tooltip={{ children: "Reimbursements" }}><HandCoins /><span>Reimbursements</span></SidebarMenuButton></SidebarMenuItem>
+                        <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('reimbursements')} tooltip={{ children: "Custom Rewards" }}><HandCoins /><span>Custom Rewards</span></SidebarMenuButton></SidebarMenuItem>
                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('purchaseHistory')} tooltip={{ children: "Purchase History" }}><ShoppingCart /><span>Purchase History</span></SidebarMenuButton></SidebarMenuItem>
                     </CollapsibleContent>
                 </Collapsible>
