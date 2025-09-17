@@ -136,42 +136,44 @@ export default function UserManagementPage() {
                 <TableHead>Status</TableHead>
                 <TableHead>Referral Code</TableHead>
                 <TableHead>Referred By</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.map((user) => (
-                <TableRow key={user.email}>
-                  <TableCell className="font-medium">{user.email}{user.isAdmin && <span className="ml-2 text-xs text-primary">(Admin)</span>}</TableCell>
-                   <TableCell>
-                        <Badge variant={user.status === 'active' ? 'default' : user.status === 'inactive' ? 'secondary' : 'destructive'} className={cn(user.status === 'active' ? 'bg-green-500/20 text-green-700 border-green-500/20' : '', 'capitalize')}>
-                          {user.status}
-                        </Badge>
-                   </TableCell>
-                  <TableCell className="font-mono text-xs">{user.referralCode}</TableCell>
-                  <TableCell className="font-mono text-xs">{user.referredBy ?? 'N/A'}</TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">User Actions</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(user)}>Edit User</DropdownMenuItem>
-                         <DropdownMenuItem onClick={() => handleViewTeam(user)}>View Team Data</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleResetPassword(user.email)}>Reset Password</DropdownMenuItem>
-                        {!user.isAdmin && (
-                            <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(user.email)}>
-                            Delete User
-                            </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {filteredUsers.map((user) => {
+                const sponsor = user.referredBy ? users.find(u => u.referralCode === user.referredBy) : null;
+                return (
+                  <TableRow key={user.email}>
+                    <TableCell className="font-medium">{user.email}{user.isAdmin && <span className="ml-2 text-xs text-primary">(Admin)</span>}</TableCell>
+                    <TableCell>
+                          <Badge variant={user.status === 'active' ? 'default' : user.status === 'inactive' ? 'secondary' : 'destructive'} className={cn(user.status === 'active' ? 'bg-green-500/20 text-green-700 border-green-500/20' : '', 'capitalize')}>
+                            {user.status}
+                          </Badge>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{user.referralCode}</TableCell>
+                    <TableCell className="text-sm">{sponsor ? sponsor.email : 'N/A'}</TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">User Actions</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEdit(user)}>Edit User</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleViewTeam(user)}>View Team Data</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleResetPassword(user.email)}>Reset Password</DropdownMenuItem>
+                          {!user.isAdmin && (
+                              <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(user.email)}>
+                              Delete User
+                              </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </CardContent>
