@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState } from "react";
@@ -18,7 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { useRequests } from "@/contexts/RequestContext";
+import { useWallet } from "@/contexts/WalletContext";
 import { Button } from "../ui/button";
 import { CardFooter } from "../ui/card";
 import { format } from "date-fns";
@@ -26,7 +25,7 @@ import { format } from "date-fns";
 const ITEMS_PER_PAGE = 10;
 
 export function ActivityHistoryPanel() {
-  const { activityHistory } = useRequests();
+  const { activityHistory } = useWallet();
   const [currentPage, setCurrentPage] = useState(1);
   
   const sortedHistory = [...activityHistory].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
