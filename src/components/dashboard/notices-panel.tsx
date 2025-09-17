@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import {
   Card,
   CardContent,
@@ -53,7 +54,12 @@ export function NoticesPanel() {
                                 <span className="text-xs text-muted-foreground font-normal mt-1">{new Date(notice.date).toLocaleDateString()}</span>
                             </div>
                             </AccordionTrigger>
-                        <AccordionContent>
+                        <AccordionContent className="space-y-4">
+                            {notice.imageUrl && (
+                                <div className="relative w-full aspect-video rounded-lg overflow-hidden">
+                                    <Image src={notice.imageUrl} alt={notice.title} layout="fill" className="object-cover" unoptimized/>
+                                </div>
+                            )}
                             <p className="whitespace-pre-wrap">{notice.content}</p>
                         </AccordionContent>
                         </AccordionItem>

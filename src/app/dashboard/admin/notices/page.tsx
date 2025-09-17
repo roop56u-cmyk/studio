@@ -1,7 +1,8 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
+import Image from "next/image";
 import {
   Card,
   CardContent,
@@ -21,7 +22,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Trash2, Pin, PinOff } from "lucide-react";
+import { Trash2, Pin, PinOff, Upload, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 
@@ -30,12 +31,14 @@ export type Notice = {
   title: string;
   content: string;
   date: string;
+  imageUrl?: string | null;
 };
 
 export default function AdminNoticesPage() {
   const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [image, setImage] = useState<string | null>(null);
   const [notices, setNotices] = useState<Notice[]>([]);
   const [isPopupEnabled, setIsPopupEnabled] = useState(false);
   const [popupNoticeId, setPopupNoticeId] = useState<string | null>(null);
@@ -71,6 +74,16 @@ export default function AdminNoticesPage() {
     }
   }, [popupNoticeId]);
 
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handlePublish = (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,6 +101,7 @@ export default function AdminNoticesPage() {
       title,
       content,
       date: new Date().toISOString().split('T')[0],
+      imageUrl: image,
     };
 
     setNotices(prev => [newNotice, ...prev]);
@@ -98,6 +112,7 @@ export default function AdminNoticesPage() {
     });
     setTitle("");
     setContent("");
+    setImage(null);
   };
 
   const handleDelete = (id: string) => {
@@ -173,8 +188,20 @@ export default function AdminNoticesPage() {
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     required
-                    rows={6}
+                    rows={4}
                 />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="notice-image">Image / GIF (Optional)</Label>
+                    <Input id="notice-image" type="file" accept="image/*,image/gif" onChange={handleFileChange} />
+                    {image && (
+                        <div className="relative mt-2 w-32 h-32">
+                             <Image src={image} alt="Notice preview" layout="fill" className="object-cover rounded-md" />
+                             <Button size="icon" variant="destructive" className="absolute -top-2 -right-2 h-6 w-6 rounded-full" onClick={() => setImage(null)}>
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </CardContent>
             <CardFooter>
@@ -199,7 +226,12 @@ export default function AdminNoticesPage() {
                             </div>
                             {popupNoticeId === notice.id && <Badge variant="secondary" className="ml-auto mr-2">Login Popup</Badge>}
                         </AccordionTrigger>
-                        <AccordionContent>
+                        <AccordionContent className="space-y-4">
+                            {notice.imageUrl && (
+                                <div className="relative w-full aspect-video rounded-lg overflow-hidden">
+                                <Image src={notice.imageUrl} alt={notice.title} layout="fill" className="object-cover" unoptimized/>
+                                </div>
+                            )}
                             <p className="whitespace-pre-wrap">{notice.content}</p>
                             <div className="flex gap-2 mt-4">
                                 <Button size="sm" variant="outline" onClick={() => handleSetPopupNotice(notice.id)}>
