@@ -24,6 +24,7 @@ import { useWallet } from "@/contexts/WalletContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { MiningMachinePanel } from "@/components/dashboard/mining-machine-panel";
 import { TokenWalletPanel } from "@/components/dashboard/token-wallet-panel";
+import { LuckyWheelPanel } from "@/components/dashboard/lucky-wheel-panel";
 
 
 
@@ -158,6 +159,8 @@ export default function UserDashboardPage() {
           </p>
         </div>
         
+        <LuckyWheelPanel />
+
         {isPanelEnabled("dailyCheckIn") && dailyRewardState && dailyRewardState.isEnabled && (
             <Card className="bg-gradient-purple text-primary-foreground">
                 <CardHeader>

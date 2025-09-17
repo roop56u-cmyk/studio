@@ -11,7 +11,7 @@ import { useLocalStorageWatcher } from '@/hooks/use-local-storage-watcher';
 export type Request = {
     id: string;
     user: string;
-    type: 'Recharge' | 'Withdrawal' | 'Team Reward' | 'Team Size Reward' | 'Sign-up Bonus' | 'Referral Bonus' | 'Salary Claim' | 'Reimbursement' | 'Custom Reward';
+    type: 'Recharge' | 'Withdrawal' | 'Team Reward' | 'Team Size Reward' | 'Sign-up Bonus' | 'Referral Bonus' | 'Salary Claim' | 'Reimbursement' | 'Custom Reward' | 'Event Claim';
     amount: number;
     address: string | null;
     status: 'Pending' | 'Approved' | 'Declined' | 'On Hold';
@@ -199,7 +199,7 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
         } = walletContext;
 
         if (status === 'Approved') {
-            if (type === 'Recharge' || type === 'Reimbursement' || type === 'Custom Reward') {
+            if (type === 'Recharge' || type === 'Reimbursement' || type === 'Custom Reward' || type === 'Event Claim') {
                 approveRecharge(userEmail, amount);
             } else if (type === 'Withdrawal') {
                 approveWithdrawal(userEmail, amount);

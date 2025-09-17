@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { PlusCircle, Edit, Trash2, HandCoins, Loader2, Upload, X, Gift } from "lucide-react";
+import { PlusCircle, Edit, Trash2, HandCoins, Loader2, Upload, X, Gift, Calendar, Users, Star } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,7 +46,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { Switch } from "@/components/ui/switch";
 
-export type CustomReward = {
+export type PlatformEvent = {
   id: string;
   title: string;
   description: string;
@@ -54,6 +54,9 @@ export type CustomReward = {
   userEmail?: string;
   enabled: boolean;
   imageUrl?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
+  maxClaims?: number | null;
 };
 
 const ManualGrantForm = () => {
@@ -145,13 +148,13 @@ const ManualGrantForm = () => {
     );
 };
 
-const CustomRewardForm = ({
+const EventForm = ({
   item,
   onSave,
   onCancel,
 }: {
-  item: Partial<CustomReward> | null;
-  onSave: (item: Omit<CustomReward, 'id'>) => void;
+  item: Partial<PlatformEvent> | null;
+  onSave: (item: Omit<PlatformEvent, 'id'>) => void;
   onCancel: () => void;
 }) => {
   const { users } = useAuth();
@@ -160,7 +163,9 @@ const CustomRewardForm = ({
   const [amount, setAmount] = useState(item?.amount || 0);
   const [userEmail, setUserEmail] = useState(item?.userEmail || "");
   const [image, setImage] = useState<string | null>(item?.imageUrl || null);
-
+  const [startTime, setStartTime] = useState(item?.startTime ? item.startTime.slice(0,16) : "");
+  const [endTime, setEndTime] = useState(item?.endTime ? item.endTime.slice(0,16) : "");
+  const [maxClaims, setMaxClaims] = useState(item?.maxClaims ?? "");
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -177,7 +182,7 @@ const CustomRewardForm = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !description || amount <= 0) {
-      alert("Please fill all fields with valid values.");
+      alert("Please fill title, description and amount fields with valid values.");
       return;
     }
     onSave({
@@ -187,6 +192,9 @@ const CustomRewardForm = ({
       userEmail,
       enabled: item?.enabled ?? true,
       imageUrl: image,
+      startTime: startTime || null,
+      endTime: endTime || null,
+      maxClaims: maxClaims ? Number(maxClaims) : null
     });
   };
   
@@ -201,22 +209,38 @@ const CustomRewardForm = ({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="title">Reward Title / Event Name</Label>
+        <Label htmlFor="title">Event / Reward Title</Label>
         <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
       </div>
       <div className="space-y-2">
         <Label htmlFor="description">Description</Label>
         <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} required />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="amount">Amount (USDT)</Label>
-        <Input id="amount" type="number" value={amount} onChange={(e) => setAmount(Number(e.target.value))} required />
+      <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="amount">Reward Amount (USDT)</Label>
+            <Input id="amount" type="number" value={amount} onChange={(e) => setAmount(Number(e.target.value))} required />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="maxClaims">Max Claims (Optional)</Label>
+            <Input id="maxClaims" type="number" value={String(maxClaims)} onChange={(e) => setMaxClaims(e.target.value)} placeholder="e.g. 100" />
+          </div>
+      </div>
+       <div className="grid grid-cols-2 gap-4">
+         <div className="space-y-2">
+            <Label htmlFor="startTime">Start Time (Optional)</Label>
+            <Input id="startTime" type="datetime-local" value={startTime} onChange={e => setStartTime(e.target.value)} />
+        </div>
+         <div className="space-y-2">
+            <Label htmlFor="endTime">End Time (Optional)</Label>
+            <Input id="endTime" type="datetime-local" value={endTime} onChange={e => setEndTime(e.target.value)} />
+        </div>
       </div>
        <div className="space-y-2">
         <Label htmlFor="userEmail">Specific User (Optional)</Label>
         <Select value={userEmail || "ALL_USERS"} onValueChange={handleUserSelectChange}>
             <SelectTrigger id="userEmail">
-                <SelectValue placeholder="All users at level" />
+                <SelectValue placeholder="All users" />
             </SelectTrigger>
             <SelectContent>
                 <SelectItem value="ALL_USERS">All users</SelectItem>
@@ -241,41 +265,41 @@ const CustomRewardForm = ({
       
       <DialogFooter>
         <DialogClose asChild><Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button></DialogClose>
-        <Button type="submit">Save Reward</Button>
+        <Button type="submit">Save Event / Reward</Button>
       </DialogFooter>
     </form>
   );
 };
 
 
-export default function ManageReimbursementsPage() {
+export default function ManageEventsPage() {
   const { toast } = useToast();
-  const [rewards, setRewards] = useState<CustomReward[]>([]);
+  const [events, setEvents] = useState<PlatformEvent[]>([]);
   const [isClient, setIsClient] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<CustomReward | null>(null);
+  const [editingItem, setEditingItem] = useState<PlatformEvent | null>(null);
 
   useEffect(() => {
     setIsClient(true);
-    const stored = localStorage.getItem("platform_reimbursements");
+    const stored = localStorage.getItem("platform_events");
     if (stored) {
-      setRewards(JSON.parse(stored));
+      setEvents(JSON.parse(stored));
     }
   }, []);
 
   useEffect(() => {
     if (isClient) {
-      localStorage.setItem("platform_reimbursements", JSON.stringify(rewards));
+      localStorage.setItem("platform_events", JSON.stringify(events));
     }
-  }, [rewards, isClient]);
+  }, [events, isClient]);
 
-  const handleSave = (itemData: Omit<CustomReward, 'id'>) => {
+  const handleSave = (itemData: Omit<PlatformEvent, 'id'>) => {
     if (editingItem) {
-      setRewards(rewards.map(r => r.id === editingItem.id ? { ...editingItem, ...itemData } : r));
-      toast({ title: "Custom Reward Updated" });
+      setEvents(events.map(r => r.id === editingItem.id ? { ...editingItem, ...itemData } : r));
+      toast({ title: "Event / Reward Updated" });
     } else {
-      setRewards([...rewards, { ...itemData, id: `REWARD-${Date.now()}` }]);
-      toast({ title: "Custom Reward Added" });
+      setEvents([...events, { ...itemData, id: `EVT-${Date.now()}` }]);
+      toast({ title: "Event / Reward Added" });
     }
     closeForm();
   };
@@ -285,19 +309,19 @@ export default function ManageReimbursementsPage() {
     setIsFormOpen(true);
   };
 
-  const handleEdit = (item: CustomReward) => {
+  const handleEdit = (item: PlatformEvent) => {
     setEditingItem(item);
     setIsFormOpen(true);
   };
   
   const handleDelete = (id: string) => {
-    setRewards(rewards.filter(r => r.id !== id));
-    toast({ title: "Reward Deleted", variant: "destructive" });
+    setEvents(events.filter(r => r.id !== id));
+    toast({ title: "Event / Reward Deleted", variant: "destructive" });
   };
 
   const handleToggle = (id: string, enabled: boolean) => {
-      setRewards(rewards.map(r => r.id === id ? {...r, enabled} : r));
-      toast({ title: `Reward ${enabled ? "Enabled" : "Disabled"}` });
+      setEvents(events.map(r => r.id === id ? {...r, enabled} : r));
+      toast({ title: `Event ${enabled ? "Enabled" : "Disabled"}` });
   }
   
   const closeForm = () => {
@@ -310,9 +334,9 @@ export default function ManageReimbursementsPage() {
         <div className="grid gap-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Manage Custom Rewards</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">Manage Events & Rewards</h1>
                     <p className="text-muted-foreground">
-                        Create special, claimable rewards for users.
+                        Create special, claimable events and one-off rewards for users.
                     </p>
                 </div>
                 <div className="flex gap-2">
@@ -327,19 +351,21 @@ export default function ManageReimbursementsPage() {
                 <div className="lg:col-span-2">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Claimable Custom Rewards ({rewards.length})</CardTitle>
+                            <CardTitle>Claimable Events & Rewards ({events.length})</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {rewards.map((item) => (
+                            {events.map((item) => (
                             <div key={item.id} className="border p-4 rounded-lg flex justify-between items-start gap-4">
                                 <div className="flex-1 flex items-start gap-4">
                                     {item.imageUrl && <Image src={item.imageUrl} alt={item.title} width={64} height={64} className="w-16 h-16 rounded-md object-cover" />}
                                     <div>
                                         <h3 className="font-semibold">{item.title}</h3>
                                         <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
-                                        <div className="flex items-center gap-4 mt-2 text-xs">
-                                            <span className="font-bold text-primary">${item.amount.toFixed(2)}</span>
-                                            {item.userEmail && <span className="text-muted-foreground">User: {item.userEmail}</span>}
+                                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs">
+                                            <span className="font-bold text-primary flex items-center gap-1"><Gift className="h-3 w-3" /> ${item.amount.toFixed(2)}</span>
+                                            {item.userEmail && <span className="text-muted-foreground flex items-center gap-1"><Users className="h-3 w-3"/>{item.userEmail}</span>}
+                                            {item.startTime && <span className="text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3"/>{new Date(item.startTime).toLocaleDateString()}</span>}
+                                            {item.maxClaims && <span className="text-muted-foreground flex items-center gap-1"><Star className="h-3 w-3"/>{item.maxClaims} claims</span>}
                                         </div>
                                     </div>
                                 </div>
@@ -372,8 +398,8 @@ export default function ManageReimbursementsPage() {
                                 </div>
                             </div>
                             ))}
-                            {rewards.length === 0 && (
-                                <p className="text-muted-foreground text-center py-12">No custom rewards have been configured yet.</p>
+                            {events.length === 0 && (
+                                <p className="text-muted-foreground text-center py-12">No custom rewards or events have been configured yet.</p>
                             )}
                         </CardContent>
                     </Card>
@@ -387,9 +413,9 @@ export default function ManageReimbursementsPage() {
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>{editingItem ? 'Edit' : 'Add New'} Custom Reward</DialogTitle>
+                    <DialogTitle>{editingItem ? 'Edit' : 'Add New'} Event / Reward</DialogTitle>
                 </DialogHeader>
-                <CustomRewardForm 
+                <EventForm 
                     item={editingItem}
                     onSave={handleSave}
                     onCancel={closeForm}
