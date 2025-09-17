@@ -14,13 +14,7 @@ import { Gift, Loader2 } from "lucide-react";
 import { useWallet } from "@/contexts/WalletContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-
-type WheelSlice = {
-  id: string;
-  name: string;
-  amount: number;
-  probability: number;
-};
+import { WheelSlice } from "@/app/dashboard/admin/lucky-wheel/page";
 
 export function LuckyWheelPanel() {
   const { currentUser } = useAuth();

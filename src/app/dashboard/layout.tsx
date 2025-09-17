@@ -152,6 +152,7 @@ import LuckyWheelSettingsPage from './admin/lucky-wheel/page';
 import ProfilePage from './profile/page';
 import SettingsPage from './settings/page';
 import type { Notice } from './admin/notices/page';
+import { LuckyWheelDialog } from "@/components/dashboard/lucky-wheel-dialog";
 
 
 type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'nftSettings' | 'nftStaking' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement' | 'purchaseHistory' | 'events' | 'aboutUs' | 'adminProfile' | 'scheduling' | 'communityCommission' | 'tokenomics' | 'luckyWheel';
@@ -239,6 +240,7 @@ function SidebarContentComponent({
     onAboutUsClick,
     onNftCollectionClick,
     onEventsClick,
+    onLuckyWheelClick,
     onShowInterestWarning,
     onShowTaskWarning
 }: { 
@@ -259,6 +261,7 @@ function SidebarContentComponent({
     onAboutUsClick: () => void,
     onNftCollectionClick: () => void,
     onEventsClick: () => void,
+    onLuckyWheelClick: () => void,
     onShowInterestWarning: () => void,
     onShowTaskWarning: () => void
 }) {
@@ -278,11 +281,14 @@ function SidebarContentComponent({
   const [amount, setAmount] = React.useState('');
   const [isClient, setIsClient] = React.useState(false);
   const [isAboutUsEnabled, setIsAboutUsEnabled] = React.useState(false);
+  const [isLuckyWheelEnabled, setIsLuckyWheelEnabled] = React.useState(false);
 
   React.useEffect(() => {
     setIsClient(true);
     const aboutUsEnabled = localStorage.getItem("about_us_enabled") === 'true';
     setIsAboutUsEnabled(aboutUsEnabled);
+    const luckyWheelEnabled = localStorage.getItem("lucky_wheel_enabled") === 'true';
+    setIsLuckyWheelEnabled(luckyWheelEnabled);
   }, []);
   
   const isAdmin = currentUser?.isAdmin;
@@ -446,6 +452,17 @@ function SidebarContentComponent({
                     </Link>
                 </SidebarMenuButton>
                 </SidebarMenuItem>
+                {isLuckyWheelEnabled && (
+                    <SidebarMenuItem>
+                        <SidebarMenuButton
+                            onClick={onLuckyWheelClick}
+                            tooltip={{ children: "Lucky Wheel" }}
+                        >
+                            <CircleDot />
+                            <span>Lucky Wheel</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                )}
                 <SidebarMenuItem>
                     <SidebarMenuButton
                         onClick={onAchievementsClick}
@@ -678,6 +695,7 @@ export default function DashboardLayout({
     const [isAboutUsOpen, setIsAboutUsOpen] = React.useState(false);
     const [isNftCollectionOpen, setIsNftCollectionOpen] = React.useState(false);
     const [isEventsOpen, setIsEventsOpen] = React.useState(false);
+    const [isLuckyWheelOpen, setIsLuckyWheelOpen] = React.useState(false);
 
 
     // User menu popups
@@ -807,6 +825,7 @@ export default function DashboardLayout({
                 onAboutUsClick={() => setIsAboutUsOpen(true)}
                 onNftCollectionClick={() => setIsNftCollectionOpen(true)}
                 onEventsClick={() => setIsEventsOpen(true)}
+                onLuckyWheelClick={() => setIsLuckyWheelOpen(true)}
                 onShowInterestWarning={() => setIsInterestMoveWarningOpen(true)}
                 onShowTaskWarning={() => setIsTaskMoveWarningOpen(true)}
             />
@@ -840,6 +859,7 @@ export default function DashboardLayout({
       </div>
        <RechargeDialog open={isRechargeOpen} onOpenChange={setIsRechargeOpen} />
        <WithdrawalDialog open={isWithdrawalOpen} onOpenChange={setIsWithdrawalOpen} />
+       <LuckyWheelDialog open={isLuckyWheelOpen} onOpenChange={setIsLuckyWheelOpen} />
        <Sheet open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
             <SheetContent className="w-full sm:max-w-lg">
                 <SheetHeader>
