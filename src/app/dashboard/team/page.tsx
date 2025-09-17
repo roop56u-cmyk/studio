@@ -387,10 +387,10 @@ export default function TeamPage() {
       )
   }
 
-  const teamLevels = [
-      { title: "Level 1", data: teamData.level1, rate: commissionRates.level1, enabled: commissionEnabled.level1, unlockReq: 1 },
-      { title: "Level 2", data: teamData.level2, rate: commissionRates.level2, enabled: commissionEnabled.level2, unlockReq: 2 },
-      { title: "Level 3", data: teamData.level3, rate: commissionRates.level3, enabled: commissionEnabled.level3, unlockReq: 3 },
+  const teamLayers = [
+      { title: "Layer 1", data: teamData.level1, rate: commissionRates.level1, enabled: commissionEnabled.level1, unlockReq: 1 },
+      { title: "Layer 2", data: teamData.level2, rate: commissionRates.level2, enabled: commissionEnabled.level2, unlockReq: 2 },
+      { title: "Layer 3", data: teamData.level3, rate: commissionRates.level3, enabled: commissionEnabled.level3, unlockReq: 3 },
   ];
   
   const availableTeamRewards = teamRewards.filter(r => (r.level === 0 || r.level <= currentLevel) && (!r.userEmail || r.userEmail === currentUser?.email));
@@ -454,7 +454,7 @@ export default function TeamPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">{totalActiveTeamMembers}</div>
-                                <p className="text-xs text-muted-foreground">Across all levels</p>
+                                <p className="text-xs text-muted-foreground">Across all layers</p>
                             </CardContent>
                         </Card>
                         <Card>
@@ -515,11 +515,11 @@ export default function TeamPage() {
                         </CardContent>
                     </Card>
                 )}
-
+                
                 {shouldShowCommunityCommission && (
                     <Card>
                         <CardHeader>
-                        <CardTitle>Community Commission Requirements</CardTitle>
+                            <CardTitle>Community Commission Requirements</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {applicableCommunityRule ? (
@@ -547,25 +547,25 @@ export default function TeamPage() {
                 )}
                 
                 <div className="grid md:grid-cols-2 gap-4">
-                    {teamLevels.map(level => {
-                        const isUnlocked = activeL1Referrals >= level.unlockReq;
+                    {teamLayers.map(layer => {
+                        const isUnlocked = activeL1Referrals >= layer.unlockReq;
                         return (
-                        <Card key={level.title}>
+                        <Card key={layer.title}>
                             <CardHeader>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <CardTitle className="text-lg">{level.title}</CardTitle>
+                                        <CardTitle className="text-lg">{layer.title}</CardTitle>
                                         {!isUnlocked && <Lock className="h-4 w-4 text-muted-foreground" />}
                                     </div>
-                                    {level.enabled ? (
-                                        <span className="text-sm font-bold text-primary">{level.rate}%</span>
+                                    {layer.enabled ? (
+                                        <span className="text-sm font-bold text-primary">{layer.rate}%</span>
                                     ) : (
                                         <TooltipProvider>
                                             <Tooltip>
                                                 <TooltipTrigger>
-                                                    <span className="text-sm font-bold text-muted-foreground line-through">{level.rate}%</span>
+                                                    <span className="text-sm font-bold text-muted-foreground line-through">{layer.rate}%</span>
                                                 </TooltipTrigger>
-                                                <TooltipContent><p>Commission for this level is disabled.</p></TooltipContent>
+                                                <TooltipContent><p>Commission for this layer is disabled.</p></TooltipContent>
                                             </Tooltip>
                                         </TooltipProvider>
                                     )}
@@ -575,19 +575,19 @@ export default function TeamPage() {
                             <CardContent className="space-y-4">
                                 <div className="flex items-center">
                                     <UserPlus className="h-5 w-5 text-muted-foreground mr-3" />
-                                    <p className="font-semibold">{level.data.count} Members ({level.data.activeCount} Active)</p>
+                                    <p className="font-semibold">{layer.data.count} Members ({layer.data.activeCount} Active)</p>
                                 </div>
                                 <div className="flex items-center">
                                     <DollarSign className="h-5 w-5 text-muted-foreground mr-3" />
-                                    <p className="font-semibold">${currentUser?.status === 'active' && isUnlocked ? (level.data.commission * (level.rate / 100)).toFixed(2) : '0.00'} Commission</p>
+                                    <p className="font-semibold">${currentUser?.status === 'active' && isUnlocked ? (layer.data.commission * (layer.rate / 100)).toFixed(2) : '0.00'} Commission</p>
                                 </div>
                                 <Accordion type="single" collapsible className="w-full">
                                     <AccordionItem value="item-1">
                                         <AccordionTrigger>View Members</AccordionTrigger>
                                         <AccordionContent>
-                                        {level.data.members.length > 0 ? (
+                                        {layer.data.members.length > 0 ? (
                                             <ul className="space-y-2 text-sm text-muted-foreground max-h-48 overflow-y-auto">
-                                                {level.data.members.map(member => (
+                                                {layer.data.members.map(member => (
                                                     <li key={member.email} className="flex justify-between items-center">
                                                         <span className="truncate pr-2">{member.email}</span>
                                                         <div className="flex items-center gap-2 flex-shrink-0">
@@ -681,4 +681,5 @@ export default function TeamPage() {
     </ScrollArea>
   );
 }
+
 
