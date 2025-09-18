@@ -341,7 +341,7 @@ export default function TeamPage() {
   const communityCommission = useMemo(() => {
     if (!communityData || !applicableCommunityRule || !currentUser || currentUser.status !== 'active') return 0;
     
-    const l1to3size = teamData ? teamData.level1.count + teamData.level2.count + teamData.level3.count : 0;
+    const l1to3size = teamData ? teamData.level1.activeCount + teamData.level2.activeCount + teamData.level3.activeCount : 0;
     
     const referralsMet = activeL1Referrals >= applicableCommunityRule.requiredDirectReferrals;
     const teamSizeMet = l1to3size >= applicableCommunityRule.requiredTeamSize;
@@ -534,9 +534,9 @@ export default function TeamPage() {
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-center text-xs text-muted-foreground">
                                         <span>L1-L3 Team Size</span>
-                                        <span>{teamData.level1.count + teamData.level2.count + teamData.level3.count} / {applicableCommunityRule.requiredTeamSize}</span>
+                                        <span>{totalActiveMembersL1toL3} / {applicableCommunityRule.requiredTeamSize}</span>
                                     </div>
-                                    <Progress value={Math.min(100, ((teamData.level1.count + teamData.level2.count + teamData.level3.count)/applicableCommunityRule.requiredTeamSize)*100)} />
+                                    <Progress value={Math.min(100, (totalActiveMembersL1toL3/applicableCommunityRule.requiredTeamSize)*100)} />
                                 </div>
                                 </>
                             ) : (
@@ -681,6 +681,7 @@ export default function TeamPage() {
     </ScrollArea>
   );
 }
+
 
 
 
