@@ -570,7 +570,9 @@ export default function TeamPage() {
                                         </TooltipProvider>
                                     )}
                                 </div>
-                                {layer.title === 'Layer 1' && <CardDescription>Direct Referrals</CardDescription>}
+                                {layer.title === 'Layer 1' && (
+                                  <CardDescription>Direct Referrals</CardDescription>
+                                )}
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="flex items-center">
@@ -589,7 +591,7 @@ export default function TeamPage() {
                                             <ul className="space-y-2 text-sm text-muted-foreground max-h-48 overflow-y-auto">
                                                 {layer.data.members.map(member => (
                                                     <li key={member.email} className="flex justify-between items-center">
-                                                        <span className="truncate pr-2">{member.email}</span>
+                                                        <span className="truncate pr-2">{member.fullName}</span>
                                                         <div className="flex items-center gap-2 flex-shrink-0">
                                                             <Badge variant={member.status === 'active' ? 'default' : 'secondary'} className={cn('text-xs py-0.5 px-1.5 h-fit', member.status === 'active' ? 'bg-green-100 text-green-800' : '')}>
                                                                 {member.status}
@@ -625,7 +627,7 @@ export default function TeamPage() {
                                     <ul className="space-y-2 text-sm text-muted-foreground max-h-60 overflow-y-auto">
                                         {communityData.members.map(member => (
                                             <li key={member.email} className="flex justify-between items-center">
-                                                <span className="truncate pr-2">{member.email}</span>
+                                                <span className="truncate pr-2">{member.fullName}</span>
                                                 <div className="flex items-center gap-2 flex-shrink-0">
                                                     <Badge variant={member.status === 'active' ? 'default' : 'secondary'} className={cn('text-xs py-0.5 px-1.5 h-fit', member.status === 'active' ? 'bg-green-100 text-green-800' : '')}>
                                                         {member.status}
@@ -681,6 +683,7 @@ export default function TeamPage() {
     </ScrollArea>
   );
 }
+
 
 
 
