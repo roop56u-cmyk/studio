@@ -498,7 +498,7 @@ export default function TeamPage() {
                             </div>
                             {uplineInfo ? (
                                 <CardDescription>
-                                    Earn {uplineCommissionSettings.rate}% from your sponsor: <strong className="text-foreground">{uplineInfo.name}</strong> ({uplineInfo.email})
+                                    Earn {uplineCommissionSettings.rate}% from your sponsor: <strong className="text-foreground">{uplineInfo.name}</strong>
                                 </CardDescription>
                             ) : (
                                 <CardDescription>Your sponsor information is not available.</CardDescription>
@@ -681,6 +681,7 @@ export default function TeamPage() {
     </ScrollArea>
   );
 }
+
 
 
 
