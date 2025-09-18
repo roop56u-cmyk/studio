@@ -427,7 +427,7 @@ export default function TeamPage() {
                             <Card>
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-sm font-medium">Upline Commission</CardTitle>
-                                    <ArrowUp className="h-4 w-4 text-muted-foreground" />
+                                    <Badge variant="secondary">{uplineCommissionSettings.rate}%</Badge>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="text-2xl font-bold">${totalUplineCommission.toFixed(2)}</div>
@@ -438,8 +438,8 @@ export default function TeamPage() {
                         {shouldShowCommunityCommission && (
                              <Card>
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                    <CardTitle className="text-sm font-medium">Community Commission</CardTitle>
-                                    <Layers className="h-4 w-4 text-muted-foreground" />
+                                    <CardTitle className="text-sm font-medium">Community</CardTitle>
+                                    {applicableCommunityRule && <Badge variant="secondary">{applicableCommunityRule.commissionRate}%</Badge>}
                                 </CardHeader>
                                 <CardContent>
                                     <div className="text-2xl font-bold">${communityCommission.toFixed(2)}</div>
@@ -683,6 +683,7 @@ export default function TeamPage() {
     </ScrollArea>
   );
 }
+
 
 
 
