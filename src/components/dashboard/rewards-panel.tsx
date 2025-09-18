@@ -219,7 +219,7 @@ export function RewardsPanel({ isEventView = false }: { isEventView?: boolean })
                             <React.Fragment key={referral.email}>
                                 <div className="flex justify-between items-center">
                                     <div>
-                                        <p className="font-semibold text-sm">{referral.email}</p>
+                                        <p className="font-semibold text-sm">{referral.fullName}</p>
                                         <p className={`text-xs ${referral.isAccountActive ? 'text-green-600' : 'text-muted-foreground'}`}>
                                             {referral.isAccountActive ? 'Active' : 'Inactive'}
                                         </p>
