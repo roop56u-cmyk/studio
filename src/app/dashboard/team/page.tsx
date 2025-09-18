@@ -570,7 +570,7 @@ export default function TeamPage() {
                                         </TooltipProvider>
                                     )}
                                 </div>
-                                <CardDescription>Direct Referrals</CardDescription>
+                                {layer.title === 'Layer 1' && <CardDescription>Direct Referrals</CardDescription>}
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="flex items-center">
@@ -681,5 +681,6 @@ export default function TeamPage() {
     </ScrollArea>
   );
 }
+
 
 
