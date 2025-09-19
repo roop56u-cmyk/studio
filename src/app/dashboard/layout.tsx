@@ -91,6 +91,7 @@ import {
   Sparkles,
   Gem,
   CircleDot,
+  X,
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -118,7 +119,7 @@ import { NoticesPanel } from "@/components/dashboard/notices-panel";
 import TeamPage from "./team/page";
 import { AboutUsPanel } from '@/components/dashboard/about-us-panel';
 import { NftCollectionPanel } from '@/components/dashboard/nft-collection-panel';
-
+import Image from "next/image";
 
 // Admin Panel Imports
 import UserManagementPage from "./admin/users/page";
@@ -1116,19 +1117,15 @@ export default function DashboardLayout({
         </Sheet>
 
         {loginNotice && (
-            <AlertDialog open={isLoginNoticeOpen} onOpenChange={setIsLoginNoticeOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>{loginNotice.title}</AlertDialogTitle>
-                        <AlertDialogDescription className="whitespace-pre-wrap">
-                            {loginNotice.content}
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogAction onClick={() => setIsLoginNoticeOpen(false)}>Close</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <div className={cn("fixed bottom-4 right-4 z-[100] w-80 h-80 rounded-full bg-background/80 backdrop-blur-sm border shadow-lg flex items-center justify-center p-4 transition-all duration-500", isLoginNoticeOpen ? "opacity-100 scale-100" : "opacity-0 scale-75 pointer-events-none")}>
+                <div className="relative w-full h-full flex flex-col items-center justify-center text-center">
+                    <button onClick={() => setIsLoginNoticeOpen(false)} className="absolute -top-2 -right-2 bg-secondary text-secondary-foreground rounded-full p-1 z-10"><X className="h-4 w-4" /></button>
+                    {loginNotice.imageUrl && <Image src={loginNotice.imageUrl} alt={loginNotice.title} width={80} height={80} className="w-20 h-20 rounded-full object-cover border-4 border-white mb-2" unoptimized />}
+                    <h3 className="font-bold text-lg">{loginNotice.title}</h3>
+                    <p className="text-xs text-muted-foreground line-clamp-3 my-1">{loginNotice.content}</p>
+                    <Button size="sm" onClick={() => { setIsLoginNoticeOpen(false); setIsNoticesOpen(true); }} className="mt-2">View Details</Button>
+                </div>
+            </div>
         )}
         <AlertDialog open={isInterestMoveWarningOpen} onOpenChange={setIsInterestMoveWarningOpen}>
             <AlertDialogContent>

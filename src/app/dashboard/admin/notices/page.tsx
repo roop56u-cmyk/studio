@@ -42,8 +42,10 @@ export default function AdminNoticesPage() {
   const [notices, setNotices] = useState<Notice[]>([]);
   const [isPopupEnabled, setIsPopupEnabled] = useState(false);
   const [popupNoticeId, setPopupNoticeId] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
     const storedNotices = localStorage.getItem("platform_notices");
     if (storedNotices) {
       setNotices(JSON.parse(storedNotices));
@@ -58,21 +60,26 @@ export default function AdminNoticesPage() {
     }
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem("platform_notices", JSON.stringify(notices));
-  }, [notices]);
-
-  useEffect(() => {
-    localStorage.setItem("login_popup_enabled", JSON.stringify(isPopupEnabled));
-  }, [isPopupEnabled]);
+  const persistNotices = (newNotices: Notice[]) => {
+    setNotices(newNotices);
+    localStorage.setItem("platform_notices", JSON.stringify(newNotices));
+  };
   
   useEffect(() => {
-    if (popupNoticeId) {
-      localStorage.setItem("login_popup_notice_id", popupNoticeId);
-    } else {
-      localStorage.removeItem("login_popup_notice_id");
+    if(isClient) {
+        localStorage.setItem("login_popup_enabled", JSON.stringify(isPopupEnabled));
     }
-  }, [popupNoticeId]);
+  }, [isPopupEnabled, isClient]);
+  
+  useEffect(() => {
+    if (isClient) {
+        if (popupNoticeId) {
+          localStorage.setItem("login_popup_notice_id", popupNoticeId);
+        } else {
+          localStorage.removeItem("login_popup_notice_id");
+        }
+    }
+  }, [popupNoticeId, isClient]);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -104,7 +111,8 @@ export default function AdminNoticesPage() {
       imageUrl: image,
     };
 
-    setNotices(prev => [newNotice, ...prev]);
+    const newNotices = [newNotice, ...notices];
+    persistNotices(newNotices);
 
     toast({
       title: "Notice Published!",
@@ -119,7 +127,8 @@ export default function AdminNoticesPage() {
     if (id === popupNoticeId) {
         setPopupNoticeId(null);
     }
-    setNotices(prev => prev.filter(n => n.id !== id));
+    const newNotices = notices.filter(n => n.id !== id);
+    persistNotices(newNotices);
     toast({
         title: "Notice Deleted",
         variant: "destructive",
