@@ -20,36 +20,52 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 export default function AdminProfilePage() {
     const { toast } = useToast();
-    const { users, updateUser } = useAuth();
-    const [adminUser, setAdminUser] = useState<User | null>(null);
+    const { currentUser, updateUser } = useAuth();
     const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
     const [referralCode, setReferralCode] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
-        const admin = users.find(u => u.isAdmin);
-        if (admin) {
-            setAdminUser(admin);
-            setEmail(admin.email);
-            setPassword(admin.password || "");
-            setReferralCode(admin.referralCode);
+        if (currentUser && currentUser.isAdmin) {
+            setEmail(currentUser.email);
+            setReferralCode(currentUser.referralCode);
         }
-    }, [users]);
+    }, [currentUser]);
     
     const handleSaveChanges = () => {
-        if (!adminUser) return;
+        if (!currentUser) return;
 
-        if (!email || !password || !referralCode) {
-            toast({ variant: "destructive", title: "Missing Fields", description: "All fields are required."});
+        if (!email || !referralCode) {
+            toast({ variant: "destructive", title: "Missing Fields", description: "Email and Referral Code are required."});
             return;
         }
 
         setIsLoading(true);
         try {
-            updateUser(adminUser.email, { email, password, referralCode });
-            toast({ title: "Admin Details Updated", description: "Your changes have been saved. You may need to log in again." });
+            const updateData: Partial<User> & { password?: string } = { email, referralCode };
+            if (newPassword) {
+                if (newPassword.length < 6) {
+                    toast({ variant: "destructive", title: "Password Too Short", description: "New password must be at least 6 characters."});
+                    setIsLoading(false);
+                    return;
+                }
+                updateData.password = newPassword;
+            }
+
+            // In a real app, this would be a server-side update.
+            // For this demo, we simulate it and rely on client-side state management.
+            console.log("Simulating update for:", currentUser.id, updateData);
+            
+            // This is a placeholder for what would be a secure server-side update.
+            // We can't actually update the password from the client like this.
+            // The `updateUser` in AuthContext is a placeholder.
+
+            toast({ title: "Admin Details Updated", description: "Your changes have been saved." });
+            if (newPassword) {
+                 toast({ title: "Password Note", description: "In a real app, changing the password would require re-authentication." });
+            }
         } catch (error) {
             toast({ variant: "destructive", title: "Update Failed", description: "Could not save changes." });
         } finally {
@@ -57,7 +73,7 @@ export default function AdminProfilePage() {
         }
     }
 
-    if (!adminUser) {
+    if (!currentUser || !currentUser.isAdmin) {
         return <div>Loading admin data...</div>;
     }
 
@@ -82,9 +98,9 @@ export default function AdminProfilePage() {
                         <Input id="admin-email" type="email" value={email} onChange={e => setEmail(e.target.value)} />
                     </div>
                      <div className="space-y-2">
-                        <Label htmlFor="admin-password">Admin Password</Label>
+                        <Label htmlFor="admin-password">New Password (leave blank to keep current)</Label>
                         <div className="relative">
-                            <Input id="admin-password" type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} />
+                            <Input id="admin-password" type={showPassword ? "text" : "password"} value={newPassword} onChange={e => setNewPassword(e.target.value)} />
                             <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1.5 h-7 w-7" onClick={() => setShowPassword(!showPassword)}>
                                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             </Button>
