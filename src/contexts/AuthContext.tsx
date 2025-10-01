@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { platformMessages } from '@/lib/platform-messages';
 import { useLocalStorageWatcher } from '@/hooks/use-local-storage-watcher';
 import { createClient } from '@/lib/supabase/client';
-import type { AuthError } from '@supabase/supabase-js';
+import type { AuthError, SupabaseClient } from '@supabase/supabase-js';
 
 export type User = {
     id: string; // From Supabase auth
@@ -60,8 +60,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [messages, setMessages] = useState<any>({});
-    const supabase = createClient();
     const router = useRouter();
+
+    // Use useMemo to ensure createClient is only called when needed and on the client-side
+    const supabase = useMemo(() => createClient(), []);
 
     useEffect(() => {
         const storedMessages = getGlobalSetting("platform_custom_messages", {}, true);
@@ -120,7 +122,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const login = async (email: string, password: string) => {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error || !data.user) {
-            return { success: false, message: error?.message || "An unknown error occurred." };
+            return { success: false, message: error?.message || "Invalid login credentials." };
         }
 
         const { data: userData, error: userError } = await supabase.from('users').select('*').eq('id', data.user.id).single();
@@ -134,7 +136,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             return { success: false, message: messages.auth?.accountDisabled || 'Your account is disabled.' };
         }
         
-        // The onAuthStateChange listener will handle setting the user state.
         return { success: true, message: 'Logged in successfully!', isAdmin: userData.isAdmin };
     };
 
@@ -168,14 +169,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             return { success: false, message: error.message };
         }
         
-        // Don't create the public user profile here. It should be created by the database trigger.
         return { success: true, message: 'Account created! Please check your email for a confirmation link.' };
     };
 
     const logout = async () => {
         await supabase.auth.signOut();
         setCurrentUser(null);
-        // Clear all user-specific data from localStorage for security
         Object.keys(localStorage).forEach(key => {
             if (key.includes('_')) {
                 localStorage.removeItem(key);
