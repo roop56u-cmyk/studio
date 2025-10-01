@@ -1,11 +1,12 @@
 
 "use client";
 
-import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { platformMessages } from '@/lib/platform-messages';
 import { useLocalStorageWatcher } from '@/hooks/use-local-storage-watcher';
 import { createClient } from '@/lib/supabase/client';
+import type { AuthError } from '@supabase/supabase-js';
 
 export type User = {
     id: string; // From Supabase auth
@@ -27,11 +28,11 @@ export type User = {
 interface AuthContextType {
   currentUser: User | null;
   users: User[];
-  login: (email: string, password: string) => Promise<{ success: boolean, message: string, isAdmin?: boolean }>;
-  signup: (email: string, password: string, fullName: string, referralCode: string) => Promise<{ success: boolean, message: string, referrerEmail?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; message: string; isAdmin?: boolean }>;
+  signup: (email: string, password: string, fullName: string, invitationCode: string) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
   updateUser: (userId: string, updatedData: Partial<Omit<User, 'status' | 'isAccountActive'>> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; purchasedReferrals?: number; }) => void;
-  deleteUser: (userId: string) => void;
+  deleteUser: (userId: string, isSelfDelete?: boolean) => void;
   updateUserStatus: (userId: string, status: User['status']) => void;
   activateUserAccount: (userId: string) => void;
 }
@@ -78,15 +79,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [users, setUsers] = useState<User[]>([]);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-    // Fetch all users for admin/referral purposes
-    const fetchAllUsers = async () => {
+    const fetchAllUsers = useCallback(async () => {
         const { data, error } = await supabase.from('users').select('*');
         if (error) {
             console.error('Error fetching users:', error);
             return;
         }
         setUsers(data as User[]);
-    };
+    }, [supabase]);
 
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -114,76 +114,82 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return () => {
             subscription.unsubscribe();
         };
-    }, [supabase]);
+    }, [supabase, fetchAllUsers]);
 
 
     const login = async (email: string, password: string) => {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) {
-            return { success: false, message: error.message };
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error || !data.user) {
+            return { success: false, message: error?.message || "An unknown error occurred." };
         }
-        
-        const { data: { user } } = await supabase.auth.getUser();
-        const { data: userData, error: userError } = await supabase.from('users').select('*').eq('id', user!.id).single();
-        if(userError || !userData) {
+
+        const { data: userData, error: userError } = await supabase.from('users').select('*').eq('id', data.user.id).single();
+        if (userError || !userData) {
+            await supabase.auth.signOut(); // Log out if profile doesn't exist
             return { success: false, message: 'Could not retrieve user profile.' };
         }
-         if (userData.status === 'disabled') {
+
+        if (userData.status === 'disabled') {
             await supabase.auth.signOut();
-            return { success: false, message: messages.auth?.accountDisabled };
+            return { success: false, message: messages.auth?.accountDisabled || 'Your account is disabled.' };
         }
         
+        // The onAuthStateChange listener will handle setting the user state.
         return { success: true, message: 'Logged in successfully!', isAdmin: userData.isAdmin };
     };
 
-    const signup = async (email: string, password: string, fullName: string, referralCode: string) => {
+    const signup = async (email: string, password: string, fullName: string, invitationCode: string) => {
         const { data: referrer, error: referrerError } = await supabase
             .from('users')
             .select('email')
-            .eq('referralCode', referralCode)
+            .eq('referralCode', invitationCode)
             .single();
 
         if (referrerError || !referrer) {
-            return { success: false, message: messages.auth?.invalidReferralCode };
+            return { success: false, message: messages.auth?.invalidReferralCode || "Invalid invitation code." };
         }
 
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
             options: {
+                emailRedirectTo: `${window.location.origin}/auth/callback`,
                 data: {
                     full_name: fullName,
-                    referral_code: "TRH-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
-                    referred_by: referralCode,
                 },
             },
         });
 
         if (error) {
+            // Check for specific Supabase error codes
+            if ((error as AuthError).code === 'user_already_exists') {
+                return { success: false, message: messages.auth?.emailExists || "An account with this email already exists." };
+            }
             return { success: false, message: error.message };
         }
         
-        if (data.user && data.user.identities && data.user.identities.length === 0) {
-            return { success: false, message: messages.auth?.emailExists };
-        }
-
-        return { success: true, message: 'Account created! Please check your email for a confirmation link.', referrerEmail: referrer.email };
+        // Don't create the public user profile here. It should be created by the database trigger.
+        return { success: true, message: 'Account created! Please check your email for a confirmation link.' };
     };
 
     const logout = async () => {
         await supabase.auth.signOut();
         setCurrentUser(null);
+        // Clear all user-specific data from localStorage for security
+        Object.keys(localStorage).forEach(key => {
+            if (key.includes('_')) {
+                localStorage.removeItem(key);
+            }
+        });
         router.push('/login');
     };
 
-    const updateUser = async (userId: string, updatedData: Partial<Omit<User, 'status' | 'isAccountActive'>> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; purchasedReferrals?: number; }) => {
-        // This function will need to be converted to use server actions to update secure data
+    const updateUser = (userId: string, updatedData: Partial<User>) => {
         console.log("Updating user (client-side placeholder):", userId, updatedData);
     };
 
-    const deleteUser = async (userId: string) => {
-        // This needs to be a server action calling Supabase admin functions
-        console.log("Deleting user (client-side placeholder):", userId);
+    const deleteUser = (userId: string, isSelfDelete = false) => {
+        console.log("Deleting user (client-side placeholder):", userId, isSelfDelete);
     };
 
     const updateUserStatus = async (userId: string, status: User['status']) => {
