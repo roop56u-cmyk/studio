@@ -1,10 +1,10 @@
 
 "use client";
 
-import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo, useCallback } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import type { AuthError, SupabaseClient, Session } from '@supabase/supabase-js';
+import type { AuthError, SupabaseClient, Session, User as SupabaseUser } from '@supabase/supabase-js';
 
 export type User = {
     id: string; // From Supabase auth
@@ -24,7 +24,7 @@ export type User = {
 
 interface AuthContextType {
   currentUser: User | null;
-  users: User[]; // This will now be primarily managed by TeamContext for team data
+  users: User[];
   logout: () => void;
   updateUser: (userId: string, updatedData: Partial<User>) => void;
   deleteUser: (userId: string, isSelfDelete?: boolean) => void;
@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [users, setUsers] = useState<User[]>([]);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-    const fetchCurrentUserProfile = useCallback(async (sessionUser: any) => {
+    const fetchCurrentUserProfile = useCallback(async (sessionUser: SupabaseUser) => {
         const { data: userData, error } = await supabase
             .from('users')
             .select('*')
@@ -50,8 +50,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (error) {
             console.error('Error fetching user profile:', error);
-            // This might happen if the profile isn't created yet.
-            // The signIn action will handle creating it on login.
+            // This can happen if RLS is on and the policy is not met.
+            // Or if the user was created but the profile creation failed.
+            // Logging out is a safe fallback.
+            await supabase.auth.signOut();
             setCurrentUser(null);
         } else {
             setCurrentUser(userData as User);
@@ -60,14 +62,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (session?.user) {
+            if (session?.user && (!currentUser || session.user.id !== currentUser.id)) {
                 await fetchCurrentUserProfile(session.user);
-            } else {
+            } else if (!session?.user) {
                 setCurrentUser(null);
             }
         });
 
-        // Initial check
+        // Initial check in case there's an active session on page load
         supabase.auth.getSession().then(({ data: { session } }) => {
             if (session?.user) {
                 fetchCurrentUserProfile(session.user);
@@ -77,16 +79,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return () => {
             subscription.unsubscribe();
         };
-    }, [supabase, fetchCurrentUserProfile]);
+    }, [supabase, fetchCurrentUserProfile, currentUser]);
 
 
     const logout = async () => {
         await supabase.auth.signOut();
         setCurrentUser(null);
-        // We don't clear all users from state, as TeamContext might need them
-        // Clearing localStorage is more important
+        setUsers([]); // Clear all user data on logout
+        // Clear sensitive data from localStorage
         Object.keys(localStorage).forEach(key => {
-            if (key.includes('@')) { // A simple heuristic for user-specific keys
+            if (key.includes('@') || key.includes('supabase')) {
                 localStorage.removeItem(key);
             }
         });
@@ -94,8 +96,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         router.push('/login');
     };
 
-    // These functions are now placeholders for client-side state changes.
-    // The real database operations should be handled by server actions.
     const updateUser = (userId: string, updatedData: Partial<User>) => {
         console.log("Updating user (client-side placeholder):", userId, updatedData);
         if (currentUser && currentUser.id === userId) {
@@ -126,7 +126,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const value = {
         currentUser,
-        users, // This is kept for any components that might still use it, but its population is now limited.
+        users, // This will be populated securely when needed
         logout,
         updateUser,
         deleteUser,

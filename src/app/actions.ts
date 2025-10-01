@@ -38,8 +38,6 @@ export async function signIn(formData: FormData) {
     return { success: false, message: error.message };
   }
   
-  revalidatePath('/', 'layout');
-  
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { success: false, message: "Could not authenticate user." };
@@ -50,7 +48,7 @@ export async function signIn(formData: FormData) {
 
   const { data: userData, error: userError } = await supabaseAdmin.from('users').select('isAdmin').eq('id', user.id).single();
 
-  if (userError && userError.code === 'PGRST116') {
+  if (userError && userError.code === 'PGRST116') { // 'PGRST116' implies no rows found
     // User profile doesn't exist, so create it. This is a fallback for users created before the trigger.
     const { data: newUser, error: insertError } = await supabaseAdmin.from('users').insert({
       id: user.id,
@@ -60,16 +58,19 @@ export async function signIn(formData: FormData) {
     }).select('isAdmin').single();
 
     if (insertError) {
+      console.error("Error creating user profile on login:", insertError);
       return { success: false, message: "Failed to create user profile on login." };
     }
+     revalidatePath('/', 'layout');
     return { success: true, isAdmin: newUser?.isAdmin || false };
   }
   
   if (userError) {
+    console.error("Error fetching user profile:", userError);
     return { success: false, message: userError.message };
   }
 
-
+  revalidatePath('/', 'layout');
   return { success: true, isAdmin: userData?.isAdmin || false };
 }
 
@@ -207,3 +208,4 @@ export async function getInternetTime(): Promise<{ utc_datetime: string } | null
     return null;
   }
 }
+

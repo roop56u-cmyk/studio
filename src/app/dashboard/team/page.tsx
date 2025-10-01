@@ -1,8 +1,7 @@
 
-
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   Card,
@@ -13,7 +12,7 @@ import {
   CardFooter
 } from "@/components/ui/card";
 import { Users, DollarSign, UserPlus, Briefcase, Activity, Award, X, Trophy, ArrowUp, Info, HandCoins, UserCheck, TrendingUp, AlertTriangle, Layers, Lock, Landmark } from "lucide-react";
-import { useTeam } from "@/contexts/TeamContext";
+import { useTeam as useTeamContextData, getLevelForUser } from "@/contexts/TeamContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Accordion,
@@ -35,6 +34,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { SalaryPackage } from "../admin/salary/page";
 import { CommunityCommissionRule } from "../admin/community-commission/page";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import type { User } from '@/contexts/AuthContext';
+
 
 const TeamRewardCard = ({ reward, totalTeamBusiness, onInactiveClaim }: { reward: TeamReward, totalTeamBusiness: number, onInactiveClaim: () => void }) => {
     const { toast } = useToast();
@@ -291,40 +292,126 @@ const SalaryPackageCard = ({ pkg, totalTeamBusiness, activeL1Referrals, onInacti
 
 
 export default function TeamPage() {
-  const { 
-      teamData, 
-      communityData,
+  const contextData = useTeamContextData();
+  const { currentUser } = useAuth();
+  const { currentLevel, setIsInactiveWarningOpen } = useWallet();
+
+  // Local state for this component
+  const [teamData, setTeamData] = useState(contextData.teamData);
+  const [communityData, setCommunityData] = useState(contextData.communityData);
+  const [isLoading, setIsLoading] = useState(true);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    // A simple way to get all user data from localStorage for the demo
+    const loadedUsers = Object.keys(localStorage)
+      .filter(key => key.endsWith('_mainBalance')) // Heuristic to find user data keys
+      .map(key => {
+        const userEmail = key.replace('_mainBalance', '');
+        const userString = localStorage.getItem(userEmail);
+        return userString ? JSON.parse(userString) : null;
+      })
+      .filter(Boolean);
+    setAllUsers(loadedUsers as User[]);
+  }, []);
+
+  const {
       communityCommissionRules,
       commissionRates, 
       commissionEnabled, 
-      isLoading, 
-      totalTeamBusiness, 
-      totalTeamNetWorth,
-      totalActivationsToday, 
       teamRewards, 
       teamSizeRewards,
       salaryPackages,
       totalUplineCommission, 
       uplineCommissionSettings,
-      uplineInfo,
-      activeL1Referrals,
-      getLevelForUser
-  } = useTeam();
-  const { currentUser } = useAuth();
-  const { currentLevel, setIsInactiveWarningOpen } = useWallet();
+      uplineInfo
+  } = contextData;
+
+  const calculateTeamAndCommunityData = useCallback(() => {
+    if (!currentUser || allUsers.length === 0) return;
+
+    setIsLoading(true);
+
+    const cycleStartTime = new Date(localStorage.getItem(`${currentUser.email}_lastPayoutCheck`) || 0).getTime();
+
+    // Helper functions within the calculation scope
+    const getTotalDepositsForUser = (userEmail: string): number => parseFloat(localStorage.getItem(`${userEmail}_totalDeposits`) || '0');
+    const getNetWorthForUser = (userEmail: string): number => {
+      const main = parseFloat(localStorage.getItem(`${userEmail}_mainBalance`) || '0');
+      const task = parseFloat(localStorage.getItem(`${userEmail}_taskRewardsBalance`) || '0');
+      const interest = parseFloat(localStorage.getItem(`${userEmail}_interestEarningsBalance`) || '0');
+      return main + task + interest;
+    };
+    
+    // Calculate L1-L3
+    const level1Members = allUsers.filter(u => u.referredBy === currentUser.referralCode);
+    const level2Members = level1Members.flatMap(l1User => allUsers.filter(u => u.referredBy === l1User.referralCode));
+    const level3Members = level2Members.flatMap(l2User => allUsers.filter(u => u.referredBy === l2User.referralCode));
+
+    const calculateLayer = (members: User[]) => {
+      const activeMembers = members.filter(m => m.status === 'active');
+      const enrichedMembers = members.map(m => ({ ...m, level: getLevelForUser(m, allUsers), status: m.status }));
+      const totalDeposits = enrichedMembers.reduce((sum, m) => sum + getTotalDepositsForUser(m.email), 0);
+      const totalNetWorth = enrichedMembers.reduce((sum, m) => sum + getNetWorthForUser(m.email), 0);
+      const dailyTaskEarnings = activeMembers.reduce((sum, m) => {
+        const completedTasksForCycle = JSON.parse(localStorage.getItem(`${m.email}_completedTasks`) || '[]')
+            .filter((task: { completedAt: string }) => new Date(task.completedAt).getTime() >= cycleStartTime);
+        return sum + completedTasksForCycle.reduce((taskSum: number, task: { earnings: number }) => taskSum + task.earnings, 0);
+      }, 0);
+      const activationsToday = members.filter(m => m.status === 'active' && m.activatedAt && new Date(m.activatedAt).getTime() >= cycleStartTime).length;
+      return { count: members.length, activeCount: activeMembers.length, commission: dailyTaskEarnings, members: enrichedMembers, totalDeposits, totalNetWorth, activationsToday };
+    };
+
+    const newTeamData = {
+      level1: calculateLayer(level1Members),
+      level2: calculateLayer(level2Members),
+      level3: calculateLayer(level3Members),
+    };
+    setTeamData(newTeamData);
+
+    // Calculate L4+
+    const processedEmails = new Set<string>([currentUser.email, ...level1Members.map(u => u.email), ...level2Members.map(u => u.email), ...level3Members.map(u => u.email)]);
+    const L4PlusMembers: User[] = [];
+    let parentLayer = level3Members;
+    while (parentLayer.length > 0) {
+      const currentLayer = parentLayer.flatMap(parent => allUsers.filter(u => u.referredBy === parent.referralCode && !processedEmails.has(u.email)));
+      if (currentLayer.length === 0) break;
+      L4PlusMembers.push(...currentLayer);
+      currentLayer.forEach(u => processedEmails.add(u.email));
+      parentLayer = currentLayer;
+    }
+    const activeCommunityMembers = L4PlusMembers.filter(m => m.status === 'active');
+    const communityTotalEarnings = activeCommunityMembers.reduce((sum, m) => {
+      const completedTasksForCycle = JSON.parse(localStorage.getItem(`${m.email}_completedTasks`) || '[]').filter((task: { completedAt: string }) => new Date(task.completedAt).getTime() >= cycleStartTime);
+      return sum + completedTasksForCycle.reduce((taskSum: number, task: { earnings: number }) => taskSum + task.earnings, 0);
+    }, 0);
+    const enrichedCommunityMembers = L4PlusMembers.map(m => ({ ...m, level: getLevelForUser(m, allUsers), status: m.status }));
+    const communityActivationsToday = L4PlusMembers.filter(m => m.status === 'active' && m.activatedAt && new Date(m.activatedAt).getTime() >= cycleStartTime).length;
+
+    setCommunityData({
+        members: enrichedCommunityMembers,
+        totalEarnings: communityTotalEarnings,
+        activeCount: activeCommunityMembers.length,
+        activationsToday: communityActivationsToday
+    });
+
+    setIsLoading(false);
+  }, [currentUser, allUsers]);
+
+  useEffect(() => {
+    calculateTeamAndCommunityData();
+  }, [calculateTeamAndCommunityData]);
+  
 
   const totalCommission = useMemo(() => {
       if (!teamData || !currentUser || currentUser.status !== 'active') return 0;
       let total = 0;
-      // L1
-      if (commissionEnabled.level1 && activeL1Referrals >= 1) total += teamData.level1.commission * (commissionRates.level1 / 100);
-      // L2
-      if (commissionEnabled.level2 && activeL1Referrals >= 2) total += teamData.level2.commission * (commissionRates.level2 / 100);
-      // L3
-      if (commissionEnabled.level3 && activeL1Referrals >= 3) total += teamData.level3.commission * (commissionRates.level3 / 100);
+      if (commissionEnabled.level1 && teamData.level1.activeCount >= 1) total += teamData.level1.commission * (commissionRates.level1 / 100);
+      if (commissionEnabled.level2 && teamData.level1.activeCount >= 2) total += teamData.level2.commission * (commissionRates.level2 / 100);
+      if (commissionEnabled.level3 && teamData.level1.activeCount >= 3) total += teamData.level3.commission * (commissionRates.level3 / 100);
 
       return total;
-  }, [teamData, commissionRates, commissionEnabled, currentUser, activeL1Referrals]);
+  }, [teamData, commissionRates, commissionEnabled, currentUser]);
   
   const applicableCommunityRule = useMemo(() => {
     if (!communityCommissionRules || communityCommissionRules.length === 0) return null;
@@ -339,29 +426,24 @@ export default function TeamPage() {
   }, [communityCommissionRules, currentLevel]);
 
   const communityCommission = useMemo(() => {
-    if (!communityData || !applicableCommunityRule || !currentUser || currentUser.status !== 'active') return 0;
+    if (!communityData || !applicableCommunityRule || !currentUser || currentUser.status !== 'active' || !teamData) return 0;
     
-    const l1to3size = teamData ? teamData.level1.activeCount + teamData.level2.activeCount + teamData.level3.activeCount : 0;
-    
-    const referralsMet = activeL1Referrals >= applicableCommunityRule.requiredDirectReferrals;
-    const teamSizeMet = l1to3size >= applicableCommunityRule.requiredTeamSize;
+    const referralsMet = teamData.level1.activeCount >= applicableCommunityRule.requiredDirectReferrals;
+    const teamSizeMet = (teamData.level1.activeCount + teamData.level2.activeCount + teamData.level3.activeCount) >= applicableCommunityRule.requiredTeamSize;
 
     if (referralsMet && teamSizeMet) {
         return communityData.totalEarnings * (applicableCommunityRule.commissionRate / 100);
     }
     
     return 0;
-  }, [communityData, applicableCommunityRule, currentUser, teamData, activeL1Referrals]);
+  }, [communityData, applicableCommunityRule, currentUser, teamData]);
   
-  const totalActiveMembersL1toL3 = useMemo(() => {
-    if (!teamData) return 0;
-    return teamData.level1.activeCount + teamData.level2.activeCount + teamData.level3.activeCount;
-  }, [teamData]);
-
-  const totalActiveTeamMembers = useMemo(() => {
-    if (!teamData || !communityData) return 0;
-    return totalActiveMembersL1toL3 + communityData.activeCount;
-  }, [totalActiveMembersL1toL3, communityData]);
+  const totalTeamBusiness = teamData ? teamData.level1.totalDeposits + teamData.level2.totalDeposits + teamData.level3.totalDeposits : 0;
+  const totalTeamNetWorth = teamData ? teamData.level1.totalNetWorth + teamData.level2.totalNetWorth + teamData.level3.totalNetWorth : 0;
+  const totalActivationsToday = teamData && communityData ? teamData.level1.activationsToday + teamData.level2.activationsToday + teamData.level3.activationsToday + communityData.activationsToday : 0;
+  const totalActiveMembersL1toL3 = teamData ? teamData.level1.activeCount + teamData.level2.activeCount + teamData.level3.activeCount : 0;
+  const totalActiveTeamMembers = communityData ? totalActiveMembersL1toL3 + communityData.activeCount : totalActiveMembersL1toL3;
+  const activeL1Referrals = teamData ? teamData.level1.activeCount : 0;
 
 
   if (isLoading || !teamData || !communityData) {
@@ -683,11 +765,3 @@ export default function TeamPage() {
     </ScrollArea>
   );
 }
-
-
-
-
-
-
-
-
