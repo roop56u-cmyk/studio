@@ -3,7 +3,6 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { platformMessages } from '@/lib/platform-messages';
 import { createClient } from '@/lib/supabase/client';
 import type { AuthError, SupabaseClient, Session } from '@supabase/supabase-js';
 
@@ -11,7 +10,6 @@ export type User = {
     id: string; // From Supabase auth
     email: string;
     fullName: string;
-    // Password is no longer stored in the app state
     isAdmin: boolean;
     referralCode: string;
     referredBy: string | null; // Stores the referral code of the user who referred them
@@ -26,147 +24,116 @@ export type User = {
 
 interface AuthContextType {
   currentUser: User | null;
-  users: User[];
-  signup: (email: string, password: string, fullName: string, invitationCode: string) => Promise<{ success: boolean; message: string }>;
+  users: User[]; // This will now be primarily managed by TeamContext for team data
   logout: () => void;
-  updateUser: (userId: string, updatedData: Partial<Omit<User, 'status' | 'isAccountActive'>> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; purchasedReferrals?: number; }) => void;
+  updateUser: (userId: string, updatedData: Partial<User>) => void;
   deleteUser: (userId: string, isSelfDelete?: boolean) => void;
   updateUserStatus: (userId: string, status: User['status']) => void;
   activateUserAccount: (userId: string) => void;
 }
 
-const getGlobalSetting = (key: string, defaultValue: any, isJson: boolean = false) => {
-    if (typeof window === 'undefined') {
-    return defaultValue;
-    }
-    try {
-    const storedValue = localStorage.getItem(key);
-    if (storedValue) {
-        if (isJson) {
-            return JSON.parse(storedValue);
-        }
-        return storedValue;
-    }
-    } catch (error) {
-    console.error(`Failed to parse global setting ${key} from localStorage`, error);
-    }
-    return defaultValue;
-};
-
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-    const [messages, setMessages] = useState<any>({});
     const router = useRouter();
-
     const supabase = useMemo(() => createClient(), []);
     
     const [users, setUsers] = useState<User[]>([]);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-    const fetchAllUsers = useCallback(async () => {
-        // This fetch might fail due to RLS, but it's okay for now.
-        // The important data is fetched via server actions.
-        const { data, error } = await supabase.from('users').select('*');
-        if (!error) {
-            setUsers(data as User[]);
+    const fetchCurrentUserProfile = useCallback(async (sessionUser: any) => {
+        const { data: userData, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', sessionUser.id)
+            .single();
+
+        if (error) {
+            console.error('Error fetching user profile:', error);
+            setCurrentUser(null);
+        } else {
+            setCurrentUser(userData as User);
         }
     }, [supabase]);
 
     useEffect(() => {
-        const storedMessages = getGlobalSetting("platform_custom_messages", {}, true);
-        const defaults: any = {};
-        Object.entries(platformMessages).forEach(([catKey, category]) => {
-            defaults[catKey] = {};
-            Object.entries(category.messages).forEach(([msgKey, msgItem]) => {
-                defaults[catKey][msgKey] = msgItem.defaultValue;
-            });
-        });
-        const mergedMessages = { ...defaults, ...storedMessages };
-        setMessages(mergedMessages);
-
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (session?.user) {
-                const { data: userData, error } = await supabase
-                    .from('users')
-                    .select('*')
-                    .eq('id', session.user.id)
-                    .single();
-
-                if (error) {
-                    console.error('Error fetching user profile:', error);
-                    setCurrentUser(null);
-                } else {
-                    setCurrentUser(userData as User);
-                }
+                await fetchCurrentUserProfile(session.user);
             } else {
                 setCurrentUser(null);
             }
-             fetchAllUsers();
         });
-        
-        fetchAllUsers();
+
+        // Initial check
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session?.user) {
+                fetchCurrentUserProfile(session.user);
+            }
+        });
 
         return () => {
             subscription.unsubscribe();
         };
-    }, [supabase, fetchAllUsers]);
+    }, [supabase, fetchCurrentUserProfile]);
 
-    const signup = async (email: string, password: string, fullName: string, invitationCode: string) => {
-        
-        const { data, error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                emailRedirectTo: `${window.location.origin}/auth/callback`,
-                data: {
-                    full_name: fullName,
-                    referred_by: invitationCode,
-                },
-            },
-        });
-        
-        if (error) {
-            if ((error as AuthError).code === 'user_already_exists') {
-                return { success: false, message: messages.auth?.emailExists || "An account with this email already exists." };
-            }
-            return { success: false, message: error.message };
-        }
-        
-        return { success: true, message: 'Account created! Please check your email for a confirmation link.' };
-    };
 
     const logout = async () => {
         await supabase.auth.signOut();
         setCurrentUser(null);
+        setUsers([]);
+        // Clear only user-specific data, not global settings
         Object.keys(localStorage).forEach(key => {
-            if (key.includes('@')) {
+            if (key.includes('@')) { // A simple heuristic for user-specific keys
                 localStorage.removeItem(key);
             }
         });
+        sessionStorage.clear();
         router.push('/login');
     };
 
+    // These functions are now placeholders for client-side state changes.
+    // The real database operations should be handled by server actions.
     const updateUser = (userId: string, updatedData: Partial<User>) => {
         console.log("Updating user (client-side placeholder):", userId, updatedData);
+        if (currentUser && currentUser.id === userId) {
+            setCurrentUser(prev => prev ? { ...prev, ...updatedData } : null);
+        }
     };
 
     const deleteUser = (userId: string, isSelfDelete = false) => {
         console.log("Deleting user (client-side placeholder):", userId, isSelfDelete);
+        if (isSelfDelete) {
+            logout();
+        }
     };
 
-    const updateUserStatus = async (userId: string, status: User['status']) => {
+    const updateUserStatus = (userId: string, status: User['status']) => {
        console.log("Updating status via server action is needed.", userId, status);
-    }
+       if (currentUser && currentUser.id === userId) {
+            setCurrentUser(prev => prev ? { ...prev, status } : null);
+        }
+    };
     
-    const activateUserAccount = async (userId: string) => {
+    const activateUserAccount = (userId: string) => {
        console.log("Activating account via server action is needed.", userId);
-    }
+       if (currentUser && currentUser.id === userId) {
+            setCurrentUser(prev => prev ? { ...prev, isAccountActive: true, status: 'active', activatedAt: new Date().toISOString() } : null);
+        }
+    };
 
+    const value = {
+        currentUser,
+        users, // This is kept for any components that might still use it, but its population is now limited.
+        logout,
+        updateUser,
+        deleteUser,
+        updateUserStatus,
+        activateUserAccount
+    };
 
     return (
-        <AuthContext.Provider value={{ currentUser, users, signup, logout, updateUser, deleteUser, updateUserStatus, activateUserAccount }}>
+        <AuthContext.Provider value={value}>
             {children}
         </AuthContext.Provider>
     );

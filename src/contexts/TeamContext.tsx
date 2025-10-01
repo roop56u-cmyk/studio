@@ -13,7 +13,8 @@ import type { SalaryPackage } from '@/app/dashboard/admin/salary/page';
 import { useLocalStorageWatcher } from '@/hooks/use-local-storage-watcher';
 import type { CommunityCommissionRule } from '@/app/dashboard/admin/community-commission/page';
 import type { Activity } from './WalletContext';
-import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@/lib/supabase/client';
+
 
 type TeamMember = User & {
     level: number;
@@ -108,7 +109,8 @@ const getNetWorthForUser = (userEmail: string): number => {
 const TeamContext = createContext<TeamContextType | undefined>(undefined);
 
 export const TeamProvider = ({ children }: { children: ReactNode }) => {
-    const { currentUser, users } = useAuth();
+    const { currentUser } = useAuth();
+    const [teamUsers, setTeamUsers] = useState<User[]>([]);
     const [teamData, setTeamData] = useState<TeamData | null>(null);
     const [communityData, setCommunityData] = useState<CommunityData | null>(null);
     const [communityCommissionRules, setCommunityCommissionRules] = useState<CommunityCommissionRule[]>([]);
@@ -191,7 +193,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         const l2 = l1.flatMap(l1User => allUsers.filter(u => u.referredBy === l1User.referralCode));
         l2.forEach(u => processedEmails.add(u.email));
         
-        const l3 = l2.flatMap(l2User => users.filter(u => u.referredBy === l2User.referralCode));
+        const l3 = l2.flatMap(l2User => teamUsers.filter(u => u.referredBy === l2User.referralCode));
         l3.forEach(u => processedEmails.add(u.email));
 
         const L4PlusMembers: User[] = [];
@@ -227,7 +229,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             activeCount: activeMembers.length,
             activationsToday,
         };
-    }, [users]);
+    }, [teamUsers]);
 
 
     const calculateTeamData = useCallback((user: User, allUsers: User[], cycleStartTime: number): TeamData => {
@@ -265,7 +267,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
         const level1Members = allUsers.filter(u => u.referredBy === user.referralCode);
         const level2Members = level1Members.flatMap(l1User => allUsers.filter(u => u.referredBy === l1User.referralCode));
-        const level3Members = level2Members.flatMap(l2User => users.filter(u => u.referredBy === l2User.referralCode));
+        const level3Members = level2Members.flatMap(l2User => teamUsers.filter(u => u.referredBy === l2User.referralCode));
         
         const level1 = calculateLayer(level1Members);
         const purchasedReferrals = parseInt(localStorage.getItem(`${user.email}_purchased_referrals`) || '0');
@@ -288,7 +290,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
         return { level1, level2, level3 };
 
-    }, [users]);
+    }, [teamUsers]);
     
     const handleCommissionPayouts = useCallback(() => {
         if (!currentUser || currentUser.status !== 'active') return;
@@ -296,7 +298,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         const lastPayoutTime = new Date(localStorage.getItem(lastPayoutCheckKey) || 0).getTime();
         
         // 1. Team Commission (L1-L3)
-        const currentTeamData = calculateTeamData(currentUser, users, lastPayoutTime);
+        const currentTeamData = calculateTeamData(currentUser, teamUsers, lastPayoutTime);
         let totalTeamCommission = 0;
         if (currentTeamData.level1.activeCount >= 1 && commissionEnabled.level1) totalTeamCommission += currentTeamData.level1.commission * (commissionRates.level1 / 100);
         if (currentTeamData.level1.activeCount >= 2 && commissionEnabled.level2) totalTeamCommission += currentTeamData.level2.commission * (commissionRates.level2 / 100);
@@ -309,7 +311,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         }
         
         // 2. Community Commission (L4+)
-        const payoutCommunityData = calculateCommunityData(currentUser, users, lastPayoutTime);
+        const payoutCommunityData = calculateCommunityData(currentUser, teamUsers, lastPayoutTime);
         const applicableRule = [...communityCommissionRules]
             .sort((a, b) => b.requiredLevel - a.requiredLevel)
             .find(rule => rule.requiredLevel === 0 || currentLevel >= rule.requiredLevel);
@@ -340,7 +342,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem(lastPayoutCheckKey, new Date().toISOString());
         setLastPayoutCheckTime(localStorage.getItem(lastPayoutCheckKey));
 
-    }, [currentUser, users, lastPayoutCheckKey, commissionEnabled, commissionRates, getReferralCommissionBoost, addCommissionToMainBalance, calculateTeamData, calculateCommunityData, communityCommissionRules, currentLevel, activeL1Referrals, addCommunityCommissionToMainBalance, addUplineCommissionToMainBalance, activityHistory]);
+    }, [currentUser, teamUsers, lastPayoutCheckKey, commissionEnabled, commissionRates, getReferralCommissionBoost, addCommissionToMainBalance, calculateTeamData, calculateCommunityData, communityCommissionRules, currentLevel, activeL1Referrals, addCommunityCommissionToMainBalance, addUplineCommissionToMainBalance, activityHistory]);
 
 
     useEffect(() => {
@@ -371,17 +373,57 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
 
     useEffect(() => {
-        if (currentUser && users.length > 0) {
-            setIsLoading(true);
-            const payoutTime = new Date(lastPayoutCheckTime || 0).getTime();
-            const currentTeamData = calculateTeamData(currentUser, users, payoutTime);
-            const currentCommunityData = calculateCommunityData(currentUser, users, payoutTime);
-            
-            setTeamData(currentTeamData);
-            setCommunityData(currentCommunityData);
-            setIsLoading(false);
+        const fetchTeamData = async () => {
+            if (currentUser) {
+                setIsLoading(true);
+                const supabase = createClient();
+                // This is a simplified approach. A real app would use a recursive CTE
+                // or a stored procedure for performance. This will be slow for large teams.
+                const { data: l1 } = await supabase.from('users').select('*').eq('referred_by', currentUser.referralCode);
+                const l1Users = l1 || [];
+
+                const l1Codes = l1Users.map(u => u.referralCode);
+                const { data: l2 } = l1Codes.length > 0 ? await supabase.from('users').select('*').in('referred_by', l1Codes) : { data: [] };
+                const l2Users = l2 || [];
+
+                const l2Codes = l2Users.map(u => u.referralCode);
+                const { data: l3 } = l2Codes.length > 0 ? await supabase.from('users').select('*').in('referred_by', l2Codes) : { data: [] };
+                const l3Users = l3 || [];
+
+                // This is very inefficient for L4+ and should be replaced with a db function in production.
+                let l4PlusUsers: User[] = [];
+                let currentLayer = l3Users;
+                const processedCodes = new Set([...l1Codes, ...l2Codes, ...l3Users.map(u => u.referralCode)]);
+
+                while (currentLayer.length > 0) {
+                    const currentLayerCodes = currentLayer.map(u => u.referralCode);
+                    const { data: nextLayer } = currentLayerCodes.length > 0 ? await supabase.from('users').select('*').in('referred_by', currentLayerCodes) : { data: [] };
+                    const newUsers = (nextLayer || []).filter(u => !processedCodes.has(u.referralCode));
+                    if (newUsers.length === 0) break;
+                    l4PlusUsers.push(...newUsers);
+                    newUsers.forEach(u => processedCodes.add(u.referralCode));
+                    currentLayer = newUsers;
+                }
+                
+                const allTeamUsers = [...l1Users, ...l2Users, ...l3Users, ...l4PlusUsers];
+                if (currentUser.referredBy) {
+                    const { data: upline } = await supabase.from('users').select('*').eq('referral_code', currentUser.referredBy).single();
+                    if (upline) allTeamUsers.push(upline);
+                }
+                
+                setTeamUsers(allTeamUsers);
+                
+                const payoutTime = new Date(lastPayoutCheckTime || 0).getTime();
+                const currentTeamData = calculateTeamData(currentUser, allTeamUsers, payoutTime);
+                const currentCommunityData = calculateCommunityData(currentUser, allTeamUsers, payoutTime);
+                
+                setTeamData(currentTeamData);
+                setCommunityData(currentCommunityData);
+                setIsLoading(false);
+            }
         }
-    }, [currentUser, users, calculateTeamData, calculateCommunityData, lastPayoutCheckTime]);
+        fetchTeamData();
+    }, [currentUser, calculateTeamData, calculateCommunityData, lastPayoutCheckTime]);
 
 
     const totalTeamBusiness = useMemo(() => {

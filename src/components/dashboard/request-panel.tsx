@@ -19,7 +19,6 @@ import { useRequests } from "@/contexts/RequestContext";
 import { Skeleton } from "../ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { levels as defaultLevels, Level } from "./level-tiers";
 import { useTeam } from "@/contexts/TeamContext";
 import {
   Dialog,
@@ -43,11 +42,26 @@ export function RequestPanel() {
     const { users } = useAuth();
     const { getLevelForUser } = useTeam();
     const [isClient, setIsClient] = React.useState(false);
+    const [allUsers, setAllUsers] = useState<User[]>([]);
     const [activeTab, setActiveTab] = useState<RequestType>('Finance');
     const [activeStatus, setActiveStatus] = useState<RequestStatus | 'All'>('Pending');
 
     React.useEffect(() => {
         setIsClient(true);
+        // This is a simplified way to get all users for the admin panel.
+        // In a real app, this should be a secure, paginated API call.
+        const storedUsers = Object.keys(localStorage)
+            .filter(key => key.endsWith('_mainBalance'))
+            .map(key => {
+                 const email = key.replace('_mainBalance', '');
+                 const userString = localStorage.getItem(email);
+                 try {
+                     return userString ? JSON.parse(userString) : null;
+                 } catch {
+                     return null;
+                 }
+            }).filter(Boolean);
+        setAllUsers(storedUsers);
     }, []);
 
     const handleAction = (requestId: string, action: RequestStatus) => {
@@ -55,20 +69,20 @@ export function RequestPanel() {
     };
 
     const getLiveUserData = useCallback((userEmail: string) => {
-        const user = users.find(u => u.email === userEmail);
+        const user = allUsers.find(u => u.email === userEmail);
         if (!user) return null;
 
         const mainBalance = parseFloat(localStorage.getItem(`${userEmail}_mainBalance`) || '0');
-        const level = getLevelForUser(user, users);
+        const level = getLevelForUser(user, allUsers);
 
         const deposits = parseInt(localStorage.getItem(`${userEmail}_deposits`) || '0');
         const withdrawals = parseInt(localStorage.getItem(`${userEmail}_withdrawals`) || '0');
 
-        const level1 = users.filter(u => u.referredBy === user.referralCode);
-        const level2 = level1.flatMap(l1 => users.filter(u => u.referredBy === l1.referralCode));
-        const level3 = level2.flatMap(l2 => users.filter(u => u.referredBy === l2.referralCode));
+        const level1 = allUsers.filter(u => u.referredBy === user.referralCode);
+        const level2 = level1.flatMap(l1 => allUsers.filter(u => u.referredBy === l1.referralCode));
+        const level3 = level2.flatMap(l2 => allUsers.filter(u => u.referredBy === l2.referralCode));
         const teamSize = level1.length + level2.length + level3.length;
-        const upline = users.find(u => u.referralCode === user.referredBy);
+        const upline = allUsers.find(u => u.referralCode === user.referredBy);
         
         const totalTeamBusiness = 
             level1.reduce((sum, u) => sum + getTotalDepositsForUser(u.email), 0) +
@@ -86,7 +100,7 @@ export function RequestPanel() {
             activatedAt: user.activatedAt ? new Date(user.activatedAt).toLocaleDateString() : 'N/A',
             totalTeamBusiness,
         };
-    }, [users, getLevelForUser]);
+    }, [allUsers, getLevelForUser]);
     
     const getSavedWithdrawalAddress = useCallback((userEmail: string) => {
         if (!isClient) return null;
@@ -106,7 +120,7 @@ export function RequestPanel() {
 
     const filteredRequests = useMemo(() => {
         const financeTypes = ['Recharge', 'Withdrawal'];
-        const rewardTypes = ['Team Reward', 'Team Size Reward', 'Sign-up Bonus', 'Referral Bonus', 'Salary Claim', 'Reimbursement'];
+        const rewardTypes = ['Team Reward', 'Team Size Reward', 'Sign-up Bonus', 'Referral Bonus', 'Salary Claim', 'Reimbursement', 'Event Claim'];
         const typeFilter = activeTab === 'Finance' ? financeTypes : rewardTypes;
         
         return requests.filter(req => {
@@ -161,7 +175,9 @@ export function RequestPanel() {
                       switch (request.type) {
                         case 'Recharge': return <ArrowUpCircle className="h-4 w-4 text-green-600" />;
                         case 'Withdrawal': return <ArrowDownCircle className="h-4 w-4 text-red-600" />;
-                        case 'Reimbursement': return <HandCoins className="h-4 w-4 text-blue-600" />;
+                        case 'Reimbursement':
+                        case 'Event Claim':
+                             return <HandCoins className="h-4 w-4 text-blue-600" />;
                         default: return <Gift className="h-4 w-4 text-yellow-600" />;
                       }
                   }
@@ -170,7 +186,9 @@ export function RequestPanel() {
                       switch (request.type) {
                         case 'Recharge': return 'bg-green-100';
                         case 'Withdrawal': return 'bg-red-100';
-                         case 'Reimbursement': return 'bg-blue-100';
+                         case 'Reimbursement':
+                         case 'Event Claim':
+                            return 'bg-blue-100';
                         default: return 'bg-yellow-100';
                       }
                   }
@@ -199,7 +217,7 @@ export function RequestPanel() {
                                         <DialogHeader>
                                             <DialogTitle>Recharge Proof</DialogTitle>
                                         </DialogHeader>
-                                        <Image src={request.imageUrl} alt="Recharge Proof" width={800} height={600} className="w-full h-auto rounded-md" />
+                                        <Image src={request.imageUrl} alt="Recharge Proof" width={800} height={600} className="w-full h-auto rounded-md" unoptimized/>
                                     </DialogContent>
                                 </Dialog>
                             )}
