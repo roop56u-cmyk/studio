@@ -4,7 +4,6 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { platformMessages } from '@/lib/platform-messages';
-import { useLocalStorageWatcher } from '@/hooks/use-local-storage-watcher';
 import { createClient } from '@/lib/supabase/client';
 import type { AuthError, SupabaseClient, Session } from '@supabase/supabase-js';
 
@@ -64,19 +63,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const supabase = useMemo(() => createClient(), []);
 
-    useEffect(() => {
-        const storedMessages = getGlobalSetting("platform_custom_messages", {}, true);
-        const defaults: any = {};
-        Object.entries(platformMessages).forEach(([catKey, category]) => {
-            defaults[catKey] = {};
-            Object.entries(category.messages).forEach(([msgKey, msgItem]) => {
-                defaults[catKey][msgKey] = msgItem.defaultValue;
-            });
-        });
-        const mergedMessages = { ...defaults, ...storedMessages };
-        setMessages(mergedMessages);
-    }, []);
-
     const [users, setUsers] = useState<User[]>([]);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
 
@@ -90,6 +76,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }, [supabase]);
 
     useEffect(() => {
+        const storedMessages = getGlobalSetting("platform_custom_messages", {}, true);
+        const defaults: any = {};
+        Object.entries(platformMessages).forEach(([catKey, category]) => {
+            defaults[catKey] = {};
+            Object.entries(category.messages).forEach(([msgKey, msgItem]) => {
+                defaults[catKey][msgKey] = msgItem.defaultValue;
+            });
+        });
+        const mergedMessages = { ...defaults, ...storedMessages };
+        setMessages(mergedMessages);
+
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (session?.user) {
                 const { data: userData, error } = await supabase
@@ -107,7 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             } else {
                 setCurrentUser(null);
             }
-             fetchAllUsers();
+             fetchAllUsers(); // Fetch all users on auth state change
         });
         
         fetchAllUsers(); // Initial fetch
@@ -120,27 +117,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const login = async (email: string, password: string) => {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-        if (error || !data.session) {
-            return { success: false, message: error?.message || "Invalid login credentials." };
+    
+        if (error || !data.user) {
+          return { success: false, message: error?.message || "Invalid login credentials." };
         }
+    
+        // The onAuthStateChange listener will handle setting the current user.
+        // We just need to check if the profile exists and is not disabled.
+        const { data: userData, error: userError } = await supabase.from('users').select('status, isAdmin').eq('id', data.user.id).single();
         
-        // Explicitly set the session to trigger onAuthStateChange correctly
-        await supabase.auth.setSession(data.session);
-
-        const { data: userData, error: userError } = await supabase.from('users').select('*').eq('id', data.user.id).single();
         if (userError || !userData) {
-            await supabase.auth.signOut(); // Log out if profile doesn't exist
-            return { success: false, message: 'Could not retrieve user profile.' };
+          await supabase.auth.signOut(); // Log out if profile doesn't exist
+          return { success: false, message: 'Could not retrieve user profile.' };
         }
-
+    
         if (userData.status === 'disabled') {
-            await supabase.auth.signOut();
-            return { success: false, message: messages.auth?.accountDisabled || 'Your account is disabled.' };
+          await supabase.auth.signOut();
+          return { success: false, message: messages.auth?.accountDisabled || 'Your account is disabled.' };
         }
-        
+    
         return { success: true, message: 'Logged in successfully!', isAdmin: userData.isAdmin };
-    };
+      };
 
     const signup = async (email: string, password: string, fullName: string, invitationCode: string) => {
         const { data: referrer, error: referrerError } = await supabase
@@ -178,8 +175,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const logout = async () => {
         await supabase.auth.signOut();
         setCurrentUser(null);
+        // Clear only user-specific data, not global settings
         Object.keys(localStorage).forEach(key => {
-            if (key.includes('_')) {
+            if (key.includes('@')) { // A simple check for keys containing user emails
                 localStorage.removeItem(key);
             }
         });
