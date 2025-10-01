@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useMemo, useCallback } from "react";
@@ -34,7 +33,9 @@ type RequestType = 'Finance' | 'Rewards';
 
 const getTotalDepositsForUser = (userEmail: string): number => {
     if (typeof window === 'undefined') return 0;
-    return parseFloat(localStorage.getItem(`${userEmail}_totalDeposits`) || '0');
+    const taskBalance = parseFloat(localStorage.getItem(`${userEmail}_taskRewardsBalance`) || '0');
+    const interestBalance = parseFloat(localStorage.getItem(`${userEmail}_interestEarningsBalance`) || '0');
+    return taskBalance + interestBalance;
 };
 
 export function RequestPanel() {

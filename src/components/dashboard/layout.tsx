@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Link from "next/link";
@@ -91,6 +90,8 @@ import {
   Layers,
   Sparkles,
   Gem,
+  CircleDot,
+  X,
 } from "lucide-react";
 import { WalletBalance } from "@/components/dashboard/wallet-balance";
 import { Input } from "@/components/ui/input";
@@ -99,7 +100,6 @@ import { useWallet } from "@/contexts/WalletContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { RechargeDialog } from "@/components/dashboard/recharge-dialog";
 import { WithdrawalDialog } from "@/components/dashboard/withdrawal-dialog";
-import { useTeamCommission } from "@/hooks/use-team-commission";
 import { ActivityHistoryPanel } from "@/components/dashboard/activity-history-panel";
 import { TaskHistoryPanel } from "@/components/dashboard/task-history-panel";
 import { ReferralCard } from "@/components/dashboard/referral-card";
@@ -119,8 +119,7 @@ import { NoticesPanel } from "@/components/dashboard/notices-panel";
 import TeamPage from "./team/page";
 import { AboutUsPanel } from '@/components/dashboard/about-us-panel';
 import { NftCollectionPanel } from '@/components/dashboard/nft-collection-panel';
-import { useCommunityCommission } from '@/hooks/use-community-commission';
-
+import Image from "next/image";
 
 // Admin Panel Imports
 import UserManagementPage from "./admin/users/page";
@@ -144,18 +143,20 @@ import ManageDailyRewardsPage from './admin/daily-rewards/page';
 import UplineCommissionPage from './admin/upline-commission/page';
 import ManageSalaryPage from './admin/salary/page';
 import PurchaseHistoryPage from "./admin/purchase-history/page";
-import ManageReimbursementsPage from './admin/reimbursements/page';
+import ManageEventsPage from './admin/reimbursements/page';
 import ManageAboutUsPage from './admin/about-us/page';
 import AdminProfilePage from './admin/admin-profile/page';
 import SchedulingPage from './admin/scheduling/page';
 import ManageCommunityCommissionPage from './admin/community-commission/page';
 import TokenomicsPage from './admin/tokenomics/page';
+import LuckyWheelSettingsPage from './admin/lucky-wheel/page';
 import ProfilePage from './profile/page';
 import SettingsPage from './settings/page';
 import type { Notice } from './admin/notices/page';
+import { LuckyWheelDialog } from "@/components/dashboard/lucky-wheel-dialog";
 
 
-type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'nftSettings' | 'nftStaking' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement' | 'purchaseHistory' | 'reimbursements' | 'aboutUs' | 'adminProfile' | 'scheduling' | 'communityCommission' | 'tokenomics';
+type PanelType = 'userManagement' | 'taskManagement' | 'questManagement' | 'boosterManagement' | 'levelManagement' | 'teamCommission' | 'uplineCommission' | 'noticeManagement' | 'userPanels' | 'websiteUI' | 'systemSettings' | 'nftSettings' | 'nftStaking' | 'activityLog' | 'inbox' | 'rechargeAddresses' | 'teamRewards' | 'teamSizeRewards' | 'messageManagement' | 'dailyRewards' | 'salaryManagement' | 'purchaseHistory' | 'events' | 'aboutUs' | 'adminProfile' | 'scheduling' | 'communityCommission' | 'tokenomics' | 'luckyWheel';
 
 
 const adminPanelComponents: Record<PanelType, React.ComponentType> = {
@@ -181,12 +182,13 @@ const adminPanelComponents: Record<PanelType, React.ComponentType> = {
     dailyRewards: ManageDailyRewardsPage,
     salaryManagement: ManageSalaryPage,
     purchaseHistory: PurchaseHistoryPage,
-    reimbursements: ManageReimbursementsPage,
+    events: ManageEventsPage,
     aboutUs: ManageAboutUsPage,
     adminProfile: AdminProfilePage,
     scheduling: SchedulingPage,
     communityCommission: ManageCommunityCommissionPage,
     tokenomics: TokenomicsPage,
+    luckyWheel: LuckyWheelSettingsPage,
 };
 
 const adminPanelTitles: Record<PanelType, { title: string; description: string }> = {
@@ -212,12 +214,13 @@ const adminPanelTitles: Record<PanelType, { title: string; description: string }
     dailyRewards: { title: "Daily Login Rewards", description: "Configure rewards for daily check-ins." },
     salaryManagement: { title: "Manage Salary", description: "Create and configure salary packages for users." },
     purchaseHistory: { title: "Purchase History", description: "View user purchases of boosters and quests." },
-    reimbursements: { title: "Manual Reimbursements", description: "Manage reimbursement packages for user events." },
+    events: { title: "Events & Rewards", description: "Create and manage custom, claimable rewards for users." },
     aboutUs: { title: "About Us", description: "Manage your company's information page." },
     adminProfile: { title: "Admin Profile", description: "Manage the primary admin credentials." },
     scheduling: { title: "Scheduling", description: "View and manage platform time settings." },
     communityCommission: { title: "Community Commission", description: "Define rules for L4+ community commissions." },
     tokenomics: { title: "Tokenomics", description: "Manage the platform's custom token and mining economy." },
+    luckyWheel: { title: "Lucky Wheel", description: "Configure the daily lucky wheel prizes." },
 };
 
 function SidebarContentComponent({ 
@@ -237,6 +240,8 @@ function SidebarContentComponent({
     onTeamClick,
     onAboutUsClick,
     onNftCollectionClick,
+    onEventsClick,
+    onLuckyWheelClick,
     onShowInterestWarning,
     onShowTaskWarning
 }: { 
@@ -256,6 +261,8 @@ function SidebarContentComponent({
     onTeamClick: () => void,
     onAboutUsClick: () => void,
     onNftCollectionClick: () => void,
+    onEventsClick: () => void,
+    onLuckyWheelClick: () => void,
     onShowInterestWarning: () => void,
     onShowTaskWarning: () => void
 }) {
@@ -275,11 +282,14 @@ function SidebarContentComponent({
   const [amount, setAmount] = React.useState('');
   const [isClient, setIsClient] = React.useState(false);
   const [isAboutUsEnabled, setIsAboutUsEnabled] = React.useState(false);
+  const [isLuckyWheelEnabled, setIsLuckyWheelEnabled] = React.useState(false);
 
   React.useEffect(() => {
     setIsClient(true);
     const aboutUsEnabled = localStorage.getItem("about_us_enabled") === 'true';
     setIsAboutUsEnabled(aboutUsEnabled);
+    const luckyWheelEnabled = localStorage.getItem("lucky_wheel_enabled") === 'true';
+    setIsLuckyWheelEnabled(luckyWheelEnabled);
   }, []);
   
   const isAdmin = currentUser?.isAdmin;
@@ -359,7 +369,8 @@ function SidebarContentComponent({
                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('questManagement')} tooltip={{ children: "Manage Quests" }}><CheckCheck /><span>Manage Quests</span></SidebarMenuButton></SidebarMenuItem>
                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('boosterManagement')} tooltip={{ children: "Manage Boosters" }}><Flame /><span>Manage Boosters</span></SidebarMenuButton></SidebarMenuItem>
                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('dailyRewards')} tooltip={{ children: "Daily Rewards" }}><CalendarDays /><span>Daily Rewards</span></SidebarMenuButton></SidebarMenuItem>
-                        <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('reimbursements')} tooltip={{ children: "Reimbursements" }}><HandCoins /><span>Reimbursements</span></SidebarMenuButton></SidebarMenuItem>
+                        <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('luckyWheel')} tooltip={{ children: "Lucky Wheel" }}><CircleDot /><span>Lucky Wheel</span></SidebarMenuButton></SidebarMenuItem>
+                        <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('events')} tooltip={{ children: "Events & Rewards" }}><HandCoins /><span>Events & Rewards</span></SidebarMenuButton></SidebarMenuItem>
                         <SidebarMenuItem><SidebarMenuButton onClick={() => onAdminPanelClick('purchaseHistory')} tooltip={{ children: "Purchase History" }}><ShoppingCart /><span>Purchase History</span></SidebarMenuButton></SidebarMenuItem>
                     </CollapsibleContent>
                 </Collapsible>
@@ -442,6 +453,17 @@ function SidebarContentComponent({
                     </Link>
                 </SidebarMenuButton>
                 </SidebarMenuItem>
+                {isLuckyWheelEnabled && (
+                    <SidebarMenuItem>
+                        <SidebarMenuButton
+                            onClick={onLuckyWheelClick}
+                            tooltip={{ children: "Lucky Wheel" }}
+                        >
+                            <CircleDot />
+                            <span>Lucky Wheel</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                )}
                 <SidebarMenuItem>
                     <SidebarMenuButton
                         onClick={onAchievementsClick}
@@ -473,6 +495,15 @@ function SidebarContentComponent({
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                     <SidebarMenuButton
+                        onClick={onEventsClick}
+                        tooltip={{ children: "Events" }}
+                    >
+                        <Gift />
+                        <span>Events</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton
                         onClick={onQuestPanelClick}
                         tooltip={{ children: "Daily Quests" }}
                     >
@@ -485,7 +516,7 @@ function SidebarContentComponent({
                         onClick={onRewardsPanelClick}
                         tooltip={{ children: "Rewards" }}
                     >
-                        <Gift />
+                        <Award />
                         <span>Rewards</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -664,6 +695,8 @@ export default function DashboardLayout({
     const [isTeamPanelOpen, setIsTeamPanelOpen] = React.useState(false);
     const [isAboutUsOpen, setIsAboutUsOpen] = React.useState(false);
     const [isNftCollectionOpen, setIsNftCollectionOpen] = React.useState(false);
+    const [isEventsOpen, setIsEventsOpen] = React.useState(false);
+    const [isLuckyWheelOpen, setIsLuckyWheelOpen] = React.useState(false);
 
 
     // User menu popups
@@ -690,9 +723,6 @@ export default function DashboardLayout({
     const [isInterestMoveWarningOpen, setIsInterestMoveWarningOpen] = React.useState(false);
     const [isTaskMoveWarningOpen, setIsTaskMoveWarningOpen] = React.useState(false);
     
-    useTeamCommission();
-    useCommunityCommission();
-
     React.useEffect(() => {
         setIsClient(true);
         const showLoginPopup = sessionStorage.getItem("show_login_popup");
@@ -795,6 +825,8 @@ export default function DashboardLayout({
                 onTeamClick={() => setIsTeamPanelOpen(true)}
                 onAboutUsClick={() => setIsAboutUsOpen(true)}
                 onNftCollectionClick={() => setIsNftCollectionOpen(true)}
+                onEventsClick={() => setIsEventsOpen(true)}
+                onLuckyWheelClick={() => setIsLuckyWheelOpen(true)}
                 onShowInterestWarning={() => setIsInterestMoveWarningOpen(true)}
                 onShowTaskWarning={() => setIsTaskMoveWarningOpen(true)}
             />
@@ -828,6 +860,7 @@ export default function DashboardLayout({
       </div>
        <RechargeDialog open={isRechargeOpen} onOpenChange={setIsRechargeOpen} />
        <WithdrawalDialog open={isWithdrawalOpen} onOpenChange={setIsWithdrawalOpen} />
+       <LuckyWheelDialog open={isLuckyWheelOpen} onOpenChange={setIsLuckyWheelOpen} />
        <Sheet open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
             <SheetContent className="w-full sm:max-w-lg">
                 <SheetHeader>
@@ -978,6 +1011,20 @@ export default function DashboardLayout({
                  <SheetClose asChild><Button variant="outline" className="sr-only">Close</Button></SheetClose>
             </SheetContent>
         </Sheet>
+        <Sheet open={isEventsOpen} onOpenChange={setIsEventsOpen}>
+            <SheetContent className="w-full sm:max-w-lg">
+                <SheetHeader>
+                    <SheetTitle>Claimable Events</SheetTitle>
+                    <SheetDescription>
+                       Participate in special events to earn rewards.
+                    </SheetDescription>
+                </SheetHeader>
+                 <div className="mt-4">
+                    <RewardsPanel isEventView={true} />
+                </div>
+                 <SheetClose asChild><Button variant="outline" className="sr-only">Close</Button></SheetClose>
+            </SheetContent>
+        </Sheet>
         <Sheet open={isTeamPanelOpen} onOpenChange={setIsTeamPanelOpen}>
             <SheetContent className="w-full sm:max-w-md">
                 <SheetHeader>
@@ -1070,19 +1117,15 @@ export default function DashboardLayout({
         </Sheet>
 
         {loginNotice && (
-            <AlertDialog open={isLoginNoticeOpen} onOpenChange={setIsLoginNoticeOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>{loginNotice.title}</AlertDialogTitle>
-                        <AlertDialogDescription className="whitespace-pre-wrap">
-                            {loginNotice.content}
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogAction onClick={() => setIsLoginNoticeOpen(false)}>Close</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <div className={cn("fixed bottom-4 right-4 z-[100] w-80 h-80 rounded-full bg-background/80 backdrop-blur-sm border shadow-lg flex items-center justify-center p-4 transition-all duration-500", isLoginNoticeOpen ? "opacity-100 scale-100" : "opacity-0 scale-75 pointer-events-none")}>
+                <div className="relative w-full h-full flex flex-col items-center justify-center text-center">
+                    <button onClick={() => setIsLoginNoticeOpen(false)} className="absolute -top-2 -right-2 bg-secondary text-secondary-foreground rounded-full p-1 z-10"><X className="h-4 w-4" /></button>
+                    {loginNotice.imageUrl && <Image src={loginNotice.imageUrl} alt={loginNotice.title} width={80} height={80} className="w-20 h-20 rounded-full object-cover border-4 border-white mb-2" unoptimized />}
+                    <h3 className="font-bold text-lg">{loginNotice.title}</h3>
+                    <p className="text-xs text-muted-foreground line-clamp-3 my-1">{loginNotice.content}</p>
+                    <Button size="sm" onClick={() => { setIsLoginNoticeOpen(false); setIsNoticesOpen(true); }} className="mt-2">View Details</Button>
+                </div>
+            </div>
         )}
         <AlertDialog open={isInterestMoveWarningOpen} onOpenChange={setIsInterestMoveWarningOpen}>
             <AlertDialogContent>

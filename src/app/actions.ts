@@ -3,6 +3,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { taskLibrary as defaultTasks, Task } from "@/lib/tasks";
 import { generateNewTaskLibrary as generateNewTaskLibraryFlow } from "@/ai/flows/generate-task-library-flow";
 import { generateNftLibraryArtwork as generateNftLibraryArtworkFlow } from "@/ai/flows/generate-nft-artwork-flow";
@@ -45,7 +46,7 @@ export async function signIn(formData: FormData) {
   }
 
   // Use the service role client to check for user profile to bypass RLS for this check
-   const supabaseAdmin = createClient(cookieStore);
+   const supabaseAdmin = createAdminClient();
 
   const { data: userData, error: userError } = await supabaseAdmin.from('users').select('isAdmin').eq('id', user.id).single();
 

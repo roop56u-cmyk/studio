@@ -50,6 +50,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (error) {
             console.error('Error fetching user profile:', error);
+            // This might happen if the profile isn't created yet.
+            // The signIn action will handle creating it on login.
             setCurrentUser(null);
         } else {
             setCurrentUser(userData as User);
@@ -81,8 +83,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const logout = async () => {
         await supabase.auth.signOut();
         setCurrentUser(null);
-        setUsers([]);
-        // Clear only user-specific data, not global settings
+        // We don't clear all users from state, as TeamContext might need them
+        // Clearing localStorage is more important
         Object.keys(localStorage).forEach(key => {
             if (key.includes('@')) { // A simple heuristic for user-specific keys
                 localStorage.removeItem(key);
