@@ -9,6 +9,7 @@ import { generateNftLibraryArtwork as generateNftLibraryArtworkFlow } from "@/ai
 import { NftLibraryItem, nftLibrary } from "@/lib/nft-library";
 import fs from "fs/promises";
 import path from "path";
+import { cookies } from 'next/headers';
 
 // This type should align with the structure in your task library
 export type GenerateTaskSuggestionOutput = Task;
@@ -24,7 +25,8 @@ export type ReviewSubmission = {
 export async function signIn(formData: FormData) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
 
   const { error } = await supabase.auth.signInWithPassword({
     email,
@@ -43,7 +45,7 @@ export async function signIn(formData: FormData) {
   }
 
   // Use the service role client to check for user profile to bypass RLS for this check
-   const supabaseAdmin = createClient();
+   const supabaseAdmin = createClient(cookieStore);
 
   const { data: userData, error: userError } = await supabaseAdmin.from('users').select('isAdmin').eq('id', user.id).single();
 
@@ -74,7 +76,7 @@ export async function signIn(formData: FormData) {
 export async function submitReview(input: ReviewSubmission): Promise<{success: boolean}> {
   try {
     // In a real app, you would save the review to a database here.
-    // For now, we'll just log it to the console and assume success.
+    // For now, we'll log it to the console and assume success.
     console.log("Received review submission:", input);
     return { success: true };
   } catch (error) {

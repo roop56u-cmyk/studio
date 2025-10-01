@@ -55,6 +55,26 @@ export async function middleware(request: NextRequest) {
     }
   )
 
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // if user is not signed in and the current path is not /
+  // redirect the user to the home page
+  if (!user && request.nextUrl.pathname !== '/') {
+    // and not the login or signup page
+    if (request.nextUrl.pathname !== '/login' && request.nextUrl.pathname !== '/signup') {
+      return NextResponse.redirect(new URL('/', request.url))
+    }
+  }
+
+  // if user is signed in and the current path is /
+  // redirect the user to the dashboard
+  if (user) {
+    if (request.nextUrl.pathname === '/' || request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup') {
+        return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+  }
+
+
   await supabase.auth.getSession()
 
   return response
@@ -69,6 +89,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * Feel free to modify this pattern to include more paths.
      */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico|auth/callback).*)',
   ],
 }
