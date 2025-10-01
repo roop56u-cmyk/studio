@@ -4,7 +4,6 @@
 import React from "react";
 import { WithdrawalPanel } from "@/components/dashboard/withdrawal-panel";
 import { useRequests } from "@/contexts/RequestContext";
-import { useWallet } from "@/contexts/WalletContext";
 import { Skeleton } from "@/components/ui/skeleton";
 
 
@@ -40,3 +39,4 @@ export default function WithdrawalPage() {
       </div>
     </div>
   );
+}
