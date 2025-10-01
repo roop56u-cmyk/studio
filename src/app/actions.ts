@@ -110,7 +110,7 @@ export async function signUp(formData: FormData) {
     if (error.message.includes("duplicate key value violates unique constraint")) {
        return { success: false, message: "An account with this email already exists." };
     }
-    return { success: false, message: "Database error saving new user." };
+    return { success: false, message: `Database error saving new user: ${error.message}` };
   }
 
   if (data.user) {
