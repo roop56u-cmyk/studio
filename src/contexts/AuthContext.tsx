@@ -1,15 +1,17 @@
 
 "use client";
 
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { platformMessages } from '@/lib/platform-messages';
 import { useLocalStorageWatcher } from '@/hooks/use-local-storage-watcher';
+import { createClient } from '@/lib/supabase/client';
 
 export type User = {
+    id: string; // From Supabase auth
     email: string;
     fullName: string;
-    password?: string; // Password is now optional for security reasons after login
+    // Password is no longer stored in the app state
     isAdmin: boolean;
     referralCode: string;
     referredBy: string | null; // Stores the referral code of the user who referred them
@@ -25,29 +27,14 @@ export type User = {
 interface AuthContextType {
   currentUser: User | null;
   users: User[];
-  login: (email: string, password: string) => { success: boolean, message: string, isAdmin?: boolean };
-  signup: (email: string, password: string, fullName: string, referralCode: string) => { success: boolean, message: string, referrerEmail?: string };
+  login: (email: string, password: string) => Promise<{ success: boolean, message: string, isAdmin?: boolean }>;
+  signup: (email: string, password: string, fullName: string, referralCode: string) => Promise<{ success: boolean, message: string, referrerEmail?: string }>;
   logout: () => void;
-  updateUser: (email: string, updatedData: Partial<Omit<User, 'status' | 'isAccountActive'>> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; purchasedReferrals?: number; }) => void;
-  deleteUser: (email: string, isSelfDelete?: boolean) => void;
-  updateUserStatus: (email: string, status: User['status']) => void;
-  activateUserAccount: (email: string) => void;
+  updateUser: (userId: string, updatedData: Partial<Omit<User, 'status' | 'isAccountActive'>> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; purchasedReferrals?: number; }) => void;
+  deleteUser: (userId: string) => void;
+  updateUserStatus: (userId: string, status: User['status']) => void;
+  activateUserAccount: (userId: string) => void;
 }
-
-const initialAdminUser: User = {
-    email: 'admin@stakinghub.com',
-    fullName: 'Platform Admin',
-    password: 'admin123',
-    isAdmin: true,
-    referralCode: "ADMINREF001",
-    referredBy: null,
-    status: 'active',
-    isAccountActive: true,
-    isBonusDisabled: true,
-    withdrawalRestrictionUntil: null,
-    createdAt: new Date(0).toISOString(),
-    activatedAt: new Date(0).toISOString(),
-};
 
 const getGlobalSetting = (key: string, defaultValue: any, isJson: boolean = false) => {
     if (typeof window === 'undefined') {
@@ -72,6 +59,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [messages, setMessages] = useState<any>({});
+    const supabase = createClient();
+    const router = useRouter();
 
     useEffect(() => {
         const storedMessages = getGlobalSetting("platform_custom_messages", {}, true);
@@ -86,222 +75,127 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setMessages(mergedMessages);
     }, []);
 
-    const [users, setUsers] = useState<User[]>(() => {
-        if (typeof window === 'undefined') {
-            return [initialAdminUser];
-        }
-        try {
-            const storedUsers = localStorage.getItem('users');
-            if (storedUsers) {
-                const parsedUsers = JSON.parse(storedUsers);
-                const adminExists = parsedUsers.some((u: User) => u.email === initialAdminUser.email);
-                if (!adminExists) {
-                    return [initialAdminUser, ...parsedUsers];
-                }
-                return parsedUsers.map((u: User) => ({
-                    ...u,
-                    fullName: u.fullName || u.email, // Fallback for old users
-                    status: u.status ?? 'active',
-                    isAccountActive: u.isAccountActive ?? false,
-                    isBonusDisabled: u.isBonusDisabled ?? false,
-                    withdrawalRestrictionUntil: u.withdrawalRestrictionUntil ?? null,
-                    createdAt: u.createdAt ?? new Date().toISOString(),
-                    activatedAt: u.activatedAt ?? null,
-                    ...(u.email === initialAdminUser.email ? initialAdminUser : {})
-                }));
-            }
-        } catch (error) {
-            console.error("Failed to parse users from localStorage", error);
-        }
-        return [initialAdminUser];
-    });
+    const [users, setUsers] = useState<User[]>([]);
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-    const [currentUser, setCurrentUser] = useState<User | null>(() => {
-        if (typeof window === 'undefined') {
-            return null;
+    // Fetch all users for admin/referral purposes
+    const fetchAllUsers = async () => {
+        const { data, error } = await supabase.from('users').select('*');
+        if (error) {
+            console.error('Error fetching users:', error);
+            return;
         }
-        try {
-            const storedUser = localStorage.getItem('currentUser');
-            if (storedUser) {
-                return JSON.parse(storedUser);
-            }
-        } catch (error) {
-            console.error("Failed to parse currentUser from localStorage", error);
-        }
-        return null;
-    });
-    
-    // Watch for changes in localStorage to sync state across tabs
-    useLocalStorageWatcher('users', setUsers);
-    useLocalStorageWatcher('currentUser', setCurrentUser);
-
-    const router = useRouter();
-
-    useEffect(() => {
-        try {
-            localStorage.setItem('users', JSON.stringify(users));
-        } catch (error) {
-            console.error("Failed to save users to localStorage", error);
-        }
-    }, [users]);
-
-    useEffect(() => {
-        try {
-            if (currentUser) {
-                const userWithPassword = users.find(u => u.email === currentUser.email);
-                const userToStore = { ...currentUser, password: userWithPassword?.password };
-                localStorage.setItem('currentUser', JSON.stringify(userToStore));
-            } else {
-                localStorage.removeItem('currentUser');
-            }
-        } catch (error) {
-            console.error("Failed to save currentUser to localStorage", error);
-        }
-    }, [currentUser, users]);
-
-    const login = (email: string, password: string) => {
-        const user = users.find(u => u.email === email);
-
-        if (!user) {
-            return { success: false, message: messages.auth?.noAccountFound };
-        }
-        if (user.password !== password) {
-            return { success: false, message: messages.auth?.incorrectPassword };
-        }
-         if (user.status === 'disabled') {
-            return { success: false, message: messages.auth?.accountDisabled };
-        }
-
-        setCurrentUser(user);
-        return { success: true, message: 'Logged in successfully!', isAdmin: user.isAdmin };
+        setUsers(data as User[]);
     };
 
-    const signup = (email: string, password: string, fullName: string, referralCode: string) => {
-        const referrer = users.find(u => u.referralCode === referralCode);
+    useEffect(() => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (session?.user) {
+                const { data: userData, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .single();
 
-        if (!referrer) {
+                if (error) {
+                    console.error('Error fetching user profile:', error);
+                    setCurrentUser(null);
+                } else {
+                    setCurrentUser(userData as User);
+                }
+            } else {
+                setCurrentUser(null);
+            }
+             fetchAllUsers();
+        });
+        
+        fetchAllUsers(); // Initial fetch
+
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, [supabase]);
+
+
+    const login = async (email: string, password: string) => {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+            return { success: false, message: error.message };
+        }
+        
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: userData, error: userError } = await supabase.from('users').select('*').eq('id', user!.id).single();
+        if(userError || !userData) {
+            return { success: false, message: 'Could not retrieve user profile.' };
+        }
+         if (userData.status === 'disabled') {
+            await supabase.auth.signOut();
+            return { success: false, message: messages.auth?.accountDisabled };
+        }
+        
+        return { success: true, message: 'Logged in successfully!', isAdmin: userData.isAdmin };
+    };
+
+    const signup = async (email: string, password: string, fullName: string, referralCode: string) => {
+        const { data: referrer, error: referrerError } = await supabase
+            .from('users')
+            .select('email')
+            .eq('referralCode', referralCode)
+            .single();
+
+        if (referrerError || !referrer) {
             return { success: false, message: messages.auth?.invalidReferralCode };
         }
-        if (users.find(u => u.email === email)) {
+
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    full_name: fullName,
+                    referral_code: "TRH-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
+                    referred_by: referralCode,
+                },
+            },
+        });
+
+        if (error) {
+            return { success: false, message: error.message };
+        }
+        
+        if (data.user && data.user.identities && data.user.identities.length === 0) {
             return { success: false, message: messages.auth?.emailExists };
         }
 
-        const newUser: User = { 
-            email, 
-            password,
-            fullName,
-            isAdmin: false,
-            referralCode: "TRH-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
-            referredBy: referralCode,
-            status: 'inactive',
-            isAccountActive: false,
-            isBonusDisabled: false,
-            createdAt: new Date().toISOString(),
-            activatedAt: null,
-        };
-        setUsers(prev => [...prev, newUser]);
-        setCurrentUser(newUser);
-
-        return { success: true, message: 'Account created successfully!', referrerEmail: referrer.email };
+        return { success: true, message: 'Account created! Please check your email for a confirmation link.', referrerEmail: referrer.email };
     };
 
-    const logout = () => {
+    const logout = async () => {
+        await supabase.auth.signOut();
         setCurrentUser(null);
         router.push('/login');
     };
 
-    const updateUser = (email: string, updatedData: Partial<Omit<User, 'status' | 'isAccountActive'>> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; purchasedReferrals?: number; }) => {
-        const { mainBalance, taskRewardsBalance, interestEarningsBalance, purchasedReferrals, ...userData } = updatedData;
-        
-        const originalUser = users.find(u => u.email === email);
-        if (!originalUser) return;
-
-        if (userData.email && userData.email !== email) {
-            const keysToMigrate = [
-                'mainBalance', 'taskRewardsBalance', 'interestEarningsBalance',
-                'taskRewardsEarned', 'interestEarned', 'deposits', 'withdrawals',
-                'interestCounter', 'tasksCompletedToday', 'lastTaskCompletionDate',
-                'completedTasks', 'withdrawalAddress', 'monthlyWithdrawalsCount',
-                'lastWithdrawalMonth', 'lastTeamCommissionCredit', 'firstDepositDate', 'purchased_referrals'
-            ];
-            keysToMigrate.forEach(key => {
-                const oldKey = `${email}_${key}`;
-                const newKey = `${userData.email}_${key}`;
-                const value = localStorage.getItem(oldKey);
-                if (value) {
-                    localStorage.setItem(newKey, value);
-                    localStorage.removeItem(oldKey);
-                }
-            });
-        }
-        
-        const targetEmail = userData.email || email;
-        if (mainBalance !== undefined) localStorage.setItem(`${targetEmail}_mainBalance`, JSON.stringify(mainBalance));
-        if (taskRewardsBalance !== undefined) localStorage.setItem(`${targetEmail}_taskRewardsBalance`, JSON.stringify(taskRewardsBalance));
-        if (interestEarningsBalance !== undefined) localStorage.setItem(`${targetEmail}_interestEarningsBalance`, JSON.stringify(interestEarningsBalance));
-        if (purchasedReferrals !== undefined) {
-             localStorage.setItem(`${targetEmail}_purchased_referrals`, JSON.stringify(purchasedReferrals));
-        }
-
-        setUsers(prevUsers => prevUsers.map(user => 
-            user.email === email ? { ...user, ...userData } : user
-        ));
-        
-        if (currentUser?.email === email) {
-            setCurrentUser(prev => prev ? { ...prev, ...userData } : null);
-        }
+    const updateUser = async (userId: string, updatedData: Partial<Omit<User, 'status' | 'isAccountActive'>> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; purchasedReferrals?: number; }) => {
+        // This function will need to be converted to use server actions to update secure data
+        console.log("Updating user (client-side placeholder):", userId, updatedData);
     };
 
-    const deleteUser = (email: string, isSelfDelete: boolean = false) => {
-        if (email === initialAdminUser.email) {
-            return;
-        }
-        setUsers(prevUsers => prevUsers.filter(user => user.email !== email));
+    const deleteUser = async (userId: string) => {
+        // This needs to be a server action calling Supabase admin functions
+        console.log("Deleting user (client-side placeholder):", userId);
     };
 
-    const updateUserStatus = (email: string, status: User['status']) => {
-        setUsers(prev => prev.map(u => {
-            if (u.email === email) {
-                const updatedUser: User = { ...u, status };
-                if (status === 'inactive') {
-                    updatedUser.isAccountActive = false;
-                    updatedUser.activatedAt = null;
-                } else if (status === 'active' && !u.isAccountActive) {
-                    updatedUser.isAccountActive = true;
-                    updatedUser.activatedAt = u.activatedAt || new Date().toISOString();
-                }
-                return updatedUser;
-            }
-            return u;
-        }));
-        if (currentUser?.email === email) {
-             const userToUpdate = users.find(u => u.email === email);
-             if (userToUpdate) {
-                const updatedCurrentUser: User = { ...currentUser, status };
-                 if (status === 'inactive') {
-                    updatedCurrentUser.isAccountActive = false;
-                    updatedCurrentUser.activatedAt = null;
-                 } else if (status === 'active' && !currentUser.isAccountActive) {
-                    updatedCurrentUser.isAccountActive = true;
-                    updatedCurrentUser.activatedAt = currentUser.activatedAt || new Date().toISOString();
-                 }
-                setCurrentUser(updatedCurrentUser);
-             }
-        }
+    const updateUserStatus = async (userId: string, status: User['status']) => {
+       const { error } = await supabase.from('users').update({ status }).eq('id', userId);
+       if (error) console.error("Error updating user status:", error);
+       else fetchAllUsers(); // Re-fetch to update state
     }
     
-    const activateUserAccount = (email: string) => {
-        const newUsers = users.map(u => {
-            if (u.email === email && u.status !== 'active') {
-                return { ...u, status: 'active', isAccountActive: true, activatedAt: new Date().toISOString() };
-            }
-            return u;
-        });
-        setUsers(newUsers);
-
-        if (currentUser?.email === email && currentUser.status !== 'active') {
-            setCurrentUser(prev => prev ? { ...prev, status: 'active', isAccountActive: true, activatedAt: new Date().toISOString() } : null);
-        }
+    const activateUserAccount = async (userId: string) => {
+        const { error } = await supabase.from('users').update({ status: 'active', isAccountActive: true, activatedAt: new Date().toISOString() }).eq('id', userId);
+        if(error) console.error("Error activating account:", error);
+        else fetchAllUsers();
     }
 
 

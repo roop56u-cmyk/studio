@@ -20,7 +20,7 @@ import { Logo } from "@/components/logo";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequests } from "@/contexts/RequestContext";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { gradients } from "@/lib/gradients";
 
@@ -35,6 +35,7 @@ export default function SignupPage() {
   const [fullName, setFullName] = useState("");
   const [invitationCode, setInvitationCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [backgroundClass, setBackgroundClass] = useState("bg-background");
   const [backgroundStyle, setBackgroundStyle] = useState<React.CSSProperties>({});
   const [mainLogoDataUrl, setMainLogoDataUrl] = useState<string | null>(null);
@@ -62,25 +63,23 @@ export default function SignupPage() {
     }
   }, []);
 
-  const handleSignUp = (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    const result = signup(email, password, fullName, invitationCode);
+    setIsLoading(true);
+    const result = await signup(email, password, fullName, invitationCode);
+    setIsLoading(false);
 
     if (result.success) {
       toast({
-        title: "Account Created!",
-        description: "Welcome! You are now being redirected to your dashboard.",
+        title: "Check Your Email",
+        description: result.message,
       });
 
-      if (result.referrerEmail) {
-        addActivity(result.referrerEmail, {
-          type: 'New Referral',
-          description: `A new member, ${fullName} (${email}), joined your team.`,
-          date: new Date().toISOString()
-        });
-      }
+      // We don't add activity here anymore, as the user is not yet "on a team"
+      // until they confirm their email and their profile is created.
+      // This logic will move to a server-side function triggered by account confirmation.
 
-      router.push("/dashboard");
+      router.push("/login");
     } else {
       toast({
         variant: "destructive",
@@ -162,7 +161,8 @@ export default function SignupPage() {
                 className="bg-white/20 text-white placeholder:text-white/60 border-white/30"
               />
             </div>
-            <Button type="submit" className="w-full bg-white/90 text-primary hover:bg-white">
+            <Button type="submit" className="w-full bg-white/90 text-primary hover:bg-white" disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Create Account
             </Button>
           </form>
