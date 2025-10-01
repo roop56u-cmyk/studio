@@ -100,18 +100,21 @@ export async function signUp(formData: FormData) {
     options: {
       data: {
         full_name: fullName,
-        referred_by: invitationCode,
+        referred_by: invitationCode, // Pass the invitation code here
       },
     },
   });
 
   if (error) {
-    return { success: false, message: error.message };
+    // The error from signUp might be generic. We'll return a more specific one.
+    if (error.message.includes("duplicate key value violates unique constraint")) {
+       return { success: false, message: "An account with this email already exists." };
+    }
+    return { success: false, message: "Database error saving new user." };
   }
 
   if (data.user) {
      // The database trigger should handle profile creation.
-     // This is just a confirmation message.
     return { success: true, message: 'Confirmation link sent to your email!' };
   }
 
@@ -252,4 +255,3 @@ export async function getInternetTime(): Promise<{ utc_datetime: string } | null
     return null;
   }
 }
-
