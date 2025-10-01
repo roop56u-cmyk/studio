@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { platformMessages } from '@/lib/platform-messages';
 import { useLocalStorageWatcher } from '@/hooks/use-local-storage-watcher';
 import { createClient } from '@/lib/supabase/client';
-import type { AuthError, SupabaseClient } from '@supabase/supabase-js';
+import type { AuthError, SupabaseClient, Session } from '@supabase/supabase-js';
 
 export type User = {
     id: string; // From Supabase auth
@@ -62,7 +62,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [messages, setMessages] = useState<any>({});
     const router = useRouter();
 
-    // Use useMemo to ensure createClient is only called when needed and on the client-side
     const supabase = useMemo(() => createClient(), []);
 
     useEffect(() => {
@@ -121,9 +120,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const login = async (email: string, password: string) => {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error || !data.user) {
+
+        if (error || !data.session) {
             return { success: false, message: error?.message || "Invalid login credentials." };
         }
+        
+        // Explicitly set the session to trigger onAuthStateChange correctly
+        await supabase.auth.setSession(data.session);
 
         const { data: userData, error: userError } = await supabase.from('users').select('*').eq('id', data.user.id).single();
         if (userError || !userData) {
