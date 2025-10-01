@@ -40,10 +40,17 @@ export function createAdminClient() {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set in .env file');
   }
+  // The admin client is a server-to-server client and doesn't manage user sessions.
+  // We provide empty cookie handlers to satisfy the requirement of the library.
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY,
     {
+      cookies: {
+        get: () => undefined,
+        set: () => {},
+        remove: () => {},
+      },
       auth: {
         autoRefreshToken: false,
         persistSession: false,
