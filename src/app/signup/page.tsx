@@ -18,8 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/logo";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
-import { useRequests } from "@/contexts/RequestContext";
+import { signUp } from "@/app/actions";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { gradients } from "@/lib/gradients";
@@ -28,12 +27,6 @@ import { gradients } from "@/lib/gradients";
 export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { signup } = useAuth();
-  const { addActivity } = useRequests();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [invitationCode, setInvitationCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [backgroundClass, setBackgroundClass] = useState("bg-background");
@@ -63,10 +56,9 @@ export default function SignupPage() {
     }
   }, []);
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSignUp = async (formData: FormData) => {
     setIsLoading(true);
-    const result = await signup(email, password, fullName, invitationCode);
+    const result = await signUp(formData);
     setIsLoading(false);
 
     if (result.success) {
@@ -74,11 +66,6 @@ export default function SignupPage() {
         title: "Check Your Email",
         description: result.message,
       });
-
-      // We don't add activity here anymore, as the user is not yet "on a team"
-      // until they confirm their email and their profile is created.
-      // This logic will move to a server-side function triggered by account confirmation.
-
       router.push("/login");
     } else {
       toast({
@@ -103,15 +90,14 @@ export default function SignupPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSignUp} className="grid gap-4">
+          <form action={handleSignUp} className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="full-name" className="text-white">Full Name</Label>
               <Input 
                 id="full-name" 
+                name="fullName"
                 placeholder="John Doe" 
                 required 
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
                 className="bg-white/20 text-white placeholder:text-white/60 border-white/30"
                 />
             </div>
@@ -119,11 +105,10 @@ export default function SignupPage() {
               <Label htmlFor="email" className="text-white">Email</Label>
               <Input
                 id="email"
+                name="email"
                 type="email"
                 placeholder="m@example.com"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 className="bg-white/20 text-white placeholder:text-white/60 border-white/30"
               />
             </div>
@@ -132,10 +117,9 @@ export default function SignupPage() {
                <div className="relative">
                 <Input 
                   id="password" 
+                  name="password"
                   type={showPassword ? "text" : "password"}
                   required 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
                   className="bg-white/20 text-white placeholder:text-white/60 border-white/30"
                   />
                   <Button
@@ -154,10 +138,9 @@ export default function SignupPage() {
               <Label htmlFor="invitation-code" className="text-white">Invitation Code</Label>
               <Input
                 id="invitation-code"
+                name="invitationCode"
                 placeholder="Enter referral code"
                 required
-                value={invitationCode}
-                onChange={(e) => setInvitationCode(e.target.value)}
                 className="bg-white/20 text-white placeholder:text-white/60 border-white/30"
               />
             </div>

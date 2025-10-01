@@ -74,6 +74,50 @@ export async function signIn(formData: FormData) {
   return { success: true, isAdmin: userData?.isAdmin || false };
 }
 
+export async function signUp(formData: FormData) {
+  const email = formData.get('email') as string;
+  const password = formData.get('password') as string;
+  const fullName = formData.get('fullName') as string;
+  const invitationCode = formData.get('invitationCode') as string;
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+  const supabaseAdmin = createAdminClient();
+
+  // Check if invitation code is valid
+  const { data: referrer, error: referrerError } = await supabaseAdmin
+    .from('users')
+    .select('id')
+    .eq('referral_code', invitationCode)
+    .single();
+
+  if (referrerError || !referrer) {
+    return { success: false, message: 'Invalid invitation code.' };
+  }
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        full_name: fullName,
+        referred_by: invitationCode,
+      },
+    },
+  });
+
+  if (error) {
+    return { success: false, message: error.message };
+  }
+
+  if (data.user) {
+     // The database trigger should handle profile creation.
+     // This is just a confirmation message.
+    return { success: true, message: 'Confirmation link sent to your email!' };
+  }
+
+  return { success: false, message: 'An unknown error occurred during sign-up.' };
+}
+
 
 export async function submitReview(input: ReviewSubmission): Promise<{success: boolean}> {
   try {
