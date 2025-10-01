@@ -1,6 +1,8 @@
 
 "use server";
 
+import { revalidatePath } from 'next/cache';
+import { createClient } from '@/lib/supabase/server';
 import { taskLibrary as defaultTasks, Task } from "@/lib/tasks";
 import { generateNewTaskLibrary as generateNewTaskLibraryFlow } from "@/ai/flows/generate-task-library-flow";
 import { generateNftLibraryArtwork as generateNftLibraryArtworkFlow } from "@/ai/flows/generate-nft-artwork-flow";
@@ -19,6 +21,29 @@ export type ReviewSubmission = {
   rating: number;
   option: string;
 };
+
+export async function signIn(formData: FormData) {
+  const email = formData.get('email') as string;
+  const password = formData.get('password') as string;
+  const supabase = createClient();
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) {
+    return { success: false, message: error.message };
+  }
+  
+  // Revalidate path to ensure session is updated
+  revalidatePath('/', 'layout');
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: userData } = await supabase.from('users').select('isAdmin').eq('id', user!.id).single();
+
+  return { success: true, isAdmin: userData?.isAdmin || false };
+}
 
 
 export async function submitReview(input: ReviewSubmission): Promise<{success: boolean}> {

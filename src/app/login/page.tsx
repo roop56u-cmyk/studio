@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Link from "next/link";
@@ -18,8 +17,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/logo";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
-import { Eye, EyeOff } from "lucide-react";
+import { signIn } from "@/app/actions";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { gradients } from "@/lib/gradients";
@@ -28,13 +27,12 @@ import { gradients } from "@/lib/gradients";
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { login } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [backgroundClass, setBackgroundClass] = useState("bg-background");
   const [backgroundStyle, setBackgroundStyle] = useState<React.CSSProperties>({});
   const [mainLogoDataUrl, setMainLogoDataUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
 
   useEffect(() => {
     const savedMainLogo = localStorage.getItem('website_main_logo_data_url');
@@ -59,9 +57,10 @@ export default function LoginPage() {
     }
   }, []);
 
-  const handleSignIn = (e: React.FormEvent) => {
-    e.preventDefault();
-    const result = login(email, password);
+  const handleSignIn = async (formData: FormData) => {
+    setIsLoading(true);
+    const result = await signIn(formData);
+    setIsLoading(false);
 
     if (result.success) {
         toast({
@@ -106,16 +105,15 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSignIn} className="grid gap-4">
+          <form action={handleSignIn} className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="email" className="text-white">Email</Label>
               <Input
                 id="email"
+                name="email"
                 type="email"
                 placeholder="m@example.com"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 className="bg-white/20 text-white placeholder:text-white/60 border-white/30"
               />
             </div>
@@ -129,10 +127,9 @@ export default function LoginPage() {
               <div className="relative">
                 <Input
                   id="password"
+                  name="password"
                   type={showPassword ? "text" : "password"}
                   required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
                   className="bg-white/20 text-white placeholder:text-white/60 border-white/30"
                 />
                 <Button
@@ -156,7 +153,8 @@ export default function LoginPage() {
                     Remember me
                 </label>
             </div>
-            <Button type="submit" className="w-full bg-white/90 text-primary hover:bg-white">
+            <Button type="submit" className="w-full bg-white/90 text-primary hover:bg-white" disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sign In
             </Button>
           </form>

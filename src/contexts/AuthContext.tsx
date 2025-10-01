@@ -27,7 +27,6 @@ export type User = {
 interface AuthContextType {
   currentUser: User | null;
   users: User[];
-  login: (email: string, password: string) => Promise<{ success: boolean; message: string; isAdmin?: boolean }>;
   signup: (email: string, password: string, fullName: string, invitationCode: string) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
   updateUser: (userId: string, updatedData: Partial<Omit<User, 'status' | 'isAccountActive'>> & { mainBalance?: number; taskRewardsBalance?: number; interestEarningsBalance?: number; purchasedReferrals?: number; }) => void;
@@ -114,31 +113,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         };
     }, [supabase, fetchAllUsers]);
 
-
-    const login = async (email: string, password: string) => {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    
-        if (error || !data.user) {
-          return { success: false, message: error?.message || "Invalid login credentials." };
-        }
-    
-        // The onAuthStateChange listener will handle setting the current user.
-        // We just need to check if the profile exists and is not disabled.
-        const { data: userData, error: userError } = await supabase.from('users').select('status, isAdmin').eq('id', data.user.id).single();
-        
-        if (userError || !userData) {
-          await supabase.auth.signOut(); // Log out if profile doesn't exist
-          return { success: false, message: 'Could not retrieve user profile.' };
-        }
-    
-        if (userData.status === 'disabled') {
-          await supabase.auth.signOut();
-          return { success: false, message: messages.auth?.accountDisabled || 'Your account is disabled.' };
-        }
-    
-        return { success: true, message: 'Logged in successfully!', isAdmin: userData.isAdmin };
-      };
-
     const signup = async (email: string, password: string, fullName: string, invitationCode: string) => {
         const { data: referrer, error: referrerError } = await supabase
             .from('users')
@@ -206,7 +180,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 
     return (
-        <AuthContext.Provider value={{ currentUser, users, login, signup, logout, updateUser, deleteUser, updateUserStatus, activateUserAccount }}>
+        <AuthContext.Provider value={{ currentUser, users, signup, logout, updateUser, deleteUser, updateUserStatus, activateUserAccount }}>
             {children}
         </AuthContext.Provider>
     );
