@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo, useCallback } from 'react';
@@ -14,6 +13,7 @@ import type { SalaryPackage } from '@/app/dashboard/admin/salary/page';
 import { useLocalStorageWatcher } from '@/hooks/use-local-storage-watcher';
 import type { CommunityCommissionRule } from '@/app/dashboard/admin/community-commission/page';
 import type { Activity } from './WalletContext';
+import { createServerClient } from '@supabase/ssr';
 
 type TeamMember = User & {
     level: number;
@@ -371,7 +371,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
 
 
     useEffect(() => {
-        if (currentUser) {
+        if (currentUser && users.length > 0) {
             setIsLoading(true);
             const payoutTime = new Date(lastPayoutCheckTime || 0).getTime();
             const currentTeamData = calculateTeamData(currentUser, users, payoutTime);

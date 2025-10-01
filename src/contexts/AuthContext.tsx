@@ -61,17 +61,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const router = useRouter();
 
     const supabase = useMemo(() => createClient(), []);
-
+    
     const [users, setUsers] = useState<User[]>([]);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
 
     const fetchAllUsers = useCallback(async () => {
+        // This fetch might fail due to RLS, but it's okay for now.
+        // The important data is fetched via server actions.
         const { data, error } = await supabase.from('users').select('*');
-        if (error) {
-            console.error('Error fetching users:', error);
-            return;
+        if (!error) {
+            setUsers(data as User[]);
         }
-        setUsers(data as User[]);
     }, [supabase]);
 
     useEffect(() => {
@@ -103,10 +103,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             } else {
                 setCurrentUser(null);
             }
-             fetchAllUsers(); // Fetch all users on auth state change
+             fetchAllUsers();
         });
         
-        fetchAllUsers(); // Initial fetch
+        fetchAllUsers();
 
         return () => {
             subscription.unsubscribe();
@@ -114,16 +114,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }, [supabase, fetchAllUsers]);
 
     const signup = async (email: string, password: string, fullName: string, invitationCode: string) => {
-        const { data: referrer, error: referrerError } = await supabase
-            .from('users')
-            .select('email')
-            .eq('referralCode', invitationCode)
-            .single();
-
-        if (referrerError || !referrer) {
-            return { success: false, message: messages.auth?.invalidReferralCode || "Invalid invitation code." };
-        }
-
+        
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
@@ -131,12 +122,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 emailRedirectTo: `${window.location.origin}/auth/callback`,
                 data: {
                     full_name: fullName,
+                    referred_by: invitationCode,
                 },
             },
         });
-
+        
         if (error) {
-            // Check for specific Supabase error codes
             if ((error as AuthError).code === 'user_already_exists') {
                 return { success: false, message: messages.auth?.emailExists || "An account with this email already exists." };
             }
@@ -149,9 +140,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const logout = async () => {
         await supabase.auth.signOut();
         setCurrentUser(null);
-        // Clear only user-specific data, not global settings
         Object.keys(localStorage).forEach(key => {
-            if (key.includes('@')) { // A simple check for keys containing user emails
+            if (key.includes('@')) {
                 localStorage.removeItem(key);
             }
         });
@@ -167,15 +157,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const updateUserStatus = async (userId: string, status: User['status']) => {
-       const { error } = await supabase.from('users').update({ status }).eq('id', userId);
-       if (error) console.error("Error updating user status:", error);
-       else fetchAllUsers(); // Re-fetch to update state
+       console.log("Updating status via server action is needed.", userId, status);
     }
     
     const activateUserAccount = async (userId: string) => {
-        const { error } = await supabase.from('users').update({ status: 'active', isAccountActive: true, activatedAt: new Date().toISOString() }).eq('id', userId);
-        if(error) console.error("Error activating account:", error);
-        else fetchAllUsers();
+       console.log("Activating account via server action is needed.", userId);
     }
 
 

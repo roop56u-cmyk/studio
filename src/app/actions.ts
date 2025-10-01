@@ -10,7 +10,6 @@ import { NftLibraryItem, nftLibrary } from "@/lib/nft-library";
 import fs from "fs/promises";
 import path from "path";
 
-
 // This type should align with the structure in your task library
 export type GenerateTaskSuggestionOutput = Task;
 
@@ -36,7 +35,6 @@ export async function signIn(formData: FormData) {
     return { success: false, message: error.message };
   }
   
-  // Revalidate path to ensure session is updated
   revalidatePath('/', 'layout');
   
   const { data: { user } } = await supabase.auth.getUser();
@@ -44,16 +42,19 @@ export async function signIn(formData: FormData) {
     return { success: false, message: "Could not authenticate user." };
   }
 
-  const { data: userData, error: userError } = await supabase.from('users').select('isAdmin').eq('id', user.id).single();
+  // Use the service role client to check for user profile to bypass RLS for this check
+   const supabaseAdmin = createClient();
+
+  const { data: userData, error: userError } = await supabaseAdmin.from('users').select('isAdmin').eq('id', user.id).single();
 
   if (userError && userError.code === 'PGRST116') {
     // User profile doesn't exist, so create it. This is a fallback for users created before the trigger.
-    const { data: newUser, error: insertError } = await supabase.from('users').insert({
+    const { data: newUser, error: insertError } = await supabaseAdmin.from('users').insert({
       id: user.id,
       email: user.email,
       full_name: user.user_metadata.full_name || user.email,
       referral_code: 'REF-' + Math.random().toString(36).substring(2, 9).toUpperCase(),
-    }).select().single();
+    }).select('isAdmin').single();
 
     if (insertError) {
       return { success: false, message: "Failed to create user profile on login." };
