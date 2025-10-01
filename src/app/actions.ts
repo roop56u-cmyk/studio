@@ -40,7 +40,31 @@ export async function signIn(formData: FormData) {
   revalidatePath('/', 'layout');
   
   const { data: { user } } = await supabase.auth.getUser();
-  const { data: userData } = await supabase.from('users').select('isAdmin').eq('id', user!.id).single();
+  if (!user) {
+    return { success: false, message: "Could not authenticate user." };
+  }
+
+  const { data: userData, error: userError } = await supabase.from('users').select('isAdmin').eq('id', user.id).single();
+
+  if (userError && userError.code === 'PGRST116') {
+    // User profile doesn't exist, so create it. This is a fallback for users created before the trigger.
+    const { data: newUser, error: insertError } = await supabase.from('users').insert({
+      id: user.id,
+      email: user.email,
+      full_name: user.user_metadata.full_name || user.email,
+      referral_code: 'REF-' + Math.random().toString(36).substring(2, 9).toUpperCase(),
+    }).select().single();
+
+    if (insertError) {
+      return { success: false, message: "Failed to create user profile on login." };
+    }
+    return { success: true, isAdmin: newUser?.isAdmin || false };
+  }
+  
+  if (userError) {
+    return { success: false, message: userError.message };
+  }
+
 
   return { success: true, isAdmin: userData?.isAdmin || false };
 }
